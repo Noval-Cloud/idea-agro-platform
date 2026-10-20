@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.venv/
+
+# Builds and caches
+dist/
+build/
+coverage/
+.astro/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Secrets and local settings: never committed
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*-key.json
+credentials*.json
+service-account*.json
+
+# OS and editors
+.DS_Store
+.idea/
