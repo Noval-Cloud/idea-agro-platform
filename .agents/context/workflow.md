@@ -73,8 +73,8 @@ Every story is an OpenSpec change, created with `pnpm openspec new change <story
 Rules for tasks:
 
 - Each task is one or more commits, and **the commit that finishes a task ticks its checkbox**. Interrupted work resumes from the first unticked task.
-- The last task archives the change: `pnpm openspec archive <change> --yes`, adding `--skip-specs` when the change has `skip_specs: true`. Spec deltas are merged into `openspec/specs/` in the same pull request.
-- `make specs` validates every change and spec, and is part of `make check`.
+- The last task archives the change: tick it first, then run `pnpm openspec archive <change> --yes`, adding `--skip-specs` when the change has `skip_specs: true`. Spec deltas are merged into `openspec/specs/` in the same pull request.
+- `make specs` validates every change and spec, and fails if an archived change still has an unticked task. It is part of `make check`.
 
 ## Flows
 
