@@ -6,12 +6,28 @@ How work goes from the project board to `main`. The same flow applies to a perso
 
 The GitHub Project **IDEA-Agro** (organization Noval-Cloud) holds every work item.
 
-| Field                | Values                                                                             |
-| :------------------- | :--------------------------------------------------------------------------------- |
-| Status               | Backlog → Ready → Spec → Spec review → In progress → In review → Done, and Blocked |
-| Stage                | `0 · Foundations` … `5 · Forecasts`, `Anytime`                                     |
-| Iteration            | Two-week sprints                                                                   |
-| Priority, Size, Area | Planning aids                                                                      |
+| Field                | Values                                                                                                              |
+| :------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| Status               | Backlog → Ready → Spec → Spec review → In progress → In review → Done, and Blocked. Pull requests also use Approved |
+| Stage                | `0 · Foundations` … `5 · Forecasts`, `Anytime`                                                                      |
+| Iteration            | Two-week sprints                                                                                                    |
+| Priority, Size, Area | Planning aids                                                                                                       |
+
+Views:
+
+- **Board, Backlog and Roadmap** show issues only (`is:issue`).
+- **Pull requests** shows the open pull requests (`is:pr is:open`), with their review state.
+
+Pull requests are items too, added automatically while open. GitHub's project workflows move them, never the team leader:
+
+| Event             | Pull request's Status        |
+| :---------------- | :--------------------------- |
+| Opened            | none yet: waiting for review |
+| Changes requested | In progress                  |
+| Approved          | Approved                     |
+| Merged or closed  | Done                         |
+
+Linking a pull request to a story (`Closes #<story>` in a pull request into `main`) moves the story to In review. Reviews only change these statuses when the reviewer's GitHub identity differs from the author's.
 
 ## Work items
 
