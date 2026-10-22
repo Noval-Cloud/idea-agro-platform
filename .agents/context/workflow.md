@@ -56,10 +56,11 @@ It takes a story that is **Ready within the current iteration**, and moves it as
 
 ## OpenSpec changes
 
-Every story is an OpenSpec change in `openspec/changes/<story>-<slug>/`:
+Every story is an OpenSpec change, created with `pnpm openspec new change <story>-<slug>`, in `openspec/changes/<story>-<slug>/`:
 
-- **`proposal.md`:** `## Why`, `## What Changes`, `## Impact` (affected specs, affected code, the story).
-- **Spec deltas** (`specs/<capability>/spec.md`), when the story changes the platform's behavior.
+- **`.openspec.yaml`:** created by the command. A change that does not alter the platform's behavior (tooling, infrastructure, docs) adds `skip_specs: true`.
+- **`proposal.md`:** `## Why`, `## What Changes`, `## Impact` (affected specs, affected code, `Story: #<number>`).
+- **Spec deltas** in `specs/<capability>/spec.md` (`## ADDED`, `## MODIFIED`, `## REMOVED` or `## RENAMED Requirements`, each requirement with at least one `#### Scenario:`), when the story changes behavior.
 - **`tasks.md`:** numbered checkboxes, the last one archiving the change.
 
 ```markdown
@@ -72,7 +73,8 @@ Every story is an OpenSpec change in `openspec/changes/<story>-<slug>/`:
 Rules for tasks:
 
 - Each task is one or more commits, and **the commit that finishes a task ticks its checkbox**. Interrupted work resumes from the first unticked task.
-- The last task archives the change: `pnpm openspec archive <change>`. Changes with no spec deltas use `--skip-specs`. The living specs in `openspec/specs/` are updated in the same pull request.
+- The last task archives the change: tick it first, then run `pnpm openspec archive <change> --yes`, adding `--skip-specs` when the change has `skip_specs: true`. Spec deltas are merged into `openspec/specs/` in the same pull request.
+- `make specs` validates every change and spec, and fails if an archived change still has an unticked task. It is part of `make check`.
 
 ## Flows
 

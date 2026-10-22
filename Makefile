@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format typecheck test check
+.PHONY: help setup lint format typecheck test specs check
 
 TERRAFORM_DIR := infrastructure/terraform
 
@@ -34,4 +34,8 @@ test: ## Run every test suite
 	pnpm test
 	uv run pytest || [ $$? -eq 5 ] # 5: no tests collected yet
 
-check: lint typecheck test ## Run lint, typecheck and test
+specs: ## Validate the OpenSpec changes and specs, and that archived changes have no open task
+	pnpm openspec validate --all --strict --no-interactive
+	! grep -rl -e '- \[ \]' openspec/changes/archive
+
+check: lint typecheck test specs ## Run lint, typecheck, test and specs
