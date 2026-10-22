@@ -32,6 +32,8 @@ crash.log
 credentials*.json
 service-account*.json
 
-# OS and editors
+# OS, editors and local agent settings
 .DS_Store
 .idea/
+.claude/settings.local.json
+*.tsbuildinfo

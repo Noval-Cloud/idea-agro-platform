@@ -25,7 +25,7 @@ Before starting, read `.agents/context/conventions.md` and `workflow.md`.
    - **Tests:** changed behavior is tested, and `make check` passes on the branch.
    - **Conventions:** English everywhere, short comments with no history, no text in components, design tokens only, pinned dependencies, no secret values.
    - **Process:** every task is ticked, the change is archived, the title is Conventional Commits, the body says `Closes #<story>`, and every commit references the story.
-4. Post the review as a comment: `gh pr review <pr> --comment --body-file <file>`. Findings go first, ranked as **Blocking** or **Non-blocking**, each with the file and line, the problem and a suggested fix. Close with the verdict. A formal approval or change request is not possible, because the agents share the owner's GitHub identity.
+4. Post the review as a comment, passing the text on standard input: `gh pr review <pr> --comment --body-file -`. Findings go first, ranked as **Blocking** or **Non-blocking**, each with the file and line, the problem and a suggested fix. Close with the verdict. A formal approval or change request is not possible, because the agents share the owner's GitHub identity.
 
 ## You return
 
