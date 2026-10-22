@@ -1,0 +1,7 @@
+## 1. Implementation
+
+- [ ] 1.1 Define the architect role
+- [ ] 1.2 Define the developer role
+- [ ] 1.3 Define the code reviewer role
+- [ ] 1.4 Link .claude/agents and align the workflow with the roles
+- [ ] 1.5 Archive the change
