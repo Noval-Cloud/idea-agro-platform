@@ -13,6 +13,8 @@ IDEA-Agro is an open platform of environmental and productive indicators for Uru
 
 Roles (architect, developer, code reviewer) live in `.agents/agents/`, and skills in `.agents/skills/`.
 
+Before changing a part of the repository, read its README, such as [infrastructure/README.md](infrastructure/README.md): it says how that part is laid out and worked on.
+
 ## Commands
 
 `make setup` installs everything, and `make check` is the gate before every pull request. The folders are in the [README layout](README.md#layout) and every command in [README commands](README.md#commands).

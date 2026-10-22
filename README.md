@@ -35,19 +35,20 @@ No version manager is needed: each tool reads its own pin.
 
 Everything runs from the root through `make`; `make` alone lists the targets.
 
-| Command          | What it does                                                                |
-| :--------------- | :-------------------------------------------------------------------------- |
-| `make setup`     | Install every dependency from the lockfiles                                 |
-| `make lint`      | Check formatting and lint rules, without changing files                     |
-| `make format`    | Format every file in place                                                  |
-| `make typecheck` | Type-check TypeScript and Python                                            |
-| `make test`      | Run every test suite                                                        |
-| `make specs`     | Validate the OpenSpec changes and specs                                     |
-| `make check`     | `lint`, `typecheck`, `test` and `specs`: the gate before every pull request |
+| Command                   | What it does                                                                          |
+| :------------------------ | :------------------------------------------------------------------------------------ |
+| `make setup`              | Install every dependency from the lockfiles                                           |
+| `make lint`               | Check formatting and lint rules, without changing files                               |
+| `make format`             | Format every file in place                                                            |
+| `make typecheck`          | Type-check TypeScript and Python                                                      |
+| `make test`               | Run every test suite                                                                  |
+| `make specs`              | Validate the OpenSpec changes and specs                                               |
+| `make check`              | `lint`, `typecheck`, `test` and `specs`: the gate before every pull request           |
+| `make tf-setup ENV=<env>` | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply |
 
-Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to `scripts/`.
+Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to a script, in `scripts/` or in the part it belongs to, such as `infrastructure/setup/`.
 
-Infrastructure targets follow one convention:
+Infrastructure targets are described in [infrastructure/README.md](infrastructure/README.md), and follow one convention:
 
 - `ENV` names the environment and must be `dev`, `qa` or `prd`.
 - Destructive targets ask for confirmation, unless `YES=1` is set (for agents and CI).

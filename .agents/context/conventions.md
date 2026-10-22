@@ -12,6 +12,12 @@ How code and text are written in this repository. The work process (stories, bra
 - **Short:** one line, two at most, and only where the reason is not obvious from the code.
 - **No history in the code:** what failed, incidents and how a decision was reached go in the commit message, the OpenSpec change or the docs.
 
+## READMEs
+
+- **One at the root, and one in each important part,** such as `infrastructure/`. A part's README says how it is laid out and how to work on it.
+- **A part starts as a section of its parent's README.** When that section grows, it moves into the README of the part's own folder.
+- **The parent keeps a summary** of the part that moved, and points to its README for the detail.
+
 ## Website (TypeScript)
 
 - **No text in components.** Every user-facing string lives in a typed per-locale catalog (Spanish, English and Brazilian Portuguese) and is read through `t("area.key", values)`, with checked keys, `{placeholder}` interpolation and plurals through `Intl.PluralRules`.
