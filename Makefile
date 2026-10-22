@@ -32,7 +32,7 @@ typecheck: ## Type-check TypeScript and Python
 
 test: ## Run every test suite
 	pnpm test
-	uv run pytest || [ $$? -eq 5 ] # 5: no tests collected yet
+	uv run pytest
 
 specs: ## Validate the OpenSpec changes and specs, and that archived changes have no open task
 	pnpm openspec validate --all --strict --no-interactive

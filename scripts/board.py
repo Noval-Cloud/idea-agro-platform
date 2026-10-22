@@ -2,7 +2,7 @@
 
 Usage:
     scripts/board.py show <story>
-    scripts/board.py move <story> [--status NAME] [--phase NAME] [--iteration current|TITLE]
+    scripts/board.py move <story> [--status NAME] [--phase NAME|none] [--iteration current|TITLE]
 
 Field and option ids are looked up by name. Requires an authenticated `gh` with the `project` scope.
 """
@@ -16,6 +16,7 @@ from typing import Any
 
 OWNER = "Noval-Cloud"
 PROJECT_NUMBER = 1
+REPOSITORY = "Noval-Cloud/idea-agro-platform"
 
 FIELDS_QUERY = """
 query($owner: String!, $number: Int!) {
@@ -41,7 +42,7 @@ query($owner: String!, $number: Int!, $cursor: String) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id
-          content { ... on Issue { number } }
+          content { ... on Issue { number repository { nameWithOwner } } }
           fieldValues(first: 30) {
             nodes {
               ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }
@@ -51,6 +52,14 @@ query($owner: String!, $number: Int!, $cursor: String) {
         }
       }
     }
+  }
+}
+"""
+
+CLEAR_MUTATION = """
+mutation($project: ID!, $item: ID!, $field: ID!) {
+  clearProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field}) {
+    projectV2Item { id }
   }
 }
 """
@@ -88,7 +97,8 @@ def find_item(story: int) -> dict[str, Any]:
         items = page["organization"]["projectV2"]["items"]
         for item in items["nodes"]:
             content: dict[str, Any] = item.get("content") or {}
-            if content.get("number") == story:
+            repository: dict[str, Any] = content.get("repository") or {}
+            if content.get("number") == story and repository.get("nameWithOwner") == REPOSITORY:
                 return item
         if not items["pageInfo"]["hasNextPage"]:
             sys.exit(f"Story #{story} is not on the board.")
@@ -116,30 +126,39 @@ def show(story: int) -> None:
     print(json.dumps({"story": story, **values}, indent=2, ensure_ascii=False))
 
 
-def move(story: int, status: str | None, phase: str | None, iteration: str | None) -> None:
-    project_id, fields = load_project()
-    item_id = find_item(story)["id"]
-    for name, wanted in (("Status", status), ("Phase", phase)):
-        if wanted is None:
-            continue
-        options = {option["name"]: option["id"] for option in fields[name]["options"]}
-        if wanted not in options:
-            sys.exit(f"{name} has no option '{wanted}'. Options: {', '.join(options)}")
-        value = {"singleSelectOptionId": options[wanted]}
-        graphql(UPDATE_MUTATION, project=project_id, item=item_id, field=fields[name]["id"], value=value)
-        print(f"#{story} {name}: {wanted}")
-    if iteration is not None:
-        field = fields["Iteration"]
+def resolve(fields: dict[str, dict[str, Any]], name: str, wanted: str) -> dict[str, str] | None:
+    """The value to write in a field, or None to clear it. Exits on an unknown value."""
+    if name == "Iteration":
+        field = fields[name]
         chosen = (
             current_iteration(field)
-            if iteration == "current"
-            else next((i for i in field["configuration"]["iterations"] if i["title"] == iteration), None)
+            if wanted == "current"
+            else next((i for i in field["configuration"]["iterations"] if i["title"] == wanted), None)
         )
         if chosen is None:
-            sys.exit(f"No iteration matches '{iteration}'.")
-        value = {"iterationId": chosen["id"]}
-        graphql(UPDATE_MUTATION, project=project_id, item=item_id, field=field["id"], value=value)
-        print(f"#{story} Iteration: {chosen['title']}")
+            sys.exit(f"No iteration matches '{wanted}'.")
+        return {"iterationId": chosen["id"]}
+    if wanted == "none":
+        return None
+    options = {option["name"]: option["id"] for option in fields[name]["options"]}
+    if wanted not in options:
+        sys.exit(f"{name} has no option '{wanted}'. Options: {', '.join(options)}")
+    return {"singleSelectOptionId": options[wanted]}
+
+
+def move(story: int, status: str | None, phase: str | None, iteration: str | None) -> None:
+    project_id, fields = load_project()
+    requested = {"Status": status, "Phase": phase, "Iteration": iteration}
+    # Every value is resolved before the first write, so a bad one never leaves the story half moved.
+    changes = {name: resolve(fields, name, wanted) for name, wanted in requested.items() if wanted is not None}
+    item_id = find_item(story)["id"]
+    for name, value in changes.items():
+        field_id = fields[name]["id"]
+        if value is None:
+            graphql(CLEAR_MUTATION, project=project_id, item=item_id, field=field_id)
+        else:
+            graphql(UPDATE_MUTATION, project=project_id, item=item_id, field=field_id, value=value)
+        print(f"#{story} {name}: {requested[name]}")
 
 
 def main() -> None:
@@ -150,7 +169,7 @@ def main() -> None:
     move_parser = commands.add_parser("move", help="Set the story's Status, Phase or Iteration")
     move_parser.add_argument("story", type=int)
     move_parser.add_argument("--status")
-    move_parser.add_argument("--phase")
+    move_parser.add_argument("--phase", help="A phase name, or 'none' to clear it")
     move_parser.add_argument("--iteration", help="'current' or an iteration title")
     args = parser.parse_args()
     if args.command == "show":

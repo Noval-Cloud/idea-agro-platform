@@ -1,6 +1,6 @@
 ---
 name: take-story
-description: Act as the team leader for one user story of the IDEA-Agro board. Read its labels, create its branches, run the matching flow with the architect, developer and code-reviewer roles, and move the story on the board until its pull request is ready to merge. Use it when a person asks to take, start, work on or resume a story ("take story #24").
+description: Act as the team leader for one user story of the IDEA-Agro board. Read its labels, create its branches, run the matching flow with the architect, developer and code-reviewer roles, and move the story on the board until its pull request is ready to merge. Use it when a person asks to take, start, work on or resume a story by its number.
 ---
 
 # Take a story
@@ -21,10 +21,10 @@ uv run python scripts/board.py move <story> --status "In progress" --phase Dev -
 ## Steps
 
 1. **Read the story.**
-   1. `gh issue view <story> --json number,title,body,labels,assignees,state`, and `scripts/board.py show <story>`.
+   1. `gh issue view <story> --json number,title,body,labels,assignees,state`, and `uv run python scripts/board.py show <story>`.
    2. It must be a user story. If it is not Ready within the current iteration, tell the person and continue only if they confirm.
    3. If it is already In progress or In review, go to "Resume".
-2. **Create the story branch** from an up-to-date `main`: `<type>/<story>/<slug>`, where the type is the Conventional Commits type of the story's main change and the slug is a short kebab-case form of the title. Push it.
+2. **Create the story branch** from an up-to-date `main`, or from the branch of an unmerged story it depends on (its pull request then targets that branch): `<type>/<story>/<slug>`, where the type is the Conventional Commits type of the story's main change and the slug is a short kebab-case form of the title. Push it.
 3. **Move the story:** Status `In progress`, Iteration `current` if it has none, and Phase `Spec` if it has `needs-spec`, otherwise `Dev`.
 4. **Spec**, only with `needs-spec`:
    1. Invoke the **architect** with the story, the branch and whether the spec needs review.
@@ -42,7 +42,7 @@ uv run python scripts/board.py move <story> --status "In progress" --phase Dev -
    2. Invoke the **code-reviewer** with the pull request.
    3. If the verdict is `changes needed`, invoke the developer with the blocking findings, then the code reviewer again.
    4. After three rounds without `ready`, stop and ask the person.
-7. **Hand over:** tell the person the pull request is ready to merge, with the reviewer's summary. Once they merge it, move Status to `Done`.
+7. **Hand over:** tell the person the pull request is ready to merge, with the reviewer's summary. Once they merge it, move Status to `Done` and clear the Phase (`--phase none`).
 
 ## Resume
 
@@ -50,7 +50,11 @@ When the story is already In progress or In review:
 
 1. Find its branch: `git branch -r --list "origin/*/<story>/*"`.
 2. Find its change in `openspec/changes/`, and the first unticked task in its `tasks.md`.
-3. Continue from the step that matches its Phase: `Spec` and `Spec review` go to step 4, `Dev` to step 5, and `Review` to step 6.
+3. Continue from where it stopped:
+   - Phase `Spec`: step 4.1, which reuses the change if it already exists;
+   - Phase `Spec review`: step 4.3;
+   - Phase `Dev`: step 5;
+   - Phase `Review`: step 6, or step 7 if the pull request is already merged.
 
 ## Rules
 
