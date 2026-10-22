@@ -27,6 +27,26 @@ The folders are added as their parts arrive.
 
 No version manager is needed: each tool reads its own pin.
 
+## Commands
+
+Everything runs from the root through `make`; `make` alone lists the targets.
+
+| Command          | What it does                                            |
+| :--------------- | :------------------------------------------------------ |
+| `make setup`     | Install every dependency (`pnpm install`, `uv sync`)    |
+| `make lint`      | Check formatting and lint rules, without changing files |
+| `make format`    | Format every file in place                              |
+| `make typecheck` | Type-check TypeScript and Python                        |
+| `make test`      | Run every test suite                                    |
+| `make check`     | `lint`, `typecheck` and `test`: what CI runs            |
+
+Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to `scripts/`.
+
+Infrastructure targets follow one convention:
+
+- `ENV` names the environment and must be `dev`, `qa` or `prd`.
+- Destructive targets ask for confirmation, unless `YES=1` is set (for agents and CI).
+
 ## Workflow
 
 [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow): every change goes in its own branch and reaches `main` through a reviewed pull request. `main` is always deployable.
