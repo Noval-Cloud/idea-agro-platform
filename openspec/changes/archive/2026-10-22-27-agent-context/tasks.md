@@ -1,0 +1,8 @@
+## 1. Implementation
+
+- [x] 1.1 Write the domain context: indicators, zones and glossary
+- [x] 1.2 Write the architecture context: parts, data flow and status
+- [x] 1.3 Write the conventions
+- [x] 1.4 Write the workflow: board, stories, branches, OpenSpec and pull requests
+- [x] 1.5 Add AGENTS.md and CLAUDE.md
+- [x] 1.6 Archive the change
