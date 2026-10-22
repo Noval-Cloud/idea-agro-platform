@@ -1,6 +1,6 @@
 ## 1. Implementation
 
-- [ ] 1.1 Add infrastructure/setup/setup.sh with its tests against a stub gcloud
+- [x] 1.1 Add infrastructure/setup/setup.sh with its tests against a stub gcloud
 - [ ] 1.2 Pin shellcheck and check every tracked shell script in make lint
 - [ ] 1.3 Add the make tf-setup target
 - [ ] 1.4 Document the setup in infrastructure/README.md and the setup.env files
