@@ -7,12 +7,12 @@ help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 setup: ## Install every dependency
-	pnpm install
-	uv sync
+	pnpm install --frozen-lockfile
+	uv sync --locked
 
 lint: ## Check formatting and lint rules (read-only)
 	pnpm exec vp fmt --check
-	pnpm exec vp lint
+	pnpm exec vp lint --deny-warnings
 	uv run ruff format --check
 	uv run ruff check
 ifneq ($(wildcard $(TERRAFORM_DIR)),)
