@@ -11,12 +11,7 @@ package = false
 members = ["services/*"]
 
 [dependency-groups]
-dev = [
-    "pyright==1.1.414",
-    "pytest==9.1.1",
-    "ruff==0.17.1",
-    "shellcheck-py==0.11.0.1",
-]
+dev = ["pyright==1.1.414", "pytest==9.1.1", "ruff==0.17.1", "shellcheck-py==0.11.0.1"]
 
 [tool.ruff]
 target-version = "py315"
