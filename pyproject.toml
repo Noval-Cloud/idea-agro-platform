@@ -1,2 +1,12 @@
 [tool.uv]
 required-version = "~=0.13.5"
+
+[tool.uv.workspace]
+members = ["services/*"]
+
+[dependency-groups]
+dev = [
+    "pyright==1.1.414",
+    "pytest==9.1.1",
+    "ruff==0.16.10",
+]
