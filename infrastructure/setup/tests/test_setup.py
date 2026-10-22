@@ -42,7 +42,7 @@ class Repo:
         self.outputs = root / "infrastructure/setup/outputs"
         self.state_file = root / "gcloud-state.json"
         self.script.parent.mkdir(parents=True)
-        shutil.copy(HERE / "setup.sh", self.script)
+        shutil.copy(HERE.parent / "setup.sh", self.script)
         bin_dir = root / "bin"
         bin_dir.mkdir()
         gcloud = bin_dir / "gcloud"
