@@ -1,0 +1,20 @@
+schema: spec-driven
+
+context: |
+  IDEA-Agro: open platform of environmental and productive indicators for Uruguay's agricultural land.
+  Monorepo: TypeScript website (Astro, pnpm workspace with Vite+) and Python services (uv workspace).
+  Everything is written in English. Keep OpenSpec headings and SHALL/MUST keywords as they are.
+  Context for every change:
+  - .agents/context/workflow.md: stories, branches, OpenSpec changes, tasks and pull requests.
+  - .agents/context/conventions.md: how code and text are written.
+  - .agents/context/architecture.md: the parts of the platform and the data flow.
+  - .agents/context/domain.md: indicators, zones and glossary.
+
+rules:
+  proposal:
+    - "Name the story it implements in the Impact section (Story: #<number>)."
+    - Record decisions already taken; never leave a decision open.
+  tasks:
+    - Number tasks as 1.1, 1.2; each one is one or more commits.
+    - The commit that finishes a task ticks its checkbox.
+    - The last task archives the change.
