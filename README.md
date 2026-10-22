@@ -35,14 +35,15 @@ No version manager is needed: each tool reads its own pin.
 
 Everything runs from the root through `make`; `make` alone lists the targets.
 
-| Command          | What it does                                                       |
-| :--------------- | :----------------------------------------------------------------- |
-| `make setup`     | Install every dependency from the lockfiles                        |
-| `make lint`      | Check formatting and lint rules, without changing files            |
-| `make format`    | Format every file in place                                         |
-| `make typecheck` | Type-check TypeScript and Python                                   |
-| `make test`      | Run every test suite                                               |
-| `make check`     | `lint`, `typecheck` and `test`: the gate before every pull request |
+| Command          | What it does                                                                |
+| :--------------- | :-------------------------------------------------------------------------- |
+| `make setup`     | Install every dependency from the lockfiles                                 |
+| `make lint`      | Check formatting and lint rules, without changing files                     |
+| `make format`    | Format every file in place                                                  |
+| `make typecheck` | Type-check TypeScript and Python                                            |
+| `make test`      | Run every test suite                                                        |
+| `make specs`     | Validate the OpenSpec changes and specs                                     |
+| `make check`     | `lint`, `typecheck`, `test` and `specs`: the gate before every pull request |
 
 Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to `scripts/`.
 
