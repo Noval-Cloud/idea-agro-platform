@@ -19,7 +19,7 @@ Before starting, read `.agents/context/workflow.md`, `conventions.md`, `architec
 1. Read the story: `gh issue view <story> --comments`.
 2. Check that every decision the story needs is already taken, in the story or in the specs. If one is missing, stop and return it as an open question. Never decide it yourself.
 3. If the spec needs review, create `<type>/<story>/specs` from the story branch and work there. Otherwise, work on the story branch.
-4. Create the change: `pnpm openspec new change <story>-<slug>`. A change that does not alter behavior gets `skip_specs: true` in `.openspec.yaml`.
+4. Create the change, unless it already exists from an interrupted run: `pnpm openspec new change <story>-<slug>`. A change that does not alter behavior gets `skip_specs: true` in `.openspec.yaml`.
 5. Write `proposal.md` (`## Why`, `## What Changes`, `## Impact`, including `Story: #<number>`).
 6. Write the spec deltas: requirements with SHALL or MUST, each with at least one `#### Scenario:` (WHEN and THEN). Add `design.md` only when the story needs a technical approach the developer must follow.
 7. Write `tasks.md`:
