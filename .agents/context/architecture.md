@@ -8,13 +8,15 @@ The repository is being built in stages (the project board's **Stage** field). T
 
 ## Parts
 
-| Part           | Folder            | Stack                                                                                            | Status            |
-| :------------- | :---------------- | :----------------------------------------------------------------------------------------------- | :---------------- |
-| Website        | `apps/web`        | Astro (static output), React islands, Tailwind, MapLibre GL                                      | Planned (stage 0) |
-| API            | `services/api`    | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) | Planned (stage 1) |
-| Data jobs      | `services/<job>`  | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches | Planned (stage 1) |
-| Earth Engine   | `gee/`            | Scripts and the documentation of the indicator assets                                            | Planned           |
-| Infrastructure | `infrastructure/` | Terraform for every GCP resource, Cloud Build for CI/CD                                          | Planned (stage 0) |
+Where each part lives is in the [README layout](../../README.md#layout).
+
+| Part           | Stack                                                                                            | Status            |
+| :------------- | :----------------------------------------------------------------------------------------------- | :---------------- |
+| Website        | Astro (static output), React islands, Tailwind, MapLibre GL                                      | Planned (stage 0) |
+| API            | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) | Planned (stage 1) |
+| Data jobs      | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches | Planned (stage 1) |
+| Earth Engine   | Scripts and the documentation of the indicator assets                                            | Planned           |
+| Infrastructure | Terraform for every GCP resource, Cloud Build for CI/CD                                          | Planned (stage 0) |
 
 ## Data flow
 

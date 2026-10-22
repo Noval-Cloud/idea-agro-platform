@@ -5,7 +5,7 @@ How code and text are written in this repository. The work process (stories, bra
 ## Language
 
 - **Everything in the repository is in English:** code, identifiers, comments, documentation, specs, commit messages, pull requests, issues and the agents' plans.
-- The only exception is user-facing text in other languages, which lives in the website's message catalogs (see "Website").
+- The exceptions are proper nouns, the Spanish glossary in [domain.md](domain.md), and user-facing text in other languages, which lives in the website's message catalogs (see "Website").
 
 ## Comments
 
@@ -35,16 +35,14 @@ How code and text are written in this repository. The work process (stories, bra
 
 ## Dependencies
 
-- Versions are pinned exactly: the pnpm catalog and lockfile, `uv.lock`, the tool pins listed in the README.
-- New versions are adopted at least two weeks after their release.
+- Dependencies are pinned to exact versions in the pnpm catalog, `pnpm-lock.yaml` and `uv.lock`. The toolchain pins (Node, pnpm, Python, uv) are listed in the README.
 
 ## Secrets and configuration
 
 - No secret values in any file of the repository. Configuration refers to secrets by their Secret Manager name.
 - Local overrides go in `.env` files, which git ignores.
 
-## Commits and pull requests
+## Commits
 
-- **Conventional Commits** (`type(scope): description`) for commit messages and pull request titles. A squash merge makes the pull request title the commit on `main`.
-- Every commit of a story references it: `Refs #<story>`.
-- Run `make check` before opening a pull request. It is what CI runs.
+- Commit messages follow Conventional Commits (`type(scope): description`).
+- Branches, pull requests and how commits reference their story are in [workflow.md](workflow.md).

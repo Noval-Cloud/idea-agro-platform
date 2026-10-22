@@ -15,7 +15,7 @@ Roles (architect, developer, code reviewer) live in `.agents/agents/`, and skill
 
 ## Commands
 
-`make setup` installs everything, and `make check` runs what CI runs. The full list is in the [README](README.md#commands).
+`make setup` installs everything, and `make check` is the gate before every pull request. The folders are in the [README layout](README.md#layout) and every command in [README commands](README.md#commands).
 
 ## Rules
 

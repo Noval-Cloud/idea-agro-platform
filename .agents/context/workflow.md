@@ -77,7 +77,7 @@ Rules for tasks:
 ## Flows
 
 1. **Spec with review** (`needs-spec`, `needs-spec-review`):
-   1. The architect creates the story branch and, from it, the spec branch.
+   1. The team leader creates the story branch; the architect creates the spec branch from it.
    2. It writes the change (proposal, spec deltas, and `tasks.md` with the spec task ticked) and opens a pull request into the story branch.
    3. A person reviews and merges it. The `main` rules do not apply to it, and merging deletes the spec branch.
    4. The developer continues on the story branch.
