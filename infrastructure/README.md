@@ -19,17 +19,17 @@ infrastructure/
 
 ## `setup.env`
 
-Shell `KEY=value` lines that `infrastructure/setup/setup.sh` sources. An empty value takes its default.
+Shell `KEY=value` lines that `infrastructure/setup/setup.sh` sources. The last column says what an empty value means.
 
-| Variable               | What it is                                                                                                  | Default                                            |
-| :--------------------- | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT` | The GCP project id                                                                                          | None: required                                     |
-| `GOOGLE_CLOUD_REGION`  | The region of the project's regional resources                                                              | `us-central1`                                      |
-| `SETUP_OPERATOR_SA`    | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as | `terraform-operator`                               |
-| `SETUP_STATE_BUCKET`   | The bucket that holds the Terraform state                                                                   | `idea-agro-tfstate-<project>`, with the project id |
-| `SETUP_REGISTRY`       | The Docker repository in Artifact Registry                                                                  | `idea-agro`                                        |
-| `SETUP_APIS`           | The APIs to enable, one per line                                                                            | None: may be empty                                 |
-| `SETUP_OPERATOR_ROLES` | The roles granted to the operator service account, one per line                                             | None: may be empty                                 |
+| Variable               | What it is                                                                                                  | When empty                               |
+| :--------------------- | :---------------------------------------------------------------------------------------------------------- | :--------------------------------------- |
+| `GOOGLE_CLOUD_PROJECT` | The GCP project id                                                                                          | Required                                 |
+| `GOOGLE_CLOUD_REGION`  | The region of the project's regional resources                                                              | Required                                 |
+| `SETUP_REGISTRY`       | The Docker repository in Artifact Registry                                                                  | Required                                 |
+| `SETUP_OPERATOR_SA`    | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as | `terraform-operator`                     |
+| `SETUP_STATE_BUCKET`   | The bucket that holds the Terraform state                                                                   | `<project>-tfstate`, with the project id |
+| `SETUP_APIS`           | The APIs to enable, one per line                                                                            | No API is enabled                        |
+| `SETUP_OPERATOR_ROLES` | The roles granted to the operator service account, one per line                                             | No role is granted                       |
 
 `SETUP_APIS` and `SETUP_OPERATOR_ROLES` are quoted strings that span several lines, one item per line.
 
