@@ -21,13 +21,14 @@ Folders are added as their parts arrive.
 
 ## Requirements
 
-| Tool     | Version  | Pinned in                                                              |
-| :------- | :------- | :--------------------------------------------------------------------- |
-| Node.js  | 24 (LTS) | `.node-version`, `engines` in `package.json`                           |
-| pnpm     | 12.15    | `packageManager` in `package.json` (pnpm switches to it automatically) |
-| Python   | 3.15     | `.python-version` (uv downloads it when missing)                       |
-| uv       | 0.13     | `required-version` in `pyproject.toml`                                 |
-| GNU Make | any      |                                                                        |
+| Tool             | Version  | Pinned in                                                              |
+| :--------------- | :------- | :--------------------------------------------------------------------- |
+| Node.js          | 24 (LTS) | `.node-version`, `engines` in `package.json`                           |
+| pnpm             | 12.15    | `packageManager` in `package.json` (pnpm switches to it automatically) |
+| Python           | 3.15     | `.python-version` (uv downloads it when missing)                       |
+| uv               | 0.13     | `required-version` in `pyproject.toml`                                 |
+| GNU Make         | any      |                                                                        |
+| Google Cloud CLI | any      | Only for the infrastructure targets                                    |
 
 No version manager is needed: each tool reads its own pin.
 
