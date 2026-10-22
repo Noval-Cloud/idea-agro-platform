@@ -4,4 +4,4 @@
 - [x] 1.2 Pin Python 3.14 and uv 0.12 at the root
 - [x] 1.3 Add editor defaults and line-ending rules
 - [x] 1.4 List the required tools in the README
-- [ ] 1.5 Archive the change
+- [x] 1.5 Archive the change
