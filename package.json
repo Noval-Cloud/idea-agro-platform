@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "check": "vp check",
-    "test": "vp test"
+    "test": "vp test run --passWithNoTests"
   },
   "devDependencies": {
     "vite-plus": "catalog:"
