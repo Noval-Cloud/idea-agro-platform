@@ -93,11 +93,18 @@ change() {
   if [ "$APPLY" -eq 1 ]; then "$@" </dev/null >/dev/null; fi
 }
 
+# enable_now <apis>: enables them, with --apply.
+# shellcheck disable=SC2086 # one API per word
+enable_now() {
+  if [ "$APPLY" -eq 0 ] || [ -z "$1" ]; then return; fi
+  gcloud services enable $1 --project="$PROJECT" </dev/null >/dev/null
+  ENABLED="$ENABLED$(printf '\n%s' $1)"
+}
+
 SEEN_APIS=""
-# enable_apis <list>: one call for the APIs of the list that are still off.
-# shellcheck disable=SC2086 # $batch holds one API per word
+# enable_apis <list>: the APIs of the list that are still off.
 enable_apis() {
-  local api batch=""
+  local api batch="" size=0
   while read -r api; do
     if [ -z "$api" ] || has "$SEEN_APIS" "$api"; then continue; fi
     SEEN_APIS="$SEEN_APIS
@@ -105,27 +112,36 @@ $api"
     if has "$ENABLED" "$api"; then continue; fi
     say "enable $api"
     batch="$batch $api"
+    size=$((size + 1))
+    # Service Usage enables at most 20 APIs per call.
+    if [ "$size" -eq 20 ]; then
+      enable_now "$batch"
+      batch=""
+      size=0
+    fi
   done <<<"$(items "$1")"
-  if [ "$APPLY" -eq 1 ] && [ -n "$batch" ]; then
-    gcloud services enable $batch --project="$PROJECT" </dev/null >/dev/null
-    ENABLED="$ENABLED$(printf '\n%s' $batch)"
-  fi
+  enable_now "$batch"
 }
 
 # A resource behind an API that is still off counts as missing, without asking for it.
 api_on() { has "$ENABLED" "$1"; }
 
-# A new account can take a minute to be visible to IAM policies.
+# grant <role>: retries while a new account is not yet visible to IAM.
 grant() {
-  local attempt
+  local attempt error
   for attempt in 1 2 3 4 5 6; do
-    if gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$OPERATOR_EMAIL" \
-      --role="$1" --condition=None; then
+    if error="$(gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$OPERATOR_EMAIL" \
+      --role="$1" --condition=None 2>&1 >/dev/null)"; then
       return
     fi
-    [ "$attempt" -lt 6 ] || return 1
-    sleep 10
+    case "$error" in
+      *"does not exist"*) ;;
+      *) break ;;
+    esac
+    [ "$attempt" -eq 6 ] || sleep 10
   done
+  echo "$error" >&2
+  return 1
 }
 
 create_state_bucket() {
@@ -139,9 +155,13 @@ if [ "$APPLY" -eq 1 ]; then
 else
   echo "$ENV: project $PROJECT, region $REGION (dry run)"
 fi
-if ! gcloud projects describe "$PROJECT" --format='value(projectId)' >/dev/null; then
+if ! FOUND="$(gcloud projects describe "$PROJECT" --format='value(projectId)')"; then
   echo "The active gcloud account cannot read project $PROJECT" >&2
   exit 1
+fi
+if [ "$FOUND" != "$PROJECT" ]; then
+  echo "GOOGLE_CLOUD_PROJECT must be the project id: $FOUND" >&2
+  exit 2
 fi
 
 ENABLED="$(gcloud services list --enabled --project="$PROJECT" --format='value(config.name)')"
@@ -174,7 +194,17 @@ BUCKETS=""
 if api_on storage.googleapis.com; then
   BUCKETS="$(gcloud storage buckets list --project="$PROJECT" --format='value(name)')"
 fi
-if ! has "$BUCKETS" "$STATE_BUCKET"; then
+if has "$BUCKETS" "$STATE_BUCKET"; then
+  VERSIONING="$(gcloud storage buckets describe "gs://$STATE_BUCKET" --project="$PROJECT" \
+    --format='value(versioning_enabled)')"
+  case "$VERSIONING" in
+    [Tt]rue) ;;
+    *)
+      change "turn on versioning in gs://$STATE_BUCKET" \
+        gcloud storage buckets update "gs://$STATE_BUCKET" --project="$PROJECT" --versioning
+      ;;
+  esac
+else
   change "create bucket gs://$STATE_BUCKET in $REGION, versioned" create_state_bucket
 fi
 

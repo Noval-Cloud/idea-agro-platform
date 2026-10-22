@@ -9,6 +9,7 @@ from typing import TypedDict, cast
 
 class State(TypedDict):
     project: str
+    number: str
     apis: list[str]
     accounts: list[str]
     bindings: list[list[str]]
@@ -16,7 +17,10 @@ class State(TypedDict):
     versioned: list[str]
     repositories: list[str]
     fail: list[str]
+    # Grants that report the account as missing before it becomes visible.
+    invisible: int
     calls: list[list[str]]
+    configs: list[str]
 
 
 class StubError(Exception):
@@ -46,7 +50,7 @@ def run(state: State, args: list[str]) -> list[str]:
 
     match words:
         case ["projects", "describe", project]:
-            return [need_project(state, project)]
+            return [need_project(state, state["project"] if project == state["number"] else project)]
         case ["projects", "get-iam-policy", project]:
             need_project(state, project)
             need_api(state, "cloudresourcemanager.googleapis.com")
@@ -57,6 +61,9 @@ def run(state: State, args: list[str]) -> list[str]:
             member = flags["member"]
             if member.removeprefix("serviceAccount:") not in state["accounts"]:
                 raise StubError(f"{member} does not exist")
+            if state["invisible"] > 0:
+                state["invisible"] -= 1
+                raise StubError(f"{member} does not exist")
             state["bindings"].append([flags["role"], member])
             return []
         case ["services", "list"]:
@@ -64,6 +71,8 @@ def run(state: State, args: list[str]) -> list[str]:
             return state["apis"] if "enabled" in flags else []
         case ["services", "enable", *apis]:
             need_project(state, flags.get("project"))
+            if len(apis) > 20:
+                raise StubError("at most 20 services per call")
             state["apis"].extend(api for api in apis if api not in state["apis"])
             return []
         case ["iam", "service-accounts", "list"]:
@@ -84,6 +93,10 @@ def run(state: State, args: list[str]) -> list[str]:
             need_api(state, "storage.googleapis.com")
             state["buckets"].append(url.removeprefix("gs://"))
             return []
+        case ["storage", "buckets", "describe", url]:
+            need_project(state, flags.get("project"))
+            need_api(state, "storage.googleapis.com")
+            return ["True" if url.removeprefix("gs://") in state["versioned"] else ""]
         case ["storage", "buckets", "update", url] if "versioning" in flags:
             need_project(state, flags.get("project"))
             need_api(state, "storage.googleapis.com")
@@ -108,6 +121,7 @@ def main() -> int:
     state = cast(State, json.loads(path.read_text()))
     args = sys.argv[1:]
     state["calls"].append(args)
+    state["configs"].append(os.environ.get("CLOUDSDK_ACTIVE_CONFIG_NAME", ""))
     try:
         lines = run(state, args)
     except StubError as error:

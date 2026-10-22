@@ -28,10 +28,12 @@ infrastructure/
 
 - the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage and Artifact Registry), always, and then the ones in `SETUP_APIS`;
 - the operator service account and its project roles;
-- the Terraform state bucket, versioned, in the region;
+- the Terraform state bucket, versioned, in the region (it turns versioning on in an existing one);
 - the Docker repository in Artifact Registry.
 
-It only adds: it never disables an API or revokes a role. It runs `gcloud` with your active configuration, or the one in `CLOUDSDK_ACTIVE_CONFIG_NAME`, and never changes it. Your account must be able to enable APIs, create service accounts and grant project roles; a project owner can.
+It only adds: it never disables an API or revokes a role. It runs `gcloud` with your active configuration, or the one in `CLOUDSDK_ACTIVE_CONFIG_NAME`, and never changes it.
+
+Before the first run, the project must have billing linked, and your account must be able to enable APIs, create service accounts and grant project roles; a project owner can.
 
 ### Running it
 
@@ -51,7 +53,7 @@ Changes: 2
 
 With `APPLY=1` it makes those changes, prints the values Terraform needs, and writes them to `setup/outputs/<env>.backend.tfvars` (the state bucket) and `<env>.terraform.tfvars` (project and region). Copy from them what `environments/<env>/` lacks: the script never writes there.
 
-On a refusal or an error, it stops with a non-zero exit status and prints the cause, `gcloud`'s own message included.
+On a refusal or an error, it stops with a non-zero exit status and prints the cause, `gcloud`'s own message included. On a new project, an API can take a few minutes to answer after it is enabled: if a call fails saying so, run it again.
 
 ### Adding or removing an API or a role
 
