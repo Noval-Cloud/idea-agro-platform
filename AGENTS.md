@@ -8,7 +8,7 @@ IDEA-Agro is an open platform of environmental and productive indicators for Uru
 | :----------------------------------------------------------------- | :--------------------------------------------------------------- |
 | [.agents/context/workflow.md](.agents/context/workflow.md)         | The board, stories, branches, OpenSpec changes and pull requests |
 | [.agents/context/conventions.md](.agents/context/conventions.md)   | How code and text are written                                    |
-| [.agents/context/architecture.md](.agents/context/architecture.md) | The parts of the platform, the data flow and what exists today   |
+| [.agents/context/architecture.md](.agents/context/architecture.md) | The parts of the platform and the data flow                      |
 | [.agents/context/domain.md](.agents/context/domain.md)             | Indicators, zones and glossary                                   |
 
 Roles (architect, developer, code reviewer) live in `.agents/agents/`, and skills in `.agents/skills/`.
