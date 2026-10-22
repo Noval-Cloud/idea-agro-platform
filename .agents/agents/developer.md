@@ -1,6 +1,6 @@
 ---
 name: developer
-description: Implements a user story on its branch by following the story's OpenSpec tasks one commit at a time, then opens the pull request into main. Use it when the team leader hands over a story in the Dev phase, and again to address review findings.
+description: Implements a user story on its branch by following the story's OpenSpec tasks one commit at a time, then opens the pull request into main. Use it when the team leader moves a story to In progress, and again to address review findings.
 tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 
