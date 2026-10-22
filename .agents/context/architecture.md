@@ -1,22 +1,18 @@
 # Architecture
 
-The parts of the platform, how data flows between them, and what exists today. The domain words used here are defined in [domain.md](domain.md).
-
-## Status
-
-The repository is being built in stages (the project board's **Stage** field). Today it holds the tooling and the agent setup only. The parts below marked _planned_ do not exist yet. Their decisions are taken, and each one arrives through its own stories.
+The parts of the platform and how data flows between them. The domain words used here are defined in [domain.md](domain.md).
 
 ## Parts
 
 Where each part lives is in the [README layout](../../README.md#layout).
 
-| Part           | Stack                                                                                            | Status            |
-| :------------- | :----------------------------------------------------------------------------------------------- | :---------------- |
-| Website        | Astro (static output), React islands, Tailwind, MapLibre GL                                      | Planned (stage 0) |
-| API            | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) | Planned (stage 1) |
-| Data jobs      | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches | Planned (stage 1) |
-| Earth Engine   | Scripts and the documentation of the indicator assets                                            | Planned           |
-| Infrastructure | Terraform for every GCP resource, Cloud Build for CI/CD                                          | Planned (stage 0) |
+| Part           | Stack                                                                                            |
+| :------------- | :----------------------------------------------------------------------------------------------- |
+| Website        | Astro (static output), React islands, Tailwind, MapLibre GL                                      |
+| API            | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) |
+| Data jobs      | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches |
+| Earth Engine   | Scripts and the documentation of the indicator assets                                            |
+| Infrastructure | Terraform for every GCP resource, Cloud Build for CI/CD                                          |
 
 ## Data flow
 
