@@ -4,5 +4,5 @@
 - [x] 1.2 Write the architecture context: parts, data flow and status
 - [x] 1.3 Write the conventions
 - [x] 1.4 Write the workflow: board, stories, branches, OpenSpec and pull requests
-- [ ] 1.5 Add AGENTS.md and CLAUDE.md
+- [x] 1.5 Add AGENTS.md and CLAUDE.md
 - [ ] 1.6 Archive the change

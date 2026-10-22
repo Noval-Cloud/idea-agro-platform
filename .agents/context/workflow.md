@@ -6,13 +6,13 @@ How work goes from the project board to `main`. The same flow applies to a perso
 
 The GitHub Project **IDEA-Agro** (organization Noval-Cloud) holds every work item.
 
-| Field | Values |
-| :-- | :-- |
-| Status | Backlog → Ready → In progress → In review → Done |
-| Phase | Spec → Spec review → Dev → Review |
-| Stage | `0 · Foundations` … `5 · Forecasts`, `Anytime` |
-| Iteration | Two-week sprints |
-| Priority, Size, Area | Planning aids |
+| Field                | Values                                           |
+| :------------------- | :----------------------------------------------- |
+| Status               | Backlog → Ready → In progress → In review → Done |
+| Phase                | Spec → Spec review → Dev → Review                |
+| Stage                | `0 · Foundations` … `5 · Forecasts`, `Anytime`   |
+| Iteration            | Two-week sprints                                 |
+| Priority, Size, Area | Planning aids                                    |
 
 ## Work items
 
@@ -24,9 +24,9 @@ The GitHub Project **IDEA-Agro** (organization Noval-Cloud) holds every work ite
 
 Story labels choose the flow:
 
-| Label | Meaning |
-| :-- | :-- |
-| `needs-spec` | The architect writes a spec before development |
+| Label               | Meaning                                                    |
+| :------------------ | :--------------------------------------------------------- |
+| `needs-spec`        | The architect writes a spec before development             |
 | `needs-spec-review` | The spec goes through a pull request that a person reviews |
 
 ## Team leader
@@ -38,14 +38,14 @@ The team leader is the only one that changes the board.
 
 It takes a story that is **Ready within the current iteration**, and moves it as the work advances:
 
-| When | Status | Phase |
-| :-- | :-- | :-- |
-| The story is taken, with `needs-spec` | In progress | Spec |
-| The story is taken, without `needs-spec` | In progress | Dev |
-| A spec pull request is opened | In progress | Spec review |
-| The spec is in the story branch | In progress | Dev |
-| The pull request into `main` is opened | In review | Review |
-| The pull request is merged | Done | — |
+| When                                     | Status      | Phase       |
+| :--------------------------------------- | :---------- | :---------- |
+| The story is taken, with `needs-spec`    | In progress | Spec        |
+| The story is taken, without `needs-spec` | In progress | Dev         |
+| A spec pull request is opened            | In progress | Spec review |
+| The spec is in the story branch          | In progress | Dev         |
+| The pull request into `main` is opened   | In review   | Review      |
+| The pull request is merged               | Done        | —           |
 
 ## Branches
 

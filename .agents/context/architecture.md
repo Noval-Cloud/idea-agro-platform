@@ -4,17 +4,17 @@ The parts of the platform, how data flows between them, and what exists today. T
 
 ## Status
 
-The repository is being built in stages (the project board's **Stage** field). Today it holds the tooling and the agent setup only. The parts below marked *planned* do not exist yet. Their decisions are taken, and each one arrives through its own stories.
+The repository is being built in stages (the project board's **Stage** field). Today it holds the tooling and the agent setup only. The parts below marked _planned_ do not exist yet. Their decisions are taken, and each one arrives through its own stories.
 
 ## Parts
 
-| Part | Folder | Stack | Status |
-| :-- | :-- | :-- | :-- |
-| Website | `apps/web` | Astro (static output), React islands, Tailwind, MapLibre GL | Planned (stage 0) |
-| API | `services/api` | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) | Planned (stage 1) |
-| Data jobs | `services/<job>` | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches | Planned (stage 1) |
-| Earth Engine | `gee/` | Scripts and the documentation of the indicator assets | Planned |
-| Infrastructure | `infrastructure/` | Terraform for every GCP resource, Cloud Build for CI/CD | Planned (stage 0) |
+| Part           | Folder            | Stack                                                                                            | Status            |
+| :------------- | :---------------- | :----------------------------------------------------------------------------------------------- | :---------------- |
+| Website        | `apps/web`        | Astro (static output), React islands, Tailwind, MapLibre GL                                      | Planned (stage 0) |
+| API            | `services/api`    | Python, FastAPI, on Cloud Run. Its OpenAPI document generates the website's typed client (Orval) | Planned (stage 1) |
+| Data jobs      | `services/<job>`  | Python, on Cloud Run jobs. They export from Earth Engine, compute zone values and refresh caches | Planned (stage 1) |
+| Earth Engine   | `gee/`            | Scripts and the documentation of the indicator assets                                            | Planned           |
+| Infrastructure | `infrastructure/` | Terraform for every GCP resource, Cloud Build for CI/CD                                          | Planned (stage 0) |
 
 ## Data flow
 
