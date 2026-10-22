@@ -1,7 +1,8 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format typecheck test specs check
+.PHONY: help setup lint format typecheck test specs check tf-setup
 
 TERRAFORM_DIR := infrastructure/terraform
+require_env = $(if $(filter dev qa prd,$(ENV)),,$(error ENV must be dev, qa or prd))
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -15,6 +16,7 @@ lint: ## Check formatting and lint rules (read-only)
 	pnpm exec vp lint --deny-warnings
 	uv run ruff format --check
 	uv run ruff check
+	git ls-files -z '*.sh' | xargs -0 uv run shellcheck
 ifneq ($(wildcard $(TERRAFORM_DIR)),)
 	terraform -chdir=$(TERRAFORM_DIR) fmt -check -recursive
 endif
@@ -39,3 +41,7 @@ specs: ## Validate the OpenSpec changes and specs, and that archived changes hav
 	! grep -rl -e '- \[ \]' openspec/changes/archive
 
 check: lint typecheck test specs ## Run lint, typecheck, test and specs
+
+tf-setup: ## Prepare ENV's GCP project for Terraform: a dry run, or APPLY=1 to apply
+	$(require_env)
+	infrastructure/setup/setup.sh --env $(ENV) $(if $(filter 1,$(APPLY)),--apply)

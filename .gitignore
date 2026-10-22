@@ -21,6 +21,7 @@ __pycache__/
 *.tfstate.*
 *.tfplan
 crash.log
+infrastructure/setup/outputs/
 
 # Secrets and local settings: never committed
 .env
