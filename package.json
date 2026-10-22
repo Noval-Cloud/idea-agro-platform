@@ -6,6 +6,7 @@
     "test": "vp test run --passWithNoTests"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "1.14.1",
     "vite-plus": "catalog:"
   },
   "engines": {
