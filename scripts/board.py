@@ -2,7 +2,7 @@
 
 Usage:
     scripts/board.py show <story>
-    scripts/board.py move <story> [--status NAME] [--phase NAME|none] [--iteration current|TITLE]
+    scripts/board.py move <story> [--status NAME] [--iteration current|TITLE]
 
 Field and option ids are looked up by name. Requires an authenticated `gh` with the `project` scope.
 """
@@ -52,14 +52,6 @@ query($owner: String!, $number: Int!, $cursor: String) {
         }
       }
     }
-  }
-}
-"""
-
-CLEAR_MUTATION = """
-mutation($project: ID!, $item: ID!, $field: ID!) {
-  clearProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field}) {
-    projectV2Item { id }
   }
 }
 """
@@ -126,8 +118,8 @@ def show(story: int) -> None:
     print(json.dumps({"story": story, **values}, indent=2, ensure_ascii=False))
 
 
-def resolve(fields: dict[str, dict[str, Any]], name: str, wanted: str) -> dict[str, str] | None:
-    """The value to write in a field, or None to clear it. Exits on an unknown value."""
+def resolve(fields: dict[str, dict[str, Any]], name: str, wanted: str) -> dict[str, str]:
+    """The value to write in a field. Exits on an unknown value."""
     if name == "Iteration":
         field = fields[name]
         chosen = (
@@ -138,26 +130,20 @@ def resolve(fields: dict[str, dict[str, Any]], name: str, wanted: str) -> dict[s
         if chosen is None:
             sys.exit(f"No iteration matches '{wanted}'.")
         return {"iterationId": chosen["id"]}
-    if wanted == "none":
-        return None
     options = {option["name"]: option["id"] for option in fields[name]["options"]}
     if wanted not in options:
         sys.exit(f"{name} has no option '{wanted}'. Options: {', '.join(options)}")
     return {"singleSelectOptionId": options[wanted]}
 
 
-def move(story: int, status: str | None, phase: str | None, iteration: str | None) -> None:
+def move(story: int, status: str | None, iteration: str | None) -> None:
     project_id, fields = load_project()
-    requested = {"Status": status, "Phase": phase, "Iteration": iteration}
+    requested = {"Status": status, "Iteration": iteration}
     # Every value is resolved before the first write, so a bad one never leaves the story half moved.
     changes = {name: resolve(fields, name, wanted) for name, wanted in requested.items() if wanted is not None}
     item_id = find_item(story)["id"]
     for name, value in changes.items():
-        field_id = fields[name]["id"]
-        if value is None:
-            graphql(CLEAR_MUTATION, project=project_id, item=item_id, field=field_id)
-        else:
-            graphql(UPDATE_MUTATION, project=project_id, item=item_id, field=field_id, value=value)
+        graphql(UPDATE_MUTATION, project=project_id, item=item_id, field=fields[name]["id"], value=value)
         print(f"#{story} {name}: {requested[name]}")
 
 
@@ -166,16 +152,15 @@ def main() -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     show_parser = commands.add_parser("show", help="Print the story's board fields")
     show_parser.add_argument("story", type=int)
-    move_parser = commands.add_parser("move", help="Set the story's Status, Phase or Iteration")
+    move_parser = commands.add_parser("move", help="Set the story's Status or Iteration")
     move_parser.add_argument("story", type=int)
     move_parser.add_argument("--status")
-    move_parser.add_argument("--phase", help="A phase name, or 'none' to clear it")
     move_parser.add_argument("--iteration", help="'current' or an iteration title")
     args = parser.parse_args()
     if args.command == "show":
         show(args.story)
     else:
-        move(args.story, args.status, args.phase, args.iteration)
+        move(args.story, args.status, args.iteration)
 
 
 if __name__ == "__main__":

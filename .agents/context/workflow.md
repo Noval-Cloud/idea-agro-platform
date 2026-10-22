@@ -6,13 +6,12 @@ How work goes from the project board to `main`. The same flow applies to a perso
 
 The GitHub Project **IDEA-Agro** (organization Noval-Cloud) holds every work item.
 
-| Field                | Values                                           |
-| :------------------- | :----------------------------------------------- |
-| Status               | Backlog → Ready → In progress → In review → Done |
-| Phase                | Spec → Spec review → Dev → Review                |
-| Stage                | `0 · Foundations` … `5 · Forecasts`, `Anytime`   |
-| Iteration            | Two-week sprints                                 |
-| Priority, Size, Area | Planning aids                                    |
+| Field                | Values                                                                             |
+| :------------------- | :--------------------------------------------------------------------------------- |
+| Status               | Backlog → Ready → Spec → Spec review → In progress → In review → Done, and Blocked |
+| Stage                | `0 · Foundations` … `5 · Forecasts`, `Anytime`                                     |
+| Iteration            | Two-week sprints                                                                   |
+| Priority, Size, Area | Planning aids                                                                      |
 
 ## Work items
 
@@ -36,16 +35,30 @@ The team leader is the only one that changes the board.
 - **Local mode:** the person's coding agent acts as team leader for the session, through the `take-story` skill.
 - **Factory (later):** a deployed team leader acts on board events, on agents' reports and on a periodic sweep.
 
-It takes a story that is **Ready within the current iteration**, and moves it as the work advances:
+Each Status says who holds the story:
 
-| When                                     | Status      | Phase       |
-| :--------------------------------------- | :---------- | :---------- |
-| The story is taken, with `needs-spec`    | In progress | Spec        |
-| The story is taken, without `needs-spec` | In progress | Dev         |
-| A spec pull request is opened            | In progress | Spec review |
-| The spec is in the story branch          | In progress | Dev         |
-| The pull request into `main` is opened   | In review   | Review      |
-| The pull request is merged               | Done        | —           |
+| Status      | Meaning                                                                | Holder                           |
+| :---------- | :--------------------------------------------------------------------- | :------------------------------- |
+| Backlog     | Not every decision is taken yet                                        | A person, to refine it           |
+| Ready       | Decided. Dispatched when it is in the current iteration                | The team leader                  |
+| Spec        | The architect writes the spec                                          | The architect                    |
+| Spec review | The spec pull request waits for a person                               | A person                         |
+| In progress | The developer implements the story                                     | The developer                    |
+| In review   | The pull request into `main` is open: the code reviewer, then a person | The code reviewer, then a person |
+| Blocked     | Waits for a person's answer to an open question                        | A person                         |
+| Done        | Merged and closed                                                      | —                                |
+
+The team leader takes a story that is **Ready within the current iteration** and moves it: to Spec (with `needs-spec`) or In progress, then Spec review, In progress, In review and Done as the work advances. A story goes to Blocked whenever a role returns an open question.
+
+Where a story stands is always visible in the repository too, which is how the team leader resumes it, also out of Blocked:
+
+| Repository state                                            | Status      |
+| :---------------------------------------------------------- | :---------- |
+| No OpenSpec change yet, with `needs-spec`                   | Spec        |
+| A spec pull request open into the story branch              | Spec review |
+| The change on the story branch, no pull request into `main` | In progress |
+| A pull request into `main` open                             | In review   |
+| The pull request merged                                     | Done        |
 
 ## Branches
 
