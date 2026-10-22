@@ -15,6 +15,7 @@ lint: ## Check formatting and lint rules (read-only)
 	pnpm exec vp lint --deny-warnings
 	uv run ruff format --check
 	uv run ruff check
+	git ls-files -z '*.sh' | xargs -0 uv run shellcheck
 ifneq ($(wildcard $(TERRAFORM_DIR)),)
 	terraform -chdir=$(TERRAFORM_DIR) fmt -check -recursive
 endif
