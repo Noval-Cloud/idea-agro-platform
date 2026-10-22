@@ -13,7 +13,7 @@ infrastructure/
         └── backend.tfvars    where this environment's Terraform state lives
 ```
 
-- Every environment has the same files, so adding one is only filling its values.
+- Every environment has the same files, so bringing one up is only filling its values.
 - `environments/` sits outside the Terraform root: an environment carries more than Terraform variables.
 - `terraform.tfvars` and `backend.tfvars` stay empty while there is no Terraform root.
 
@@ -25,9 +25,9 @@ Shell `KEY=value` lines that `infrastructure/setup/setup.sh` sources. The last c
 | :--------------------- | :---------------------------------------------------------------------------------------------------------- | :--------------------------------------- |
 | `GOOGLE_CLOUD_PROJECT` | The GCP project id                                                                                          | Required                                 |
 | `GOOGLE_CLOUD_REGION`  | The region of the project's regional resources                                                              | Required                                 |
-| `SETUP_REGISTRY`       | The Docker repository in Artifact Registry                                                                  | Required                                 |
+| `SETUP_REGISTRY`       | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path       | Required                                 |
 | `SETUP_OPERATOR_SA`    | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as | `terraform-operator`                     |
-| `SETUP_STATE_BUCKET`   | The bucket that holds the Terraform state                                                                   | `<project>-tfstate`, with the project id |
+| `SETUP_STATE_BUCKET`   | The name of the bucket that holds the Terraform state, without `gs://`                                      | `<project>-tfstate`, with the project id |
 | `SETUP_APIS`           | The APIs to enable, one per line                                                                            | No API is enabled                        |
 | `SETUP_OPERATOR_ROLES` | The roles granted to the operator service account, one per line                                             | No role is granted                       |
 
