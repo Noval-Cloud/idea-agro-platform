@@ -88,9 +88,9 @@ Rules for tasks:
 
 In every flow:
 
-- The developer implements the tasks.
-- The code reviewer reviews the branch.
-- The pull request into `main` closes the story.
+- The developer implements the tasks and opens the pull request into `main`.
+- The code reviewer reviews that pull request and posts its findings on it. The developer fixes them on the same branch until the verdict is `ready`.
+- A person merges the pull request, which closes the story.
 
 ## Pull requests
 
@@ -102,6 +102,6 @@ In every flow:
   - the changes;
   - the checks run;
   - when stacked, which pull request merges first.
-- **Before opening it:** `make check` passes, and the code reviewer has reviewed the branch.
+- **Before opening it:** `make check` passes. The code reviewer reviews it once it is open, so its review is recorded on GitHub.
 - **`main` accepts only pull requests,** merged with squash, with no exceptions. The branch is deleted on merge.
 - **Today the person merges.** Agents open pull requests with the owner's token, and GitHub does not allow approving your own pull request.
