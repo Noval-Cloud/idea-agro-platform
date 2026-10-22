@@ -20,9 +20,9 @@ The folders are added as their parts arrive.
 | Tool | Version | Pinned in |
 | :-- | :-- | :-- |
 | Node.js | 24 (LTS) | `.node-version`, `engines` in `package.json` |
-| pnpm | 12.14 | `packageManager` in `package.json` (pnpm switches to it automatically) |
-| Python | 3.14 | `.python-version` (uv downloads it when missing) |
-| uv | 0.12 | `required-version` in `pyproject.toml` |
+| pnpm | 12.15 | `packageManager` in `package.json` (pnpm switches to it automatically) |
+| Python | 3.15 | `.python-version` (uv downloads it when missing) |
+| uv | 0.13 | `required-version` in `pyproject.toml` |
 | GNU Make | any | |
 
 No version manager is needed: each tool reads its own pin.
