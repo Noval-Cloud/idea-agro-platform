@@ -4,4 +4,4 @@
 - [x] 1.2 Define the developer role
 - [x] 1.3 Define the code reviewer role
 - [x] 1.4 Link .claude/agents and align the workflow with the roles
-- [ ] 1.5 Archive the change
+- [x] 1.5 Archive the change
