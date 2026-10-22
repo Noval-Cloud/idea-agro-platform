@@ -3,4 +3,4 @@
 - [x] 1.1 Add OpenSpec 1.14.1 as a root dev dependency
 - [x] 1.2 Initialize openspec/ with the project context
 - [x] 1.3 Validate specs and changes in make check
-- [ ] 1.4 Archive the change with the OpenSpec CLI
+- [x] 1.4 Archive the change with the OpenSpec CLI
