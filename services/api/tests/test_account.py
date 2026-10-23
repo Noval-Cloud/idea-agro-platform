@@ -189,7 +189,7 @@ def test_unreachable_keys_are_not_a_bad_token(tmp_path: Path, accounts: MemoryAc
     assert "www-authenticate" not in response.headers
 
 
-def test_an_unexpected_failure_is_a_readable_problem(client: TestClient) -> None:
+def test_an_unexpected_failure_is_a_readable_problem(client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
     app = cast(FastAPI, client.app)
 
     @app.get("/boom")
@@ -203,6 +203,7 @@ def test_an_unexpected_failure_is_a_readable_problem(client: TestClient) -> None
     assert response.headers["access-control-allow-origin"] == "*"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "bug" not in response.text
+    assert "GET /boom failed" in caplog.text
 
 
 def test_a_disabled_account_is_refused(client: TestClient, accounts: MemoryAccounts) -> None:
