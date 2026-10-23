@@ -80,7 +80,7 @@ variable "jobs_job" {
 variable "jobs_files" {
   description = "Files whose changes redeploy the data jobs"
   type        = list(string)
-  default     = ["services/jobs/**", "pyproject.toml", "uv.lock", ".python-version"]
+  default     = ["services/jobs/**", "apps/web/src/design/generated/map-theme.json", "pyproject.toml", "uv.lock", ".python-version"]
 }
 
 variable "external_pull_requests" {

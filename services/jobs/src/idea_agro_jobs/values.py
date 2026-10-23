@@ -66,7 +66,7 @@ def calendars(stored: dict[tuple[Division, Indicator], set[Period]]) -> dict[str
     calendar: dict[str, list[str]] = {}
     for indicator in SEASONAL:
         shared = set[Period].intersection(*(stored.get((division, indicator), set()) for division in Division))
-        calendar[indicator] = [start.isoformat() for start in sorted(cast(Iterable[date], shared))]
+        calendar[indicator.value] = [start.isoformat() for start in sorted(cast(Iterable[date], shared))]
     return calendar
 
 

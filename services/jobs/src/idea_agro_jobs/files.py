@@ -19,6 +19,8 @@ class Files(Protocol):
         """The file's bytes, or None when it does not exist."""
         ...
 
+    def exists(self, name: str) -> bool: ...
+
     def write(self, name: str, content: bytes) -> None: ...
 
     def update(self, name: str, change: Callable[[bytes | None], bytes]) -> None:
@@ -33,6 +35,9 @@ class LocalFiles:
     def read(self, name: str) -> bytes | None:
         path = self._root / name
         return path.read_bytes() if path.is_file() else None
+
+    def exists(self, name: str) -> bool:
+        return (self._root / name).is_file()
 
     def write(self, name: str, content: bytes) -> None:
         path = self._root / name
@@ -55,6 +60,9 @@ class BucketFiles:
             return self._bucket.blob(name).download_as_bytes()  # pyright: ignore[reportUnknownMemberType]
         except NotFound:
             return None
+
+    def exists(self, name: str) -> bool:
+        return bool(self._bucket.blob(name).exists())  # pyright: ignore[reportUnknownMemberType]
 
     def write(self, name: str, content: bytes) -> None:
         self._bucket.blob(name).upload_from_string(content, content_type=media_type(name))  # pyright: ignore[reportUnknownMemberType]
