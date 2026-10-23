@@ -2,7 +2,7 @@
 
 Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery and publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)).
 
-`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values`.
+`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps`.
 
 ## Values
 
@@ -29,6 +29,15 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 - **Shape:** the files keep the shape `scripts/seed_public_data.py` gave the prototype's (`outlines.py` ports its cleanup of names and outlines).
 - **Values:** a zone whose outline changed keeps its values. To recompute a division, delete its rows from the three tables and run `values`.
 
+## Maps
+
+`idea-agro-jobs maps` draws each indicator's map of every year it does not have yet (or its only map), and the layer picker's thumbnails of the latest.
+
+- **Images:** grayscale over the catalog's frame (Web Mercator, 1600 pixels wide, and 800 for the light copy), transparent where there is no value; the website colors them. Continuous maps are compressed WebP; classes and the no-data mask stay lossless.
+- **Range:** a continuous map's gray spans the 2nd percentile of its lowest year to the 98th of its highest, kept fixed once in the catalog, so a time-lapse shows change rather than rescaled images.
+- **Thumbnails:** colored with the website's palettes (`apps/web/src/design/generated/map-theme.json`, copied into the image).
+- **Catalog:** the frame, and each indicator's kind, years, range and classes.
+
 ## Earth Engine
 
 `earth.py` computes what the prototype computed (`apps/web/scripts/prototype-data/extract.mjs`). It reads the assets as they are, selecting only the bands it needs:
@@ -44,6 +53,8 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 | divtfe        | `EFT/TFE_17-19`                                                                          | one map of functional types               |
 | csue, ahppn   | `Soil/RUSLE_agricola_17-19`, `AHPPN/AHPPN_17-19_sin0`                                    | one map                                   |
 | The divisions | `Seccionales_Policiales` (id `CODIGOSECC`), `cuencas/Cuencas_G1` to `G5` (`codcuenca`)   | outlines                                  |
+| The parcels   | `padrones/padrones_ajustado` (`PADRON`, `area_ha`, `NOMDEPTO`)                           | outlines                                  |
+| The country   | `general/limite_oficial_rou_km2`                                                         | the outline the maps are clipped to       |
 
 - **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite; for the others, a year is a band.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).

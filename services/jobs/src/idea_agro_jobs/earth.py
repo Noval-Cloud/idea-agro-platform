@@ -10,6 +10,7 @@ import logging
 import math
 import re
 import time
+import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -20,6 +21,7 @@ import ee.data
 import google.auth
 
 from idea_agro_jobs.domain import Division, Indicator, Period, ZoneValues
+from idea_agro_jobs.frame import BOUNDS
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ DIVISIONS = {
     Division.CUENCAS_5: DivisionAsset("cuencas/Cuencas_G5", "codcuenca", None, 60),
 }
 PARCELS = "padrones/padrones_ajustado"
+COUNTRY = "general/limite_oficial_rou_km2"
 # The seasonal images and their composites per year.
 SEASONAL = {Indicator.PPNA: ("ppna/ppna-16", 23), Indicator.APAR: ("apar/apar-16", 23), Indicator.ET: ("et/et-8", 46)}
 # Pixel size of each indicator's reductions, in meters.
@@ -107,7 +110,8 @@ def retry[T](label: str, compute: Callable[[], T]) -> T:
     for attempt in range(1, ATTEMPTS + 1):
         try:
             return compute()
-        except ee.EEException as error:
+        # Earth Engine's own errors, and downloads that fail.
+        except (ee.EEException, OSError) as error:
             if attempt == ATTEMPTS:
                 raise
             log.warning("%s failed (attempt %d), retrying: %s", label, attempt, str(error)[:200])
@@ -192,6 +196,15 @@ class EarthEngine:
         outputs: dict[str, Period] = {f"y{year}" if len(years) > 1 else "mean": year for year in years}
         return self._reduce(division, image, ee.Reducer.mean(), SCALE.get(indicator, 500), outputs, 4)
 
+    @staticmethod
+    def _summarized_image(indicator: Indicator) -> ee.Image:
+        if indicator == Indicator.DIVTFE:
+            # Functional diversity: the entropy, in bits, of the ecosystem functional types around each pixel.
+            return ee.Image(ASSETS + "EFT/TFE_17-19").toInt().entropy(ee.Kernel.square(4))
+        if indicator == Indicator.CSUE:
+            return ee.Image(ASSETS + "Soil/RUSLE_agricola_17-19")
+        return ee.Image(ASSETS + "AHPPN/AHPPN_17-19_sin0").multiply(100)
+
     def summary(self, division: Division, indicator: Indicator) -> ZoneValues:
         if indicator == Indicator.COMPN:
             communities = ee.Image(COMMUNITIES)
@@ -208,12 +221,7 @@ class EarthEngine:
                 if histogram:
                     values[zone_id(properties[id_property])] = {c: float(n) for c, n in histogram.items()}
             return values
-        image = {
-            # Functional diversity: the entropy, in bits, of the ecosystem functional types around each pixel.
-            Indicator.DIVTFE: lambda: ee.Image(ASSETS + "EFT/TFE_17-19").toInt().entropy(ee.Kernel.square(4)),
-            Indicator.CSUE: lambda: ee.Image(ASSETS + "Soil/RUSLE_agricola_17-19"),
-            Indicator.AHPPN: lambda: ee.Image(ASSETS + "AHPPN/AHPPN_17-19_sin0").multiply(100),
-        }[indicator]()
+        image = self._summarized_image(indicator)
         reducer = ee.Reducer.mean().combine(ee.Reducer.percentile([25, 75]), sharedInputs=True)
         outputs: dict[str, Period] = {"mean": "mean", "p25": "p25", "p75": "p75"}
         return self._reduce(division, image.rename("v"), reducer, 500, outputs, 4)
@@ -257,3 +265,59 @@ class EarthEngine:
 
         parcels = ee.FeatureCollection(ASSETS + PARCELS).filter(ee.Filter.eq("NOMDEPTO", department))
         return self._pages(department, parcels.map(simplified).select(["PADRON", "area_ha"]), 1500)
+
+    def _map_image(self, indicator: Indicator, year: int | None) -> ee.Image:
+        """The image an indicator's map shows: one year's, or its only one."""
+        if indicator == Indicator.COB:
+            image = ee.Image(MAPBIOMAS).select(f"classification_{year}").eq(12)
+        elif year is not None:
+            image = self._year_image(indicator, year)
+        elif indicator == Indicator.COMPN:
+            communities = ee.Image(COMMUNITIES)
+            image = communities.updateMask(communities.gt(0))
+        else:
+            image = self._summarized_image(indicator)
+        country = ee.FeatureCollection(ASSETS + COUNTRY).geometry()
+        return image.rename("v").clip(country)
+
+    def value_range(self, indicator: Indicator, years: list[int | None]) -> tuple[float, float]:
+        """The 2nd percentile of the lowest year and the 98th of the highest, in the whole country."""
+        country = ee.FeatureCollection(ASSETS + COUNTRY).geometry()
+        percentiles = ee.List(
+            [
+                self._map_image(indicator, year).reduceRegion(
+                    reducer=ee.Reducer.percentile([2, 98]),
+                    geometry=country,
+                    scale=3000,
+                    maxPixels=10_000_000_000,
+                    bestEffort=True,
+                )
+                for year in years
+            ]
+        )
+        found = cast(list[dict[str, float | None]], retry(f"range of {indicator}", percentiles.getInfo))
+        # A year without pixels has no percentiles.
+        lows = [low for p in found if (low := p.get("v_p2")) is not None]
+        highs = [high for p in found if (high := p.get("v_p98")) is not None]
+        return min(lows), max(highs)
+
+    def picture(
+        self, indicator: Indicator, year: int | None, low: float, high: float, width: int, height: int
+    ) -> bytes:
+        """The map in grayscale, from `low` (black) to `high` (white), transparent where there is no value, as PNG."""
+        image = self._map_image(indicator, year).visualize(min=low, max=high, palette=["000000", "ffffff"])
+        west, south, east, north = BOUNDS
+        url = image.getThumbURL(
+            {
+                "region": ee.Geometry.Rectangle([west, south, east, north], "EPSG:4326", False),
+                "dimensions": f"{width}x{height}",
+                "crs": "EPSG:3857",
+                "format": "png",
+            }
+        )
+
+        def download() -> bytes:
+            with urllib.request.urlopen(url, timeout=300) as response:
+                return cast(bytes, response.read())
+
+        return retry(f"map of {indicator} {year}", download)

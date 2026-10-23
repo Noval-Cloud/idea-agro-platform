@@ -1,15 +1,16 @@
-"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values`.
+"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps`.
 
 `PUBLIC_DATA` is where the API's public files are (`gs://<bucket>` or a folder), `VALUES_STORE` the BigQuery
-dataset of the zones' values (`bigquery://<project>/<dataset>`), and `EARTH_ENGINE_PROJECT` the Cloud project
-registered for Earth Engine.
+dataset of the zones' values (`bigquery://<project>/<dataset>`), `EARTH_ENGINE_PROJECT` the Cloud project
+registered for Earth Engine, and `MAP_THEME` the website's map palettes.
 """
 
 import argparse
 import logging
 import os
+from pathlib import Path
 
-from idea_agro_jobs import outlines, values
+from idea_agro_jobs import maps, outlines, values
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
 from idea_agro_jobs.sources import PublicFiles, Source
@@ -18,7 +19,9 @@ from idea_agro_jobs.store import store_from
 TASKS = {
     "outlines": "publish the zones, the search index and the parcels when an Earth Engine asset changed",
     "values": "add the periods BigQuery is missing and publish the values",
+    "maps": "draw the maps of new years, and the thumbnails of the latest",
 }
+MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
 
 def main() -> None:
@@ -48,6 +51,8 @@ def main() -> None:
         elif task == "values":
             source: Source = earth_engine() if arguments.source == "earth-engine" else PublicFiles(files)
             values.refresh(source, store_from(os.environ["VALUES_STORE"]), files)
+        elif task == "maps":
+            maps.refresh(earth_engine(), files, maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))))
 
 
 if __name__ == "__main__":
