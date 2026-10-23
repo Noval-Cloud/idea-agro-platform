@@ -12,3 +12,11 @@ module "web" {
   region         = var.region
   builder_member = module.platform.builder_member
 }
+
+module "api" {
+  source = "./modules/services/api"
+
+  project        = var.project
+  region         = var.region
+  builder_member = module.platform.builder_member
+}

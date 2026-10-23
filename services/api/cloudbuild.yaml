@@ -1,0 +1,17 @@
+# Builds the API's image from the repository, pushes it and updates only the service's image.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "--file", "services/api/Dockerfile", "--tag", "${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}"]
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - services
+      - update
+      - ${_SERVICE}
+      - --region=${_REGION}
+      - --image=${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}
+options:
+  logging: CLOUD_LOGGING_ONLY

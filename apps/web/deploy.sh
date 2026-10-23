@@ -21,11 +21,12 @@ PROJECT="$(tf output -raw project)"
 REGION="$(tf output -raw region)"
 SERVICE="$(tf output -raw web_service)"
 URL="$(tf output -raw web_url)"
+API_URL="$(tf output -raw api_url)"
 BUILDER="$(tf output -raw builder_email)"
 SOURCES="$(tf output -raw build_sources_bucket)"
 IMAGES="$(tf output -raw image_repository)"
 
-SITE_URL="$URL" pnpm --filter @idea-agro/web build
+SITE_URL="$URL" PUBLIC_API_URL="$API_URL" pnpm --filter @idea-agro/web build
 gcloud builds submit apps/web --project="$PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
   --service-account="projects/$PROJECT/serviceAccounts/$BUILDER" \
   --gcs-source-staging-dir="gs://$SOURCES/source" \
