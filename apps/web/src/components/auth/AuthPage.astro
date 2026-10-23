@@ -4,6 +4,7 @@ import Wordmark from "@/components/brand/Wordmark.astro";
 import ThemeToggle from "@/components/site/ThemeToggle.astro";
 import LanguageMenu from "@/components/site/LanguageMenu.astro";
 import ProviderIcon from "./ProviderIcon.astro";
+import { signInProviders } from "@/lib/sign-in-providers";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createTranslator, localizePath, type Locale } from "@/i18n";
@@ -53,10 +54,21 @@ const drawnPath = `M${drawn.map((p) => p.join(",")).join("L")}Z`;
         <h1 class="font-display text-3xl font-medium tracking-tight text-ink">{t("auth.title")}</h1>
         <p class="mt-3 text-base text-ink-muted">{t("auth.lead")}</p>
 
-        <button type="button" data-sign-in data-default-next={account} class={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-8 w-full justify-start gap-3")}>
-          <ProviderIcon provider="google" />
-          {t("auth.google")}
-        </button>
+        <div class="mt-8 grid gap-2.5">
+          {
+            signInProviders.map((provider) => (
+              <button
+                type="button"
+                data-sign-in={provider}
+                data-default-next={account}
+                class={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full justify-start gap-3")}
+              >
+                <ProviderIcon provider={provider} />
+                {t(`auth.providers.${provider}`)}
+              </button>
+            ))
+          }
+        </div>
         <p class="mt-4 min-h-5 text-sm text-ink-muted data-[state=error]:text-danger" role="status" aria-live="polite" data-sign-in-status data-messages={JSON.stringify(messages)}></p>
 
         <p class="mt-8 text-xs text-ink-subtle">{t("auth.privacy")}</p>

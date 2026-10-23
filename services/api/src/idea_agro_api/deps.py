@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.accounts import Account, new_account, profile_changes
-from idea_agro_api.auth import Identity, InvalidToken
+from idea_agro_api.auth import Identity, InvalidToken, KeysUnavailable
 from idea_agro_api.security import client_key
 from idea_agro_api.services import Services
 
@@ -53,6 +53,8 @@ def caller(
         identity = found.verifier.verify(credentials.credentials)
     except InvalidToken as error:
         raise unauthorized("The token is not valid.") from error
+    except KeysUnavailable as error:
+        raise HTTPException(503, "Tokens cannot be checked right now: try again later.") from error
     account = found.accounts.by_identity(identity) or found.accounts.create(new_account(identity), identity)
     limited(found, f"account:{account.id}")
     if account.disabled:

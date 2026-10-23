@@ -1,9 +1,9 @@
 """Every error as Problem Details (RFC 9457)."""
 
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -37,6 +37,15 @@ DESCRIPTIONS = {
 }
 
 
+class SessionsEndedLocally(HTTPException):
+    """The sessions ended in our records, but the sign-in provider did not answer."""
+
+    type = "urn:idea-agro:problem:sessions-ended-locally"
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(503, detail)
+
+
 def problems(*statuses: int, **descriptions: str) -> dict[int | str, dict[str, Any]]:
     """The documented error responses of a route; `descriptions` override the defaults by status, as `s404=...`."""
     return {
@@ -59,11 +68,16 @@ def problem_response(
 
 async def http_problem(request: Request, error: Exception) -> JSONResponse:
     assert isinstance(error, HTTPException)
-    return problem_response(error.status_code, request, headers=error.headers, detail=str(error.detail))
+    kind = getattr(error, "type", "about:blank")
+    return problem_response(error.status_code, request, headers=error.headers, detail=str(error.detail), type=kind)
 
 
-async def server_problem(request: Request, error: Exception) -> JSONResponse:
-    return problem_response(500, request, detail="Something failed on our side.")
+async def server_problems(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Any unexpected failure becomes a problem response, inside CORS, so browsers can read it."""
+    try:
+        return await call_next(request)
+    except Exception:
+        return problem_response(500, request, detail="Something failed on our side.")
 
 
 async def validation_problem(request: Request, error: Exception) -> JSONResponse:

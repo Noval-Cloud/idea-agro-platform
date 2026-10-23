@@ -11,6 +11,10 @@ class InvalidToken(Exception):
     pass
 
 
+class KeysUnavailable(Exception):
+    """The issuer's keys could not be fetched: no token can be checked, which says nothing about the token."""
+
+
 @dataclass(frozen=True)
 class Identity:
     """What a valid token says about the caller."""
@@ -59,9 +63,15 @@ class OidcVerifier:
 
     def verify(self, token: str) -> Identity:
         try:
+            key = self._keys.key_for(token)
+        except jwt.PyJWKClientConnectionError as error:
+            raise KeysUnavailable(str(error)) from error
+        except (jwt.PyJWTError, ValueError) as error:
+            raise InvalidToken(str(error)) from error
+        try:
             claims: dict[str, Any] = jwt.decode(
                 token,
-                self._keys.key_for(token),
+                key,
                 algorithms=["RS256"],
                 audience=self._audience,
                 issuer=self._issuer,

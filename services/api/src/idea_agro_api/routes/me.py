@@ -1,10 +1,9 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Response
-from starlette.exceptions import HTTPException
 
 from idea_agro_api.deps import CallerDep, ServicesDep
-from idea_agro_api.errors import problems
+from idea_agro_api.errors import SessionsEndedLocally, problems
 from idea_agro_api.models import AccountRole, Me
 
 router = APIRouter(tags=["Account"])
@@ -39,5 +38,5 @@ def revoke_my_sessions(caller: CallerDep, services: ServicesDep) -> Response:
     try:
         services.identity_admin.revoke_sessions(caller.identity)
     except Exception as error:
-        raise HTTPException(503, "Your sessions ended here, but the sign-in provider did not answer.") from error
+        raise SessionsEndedLocally("Your sessions ended here, but the sign-in provider did not answer.") from error
     return Response(status_code=204)

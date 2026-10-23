@@ -663,7 +663,7 @@ export const pt = {
   auth: {
     title: "Entre no IDEA-Agro",
     lead: "Com sua conta do Google. Na primeira vez, sua conta é criada ao entrar.",
-    google: "Continuar com o Google",
+    providers: { google: "Continuar com o Google" },
     working: "Aguardando o Google…",
     privacy: "Usamos apenas seu nome, seu e-mail e sua foto para identificar você.",
     backHome: "Voltar ao início",

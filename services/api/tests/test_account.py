@@ -2,12 +2,13 @@ import base64
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import jwt
 import pytest
 from auth_tokens import KEY, bearer, make_token
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from idea_agro_api.accounts import MemoryAccounts, Role
 from idea_agro_api.app import create_app
@@ -169,8 +170,39 @@ def test_a_provider_failure_still_ends_our_sessions(
     response = client.post("/v1/me/sessions/revoke", headers=bearer(token(auth_time=signed_in)))
 
     assert response.status_code == 503
-    assert response.headers["content-type"] == "application/problem+json"
+    assert response.json()["type"] == "urn:idea-agro:problem:sessions-ended-locally"
     assert client.get("/v1/me", headers=bearer(token(auth_time=signed_in))).status_code == 401
+
+
+class UnreachableKeys:
+    def key_for(self, token: str) -> Any:
+        raise jwt.PyJWKClientConnectionError("keys unreachable")
+
+
+def test_unreachable_keys_are_not_a_bad_token(tmp_path: Path, accounts: MemoryAccounts, admin: Recorder) -> None:
+    verifier = OidcVerifier("https://issuer.example.org/demo", "demo", UnreachableKeys())
+    client = build(tmp_path, accounts, admin, verifier, per_minute=50)
+
+    response = client.get("/v1/me", headers=bearer(token()))
+
+    assert response.status_code == 503
+    assert "www-authenticate" not in response.headers
+
+
+def test_an_unexpected_failure_is_a_readable_problem(client: TestClient) -> None:
+    app = cast(FastAPI, client.app)
+
+    @app.get("/boom")
+    def boom() -> None:  # pyright: ignore[reportUnusedFunction]
+        raise RuntimeError("bug")
+
+    response = client.get("/boom", headers={"Origin": "https://example.org"})
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert "bug" not in response.text
 
 
 def test_a_disabled_account_is_refused(client: TestClient, accounts: MemoryAccounts) -> None:

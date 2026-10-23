@@ -5,8 +5,8 @@ const origin = "https://idea-agro.example.org";
 const fallback = "/account/";
 
 describe("nextPath", () => {
-  it("keeps a path of this site", () => {
-    expect(nextPath("/explore/?d=seccionales#map", origin, fallback)).toBe("/explore/?d=seccionales#map");
+  it("keeps an address of this site", () => {
+    expect(nextPath("/explore/?d=seccionales#map", origin, fallback)).toBe(`${origin}/explore/?d=seccionales#map`);
   });
 
   it.each([
@@ -19,6 +19,16 @@ describe("nextPath", () => {
     "http:evil.example.com",
   ])("refuses %j", (wanted) => {
     expect(nextPath(wanted, origin, fallback)).toBe(fallback);
+  });
+
+  it.each([
+    "/..//evil.example.com/phish",
+    "/.//evil.example.com",
+    "/a/..//evil.example.com",
+    "/%2e%2e//evil.example.com",
+  ])("keeps %j on this site", (wanted) => {
+    const result = new URL(nextPath(wanted, origin, fallback), origin);
+    expect(result.origin).toBe(origin);
   });
 
   it("falls back without a next", () => {

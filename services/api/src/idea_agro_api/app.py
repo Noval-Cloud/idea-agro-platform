@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
 
-from idea_agro_api.errors import http_problem, server_problem, validation_problem
+from idea_agro_api.errors import http_problem, server_problems, validation_problem
 from idea_agro_api.routes import me, service, zones
 from idea_agro_api.security import security_headers
 from idea_agro_api.services import Services
@@ -61,6 +61,8 @@ def create_app(services: Services) -> FastAPI:
         generate_unique_id_function=lambda route: route.name,
     )
     app.state.services = services
+    # Innermost, so the problem response still gets CORS and security headers.
+    app.middleware("http")(server_problems)
     # Public: any site or app may call it. Tokens travel in a header, never in cookies.
     app.add_middleware(
         CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"]
@@ -68,7 +70,6 @@ def create_app(services: Services) -> FastAPI:
     app.middleware("http")(security_headers)
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    app.add_exception_handler(Exception, server_problem)
     for module in (service, zones, me):
         app.include_router(module.router)
 
