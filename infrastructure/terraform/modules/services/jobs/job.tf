@@ -27,6 +27,10 @@ resource "google_cloud_run_v2_job" "data" {
           name  = "VALUES_STORE"
           value = "bigquery://${var.project}/${var.values_dataset}"
         }
+        env {
+          name  = "EARTH_ENGINE_PROJECT"
+          value = var.project
+        }
 
         resources {
           limits = {

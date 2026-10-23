@@ -90,9 +90,27 @@ variable "act_as_role" {
 }
 
 variable "project_roles" {
-  description = "Roles of the job on the project: running BigQuery queries and loads"
+  description = "Roles of the job on the project: running BigQuery queries and loads, and Earth Engine computations"
   type        = list(string)
-  default     = ["roles/bigquery.jobUser"]
+  default     = ["roles/bigquery.jobUser", "roles/earthengine.viewer", "roles/serviceusage.serviceUsageConsumer"]
+}
+
+variable "schedule" {
+  description = "When the job runs by itself, in cron syntax"
+  type        = string
+  default     = "0 6 * * *"
+}
+
+variable "time_zone" {
+  description = "Time zone of the schedule"
+  type        = string
+  default     = "America/Montevideo"
+}
+
+variable "invoker_role" {
+  description = "Role that lets the schedule start the job"
+  type        = string
+  default     = "roles/run.invoker"
 }
 
 variable "dataset_role" {
