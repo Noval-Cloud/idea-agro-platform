@@ -2,6 +2,8 @@
 
 Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery and publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)).
 
+`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values`.
+
 ## Values
 
 `idea-agro-jobs values` adds to BigQuery the periods it is missing, then publishes from BigQuery the files that change.
@@ -18,6 +20,14 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
+
+## Outlines
+
+`idea-agro-jobs outlines` publishes, from the division and parcel assets, each division's simplified zones (`divisions/<division>.geojson`), each zone's file, the map's search index, the parcels of each department and their index, and the catalog's divisions, parcels and country outline.
+
+- **Only on change:** it keeps each asset's last update time in `jobs/outlines.json` and does nothing until one changes; `--force` publishes anyway.
+- **Shape:** the files keep the shape `scripts/seed_public_data.py` gave the prototype's (`outlines.py` ports its cleanup of names and outlines).
+- **Values:** a zone whose outline changed keeps its values. To recompute a division, delete its rows from the three tables and run `values`.
 
 ## Earth Engine
 
@@ -41,7 +51,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 ## Schedule
 
-Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments, `values`. A run with nothing new ends in seconds.
+Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. A run with nothing new ends in a minute or two.
 
 ## Running it
 
@@ -51,11 +61,12 @@ make jobs-run ENV=dev                                     # one run, as the sche
 make jobs-run ENV=dev ARGS="values --source public-files" # one run from the public files
 ```
 
-Locally, the job reads and writes a folder instead of the bucket, while still writing BigQuery:
+Locally, the job reads and writes a folder instead of the bucket, while still writing BigQuery. That is how a first run from Earth Engine is checked: into a copy of the published files, compared with them before the job writes the bucket.
 
 ```bash
-PUBLIC_DATA=.cache/public-data VALUES_STORE=bigquery://<project>/zone_values EARTH_ENGINE_PROJECT=<project> \
-  uv run idea-agro-jobs values
+cp -R .cache/public-data .cache/earth-engine
+PUBLIC_DATA=.cache/earth-engine EARTH_ENGINE_PROJECT=<project> uv run idea-agro-jobs outlines --force
+diff <(jq -S . .cache/public-data/zone-index.json) <(jq -S . .cache/earth-engine/zone-index.json)
 ```
 
 The job, its tables and its permissions are in Terraform (`infrastructure/terraform/modules/services/jobs`); the dataset is in the `platform` module, since the API reads it too.

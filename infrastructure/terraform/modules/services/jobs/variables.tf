@@ -44,7 +44,7 @@ variable "placeholder_image" {
 variable "args" {
   description = "Arguments of a run that does not override them: the task and its options"
   type        = list(string)
-  default     = ["values"]
+  default     = ["outlines", "values"]
 }
 
 variable "cpu" {

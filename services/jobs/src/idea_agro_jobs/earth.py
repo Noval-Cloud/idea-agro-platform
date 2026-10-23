@@ -11,10 +11,12 @@ import math
 import re
 import time
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, cast
 
 import ee
+import ee.data
 import google.auth
 
 from idea_agro_jobs.domain import Division, Indicator, Period, ZoneValues
@@ -26,15 +28,26 @@ MAPBIOMAS = "projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collect
 COMMUNITIES = "users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal"
 SCOPES = ["https://www.googleapis.com/auth/earthengine", "https://www.googleapis.com/auth/cloud-platform"]
 
-# Each division's zones, and the property that holds a zone's id.
+
+@dataclass(frozen=True)
+class DivisionAsset:
+    asset: str
+    # The properties that hold a zone's id and name.
+    id: str
+    name: str | None
+    # How far, in meters, the map's outlines may stray from the zones'.
+    max_error: int
+
+
 DIVISIONS = {
-    Division.SECCIONALES: ("Seccionales_Policiales", "CODIGOSECC"),
-    Division.CUENCAS_1: ("cuencas/Cuencas_G1", "codcuenca"),
-    Division.CUENCAS_2: ("cuencas/Cuencas_G2", "codcuenca"),
-    Division.CUENCAS_3: ("cuencas/Cuencas_G3", "codcuenca"),
-    Division.CUENCAS_4: ("cuencas/Cuencas_G4", "codcuenca"),
-    Division.CUENCAS_5: ("cuencas/Cuencas_G5", "codcuenca"),
+    Division.SECCIONALES: DivisionAsset("Seccionales_Policiales", "CODIGOSECC", None, 60),
+    Division.CUENCAS_1: DivisionAsset("cuencas/Cuencas_G1", "codcuenca", "nombrec1", 250),
+    Division.CUENCAS_2: DivisionAsset("cuencas/Cuencas_G2", "codcuenca", "nombrec2", 150),
+    Division.CUENCAS_3: DivisionAsset("cuencas/Cuencas_G3", "codcuenca", "nombrec3", 100),
+    Division.CUENCAS_4: DivisionAsset("cuencas/Cuencas_G4", "codcuenca", "nombrec4", 80),
+    Division.CUENCAS_5: DivisionAsset("cuencas/Cuencas_G5", "codcuenca", None, 60),
 }
+PARCELS = "padrones/padrones_ajustado"
 # The seasonal images and their composites per year.
 SEASONAL = {Indicator.PPNA: ("ppna/ppna-16", 23), Indicator.APAR: ("apar/apar-16", 23), Indicator.ET: ("et/et-8", 46)}
 # Pixel size of each indicator's reductions, in meters.
@@ -117,8 +130,8 @@ class EarthEngine:
         return self._bands[asset]
 
     def _zones(self, division: Division) -> tuple[ee.FeatureCollection, str]:
-        asset, id_property = DIVISIONS[division]
-        return ee.FeatureCollection(ASSETS + asset).select([id_property]), id_property
+        found = DIVISIONS[division]
+        return ee.FeatureCollection(ASSETS + found.asset).select([found.id]), found.id
 
     def _reduce(
         self,
@@ -204,3 +217,43 @@ class EarthEngine:
         reducer = ee.Reducer.mean().combine(ee.Reducer.percentile([25, 75]), sharedInputs=True)
         outputs: dict[str, Period] = {"mean": "mean", "p25": "p25", "p75": "p75"}
         return self._reduce(division, image.rename("v"), reducer, 500, outputs, 4)
+
+    def updated(self, asset: str) -> str:
+        """When the asset last changed."""
+        found = retry(f"asset {asset}", lambda: ee.data.getAsset(ASSETS + asset))
+        return str(found["updateTime"])
+
+    def _pages(self, label: str, collection: ee.FeatureCollection, size: int) -> list[dict[str, Any]]:
+        count = cast(int, retry(f"{label} size", collection.size().getInfo))
+        features: list[dict[str, Any]] = []
+        for offset in range(0, count, size):
+            page = ee.FeatureCollection(collection.toList(size, offset))
+            result = cast(dict[str, Any], retry(f"{label} {offset}", page.getInfo))
+            features.extend(cast(list[dict[str, Any]], result["features"]))
+        log.info("%s: %d features", label, len(features))
+        return features
+
+    def zones(self, division: Division) -> list[dict[str, Any]]:
+        """The division's zones as GeoJSON features, simplified, with their area in km² as `area_km2`."""
+        found = DIVISIONS[division]
+
+        def simplified(element: ee.Element) -> ee.Feature:
+            feature = ee.Feature(element)
+            area = feature.geometry().area(100).divide(1e6)
+            return ee.Feature(feature.simplify(found.max_error).set("area_km2", area))
+
+        return self._pages(str(division), ee.FeatureCollection(ASSETS + found.asset).map(simplified), 400)
+
+    def departments(self) -> list[str]:
+        """The departments the parcels are filed by, as the asset names them."""
+        names = ee.FeatureCollection(ASSETS + PARCELS).aggregate_array("NOMDEPTO").distinct()
+        return cast(list[str], retry("departments", names.getInfo))
+
+    def parcels(self, department: str) -> list[dict[str, Any]]:
+        """A department's parcels as GeoJSON features, simplified, with `PADRON` and `area_ha`."""
+
+        def simplified(element: ee.Element) -> ee.Feature:
+            return ee.Feature(element).simplify(12)
+
+        parcels = ee.FeatureCollection(ASSETS + PARCELS).filter(ee.Filter.eq("NOMDEPTO", department))
+        return self._pages(department, parcels.map(simplified).select(["PADRON", "area_ha"]), 1500)
