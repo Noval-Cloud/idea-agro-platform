@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
+from idea_agro_api.services import services_for_tests
 from idea_agro_api.zones import LocalFiles, ZoneStore, composite_start
 
 
@@ -14,7 +15,7 @@ def client(tmp_path: Path) -> TestClient:
     zones = tmp_path / "series" / "seccionales"
     zones.mkdir(parents=True)
     (zones / "1806.json").write_text(json.dumps({"ppna": [330.3, None], "et": [1.2, 1.4]}))
-    return TestClient(create_app(ZoneStore(LocalFiles(tmp_path))))
+    return TestClient(create_app(services_for_tests(ZoneStore(LocalFiles(tmp_path)))))
 
 
 def test_a_composite_starts_on_its_day_of_the_year() -> None:
@@ -76,6 +77,6 @@ def test_the_document_publishes_problems_and_the_version() -> None:
 
     published = json.loads(document())
     responses = published["paths"]["/v1/zones/{division}/{zone}/seasonal"]["get"]["responses"]
-    assert published["info"]["version"] == "1.0.0"
+    assert published["info"]["version"] == "1.1.0"
     assert list(responses["404"]["content"]) == ["application/problem+json"]
     assert list(responses["422"]["content"]) == ["application/problem+json"]

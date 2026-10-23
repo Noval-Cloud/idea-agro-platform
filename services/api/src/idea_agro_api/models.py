@@ -1,6 +1,7 @@
 """The shapes of the API's responses, as published in its OpenAPI document."""
 
-from datetime import date
+from datetime import date, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -48,3 +49,22 @@ class Problem(BaseModel):
     errors: list[dict[str, Any]] | None = Field(
         default=None, description="For invalid requests, each parameter that failed validation and why."
     )
+
+
+class AccountRole(StrEnum):
+    """`client` is every account; `editor` manages content and `admin` manages accounts. They combine."""
+
+    CLIENT = "client"
+    EDITOR = "editor"
+    ADMIN = "admin"
+
+
+class Me(BaseModel):
+    """Your account."""
+
+    id: str = Field(description="The account's id in IDEA-Agro.")
+    email: str | None = Field(description="The email your sign-in provider reports.")
+    name: str | None = Field(description="Your name, as your sign-in provider reports it.")
+    picture: str | None = Field(description="URL of your picture, as your sign-in provider reports it.")
+    roles: list[AccountRole] = Field(description="Your roles: always `client`, plus `editor` or `admin` if given.")
+    created_at: datetime = Field(description="When the account was created, on its first sign-in.")

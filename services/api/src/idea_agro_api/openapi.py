@@ -5,12 +5,13 @@ import sys
 from pathlib import Path
 
 from idea_agro_api.app import create_app
+from idea_agro_api.services import services_for_tests
 from idea_agro_api.zones import LocalFiles, ZoneStore
 
 
 def document() -> str:
     # The document depends on the routes only, never on the data.
-    app = create_app(ZoneStore(LocalFiles(Path("/nonexistent"))))
+    app = create_app(services_for_tests(ZoneStore(LocalFiles(Path("/nonexistent")))))
     return json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n"
 
 

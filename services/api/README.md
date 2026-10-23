@@ -17,6 +17,23 @@ The public, read-only API of IDEA-Agro: FastAPI on Cloud Run. Any site or app ma
 - `API_VERSION` in `app.py` is the document's `info.version`, in semantic versioning: patch for documentation, minor for backward-compatible additions, major only together with a new path prefix.
 - A change to `openapi.json` shows up in the pull request; reviewing it against these rules is part of the review.
 
+## Signing in
+
+Only the routes about the caller's own account, zones and projects are private. They take a token from the sign-in provider in `Authorization: Bearer <token>`.
+
+- **Verification:** tokens are checked as standard OIDC JWTs, with signature, issuer, audience and expiry, using `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL`. No provider SDK is involved, so another provider means other values.
+- **Routes:** they declare `CallerDep` (`deps.py`) and never learn how sign-in works.
+- **Accounts:**
+  - they are created on the first authenticated request;
+  - their id derives from the provider identity, and that identity is a field linked to it;
+  - they live behind an `AccountStore`: `ACCOUNTS_SOURCE` is `firestore://<database>` or `memory://`.
+- **Roles:** every account is `client`, and `editor` and `admin` combine on top of it.
+- **"Log out everywhere":**
+  - it revokes the provider's sessions through `IdentityAdmin` (`IDENTITY_ADMIN` is `identity-platform://<project>` or `none`);
+  - it stamps the account, so tokens issued before are refused at once;
+  - a disabled account is refused.
+- **Limits and headers:** private routes are limited to `PRIVATE_REQUESTS_PER_MINUTE` per client and instance (60 by default). Every response carries security headers.
+
 ## Errors
 
 Every error is a Problem Details object (RFC 9457) served as `application/problem+json`: `type`, `title`, `status`, `detail`, `instance`, and `errors` for invalid parameters.
@@ -27,7 +44,7 @@ Every error is a Problem Details object (RFC 9457) served as `application/proble
 make api-dev    # http://localhost:8080, serving the website's prototype data
 ```
 
-With it running, `pnpm dev` in `apps/web` reads from it. Tests run in `make test`, against local files shaped like the bucket.
+With it running, `pnpm dev` in `apps/web` reads from it. Private routes answer 503 until `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL` are set; accounts then live in memory unless `ACCOUNTS_SOURCE` says otherwise. Tests run in `make test`, against local files shaped like the bucket.
 
 ## Data
 
