@@ -69,7 +69,10 @@ def create_app(services: Services) -> FastAPI:
     app.middleware("http")(server_problems)
     # Public: any site or app may call it. Tokens travel in a header, never in cookies.
     app.add_middleware(
-        CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"]
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["*"],
     )
     app.middleware("http")(security_headers)
     app.add_exception_handler(HTTPException, http_problem)
