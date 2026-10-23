@@ -9,6 +9,8 @@ type Props = { t: AccountTranslator["t"]; date: AccountTranslator["date"]; signI
 type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
+/** An action and what it is called, for the person to recognize when asked to confirm it. */
+type Action = { run: Run; label: string; account: AdminAccount };
 
 const card = "rounded-lg border border-line bg-surface p-6";
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
@@ -22,7 +24,11 @@ export default function Users({ t, date, signInPath, me }: Props) {
   const [notice, setNotice] = useState<Notice>(null);
   const [audit, setAudit] = useState<AuditOut[] | null>(null);
   // An action waiting for the person to confirm it is them; confirming retries it.
-  const [waiting, setWaiting] = useState<Run | null>(null);
+  const [waiting, setWaiting] = useState<Action | null>(null);
+  const [confirmReady, setConfirmReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // Grows after every action, so the role checkboxes go back to what the account really has.
+  const [settled, setSettled] = useState(0);
   const confirm = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
@@ -52,73 +58,100 @@ export default function Users({ t, date, signInPath, me }: Props) {
     if (!waiting || confirm.current) return;
     void import("@/lib/account")
       .then(({ prepareConfirmation }) => prepareConfirmation(signInProviders[0]))
-      .then((ready) => (confirm.current = ready))
-      .catch(() => undefined);
+      .then((ready) => {
+        confirm.current = ready;
+        setConfirmReady(true);
+      })
+      .catch(() => setNotice("failed"));
   }, [waiting]);
 
-  const act = async (run: Run) => {
+  const act = async (action: Action) => {
+    if (busy) return;
     setNotice(null);
+    // A new action replaces one still waiting for confirmation.
+    setWaiting(null);
+    setBusy(true);
     try {
       const modules = await api();
-      const outcome = await run(modules);
-      if (outcome.status === 403 && outcome.type === modules[0].RECENT_SIGN_IN) return setWaiting(() => run);
+      const outcome = await action.run(modules);
+      if (outcome.status === 403 && outcome.type === modules[0].RECENT_SIGN_IN) return setWaiting(action);
       if (outcome.account) {
         const changed = outcome.account;
         setAccounts((all) => all?.map((a) => (a.id === changed.id ? changed : a)) ?? null);
       }
       setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
+      // The page shows the admin's own roles and sessions: it starts over when they change.
+      if (outcome.status < 300 && action.account.id === me) return location.reload();
       loadAudit();
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) return location.assign(signInPath);
       setNotice("failed");
+    } finally {
+      setBusy(false);
+      setSettled((n) => n + 1);
     }
   };
 
   const confirmAndRetry = async () => {
-    const run = waiting;
-    if (!run || !confirm.current) return;
+    const action = waiting;
+    if (!action || !confirm.current) return;
     try {
       await confirm.current();
     } catch {
       return setNotice("failed");
     }
-    setWaiting(null);
-    await act(run);
+    await act(action);
   };
 
   const problem = (data: unknown) => (data as { type?: string | null }).type;
 
   const saveRoles = (account: AdminAccount, roles: ("editor" | "admin")[]) =>
-    void act(async ([{ privately }, client]) => {
-      const response = await privately((init) => client.changeAccountRoles(account.id, { roles }, init));
-      return response.status === 200
-        ? { status: 200, account: response.data }
-        : { status: response.status, type: problem(response.data) };
+    void act({
+      account,
+      label: t("account.users.saveRoles"),
+      run: async ([{ privately }, client]) => {
+        const response = await privately((init) => client.changeAccountRoles(account.id, { roles }, init));
+        return response.status === 200
+          ? { status: 200, account: response.data }
+          : { status: response.status, type: problem(response.data) };
+      },
     });
 
   const setAccess = (account: AdminAccount, disabled: boolean) => {
     if (disabled && !window.confirm(t("account.users.confirmDisable", { name: nameOf(account) }))) return;
-    void act(async ([{ privately }, client]) => {
-      const response = await privately((init) => client.changeAccountAccess(account.id, { disabled }, init));
-      return response.status === 200
-        ? { status: 200, account: response.data }
-        : { status: response.status, type: problem(response.data) };
+    void act({
+      account,
+      label: disabled ? t("account.users.disable") : t("account.users.enable"),
+      run: async ([{ privately }, client]) => {
+        const response = await privately((init) => client.changeAccountAccess(account.id, { disabled }, init));
+        return response.status === 200
+          ? { status: 200, account: response.data }
+          : { status: response.status, type: problem(response.data) };
+      },
     });
   };
 
   const revoke = (account: AdminAccount) => {
     if (!window.confirm(t("account.users.confirmRevoke", { name: nameOf(account) }))) return;
-    void act(async ([{ privately }, client]) => {
-      const response = await privately((init) => client.revokeAccountSessions(account.id, init));
-      return { status: response.status };
+    void act({
+      account,
+      label: t("account.users.revoke"),
+      run: async ([{ privately }, client]) => {
+        const response = await privately((init) => client.revokeAccountSessions(account.id, init));
+        return { status: response.status };
+      },
     });
   };
 
   const recover = (account: AdminAccount) =>
-    void act(async ([{ privately }, client]) => {
-      const response = await privately((init) => client.sendAccountRecovery(account.id, init));
-      return response.status === 409 ? { status: 409, notice: "recoveryNotApplicable" } : { status: response.status };
+    void act({
+      account,
+      label: t("account.users.recovery"),
+      run: async ([{ privately }, client]) => {
+        const response = await privately((init) => client.sendAccountRecovery(account.id, init));
+        return response.status === 409 ? { status: 409, notice: "recoveryNotApplicable" } : { status: response.status };
+      },
     });
 
   return (
@@ -136,9 +169,14 @@ export default function Users({ t, date, signInPath, me }: Props) {
       />
       {waiting && (
         <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-sm border border-line p-3 text-sm">
-          <p className="grow text-ink">{t("account.users.confirmIdentity")}</p>
-          <Button size="sm" onClick={() => void confirmAndRetry()}>
+          <p className="grow text-ink">
+            {t("account.users.confirmIdentity", { action: waiting.label, name: nameOf(waiting.account) })}
+          </p>
+          <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
             {t("account.users.confirmAction")}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
+            {t("account.users.cancel")}
           </Button>
         </div>
       )}
@@ -175,9 +213,11 @@ export default function Users({ t, date, signInPath, me }: Props) {
             </div>
             {open === account.id && (
               <Manage
+                key={settled}
                 t={t}
                 account={account}
                 own={account.id === me}
+                busy={busy}
                 onRoles={(roles) => saveRoles(account, roles)}
                 onAccess={(disabled) => setAccess(account, disabled)}
                 onRevoke={() => revoke(account)}
@@ -220,6 +260,7 @@ function Manage({
   t,
   account,
   own,
+  busy,
   onRoles,
   onAccess,
   onRevoke,
@@ -228,6 +269,7 @@ function Manage({
   t: AccountTranslator["t"];
   account: AdminAccount;
   own: boolean;
+  busy: boolean;
   onRoles: (roles: ("editor" | "admin")[]) => void;
   onAccess: (disabled: boolean) => void;
   onRevoke: () => void;
@@ -258,20 +300,20 @@ function Manage({
             {t(`account.roles.${role}`)}
           </label>
         ))}
-        <Button size="sm" variant="outline" onClick={() => onRoles([...roles])}>
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => onRoles([...roles])}>
           {t("account.users.saveRoles")}
         </Button>
       </fieldset>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="ghost" onClick={onRevoke}>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onRevoke}>
           {t("account.users.revoke")}
         </Button>
         {!own && (
-          <Button size="sm" variant="ghost" onClick={() => onAccess(!account.disabled)}>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAccess(!account.disabled)}>
             {account.disabled ? t("account.users.enable") : t("account.users.disable")}
           </Button>
         )}
-        <Button size="sm" variant="ghost" onClick={onRecover}>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onRecover}>
           {t("account.users.recovery")}
         </Button>
       </div>
