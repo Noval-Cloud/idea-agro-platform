@@ -1,0 +1,3 @@
+# Runs of the CI pipelines by hand upload the repository as git sees it.
+.git/
+#!include:.gitignore

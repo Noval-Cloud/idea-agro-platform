@@ -50,3 +50,7 @@ output "auth_browser_key" {
 output "auth_csp" {
   value = module.identity.csp
 }
+
+output "ci_image" {
+  value = module.ci.ci_image
+}

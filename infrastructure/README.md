@@ -89,6 +89,22 @@ The `identity` module adds Firebase to the project, turns on Identity Platform w
 
 Google as a provider is the one step done by hand, once per environment, because only the Firebase console creates its OAuth client: Firebase console → the project → Authentication → Sign-in method → Google → Enable, with the support email. Until then, the sign-in page answers that Google sign-in is not enabled.
 
+## CI/CD
+
+Cloud Build runs the checks and the deploys. The `ci` module declares the triggers, which run as the build identity.
+
+- **Checks:** every pull request into `main` runs `make setup` and `make check` in the CI image (`ci/checks.cloudbuild.yaml`), and reports the result on the pull request. Pull requests from outside the team run only after a collaborator comments `/gcbrun`.
+- **CI image:** built from `ci/` with the tool versions read from where the repository pins them (`.node-version`, `package.json`, `pyproject.toml`, `.python-version`, `terraform/providers.tf`), and rebuilt when any of them changes.
+- **Deploys:** a push to `main` that changes the API rebuilds its image and updates only the image of its service.
+- **The GitHub connection** is made once by hand, because it installs the Cloud Build app on the organization:
+  1. In the Cloud Build console, open Repositories (2nd gen) → Create host connection → GitHub, in the environment's region, named `github`.
+  2. Set `github_connection = "projects/<project>/locations/<region>/connections/github"` in the environment's `terraform.tfvars`.
+  3. Apply.
+
+  Without the connection, Terraform creates no triggers.
+
+- **By hand:** `make ci-image ENV=dev` and `make ci-checks ENV=dev` run the same pipelines on the environment's Cloud Build. They upload the repository as git sees it (`.ci.gcloudignore`).
+
 ## `setup.env`
 
 Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except the lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` or `TF_SA_USERS` grants nothing.

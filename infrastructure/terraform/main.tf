@@ -33,3 +33,14 @@ module "api" {
   records_database = module.platform.firestore_database
   admin_emails     = var.admin_emails
 }
+
+module "ci" {
+  source = "./modules/ci"
+
+  project           = var.project
+  region            = var.region
+  github_connection = var.github_connection
+  builder_email     = module.platform.builder_email
+  image_repository  = module.platform.image_repository
+  api_service       = module.api.service
+}

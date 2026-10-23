@@ -1,0 +1,15 @@
+# Runs every check of the repository, as `make check` does on a person's machine.
+steps:
+  - name: ${_CI_IMAGE}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        # Some checks list the repository's files through git: a source without history gets a fresh index.
+        [ -d .git ] || { git init --quiet && git add --all; }
+        make setup
+        make check
+timeout: 1800s
+options:
+  logging: CLOUD_LOGGING_ONLY
