@@ -315,4 +315,6 @@ class AuditOut(BaseModel):
     action: AuditAction
     target: str = Field(description="The account acted on.")
     target_email: str = Field(description="Its email at the time.")
-    detail: str = Field(description="The roles given, for a role change.")
+    detail: str = Field(
+        description="The roles given, for a role change; `provider_failed` when the sign-in provider did not take it."
+    )

@@ -18,8 +18,8 @@ router = APIRouter(tags=["Admin"])
 log = logging.getLogger("idea_agro_api")
 
 AccountId = Annotated[UUID, PathParam(description="The account's id.")]
-# Searches look through the newest accounts; enough until the platform has many more.
-SEARCHED = 1000
+LISTED = 50
+PROVIDER_FAILED = "provider_failed"
 
 
 def found(services: Services, id: UUID) -> Account:
@@ -30,9 +30,12 @@ def found(services: Services, id: UUID) -> Account:
 
 
 def recently_signed_in(caller: Caller, services: Services) -> None:
-    """Sensitive actions need a sign-in from the last minutes, so a stolen session alone cannot do them."""
-    signed_in = caller.identity.auth_time or caller.identity.issued_at
-    if datetime.now(UTC) - signed_in > timedelta(seconds=services.limits.recent_sign_in_seconds):
+    """Sensitive actions need a sign-in from the last minutes, so a stolen session alone cannot do them.
+
+    Only the sign-in time counts: a token's issue time renews every hour without anyone signing in.
+    """
+    signed_in = caller.identity.auth_time
+    if signed_in is None or datetime.now(UTC) - signed_in > timedelta(seconds=services.limits.recent_sign_in_seconds):
         raise RecentSignInRequired("Sign in again to do this: it needs a recent sign-in.")
 
 
@@ -54,20 +57,28 @@ def admin_view(account: Account) -> AdminAccount:
     )
 
 
-def end_sessions(services: Services, account: Account) -> None:
-    """Ours first, so older sign-ins are refused even if the provider does not answer."""
-    services.accounts.update(account.id, sessions_valid_after=datetime.now(UTC).replace(microsecond=0))
+def at_provider(services: Services, account: Account, *, revoke: bool, disabled: bool | None = None) -> bool:
+    """Tells the sign-in provider about every identity of the account; False when it did not take it."""
     try:
         for subject in services.accounts.subjects(account.id):
-            services.identity_admin.revoke_sessions(subject)
-    except Exception as error:
-        raise SessionsEndedLocally("The sessions ended here, but the sign-in provider did not answer.") from error
+            if disabled is not None:
+                services.identity_admin.set_disabled(subject, disabled)
+            if revoke:
+                services.identity_admin.revoke_sessions(subject)
+    except Exception:
+        log.warning("The sign-in provider did not take an admin change", exc_info=True)
+        return False
+    return True
+
+
+def now_on() -> datetime:
+    return datetime.now(UTC).replace(microsecond=0)
 
 
 @router.get(
     "/v1/admin/accounts",
     summary="Accounts",
-    description="For admins: the newest accounts, or those whose name or email contains the search.",
+    description="For admins: the newest accounts, or those whose email or name starts with the search.",
     responses=problems(401, 403, 429),
 )
 def list_accounts(
@@ -75,11 +86,8 @@ def list_accounts(
     services: ServicesDep,
     q: Annotated[str, Query(max_length=100, description="Part of a name or an email.")] = "",
 ) -> list[AdminAccount]:
-    search = q.strip().casefold()
-    accounts = services.accounts.newest(SEARCHED)
-    if search:
-        accounts = [a for a in accounts if search in f"{a.name or ''} {a.email or ''}".casefold()]
-    return [admin_view(a) for a in accounts[:50]]
+    accounts = services.accounts.search(q, LISTED) if q.strip() else services.accounts.newest(LISTED)
+    return [admin_view(a) for a in accounts]
 
 
 @router.put(
@@ -110,10 +118,12 @@ def change_account_roles(
 )
 def revoke_account_sessions(account_id: AccountId, caller: AdminDep, services: ServicesDep) -> Response:
     account = found(services, account_id)
-    try:
-        end_sessions(services, account)
-    finally:
-        audit(services, caller, AuditAction.SESSIONS_REVOKED, account)
+    # Ours first, so older sign-ins are refused even if the provider does not answer.
+    services.accounts.update(account.id, sessions_valid_after=now_on())
+    taken = at_provider(services, account, revoke=True)
+    audit(services, caller, AuditAction.SESSIONS_REVOKED, account, "" if taken else PROVIDER_FAILED)
+    if not taken:
+        raise SessionsEndedLocally("The sessions ended here, but the sign-in provider did not answer.")
     return Response(status_code=204)
 
 
@@ -124,7 +134,7 @@ def revoke_account_sessions(account_id: AccountId, caller: AdminDep, services: S
         "For admins, with a recent sign-in. A disabled account cannot use any private route, and its sessions end. "
         "Admins cannot disable themselves."
     ),
-    responses=problems(401, 403, 404, 409, 422, 429),
+    responses=problems(401, 403, 404, 409, 422, 429, 503),
 )
 def change_account_access(
     account_id: AccountId, change: AccessChange, caller: AdminDep, services: ServicesDep
@@ -133,14 +143,16 @@ def change_account_access(
     account = found(services, account_id)
     if account.id == caller.account.id:
         raise HTTPException(409, "You cannot disable your own account.")
-    changed = services.accounts.update(account.id, disabled=change.disabled)
-    # Our record is what counts: every private route checks it. The provider is told too, when it answers.
-    for subject in services.accounts.subjects(account.id):
-        try:
-            services.identity_admin.set_disabled(subject, change.disabled)
-        except Exception:
-            log.warning("The sign-in provider did not take the account's new access", exc_info=True)
-    audit(services, caller, AuditAction.DISABLED if change.disabled else AuditAction.ENABLED, account)
+    # Disabling also ends the sessions, so enabling later does not bring old tokens back.
+    ended = {"sessions_valid_after": now_on()} if change.disabled else {}
+    changed = services.accounts.update(account.id, disabled=change.disabled, **ended)
+    taken = at_provider(services, account, revoke=change.disabled, disabled=change.disabled)
+    action = AuditAction.DISABLED if change.disabled else AuditAction.ENABLED
+    audit(services, caller, action, account, "" if taken else PROVIDER_FAILED)
+    # Our record is what every private route checks, so a disable holds anyway; an enable the provider did not
+    # take leaves the person unable to sign in.
+    if not taken and not change.disabled:
+        raise HTTPException(503, "Enabled here, but the sign-in provider did not answer: enable it again.")
     return admin_view(changed)
 
 

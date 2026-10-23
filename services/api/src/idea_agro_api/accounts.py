@@ -29,6 +29,8 @@ class Account:
     roles: frozenset[Role] = field(default_factory=frozenset[Role])
     sessions_valid_after: datetime | None = None
     disabled: bool = False
+    # Set once the configured first-admin list has made this account an admin: it never does again.
+    bootstrapped: bool = False
 
     @property
     def display_name(self) -> str:
@@ -45,6 +47,15 @@ class Account:
 
 
 PROFILE_FIELDS = ("email", "name", "picture")
+
+
+def search_key(text: str) -> str:
+    return text.strip().casefold()
+
+
+def search_keys(account: Account) -> dict[str, str]:
+    """What searches by email or name compare with: the start of each, ignoring case."""
+    return {"email_key": search_key(account.email or ""), "name_key": search_key(account.name or "")}
 
 
 def identity_key(identity: Identity) -> str:
@@ -86,6 +97,10 @@ class AccountStore(Protocol):
         """The latest accounts, newest first."""
         ...
 
+    def search(self, text: str, limit: int) -> list[Account]:
+        """Accounts whose email or name starts with the text, ignoring case."""
+        ...
+
     def subjects(self, id: str) -> list[str]:
         """The provider subjects of the identities linked to the account."""
         ...
@@ -118,6 +133,11 @@ class MemoryAccounts:
 
     def newest(self, limit: int) -> list[Account]:
         return sorted(self._accounts.values(), key=lambda a: a.created_at, reverse=True)[:limit]
+
+    def search(self, text: str, limit: int) -> list[Account]:
+        key = search_key(text)
+        found = [a for a in self._accounts.values() if any(k.startswith(key) for k in search_keys(a).values())]
+        return sorted(found, key=lambda a: a.created_at, reverse=True)[:limit]
 
     def subjects(self, id: str) -> list[str]:
         return [self._subjects[key] for key, account in self._identities.items() if account == id]
@@ -160,11 +180,26 @@ class FirestoreAccounts:
 
     def update(self, id: str, **fields: Any) -> Account:
         values = {key: sorted(value) if key == "roles" else value for key, value in fields.items()}
+        # The search keys follow the profile they come from.
+        values |= {f"{key}_key": search_key(fields[key] or "") for key in ("email", "name") if key in fields}
         self._accounts.document(id).update(values)  # pyright: ignore[reportUnknownMemberType]
         found = self.get(id)
         if found is None:
             raise KeyError(id)
         return found
+
+    def search(self, text: str, limit: int) -> list[Account]:
+        key = search_key(text)
+        found: dict[str, Account] = {}
+        for indexed in ("email_key", "name_key"):
+            query = (
+                self._accounts.where(filter=firestore.FieldFilter(indexed, ">=", key))  # pyright: ignore[reportUnknownMemberType]
+                .where(filter=firestore.FieldFilter(indexed, "<", f"{key}\uf8ff"))
+                .limit(limit)
+            )
+            for d in query.stream():  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                found[d.id] = _from_document(d.id, cast(dict[str, Any], d.to_dict()))  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+        return sorted(found.values(), key=lambda a: a.created_at, reverse=True)[:limit]
 
     def newest(self, limit: int) -> list[Account]:
         query = self._accounts.order_by("created_at", direction=firestore.Query.DESCENDING).limit(limit)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -184,7 +219,8 @@ def _to_document(account: Account) -> dict[str, Any]:
         "roles": sorted(account.roles),
         "sessions_valid_after": account.sessions_valid_after,
         "disabled": account.disabled,
-    }
+        "bootstrapped": account.bootstrapped,
+    } | search_keys(account)
 
 
 def _from_document(id: str, data: dict[str, Any]) -> Account:
@@ -197,6 +233,7 @@ def _from_document(id: str, data: dict[str, Any]) -> Account:
         roles=frozenset(Role(r) for r in data.get("roles", [])),
         sessions_valid_after=data.get("sessions_valid_after"),
         disabled=data.get("disabled", False),
+        bootstrapped=data.get("bootstrapped", False),
     )
 
 

@@ -69,13 +69,22 @@ def caller(
 
 
 def bootstrapped(found: Services, account: Account, identity: Identity) -> Account:
-    """Makes the configured first admins admins when their verified email signs in."""
-    email = (identity.email or "").lower()
-    if Role.ADMIN in account.roles or not identity.email_verified or email not in found.admin_emails:
+    """Makes the configured first admins admins when their verified email signs in, once per account.
+
+    Once is what lets another admin take the role away for good.
+    """
+    email = identity.email or ""
+    # Plain ASCII only: case folding of other letters could make a look-alike address match.
+    if (
+        account.bootstrapped
+        or not identity.email_verified
+        or not email.isascii()
+        or email.lower() not in found.admin_emails
+    ):
         return account
-    account = found.accounts.update(account.id, roles=account.roles | {Role.ADMIN})
+    account = found.accounts.update(account.id, roles=account.roles | {Role.ADMIN}, bootstrapped=True)
     entry = AuditEntry(
-        datetime.now(UTC), account.id, account.display_name, AuditAction.ADMIN_BOOTSTRAPPED, account.id, email
+        datetime.now(UTC), account.id, account.display_name, AuditAction.ADMIN_BOOTSTRAPPED, account.id, email.lower()
     )
     found.audit.record(entry)
     return account
