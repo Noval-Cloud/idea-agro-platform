@@ -36,7 +36,7 @@ def revoke_my_sessions(caller: CallerDep, services: ServicesDep) -> Response:
     # Ours first: even if the provider fails below, older sign-ins are already refused.
     services.accounts.update(caller.account.id, sessions_valid_after=datetime.now(UTC).replace(microsecond=0))
     try:
-        services.identity_admin.revoke_sessions(caller.identity)
+        services.identity_admin.revoke_sessions(caller.identity.subject)
     except Exception as error:
         raise SessionsEndedLocally("Your sessions ended here, but the sign-in provider did not answer.") from error
     return Response(status_code=204)

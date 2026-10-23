@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.4.0
+ * OpenAPI spec version: 1.5.0
  */
 import {
   useMutation,
@@ -50,6 +50,11 @@ import type {
 } from '@tanstack/react-query';
 
 import { apiFetch } from '../fetcher';
+export interface AccessChange {
+  /** True disables the account and ends its sessions; false enables it again. */
+  disabled: boolean;
+}
+
 /**
  * `client` is every account; `editor` manages content and `admin` manages accounts. They combine.
  */
@@ -91,6 +96,49 @@ export interface ActivityOut {
   /** The item's id or the member's email the change was about, if any. */
   subject: string;
   /** A zone's name or a role, when it helps to read the change. */
+  detail: string;
+}
+
+/**
+ * An account, as admins see it.
+ */
+export interface AdminAccount {
+  id: string;
+  email: string | null;
+  name: string | null;
+  picture: string | null;
+  /** Always `client`, plus `editor` or `admin` if given. */
+  roles: AccountRole[];
+  /** A disabled account cannot use any private route. */
+  disabled: boolean;
+  created_at: string;
+}
+
+export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
+
+
+export const AuditAction = {
+  admin_bootstrapped: 'admin_bootstrapped',
+  roles_changed: 'roles_changed',
+  sessions_revoked: 'sessions_revoked',
+  disabled: 'disabled',
+  enabled: 'enabled',
+  recovery_sent: 'recovery_sent',
+} as const;
+
+/**
+ * One admin action.
+ */
+export interface AuditOut {
+  at: string;
+  /** The admin who acted, by their name at the time. */
+  actor_name: string;
+  action: AuditAction;
+  /** The account acted on. */
+  target: string;
+  /** Its email at the time. */
+  target_email: string;
+  /** The roles given, for a role change. */
   detail: string;
 }
 
@@ -160,6 +208,20 @@ export interface DivisionItemIn {
      * @pattern ^[0-9A-Za-z-]{1,40}$
      */
   zone_id: string;
+}
+
+export type ValidationErrorCtx = { [key: string]: unknown };
+
+export interface ValidationError {
+  loc: (string | number)[];
+  msg: string;
+  type: string;
+  input?: unknown;
+  ctx?: ValidationErrorCtx;
+}
+
+export interface HTTPValidationError {
+  detail?: ValidationError[];
 }
 
 export interface Health {
@@ -458,6 +520,25 @@ export interface ProjectSummary {
   updated_at: string;
 }
 
+export type RolesChangeRolesItem = typeof RolesChangeRolesItem[keyof typeof RolesChangeRolesItem];
+
+
+export const RolesChangeRolesItem = {
+  editor: 'editor',
+  admin: 'admin',
+} as const;
+
+/**
+ * The roles an account has beyond `client`.
+ */
+export interface RolesChange {
+  /**
+     * `editor`, `admin`, both or none.
+     * @maxItems 2
+     */
+  roles: RolesChangeRolesItem[];
+}
+
 /**
  * A zone of your library.
  */
@@ -559,6 +640,14 @@ export interface ZoneSeasonal {
   /** Evapotranspiration, as a daily rate every 8 days. */
   et?: SeasonalSeries | null;
 }
+
+export type ListAccountsParams = {
+/**
+ * Part of a name or an email.
+ * @maxLength 100
+ */
+q?: string;
+};
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -4239,3 +4328,777 @@ export const useChangeProjectZoneGeometry = <TError = Problem,
       > => {
       return useMutation(getChangeProjectZoneGeometryMutationOptions(options), queryClient);
     }
+
+export type listAccountsResponse200 = {
+  data: AdminAccount[]
+  status: 200
+}
+
+export type listAccountsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listAccountsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listAccountsResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listAccountsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listAccountsResponseSuccess = (listAccountsResponse200) & {
+  headers: Headers;
+};
+export type listAccountsResponseError = (listAccountsResponse401 | listAccountsResponse403 | listAccountsResponse422 | listAccountsResponse429) & {
+  headers: Headers;
+};
+
+export type listAccountsResponse = (listAccountsResponseSuccess | listAccountsResponseError)
+
+export const getListAccountsUrl = (params?: ListAccountsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/accounts?${stringifiedParams}` : `/v1/admin/accounts`
+}
+
+/**
+ * For admins: the newest accounts, or those whose name or email contains the search.
+ * @summary Accounts
+ */
+export const listAccounts = async (params?: ListAccountsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listAccountsResponse> => {
+
+  return apiFetch<listAccountsResponse>(getListAccountsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAccountsQueryKey = (params?: ListAccountsParams,) => {
+    return [
+    `/v1/admin/accounts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAccounts>>, TError = Problem | HTTPValidationError>(params?: ListAccountsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAccountsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAccounts>>> = ({ signal }) => listAccounts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listAccounts>>>
+export type ListAccountsQueryError = Problem | HTTPValidationError
+
+
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = Problem | HTTPValidationError>(
+ params: undefined |  ListAccountsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = Problem | HTTPValidationError>(
+ params?: ListAccountsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = Problem | HTTPValidationError>(
+ params?: ListAccountsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Accounts
+ */
+
+export function useListAccounts<TData = Awaited<ReturnType<typeof listAccounts>>, TError = Problem | HTTPValidationError>(
+ params?: ListAccountsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAccounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAccountsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type changeAccountRolesResponse200 = {
+  data: AdminAccount
+  status: 200
+}
+
+export type changeAccountRolesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type changeAccountRolesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type changeAccountRolesResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type changeAccountRolesResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type changeAccountRolesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type changeAccountRolesResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type changeAccountRolesResponseSuccess = (changeAccountRolesResponse200) & {
+  headers: Headers;
+};
+export type changeAccountRolesResponseError = (changeAccountRolesResponse401 | changeAccountRolesResponse403 | changeAccountRolesResponse404 | changeAccountRolesResponse409 | changeAccountRolesResponse422 | changeAccountRolesResponse429) & {
+  headers: Headers;
+};
+
+export type changeAccountRolesResponse = (changeAccountRolesResponseSuccess | changeAccountRolesResponseError)
+
+export const getChangeAccountRolesUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/admin/accounts/${accountId}/roles`
+}
+
+/**
+ * For admins, with a recent sign-in. Admins cannot remove their own admin role.
+ * @summary Change an account's roles
+ */
+export const changeAccountRoles = async (accountId: string,
+    rolesChange: RolesChange, options?: Parameters<typeof apiFetch>[1]): Promise<changeAccountRolesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<changeAccountRolesResponse>(getChangeAccountRolesUrl(accountId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rolesChange)
+  }
+);}
+
+
+
+
+
+export const getChangeAccountRolesMutationKey = () => ['changeAccountRoles'] as const;
+
+export const getChangeAccountRolesMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountRoles>>, TError,ChangeAccountRolesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAccountRoles>>, TError,ChangeAccountRolesMutationVariables, TContext> => {
+
+const mutationKey = getChangeAccountRolesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAccountRoles>>, ChangeAccountRolesMutationVariables> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  changeAccountRoles(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAccountRolesMutationResult = NonNullable<Awaited<ReturnType<typeof changeAccountRoles>>>
+    export type ChangeAccountRolesMutationBody = RolesChange
+    export type ChangeAccountRolesMutationError = Problem
+    export type ChangeAccountRolesMutationVariables = {accountId: string;data: RolesChange}
+
+    /**
+ * @summary Change an account's roles
+ */
+export const useChangeAccountRoles = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountRoles>>, TError,ChangeAccountRolesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeAccountRoles>>,
+        TError,
+        ChangeAccountRolesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeAccountRolesMutationOptions(options), queryClient);
+    }
+
+export type revokeAccountSessionsResponse204 = {
+  data: void
+  status: 204
+}
+
+export type revokeAccountSessionsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type revokeAccountSessionsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type revokeAccountSessionsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type revokeAccountSessionsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type revokeAccountSessionsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type revokeAccountSessionsResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type revokeAccountSessionsResponseSuccess = (revokeAccountSessionsResponse204) & {
+  headers: Headers;
+};
+export type revokeAccountSessionsResponseError = (revokeAccountSessionsResponse401 | revokeAccountSessionsResponse403 | revokeAccountSessionsResponse404 | revokeAccountSessionsResponse422 | revokeAccountSessionsResponse429 | revokeAccountSessionsResponse503) & {
+  headers: Headers;
+};
+
+export type revokeAccountSessionsResponse = (revokeAccountSessionsResponseSuccess | revokeAccountSessionsResponseError)
+
+export const getRevokeAccountSessionsUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/admin/accounts/${accountId}/sessions/revoke`
+}
+
+/**
+ * For admins: tokens from earlier sign-ins are refused, and the provider stops renewing them.
+ * @summary Log an account out everywhere
+ */
+export const revokeAccountSessions = async (accountId: string, options?: Parameters<typeof apiFetch>[1]): Promise<revokeAccountSessionsResponse> => {
+
+  return apiFetch<revokeAccountSessionsResponse>(getRevokeAccountSessionsUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeAccountSessionsMutationKey = () => ['revokeAccountSessions'] as const;
+
+export const getRevokeAccountSessionsMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAccountSessions>>, TError,RevokeAccountSessionsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeAccountSessions>>, TError,RevokeAccountSessionsMutationVariables, TContext> => {
+
+const mutationKey = getRevokeAccountSessionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeAccountSessions>>, RevokeAccountSessionsMutationVariables> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  revokeAccountSessions(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeAccountSessionsMutationResult = NonNullable<Awaited<ReturnType<typeof revokeAccountSessions>>>
+
+    export type RevokeAccountSessionsMutationError = Problem
+    export type RevokeAccountSessionsMutationVariables = {accountId: string}
+
+    /**
+ * @summary Log an account out everywhere
+ */
+export const useRevokeAccountSessions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAccountSessions>>, TError,RevokeAccountSessionsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof revokeAccountSessions>>,
+        TError,
+        RevokeAccountSessionsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRevokeAccountSessionsMutationOptions(options), queryClient);
+    }
+
+export type changeAccountAccessResponse200 = {
+  data: AdminAccount
+  status: 200
+}
+
+export type changeAccountAccessResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type changeAccountAccessResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type changeAccountAccessResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type changeAccountAccessResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type changeAccountAccessResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type changeAccountAccessResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type changeAccountAccessResponseSuccess = (changeAccountAccessResponse200) & {
+  headers: Headers;
+};
+export type changeAccountAccessResponseError = (changeAccountAccessResponse401 | changeAccountAccessResponse403 | changeAccountAccessResponse404 | changeAccountAccessResponse409 | changeAccountAccessResponse422 | changeAccountAccessResponse429) & {
+  headers: Headers;
+};
+
+export type changeAccountAccessResponse = (changeAccountAccessResponseSuccess | changeAccountAccessResponseError)
+
+export const getChangeAccountAccessUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/admin/accounts/${accountId}/access`
+}
+
+/**
+ * For admins, with a recent sign-in. A disabled account cannot use any private route, and its sessions end. Admins cannot disable themselves.
+ * @summary Disable or enable an account
+ */
+export const changeAccountAccess = async (accountId: string,
+    accessChange: AccessChange, options?: Parameters<typeof apiFetch>[1]): Promise<changeAccountAccessResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<changeAccountAccessResponse>(getChangeAccountAccessUrl(accountId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(accessChange)
+  }
+);}
+
+
+
+
+
+export const getChangeAccountAccessMutationKey = () => ['changeAccountAccess'] as const;
+
+export const getChangeAccountAccessMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountAccess>>, TError,ChangeAccountAccessMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAccountAccess>>, TError,ChangeAccountAccessMutationVariables, TContext> => {
+
+const mutationKey = getChangeAccountAccessMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAccountAccess>>, ChangeAccountAccessMutationVariables> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  changeAccountAccess(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAccountAccessMutationResult = NonNullable<Awaited<ReturnType<typeof changeAccountAccess>>>
+    export type ChangeAccountAccessMutationBody = AccessChange
+    export type ChangeAccountAccessMutationError = Problem
+    export type ChangeAccountAccessMutationVariables = {accountId: string;data: AccessChange}
+
+    /**
+ * @summary Disable or enable an account
+ */
+export const useChangeAccountAccess = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountAccess>>, TError,ChangeAccountAccessMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeAccountAccess>>,
+        TError,
+        ChangeAccountAccessMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeAccountAccessMutationOptions(options), queryClient);
+    }
+
+export type sendAccountRecoveryResponse204 = {
+  data: void
+  status: 204
+}
+
+export type sendAccountRecoveryResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type sendAccountRecoveryResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type sendAccountRecoveryResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type sendAccountRecoveryResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type sendAccountRecoveryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type sendAccountRecoveryResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type sendAccountRecoveryResponseSuccess = (sendAccountRecoveryResponse204) & {
+  headers: Headers;
+};
+export type sendAccountRecoveryResponseError = (sendAccountRecoveryResponse401 | sendAccountRecoveryResponse403 | sendAccountRecoveryResponse404 | sendAccountRecoveryResponse409 | sendAccountRecoveryResponse422 | sendAccountRecoveryResponse429) & {
+  headers: Headers;
+};
+
+export type sendAccountRecoveryResponse = (sendAccountRecoveryResponseSuccess | sendAccountRecoveryResponseError)
+
+export const getSendAccountRecoveryUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/admin/accounts/${accountId}/recovery`
+}
+
+/**
+ * For admins: the sign-in provider emails a link that expires and works once. Only for password sign-in, which the platform may not offer: then it answers 409.
+ * @summary Send a password recovery link
+ */
+export const sendAccountRecovery = async (accountId: string, options?: Parameters<typeof apiFetch>[1]): Promise<sendAccountRecoveryResponse> => {
+
+  return apiFetch<sendAccountRecoveryResponse>(getSendAccountRecoveryUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSendAccountRecoveryMutationKey = () => ['sendAccountRecovery'] as const;
+
+export const getSendAccountRecoveryMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAccountRecovery>>, TError,SendAccountRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendAccountRecovery>>, TError,SendAccountRecoveryMutationVariables, TContext> => {
+
+const mutationKey = getSendAccountRecoveryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendAccountRecovery>>, SendAccountRecoveryMutationVariables> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  sendAccountRecovery(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendAccountRecoveryMutationResult = NonNullable<Awaited<ReturnType<typeof sendAccountRecovery>>>
+
+    export type SendAccountRecoveryMutationError = Problem
+    export type SendAccountRecoveryMutationVariables = {accountId: string}
+
+    /**
+ * @summary Send a password recovery link
+ */
+export const useSendAccountRecovery = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAccountRecovery>>, TError,SendAccountRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof sendAccountRecovery>>,
+        TError,
+        SendAccountRecoveryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendAccountRecoveryMutationOptions(options), queryClient);
+    }
+
+export type listAuditResponse200 = {
+  data: AuditOut[]
+  status: 200
+}
+
+export type listAuditResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listAuditResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listAuditResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listAuditResponseSuccess = (listAuditResponse200) & {
+  headers: Headers;
+};
+export type listAuditResponseError = (listAuditResponse401 | listAuditResponse403 | listAuditResponse429) & {
+  headers: Headers;
+};
+
+export type listAuditResponse = (listAuditResponseSuccess | listAuditResponseError)
+
+export const getListAuditUrl = () => {
+
+
+
+
+  return `/v1/admin/audit`
+}
+
+/**
+ * For admins: the latest admin actions, newest first.
+ * @summary What admins did
+ */
+export const listAudit = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listAuditResponse> => {
+
+  return apiFetch<listAuditResponse>(getListAuditUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAuditQueryKey = () => {
+    return [
+    `/v1/admin/audit`
+    ] as const;
+    }
+
+
+export const getListAuditQueryOptions = <TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAuditQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAudit>>> = ({ signal }) => listAudit({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAuditQueryResult = NonNullable<Awaited<ReturnType<typeof listAudit>>>
+export type ListAuditQueryError = Problem
+
+
+export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAudit>>,
+          TError,
+          Awaited<ReturnType<typeof listAudit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAudit>>,
+          TError,
+          Awaited<ReturnType<typeof listAudit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What admins did
+ */
+
+export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAuditQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

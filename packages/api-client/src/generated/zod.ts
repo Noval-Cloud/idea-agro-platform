@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.4.0
+ * OpenAPI spec version: 1.5.0
  */
 import * as zod from 'zod';
 
@@ -1024,3 +1024,115 @@ export const ChangeProjectZoneGeometryResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * For admins: the newest accounts, or those whose name or email contains the search.
+ * @summary Accounts
+ */
+export const listAccountsQueryQDefault = ``;
+export const listAccountsQueryQMax = 100;
+
+
+
+export const ListAccountsQueryParams = zod.object({
+  "q": zod.string().max(listAccountsQueryQMax).default(listAccountsQueryQDefault).describe('Part of a name or an email.')
+})
+
+export const ListAccountsResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.union([zod.string(),zod.null()]),
+  "name": zod.union([zod.string(),zod.null()]),
+  "picture": zod.union([zod.string(),zod.null()]),
+  "roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Always `client`, plus `editor` or `admin` if given.'),
+  "disabled": zod.boolean().describe('A disabled account cannot use any private route.'),
+  "created_at": zod.iso.datetime({"offset":true})
+}).describe('An account, as admins see it.')
+export const ListAccountsResponse = zod.array(ListAccountsResponseItem)
+
+
+/**
+ * For admins, with a recent sign-in. Admins cannot remove their own admin role.
+ * @summary Change an account's roles
+ */
+export const ChangeAccountRolesParams = zod.object({
+  "account_id": zod.uuid().describe('The account\'s id.')
+})
+
+export const changeAccountRolesBodyRolesMax = 2;
+
+
+
+export const ChangeAccountRolesBody = zod.object({
+  "roles": zod.array(zod.enum(['editor', 'admin'])).max(changeAccountRolesBodyRolesMax).describe('`editor`, `admin`, both or none.')
+}).describe('The roles an account has beyond `client`.')
+
+export const ChangeAccountRolesResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.union([zod.string(),zod.null()]),
+  "name": zod.union([zod.string(),zod.null()]),
+  "picture": zod.union([zod.string(),zod.null()]),
+  "roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Always `client`, plus `editor` or `admin` if given.'),
+  "disabled": zod.boolean().describe('A disabled account cannot use any private route.'),
+  "created_at": zod.iso.datetime({"offset":true})
+}).describe('An account, as admins see it.')
+
+
+/**
+ * For admins: tokens from earlier sign-ins are refused, and the provider stops renewing them.
+ * @summary Log an account out everywhere
+ */
+export const RevokeAccountSessionsParams = zod.object({
+  "account_id": zod.uuid().describe('The account\'s id.')
+})
+
+export const RevokeAccountSessionsResponse = zod.void()
+
+
+/**
+ * For admins, with a recent sign-in. A disabled account cannot use any private route, and its sessions end. Admins cannot disable themselves.
+ * @summary Disable or enable an account
+ */
+export const ChangeAccountAccessParams = zod.object({
+  "account_id": zod.uuid().describe('The account\'s id.')
+})
+
+export const ChangeAccountAccessBody = zod.object({
+  "disabled": zod.boolean().describe('True disables the account and ends its sessions; false enables it again.')
+})
+
+export const ChangeAccountAccessResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.union([zod.string(),zod.null()]),
+  "name": zod.union([zod.string(),zod.null()]),
+  "picture": zod.union([zod.string(),zod.null()]),
+  "roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Always `client`, plus `editor` or `admin` if given.'),
+  "disabled": zod.boolean().describe('A disabled account cannot use any private route.'),
+  "created_at": zod.iso.datetime({"offset":true})
+}).describe('An account, as admins see it.')
+
+
+/**
+ * For admins: the sign-in provider emails a link that expires and works once. Only for password sign-in, which the platform may not offer: then it answers 409.
+ * @summary Send a password recovery link
+ */
+export const SendAccountRecoveryParams = zod.object({
+  "account_id": zod.uuid().describe('The account\'s id.')
+})
+
+export const SendAccountRecoveryResponse = zod.void()
+
+
+/**
+ * For admins: the latest admin actions, newest first.
+ * @summary What admins did
+ */
+export const ListAuditResponseItem = zod.object({
+  "at": zod.iso.datetime({"offset":true}),
+  "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
+  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent']),
+  "target": zod.string().describe('The account acted on.'),
+  "target_email": zod.string().describe('Its email at the time.'),
+  "detail": zod.string().describe('The roles given, for a role change.')
+}).describe('One admin action.')
+export const ListAuditResponse = zod.array(ListAuditResponseItem)

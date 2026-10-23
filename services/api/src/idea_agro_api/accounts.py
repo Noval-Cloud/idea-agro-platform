@@ -82,6 +82,14 @@ class AccountStore(Protocol):
         """Changes only the fields given, so concurrent changes to other fields are kept."""
         ...
 
+    def newest(self, limit: int) -> list[Account]:
+        """The latest accounts, newest first."""
+        ...
+
+    def subjects(self, id: str) -> list[str]:
+        """The provider subjects of the identities linked to the account."""
+        ...
+
 
 class MemoryAccounts:
     """Accounts kept in memory: for tests and local runs."""
@@ -89,6 +97,7 @@ class MemoryAccounts:
     def __init__(self) -> None:
         self._accounts: dict[str, Account] = {}
         self._identities: dict[str, str] = {}
+        self._subjects: dict[str, str] = {}
 
     def by_identity(self, identity: Identity) -> Account | None:
         id = self._identities.get(identity_key(identity))
@@ -99,12 +108,19 @@ class MemoryAccounts:
 
     def create(self, account: Account, identity: Identity) -> Account:
         id = self._identities.setdefault(identity_key(identity), account.id)
+        self._subjects[identity_key(identity)] = identity.subject
         return self._accounts.setdefault(id, account)
 
     def update(self, id: str, **fields: Any) -> Account:
         account = replace(self._accounts[id], **fields)
         self._accounts[id] = account
         return account
+
+    def newest(self, limit: int) -> list[Account]:
+        return sorted(self._accounts.values(), key=lambda a: a.created_at, reverse=True)[:limit]
+
+    def subjects(self, id: str) -> list[str]:
+        return [self._subjects[key] for key, account in self._identities.items() if account == id]
 
 
 # google-cloud-firestore is only partly typed; this class is its only user here.
@@ -149,6 +165,14 @@ class FirestoreAccounts:
         if found is None:
             raise KeyError(id)
         return found
+
+    def newest(self, limit: int) -> list[Account]:
+        query = self._accounts.order_by("created_at", direction=firestore.Query.DESCENDING).limit(limit)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return [_from_document(d.id, cast(dict[str, Any], d.to_dict())) for d in query.stream()]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType, reportUnknownArgumentType]
+
+    def subjects(self, id: str) -> list[str]:
+        query = self._identities.where(filter=firestore.FieldFilter("account", "==", id))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return [cast(str, d.get("subject")) for d in query.stream()]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
 
 def _to_document(account: Account) -> dict[str, Any]:

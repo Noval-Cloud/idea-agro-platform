@@ -1,13 +1,15 @@
 """What routes declare they need: the services, and for private routes, the account calling."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.exceptions import HTTPException
 
-from idea_agro_api.accounts import Account, new_account, profile_changes
+from idea_agro_api.accounts import Account, Role, new_account, profile_changes
+from idea_agro_api.audit import AuditAction, AuditEntry
 from idea_agro_api.auth import Identity, InvalidToken, KeysUnavailable
 from idea_agro_api.security import client_key
 from idea_agro_api.services import Services
@@ -63,8 +65,30 @@ def caller(
         raise unauthorized("The session has ended: sign in again.")
     if changes := profile_changes(account, identity):
         account = found.accounts.update(account.id, **changes)
-    return Caller(account=account, identity=identity)
+    return Caller(account=bootstrapped(found, account, identity), identity=identity)
+
+
+def bootstrapped(found: Services, account: Account, identity: Identity) -> Account:
+    """Makes the configured first admins admins when their verified email signs in."""
+    email = (identity.email or "").lower()
+    if Role.ADMIN in account.roles or not identity.email_verified or email not in found.admin_emails:
+        return account
+    account = found.accounts.update(account.id, roles=account.roles | {Role.ADMIN})
+    entry = AuditEntry(
+        datetime.now(UTC), account.id, account.display_name, AuditAction.ADMIN_BOOTSTRAPPED, account.id, email
+    )
+    found.audit.record(entry)
+    return account
 
 
 ServicesDep = Annotated[Services, Depends(services)]
 CallerDep = Annotated[Caller, Depends(caller)]
+
+
+def admin(signed_in: CallerDep) -> Caller:
+    if Role.ADMIN not in signed_in.account.roles:
+        raise HTTPException(403, "Only admins can do this.")
+    return signed_in
+
+
+AdminDep = Annotated[Caller, Depends(admin)]

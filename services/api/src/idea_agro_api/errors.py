@@ -40,6 +40,15 @@ DESCRIPTIONS = {
 }
 
 
+class RecentSignInRequired(HTTPException):
+    """A sensitive action needs a fresh sign-in: the client asks the person to sign in again, then retries."""
+
+    type = "urn:idea-agro:problem:recent-sign-in-required"
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(403, detail)
+
+
 class SessionsEndedLocally(HTTPException):
     """The sessions ended in our records, but the sign-in provider did not answer."""
 
