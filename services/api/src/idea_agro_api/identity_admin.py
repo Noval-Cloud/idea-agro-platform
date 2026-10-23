@@ -16,7 +16,7 @@ class IdentityAdmin(Protocol):
 
 
 class NoIdentityAdmin:
-    """For local runs and tests: our own account record still ends the sessions."""
+    """For local runs and tests, with no provider to call: only the account's own record ends the sessions."""
 
     def revoke_sessions(self, identity: Identity) -> None:
         return None

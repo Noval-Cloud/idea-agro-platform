@@ -16,8 +16,9 @@ module "web" {
 module "identity" {
   source = "./modules/identity"
 
-  project     = var.project
-  app_origins = concat([module.web.url], var.auth_local_origins)
+  project            = var.project
+  app_origins        = concat([module.web.url], var.auth_local_origins)
+  firestore_database = module.platform.firestore_database
 }
 
 module "api" {

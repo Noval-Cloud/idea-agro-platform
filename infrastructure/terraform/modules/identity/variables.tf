@@ -19,3 +19,24 @@ variable "browser_key_services" {
   type        = list(string)
   default     = ["identitytoolkit.googleapis.com", "securetoken.googleapis.com"]
 }
+
+variable "firestore_database" {
+  description = "The Firestore database whose direct access from browsers is closed"
+  type        = string
+}
+
+variable "csp" {
+  description = "Origins the provider's sign-in needs in the website's Content Security Policy"
+  type = object({
+    connect = list(string)
+    script  = list(string)
+    images  = list(string)
+  })
+  default = {
+    connect = ["https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com"]
+    # The popup sign-in loads Google's iframe helper.
+    script = ["https://apis.google.com"]
+    # Profile pictures.
+    images = ["https://lh3.googleusercontent.com"]
+  }
+}

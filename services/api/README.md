@@ -26,11 +26,11 @@ Only the routes about the caller's own account, zones and projects are private. 
 - **Accounts:**
   - they are created on the first authenticated request;
   - their id derives from the provider identity, and that identity is a field linked to it;
-  - they live behind an `AccountStore`: `ACCOUNTS_SOURCE` is `firestore://<database>` or `memory://`.
+  - they live behind an `AccountStore`: `RECORDS_SOURCE` is `firestore://<database>` or `memory://` (with `ALLOW_MEMORY_RECORDS=1`, for local runs only).
 - **Roles:** every account is `client`, and `editor` and `admin` combine on top of it.
 - **"Log out everywhere":**
   - it revokes the provider's sessions through `IdentityAdmin` (`IDENTITY_ADMIN` is `identity-platform://<project>` or `none`);
-  - it stamps the account, so tokens issued before are refused at once;
+  - it stamps the account, so tokens from an earlier sign-in (their `auth_time`) are refused at once, refreshed or not;
   - a disabled account is refused.
 - **Limits and headers:** private routes are limited to `PRIVATE_REQUESTS_PER_MINUTE` per client and instance (60 by default). Every response carries security headers.
 
@@ -44,7 +44,7 @@ Every error is a Problem Details object (RFC 9457) served as `application/proble
 make api-dev    # http://localhost:8080, serving the website's prototype data
 ```
 
-With it running, `pnpm dev` in `apps/web` reads from it. Private routes answer 503 until `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL` are set; accounts then live in memory unless `ACCOUNTS_SOURCE` says otherwise. Tests run in `make test`, against local files shaped like the bucket.
+With it running, `pnpm dev` in `apps/web` reads from it. Private routes answer 503 until `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL` are set; for a run without Firestore, set `RECORDS_SOURCE=memory://` and `ALLOW_MEMORY_RECORDS=1`. Tests run in `make test`, against local files shaped like the bucket.
 
 ## Data
 

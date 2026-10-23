@@ -45,3 +45,23 @@ resource "google_apikeys_key" "browser" {
     }
   }
 }
+
+# Adding Firebase opens Firestore to browsers through its SDK: every record goes through the API, so close it.
+resource "google_firebaserules_ruleset" "firestore" {
+  project = var.project
+
+  source {
+    files {
+      name    = "firestore.rules"
+      content = "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if false;\n    }\n  }\n}\n"
+    }
+  }
+
+  depends_on = [google_firebase_project.this]
+}
+
+resource "google_firebaserules_release" "firestore" {
+  project      = var.project
+  name         = var.firestore_database == "(default)" ? "cloud.firestore" : "cloud.firestore/${var.firestore_database}"
+  ruleset_name = google_firebaserules_ruleset.firestore.name
+}

@@ -18,3 +18,12 @@ output "browser_key" {
   value     = google_apikeys_key.browser.key_string
   sensitive = true
 }
+
+output "csp" {
+  value = {
+    connect = var.csp.connect
+    frame   = ["https://${local.auth_domain}"]
+    script  = var.csp.script
+    images  = var.csp.images
+  }
+}

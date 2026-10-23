@@ -162,7 +162,7 @@
           "Account"
         ],
         "summary": "Log out everywhere",
-        "description": "Ends every session of your account, on every device: the next request of each must sign in again.",
+        "description": "Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.",
         "operationId": "revoke_my_sessions",
         "responses": {
           "204": {
@@ -190,6 +190,16 @@
           },
           "429": {
             "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service it depends on did not answer: try again later.",
             "content": {
               "application/problem+json": {
                 "schema": {

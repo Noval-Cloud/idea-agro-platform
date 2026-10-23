@@ -1,7 +1,7 @@
 """Everything the routes depend on, built once from the environment and injected into the app."""
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
@@ -26,14 +26,19 @@ class Services:
         verifier = None
         if issuer := env.get("AUTH_ISSUER"):
             verifier = OidcVerifier(issuer, env["AUTH_AUDIENCE"], PublishedKeys(env["AUTH_JWKS_URL"]))
+        records = env.get("RECORDS_SOURCE", "memory://")
+        if verifier and records == "memory://" and env.get("ALLOW_MEMORY_RECORDS") != "1":
+            # Accounts in memory forget a log-out on every other instance: refuse to run that way.
+            raise RuntimeError("Sign-in needs RECORDS_SOURCE, unless ALLOW_MEMORY_RECORDS=1 for a local run.")
         return Services(
             zones=ZoneStore(files_from(env["ZONES_SOURCE"])),
-            accounts=accounts_from(env.get("ACCOUNTS_SOURCE", "memory://")),
+            accounts=accounts_from(records),
             verifier=verifier,
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),
             rate_limit=RateLimit(per_minute=int(env.get("PRIVATE_REQUESTS_PER_MINUTE", "60"))),
         )
 
 
-def services_for_tests(zones: ZoneStore, verifier: TokenVerifier | None = None) -> Services:
-    return Services(zones=zones, accounts=MemoryAccounts(), verifier=verifier)
+def services_for_tests(zones: ZoneStore, verifier: TokenVerifier | None = None, **overrides: object) -> Services:
+    """Every store in memory, with any service replaced through `overrides`."""
+    return replace(Services(zones=zones, accounts=MemoryAccounts(), verifier=verifier), **overrides)  # pyright: ignore[reportArgumentType]

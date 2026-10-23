@@ -7,7 +7,7 @@ from fastapi import Depends, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.exceptions import HTTPException
 
-from idea_agro_api.accounts import Account, account_id, new_account, refreshed
+from idea_agro_api.accounts import Account, new_account, profile_changes
 from idea_agro_api.auth import Identity, InvalidToken
 from idea_agro_api.security import client_key
 from idea_agro_api.services import Services
@@ -29,6 +29,13 @@ def unauthorized(detail: str) -> HTTPException:
     return HTTPException(401, detail, headers={"WWW-Authenticate": "Bearer"})
 
 
+def limited(found: Services, key: str) -> None:
+    if not found.rate_limit.allow(key):
+        raise HTTPException(
+            429, "Too many requests.", headers={"Retry-After": str(found.rate_limit.seconds_to_reset())}
+        )
+
+
 def caller(
     request: Request,
     response: Response,
@@ -37,10 +44,7 @@ def caller(
 ) -> Caller:
     """The signed-in account. Private routes depend on this, and on nothing about how sign-in works."""
     response.headers["Cache-Control"] = "no-store"
-    if not found.rate_limit.allow(client_key(request)):
-        raise HTTPException(
-            429, "Too many requests.", headers={"Retry-After": str(found.rate_limit.seconds_to_reset())}
-        )
+    limited(found, f"address:{client_key(request)}")
     if found.verifier is None:
         raise HTTPException(503, "Sign-in is not configured.")
     if credentials is None:
@@ -49,15 +53,15 @@ def caller(
         identity = found.verifier.verify(credentials.credentials)
     except InvalidToken as error:
         raise unauthorized("The token is not valid.") from error
-    account = found.accounts.get(account_id(identity)) or found.accounts.create(new_account(identity))
+    account = found.accounts.by_identity(identity) or found.accounts.create(new_account(identity), identity)
+    limited(found, f"account:{account.id}")
     if account.disabled:
         raise HTTPException(403, "The account is disabled.")
     if not account.accepts(identity):
         raise unauthorized("The session has ended: sign in again.")
-    current = refreshed(account, identity)
-    if current != account:
-        found.accounts.save(current)
-    return Caller(account=current, identity=identity)
+    if changes := profile_changes(account, identity):
+        account = found.accounts.update(account.id, **changes)
+    return Caller(account=account, identity=identity)
 
 
 ServicesDep = Annotated[Services, Depends(services)]

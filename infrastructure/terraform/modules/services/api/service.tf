@@ -38,7 +38,7 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.auth_jwks_url
       }
       env {
-        name  = "ACCOUNTS_SOURCE"
+        name  = "RECORDS_SOURCE"
         value = "firestore://${var.accounts_database}"
       }
       env {

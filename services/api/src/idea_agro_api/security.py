@@ -27,9 +27,12 @@ async def security_headers(request: Request, call_next: Callable[[Request], Awai
 
 
 def client_key(request: Request) -> str:
-    """The caller's address: Cloud Run's proxy puts it first in X-Forwarded-For."""
-    forwarded = request.headers.get("x-forwarded-for", "")
-    return forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    """The caller's address: the last entry of X-Forwarded-For, which Google's front end appends.
+
+    Earlier entries come from the caller and can say anything.
+    """
+    forwarded = [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",") if part.strip()]
+    return forwarded[-1] if forwarded else (request.client.host if request.client else "unknown")
 
 
 class RateLimit:

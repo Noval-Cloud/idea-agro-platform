@@ -118,7 +118,19 @@ variable "accounts_database" {
 }
 
 variable "project_roles" {
-  description = "Roles of the API on the project: reading and writing accounts, and managing their sessions"
+  description = "Roles of the API on the project: reading and writing records"
   type        = list(string)
-  default     = ["roles/datastore.user", "roles/firebaseauth.admin"]
+  default     = ["roles/datastore.user"]
+}
+
+variable "identity_role_id" {
+  description = "Id of the custom role that lets the API manage people's sessions at the sign-in provider"
+  type        = string
+  default     = "apiAccountSessions"
+}
+
+variable "identity_permissions" {
+  description = "The only provider permissions the API needs: reading a person and ending their sessions"
+  type        = list(string)
+  default     = ["firebaseauth.users.get", "firebaseauth.users.update"]
 }

@@ -1,12 +1,12 @@
-"""Accounts: our own record of each person, linked to the identity their provider vouches for."""
+"""Accounts: our own record of each person, linked to the identities their providers vouch for."""
 
+import hashlib
 import uuid
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Protocol, cast
 
-from google.api_core.exceptions import Conflict
 from google.cloud import firestore  # pyright: ignore[reportMissingTypeStubs]
 
 from idea_agro_api.auth import Identity
@@ -22,7 +22,6 @@ class Role(StrEnum):
 @dataclass(frozen=True)
 class Account:
     id: str
-    identity: str
     email: str | None
     name: str | None
     picture: str | None
@@ -32,24 +31,27 @@ class Account:
     disabled: bool = False
 
     def accepts(self, identity: Identity) -> bool:
-        """Whether a token of this account still counts: not disabled, and issued after the last log-out."""
+        """Whether a token of this account still counts: not disabled, and from a sign-in after the last log-out.
+
+        The sign-in time (`auth_time`) is what counts: tokens refreshed from an older sign-in keep it.
+        """
         valid_after = self.sessions_valid_after
-        return not self.disabled and (valid_after is None or identity.issued_at >= valid_after)
+        signed_in = identity.auth_time or identity.issued_at
+        return not self.disabled and (valid_after is None or signed_in > valid_after)
+
+
+PROFILE_FIELDS = ("email", "name", "picture")
 
 
 def identity_key(identity: Identity) -> str:
-    return f"{identity.issuer}|{identity.subject}"
-
-
-def account_id(identity: Identity) -> str:
-    """Derived from the identity, so two first requests at once cannot create two accounts."""
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, identity_key(identity)))
+    """A fixed-length key for an identity: the issuer and subject, hashed."""
+    return hashlib.sha256(f"{identity.issuer}|{identity.subject}".encode()).hexdigest()
 
 
 def new_account(identity: Identity) -> Account:
+    """A new account with an id of its own, so another provider can be linked to it later."""
     return Account(
-        id=account_id(identity),
-        identity=identity_key(identity),
+        id=str(uuid.uuid4()),
         email=identity.email,
         name=identity.name,
         picture=identity.picture,
@@ -57,14 +59,24 @@ def new_account(identity: Identity) -> Account:
     )
 
 
+def profile_changes(account: Account, identity: Identity) -> dict[str, Any]:
+    """The profile fields the provider now reports differently."""
+    now = {"email": identity.email, "name": identity.name, "picture": identity.picture}
+    return {key: value for key, value in now.items() if getattr(account, key) != value}
+
+
 class AccountStore(Protocol):
+    def by_identity(self, identity: Identity) -> Account | None: ...
+
     def get(self, id: str) -> Account | None: ...
 
-    def create(self, account: Account) -> Account:
-        """Stores a new account; when one with its id already exists, returns that one untouched."""
+    def create(self, account: Account, identity: Identity) -> Account:
+        """Stores the account linked to the identity; when one is already linked to it, returns that one."""
         ...
 
-    def save(self, account: Account) -> None: ...
+    def update(self, id: str, **fields: Any) -> Account:
+        """Changes only the fields given, so concurrent changes to other fields are kept."""
+        ...
 
 
 class MemoryAccounts:
@@ -72,21 +84,37 @@ class MemoryAccounts:
 
     def __init__(self) -> None:
         self._accounts: dict[str, Account] = {}
+        self._identities: dict[str, str] = {}
+
+    def by_identity(self, identity: Identity) -> Account | None:
+        id = self._identities.get(identity_key(identity))
+        return self._accounts.get(id) if id else None
 
     def get(self, id: str) -> Account | None:
         return self._accounts.get(id)
 
-    def create(self, account: Account) -> Account:
-        return self._accounts.setdefault(account.id, account)
+    def create(self, account: Account, identity: Identity) -> Account:
+        id = self._identities.setdefault(identity_key(identity), account.id)
+        return self._accounts.setdefault(id, account)
 
-    def save(self, account: Account) -> None:
-        self._accounts[account.id] = account
+    def update(self, id: str, **fields: Any) -> Account:
+        account = replace(self._accounts[id], **fields)
+        self._accounts[id] = account
+        return account
 
 
-# google-cloud-firestore is only partly typed; this class is its only user.
+# google-cloud-firestore is only partly typed; this class is its only user here.
 class FirestoreAccounts:
     def __init__(self, database: str) -> None:
-        self._accounts = firestore.Client(database=database).collection("accounts")  # pyright: ignore[reportUnknownMemberType]
+        self._client = firestore.Client(database=database)  # pyright: ignore[reportUnknownMemberType]
+        self._accounts = self._client.collection("accounts")  # pyright: ignore[reportUnknownMemberType]
+        self._identities = self._client.collection("identities")  # pyright: ignore[reportUnknownMemberType]
+
+    def by_identity(self, identity: Identity) -> Account | None:
+        link = self._identities.document(identity_key(identity)).get()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        if not link.exists:  # pyright: ignore[reportUnknownMemberType]
+            return None
+        return self.get(cast(str, link.get("account")))  # pyright: ignore[reportUnknownMemberType]
 
     def get(self, id: str) -> Account | None:
         document = self._accounts.document(id).get()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -94,20 +122,33 @@ class FirestoreAccounts:
             return None
         return _from_document(id, cast(dict[str, Any], document.to_dict()))  # pyright: ignore[reportUnknownMemberType]
 
-    def create(self, account: Account) -> Account:
-        try:
-            self._accounts.document(account.id).create(_to_document(account))  # pyright: ignore[reportUnknownMemberType]
-        except Conflict:
-            return self.get(account.id) or account
-        return account
+    def create(self, account: Account, identity: Identity) -> Account:
+        link = self._identities.document(identity_key(identity))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        target = self._accounts.document(account.id)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-    def save(self, account: Account) -> None:
-        self._accounts.document(account.id).set(_to_document(account))  # pyright: ignore[reportUnknownMemberType]
+        @firestore.transactional  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
+        def link_or_create(transaction: Any) -> str:
+            existing = link.get(transaction=transaction)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            if existing.exists:  # pyright: ignore[reportUnknownMemberType]
+                return cast(str, existing.get("account"))  # pyright: ignore[reportUnknownMemberType]
+            transaction.create(target, _to_document(account))
+            transaction.create(link, {"account": account.id, "issuer": identity.issuer, "subject": identity.subject})
+            return account.id
+
+        id = link_or_create(self._client.transaction())  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return self.get(cast(str, id)) or account
+
+    def update(self, id: str, **fields: Any) -> Account:
+        values = {key: sorted(value) if key == "roles" else value for key, value in fields.items()}
+        self._accounts.document(id).update(values)  # pyright: ignore[reportUnknownMemberType]
+        found = self.get(id)
+        if found is None:
+            raise KeyError(id)
+        return found
 
 
 def _to_document(account: Account) -> dict[str, Any]:
     return {
-        "identity": account.identity,
         "email": account.email,
         "name": account.name,
         "picture": account.picture,
@@ -121,7 +162,6 @@ def _to_document(account: Account) -> dict[str, Any]:
 def _from_document(id: str, data: dict[str, Any]) -> Account:
     return Account(
         id=id,
-        identity=data["identity"],
         email=data.get("email"),
         name=data.get("name"),
         picture=data.get("picture"),
@@ -133,14 +173,9 @@ def _from_document(id: str, data: dict[str, Any]) -> Account:
 
 
 def accounts_from(source: str) -> AccountStore:
-    """`firestore://<database>` for Firestore, `memory://` for a store that lives as long as the process."""
+    """`firestore://<database>`, or `memory://` for a store that lives as long as the process."""
     if source.startswith("firestore://"):
         return FirestoreAccounts(source.removeprefix("firestore://"))
     if source == "memory://":
         return MemoryAccounts()
-    raise ValueError(f"Unknown accounts source: {source}")
-
-
-def refreshed(account: Account, identity: Identity) -> Account:
-    """The account with the profile the provider reports now."""
-    return replace(account, email=identity.email, name=identity.name, picture=identity.picture)
+    raise ValueError(f"Unknown records source: {source}")

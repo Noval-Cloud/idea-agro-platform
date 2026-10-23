@@ -21,6 +21,7 @@ TITLES = {
     413: "Content Too Large",
     422: "Unprocessable Content",
     429: "Too Many Requests",
+    500: "Internal Server Error",
     503: "Service Unavailable",
 }
 
@@ -32,6 +33,7 @@ DESCRIPTIONS = {
     413: "It is larger than allowed.",
     422: "A parameter is not valid.",
     429: "Too many requests: wait the seconds in `Retry-After`.",
+    503: "A service it depends on did not answer: try again later.",
 }
 
 
@@ -58,6 +60,10 @@ def problem_response(
 async def http_problem(request: Request, error: Exception) -> JSONResponse:
     assert isinstance(error, HTTPException)
     return problem_response(error.status_code, request, headers=error.headers, detail=str(error.detail))
+
+
+async def server_problem(request: Request, error: Exception) -> JSONResponse:
+    return problem_response(500, request, detail="Something failed on our side.")
 
 
 async def validation_problem(request: Request, error: Exception) -> JSONResponse:
