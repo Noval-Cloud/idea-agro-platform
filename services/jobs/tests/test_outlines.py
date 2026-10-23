@@ -36,6 +36,12 @@ class FakeOutlines:
                      area_km2=1649.94),
                 zone(square(-55, -34), CODIGOSECC="1501", NOMBRE="", DEPARTAMEN="SALTO", SECCION=1, area_km2=2.0),
             ]  # fmt: skip
+        if division == Division.CUENCAS_3:
+            # The asset holds two parts of basin 406.
+            return [
+                zone(square(-55, -33), codcuenca=406.0, nombrec3="Ao. Grande", area_km2=1867.9),
+                zone(square(-55, -32), codcuenca=406.0, nombrec3="Ao. Grande", area_km2=3.6),
+            ]
         if division == Division.CUENCAS_4:
             return [zone(square(-54, -34), codcuenca=4451.0, nombrec4="Ao. De La Coronilla", area_km2=300.0)]
         if division == Division.CUENCAS_5:
@@ -156,3 +162,23 @@ def test_a_run_does_nothing_until_an_asset_changes(files: LocalFiles) -> None:
     source.version = "2026-02-01T00:00:00Z"
     outlines.refresh(source, files)
     assert source.read == 2 * first
+
+
+def test_coordinates_round_as_the_prototype_files_did() -> None:
+    assert outlines.fixed(-55.35905, 4) == -55.3591
+    assert outlines.fixed(-31.28125, 4) == -31.2813
+    assert outlines.polygons({"type": "GeometryCollection", "geometries": []}, 5) == {
+        "type": "MultiPolygon",
+        "coordinates": [],
+    }
+
+
+def test_parts_of_one_zone_are_published_as_one(files: LocalFiles) -> None:
+    outlines.refresh(FakeOutlines(), files)
+
+    basins = read(files, "divisions/cuencas-3.geojson")["features"]
+    assert len(basins) == 1
+    assert basins[0]["properties"]["area_km2"] == 1871.5
+    assert basins[0]["geometry"]["type"] == "MultiPolygon"
+    assert len(basins[0]["geometry"]["coordinates"]) == 2
+    assert read(files, "catalog.json")["divisions"]["cuencas-3"] == 1

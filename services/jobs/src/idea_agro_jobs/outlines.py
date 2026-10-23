@@ -10,6 +10,7 @@ import re
 import unicodedata
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Protocol, cast
 
 from idea_agro_jobs.domain import Division
@@ -120,15 +121,16 @@ def district_name(text: str) -> str:
     return title_case(text)
 
 
-def half_up(value: float, digits: int) -> float:
-    """Rounds halves up, as the website's scripts do, so outlines keep their coordinates."""
-    scale = 10**digits
-    return math.floor(value * scale + 0.5) / scale
+def fixed(value: float, digits: int) -> float:
+    """Rounds the exact value with ties away from zero, as JavaScript's toFixed wrote the prototype's files."""
+    return float(Decimal(value).quantize(Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP))
 
 
 def rounded(coordinates: Any, digits: int) -> Any:
+    if not coordinates:
+        return []
     if isinstance(coordinates[0], int | float):
-        return [half_up(coordinates[0], digits), half_up(coordinates[1], digits)]
+        return [fixed(coordinates[0], digits), fixed(coordinates[1], digits)]
     return [rounded(c, digits) for c in coordinates]
 
 
@@ -174,10 +176,10 @@ def rings(geometry: Json) -> list[list[list[float]]]:
 def bbox(geometry: Json) -> Box:
     points = [p for r in rings(geometry) for p in r]
     return [
-        half_up(min(p[0] for p in points), 4),
-        half_up(min(p[1] for p in points), 4),
-        half_up(max(p[0] for p in points), 4),
-        half_up(max(p[1] for p in points), 4),
+        fixed(min(p[0] for p in points), 4),
+        fixed(min(p[1] for p in points), 4),
+        fixed(max(p[0] for p in points), 4),
+        fixed(max(p[1] for p in points), 4),
     ]
 
 
@@ -186,14 +188,29 @@ def union(boxes: Iterable[Box]) -> Box:
     return [min(b[0] for b in found), min(b[1] for b in found), max(b[2] for b in found), max(b[3] for b in found)]
 
 
+def by_id(features: list[Json], id_property: str) -> dict[str, list[Json]]:
+    """Features that share an id are parts of one zone."""
+    found: dict[str, list[Json]] = {}
+    for feature in features:
+        found.setdefault(zone_id(feature["properties"][id_property]), []).append(feature)
+    return found
+
+
+def joined(parts: list[Json]) -> Json:
+    if len(parts) == 1:
+        return parts[0]
+    pieces = [[p["coordinates"]] if p["type"] == "Polygon" else p["coordinates"] for p in parts]
+    return {"type": "MultiPolygon", "coordinates": [polygon for piece in pieces for polygon in piece]}
+
+
 def shaped_zones(division: Division, features: list[Json], parents: dict[str, str]) -> list[Json]:
     """The division's zones as the API publishes them; grade 5 basins borrow their grade 4 parent's name."""
     asset = DIVISIONS[division]
     zones: list[Json] = []
-    for feature in features:
-        source = cast(Json, feature["properties"])
-        id = zone_id(source[asset.id])
-        properties: Json = {"id": id, "name": None, "area_km2": half_up(float(source["area_km2"]), 1)}
+    for id, parts in by_id(features, asset.id).items():
+        source = cast(Json, parts[0]["properties"])
+        area = sum(float(part["properties"]["area_km2"]) for part in parts)
+        properties: Json = {"id": id, "name": None, "area_km2": fixed(area, 1)}
         if division == Division.SECCIONALES:
             properties["name"] = district_name(str(source.get("NOMBRE_1") or source.get("NOMBRE") or "")) or None
             properties["department"] = department_name(str(source["DEPARTAMEN"]))
@@ -203,7 +220,7 @@ def shaped_zones(division: Division, features: list[Json], parents: dict[str, st
             properties["name"] = properties["name"] or None
             if division == Division.CUENCAS_5 and (parent := parents.get(str(int(id) // 10))):
                 properties["parent"] = parent
-        exact = polygons(feature["geometry"], 5)
+        exact = joined([polygons(part["geometry"], 5) for part in parts])
         geometry = clean(polygons(exact, 4)) or exact
         zones.append({"type": "Feature", "id": int(id), "properties": properties, "geometry": geometry})
     return zones
@@ -281,7 +298,7 @@ def shaped_parcels(features: list[Json]) -> list[Json]:
         if geometry is None:
             continue
         source = cast(Json, feature["properties"])
-        properties = {"padron": int(source["PADRON"]), "area_ha": half_up(float(source["area_ha"]), 1)}
+        properties = {"padron": int(source["PADRON"]), "area_ha": fixed(float(source["area_ha"]), 1)}
         parcels.append({"type": "Feature", "id": len(parcels), "properties": properties, "geometry": geometry})
     return parcels
 
