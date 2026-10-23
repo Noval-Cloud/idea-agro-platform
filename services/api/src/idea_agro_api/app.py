@@ -9,12 +9,12 @@ from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
-from idea_agro_api.routes import me, saved_zones, service, zones
+from idea_agro_api.routes import me, projects, saved_zones, service, zones
 from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.2.0"
+API_VERSION = "1.3.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -47,6 +47,7 @@ TAGS = [
     {"name": "Zones", "description": "Indicator values of the predefined zones of each division."},
     {"name": "Account", "description": "Your own account. Requires signing in."},
     {"name": "Saved zones", "description": "The zones you keep in your library. Requires signing in."},
+    {"name": "Projects", "description": "Your groups of zones, from any source. Requires signing in."},
     {"name": "Service", "description": "The state of the service itself."},
 ]
 
@@ -73,7 +74,7 @@ def create_app(services: Services) -> FastAPI:
     app.middleware("http")(security_headers)
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    for module in (service, zones, me, saved_zones):
+    for module in (service, zones, me, saved_zones, projects):
         app.include_router(module.router)
 
     def openapi() -> dict[str, Any]:

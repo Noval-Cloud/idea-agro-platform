@@ -3,10 +3,11 @@
 from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, StringConstraints
 
-from idea_agro_api.zones import Division
+from idea_agro_api.zones import Department, Division
 
 
 class Health(BaseModel):
@@ -135,3 +136,87 @@ class SavedZoneFeatures(BaseModel):
 
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[SavedZoneFeature]
+
+
+ProjectName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+ProjectDescription = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)]
+
+
+class ProjectIn(BaseModel):
+    """A new project."""
+
+    name: ProjectName = Field(description="The project's name.", examples=["Campo Las Rosas"])
+    description: ProjectDescription = Field(default="", description="What the project is about.")
+
+
+class ProjectChange(BaseModel):
+    """The fields to change; those left out keep their value."""
+
+    name: ProjectName | None = Field(default=None, description="The project's new name.")
+    description: ProjectDescription | None = Field(default=None, description="The project's new description.")
+
+
+class SavedItemIn(BaseModel):
+    """A zone of your library."""
+
+    kind: Literal["saved"]
+    zone_id: UUID = Field(description="The saved zone's id.")
+
+
+class DivisionItemIn(BaseModel):
+    """A zone of a predefined division."""
+
+    kind: Literal["division"]
+    division: Division
+    zone_id: str = Field(pattern=r"^[0-9A-Za-z-]{1,40}$", description="The zone's id in its division.")
+
+
+class PadronItemIn(BaseModel):
+    """A cadastral parcel (padrón) of a department."""
+
+    kind: Literal["padron"]
+    department: Department
+    padron: int = Field(ge=1, le=99_999_999, description="The parcel's number in its department.")
+
+
+ProjectItemIn = Annotated[SavedItemIn | DivisionItemIn | PadronItemIn, Field(discriminator="kind")]
+
+ITEM_ID = "The item's id in the project, used to remove it."
+
+
+class SavedItem(SavedItemIn):
+    id: str = Field(description=ITEM_ID)
+    zone: SavedZoneOut | None = Field(description="The saved zone, or null if it was deleted meanwhile.")
+
+
+class DivisionItem(DivisionItemIn):
+    id: str = Field(description=ITEM_ID)
+
+
+class PadronItem(PadronItemIn):
+    id: str = Field(description=ITEM_ID)
+
+
+ProjectItem = Annotated[SavedItem | DivisionItem | PadronItem, Field(discriminator="kind")]
+
+
+class ProjectSummary(BaseModel):
+    """One of your projects, without its zones."""
+
+    id: str = Field(description="The project's id.")
+    name: str
+    description: str
+    zone_count: int = Field(description="How many zones the project holds.")
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProjectOut(BaseModel):
+    """A project and its zones, in the order they were added."""
+
+    id: str = Field(description="The project's id.")
+    name: str
+    description: str
+    items: list[ProjectItem]
+    created_at: datetime
+    updated_at: datetime

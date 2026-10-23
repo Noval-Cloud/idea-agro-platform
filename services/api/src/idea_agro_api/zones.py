@@ -22,6 +22,30 @@ class Division(StrEnum):
     CUENCAS_5 = "cuencas-5"
 
 
+class Department(StrEnum):
+    """A department of Uruguay, as cadastral parcels are filed by."""
+
+    ARTIGAS = "artigas"
+    CANELONES = "canelones"
+    CERRO_LARGO = "cerro-largo"
+    COLONIA = "colonia"
+    DURAZNO = "durazno"
+    FLORES = "flores"
+    FLORIDA = "florida"
+    LAVALLEJA = "lavalleja"
+    MALDONADO = "maldonado"
+    MONTEVIDEO = "montevideo"
+    PAYSANDU = "paysandu"
+    RIO_NEGRO = "rio-negro"
+    RIVERA = "rivera"
+    ROCHA = "rocha"
+    SALTO = "salto"
+    SAN_JOSE = "san-jose"
+    SORIANO = "soriano"
+    TACUAREMBO = "tacuarembo"
+    TREINTA_Y_TRES = "treinta-y-tres"
+
+
 class SeasonalIndicator(StrEnum):
     """An indicator with a seasonal series per zone."""
 
@@ -86,6 +110,9 @@ class ZoneStore:
             raise RuntimeError("The zone store has no manifest.json")
         bands = cast(dict[str, list[str]], json.loads(manifest)["seasonal"])
         return {indicator: [composite_start(band) for band in bands[indicator]] for indicator in SeasonalIndicator}
+
+    def exists(self, division: Division, zone: str) -> bool:
+        return self._files.read(f"series/{division}/{zone}.json") is not None
 
     def seasonal(self, division: Division, zone: str) -> dict[SeasonalIndicator, Series] | None:
         """Each indicator's dates and values in the zone, or None when the zone does not exist."""

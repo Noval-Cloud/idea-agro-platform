@@ -50,6 +50,10 @@ class SavedZoneStore(Protocol):
 
     def get(self, id: str) -> SavedZone | None: ...
 
+    def get_many(self, ids: list[str]) -> dict[str, SavedZone]:
+        """The zones that exist among `ids`, by id."""
+        ...
+
     def add(self, zones: list[SavedZone]) -> None:
         """Every zone, or none."""
         ...
@@ -74,6 +78,9 @@ class MemorySavedZones:
 
     def get(self, id: str) -> SavedZone | None:
         return self._zones.get(id)
+
+    def get_many(self, ids: list[str]) -> dict[str, SavedZone]:
+        return {id: self._zones[id] for id in ids if id in self._zones}
 
     def add(self, zones: list[SavedZone]) -> None:
         self._zones.update({z.id: z for z in zones})
@@ -111,6 +118,16 @@ class FirestoreSavedZones:
         if not document.exists:  # pyright: ignore[reportUnknownMemberType]
             return None
         return _from_document(id, cast(dict[str, Any], document.to_dict()))  # pyright: ignore[reportUnknownMemberType]
+
+    def get_many(self, ids: list[str]) -> dict[str, SavedZone]:
+        if not ids:
+            return {}
+        documents = self._client.get_all([self._zones.document(id) for id in ids])  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return {
+            d.id: _from_document(d.id, cast(dict[str, Any], d.to_dict()))  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+            for d in documents  # pyright: ignore[reportUnknownVariableType]
+            if d.exists  # pyright: ignore[reportUnknownMemberType]
+        }
 
     def add(self, zones: list[SavedZone]) -> None:
         batch = self._client.batch()  # pyright: ignore[reportUnknownMemberType]
