@@ -1,0 +1,330 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IDEA-Agro API",
+    "description": "\nEnvironmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery\nand backed by research from INIA, Udelar and the University of Buenos Aires.\n\nThe API is public and read-only: any site or app may call it, with no key.\n\n## Versions\n\n- The major version is part of the path: `/v1/...`.\n- Within a major version every change is backward compatible: new endpoints, new optional fields,\n  new values in a response. Clients ignore the fields they do not know.\n- A breaking change ships as a new major version, such as `/v2/...`. The previous one keeps answering\n  through a deprecation period, announced in the `Deprecation` and `Sunset` response headers.\n- `info.version` of this document follows semantic versioning.\n\n## Errors\n\nEvery error is a Problem Details object (RFC 9457), served as `application/problem+json`.\n",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Whether the service answers",
+        "operationId": "get_health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zones/{division}/{zone}/seasonal": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "Seasonal series of a zone",
+        "description": "Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). The response can be cached for an hour.",
+        "operationId": "get_zone_seasonal",
+        "parameters": [
+          {
+            "name": "division",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Division",
+              "description": "The division the zone belongs to."
+            },
+            "description": "The division the zone belongs to."
+          },
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,8}$",
+              "description": "The zone's id within its division.",
+              "examples": [
+                "1806"
+              ],
+              "title": "Zone"
+            },
+            "description": "The zone's id within its division."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneSeasonal"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The zone does not exist in that division.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Division": {
+        "type": "string",
+        "enum": [
+          "seccionales",
+          "cuencas-1",
+          "cuencas-2",
+          "cuencas-3",
+          "cuencas-4",
+          "cuencas-5"
+        ],
+        "title": "Division",
+        "description": "A predefined division of Uruguay into zones."
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "`ok` when the service answers.",
+            "examples": [
+              "ok"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Health"
+      },
+      "Problem": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "A URI that identifies the kind of problem.",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "A short summary of the kind of problem.",
+            "examples": [
+              "Not Found"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status",
+            "description": "The HTTP status code.",
+            "examples": [
+              404
+            ]
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "What went wrong in this request."
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance",
+            "description": "The path of the request that failed."
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors",
+            "description": "For invalid requests, each parameter that failed validation and why."
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status"
+        ],
+        "title": "Problem",
+        "description": "An error, as Problem Details (RFC 9457)."
+      },
+      "SeasonalSeries": {
+        "properties": {
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "Unit of every value.",
+            "examples": [
+              "kg DM/ha per 16 days"
+            ]
+          },
+          "cadence_days": {
+            "type": "integer",
+            "title": "Cadence Days",
+            "description": "Days between the start of two consecutive composites.",
+            "examples": [
+              16
+            ]
+          },
+          "dates": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Dates",
+            "description": "First day of each composite, oldest first."
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "The zone's mean for each date, in the same order as `dates`; null where there is no data."
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit",
+          "cadence_days",
+          "dates",
+          "values"
+        ],
+        "title": "SeasonalSeries",
+        "description": "One indicator's seasonal series in a zone: the zone's mean for each composite of the satellite record."
+      },
+      "ZoneSeasonal": {
+        "properties": {
+          "division": {
+            "$ref": "#/components/schemas/Division",
+            "description": "The division the zone belongs to."
+          },
+          "zone": {
+            "type": "string",
+            "title": "Zone",
+            "description": "The zone's id within its division.",
+            "examples": [
+              "1806"
+            ]
+          },
+          "ppna": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Aboveground net primary productivity: forage production, in 16-day totals."
+          },
+          "apar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absorbed photosynthetically active radiation, in 16-day totals."
+          },
+          "et": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Evapotranspiration, as a daily rate every 8 days."
+          }
+        },
+        "type": "object",
+        "required": [
+          "division",
+          "zone"
+        ],
+        "title": "ZoneSeasonal",
+        "description": "The seasonal series of a zone. An indicator without data in the zone is left out."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Zones",
+      "description": "Indicator values of the predefined zones of each division."
+    },
+    {
+      "name": "Service",
+      "description": "The state of the service itself."
+    }
+  ]
+}
