@@ -189,7 +189,7 @@ export default function Users({ t, date, signInPath, me }: Props) {
       <ul className="mt-4 grid divide-y divide-line">
         {accounts?.map((account) => (
           <li key={account.id} className="py-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <div className="flex items-center gap-x-4">
               <div className="min-w-0 grow">
                 <p className="truncate text-sm font-medium text-ink">{nameOf(account)}</p>
                 <p className="truncate text-xs text-ink-subtle">
@@ -205,6 +205,7 @@ export default function Users({ t, date, signInPath, me }: Props) {
               <Button
                 size="sm"
                 variant="ghost"
+                className="shrink-0"
                 aria-expanded={open === account.id}
                 onClick={() => setOpen(open === account.id ? null : account.id)}
               >
