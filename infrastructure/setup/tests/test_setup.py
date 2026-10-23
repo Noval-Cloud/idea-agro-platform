@@ -27,11 +27,12 @@ def setup_env(
     bucket_suffix: str = "tfstate",
     apis: str = "",
     roles: str = "",
+    users: str = "",
 ) -> str:
     return (
         f"GCP_PROJECT_ID={project}\nGCP_REGION={region}\nARTIFACT_REGISTRY={registry}\n"
         f"TF_SA={operator}\nTF_STATE_BUCKET_SUFFIX={bucket_suffix}\n"
-        f'GCP_APIS="\n{apis}\n"\nTF_SA_ROLES="\n{roles}\n"\n'
+        f'GCP_APIS="\n{apis}\n"\nTF_SA_ROLES="\n{roles}\n"\nTF_SA_USERS="\n{users}\n"\n'
     )
 
 
@@ -70,6 +71,7 @@ class Repo:
             "apis": [],
             "accounts": [],
             "bindings": [],
+            "sa_bindings": [],
             "buckets": [],
             "versioned": [],
             "repositories": [],
@@ -149,7 +151,11 @@ def test_refuses_a_project_number(repo: Repo) -> None:
 
 def test_dry_run_lists_what_is_missing_and_changes_nothing(repo: Repo) -> None:
     repo.write_env(
-        setup_env(apis="  run.googleapis.com\n\n  iam.googleapis.com", roles="roles/run.admin\n\nroles/storage.admin")
+        setup_env(
+            apis="  run.googleapis.com\n\n  iam.googleapis.com",
+            roles="roles/run.admin\n\nroles/storage.admin",
+            users="user:ana@example.org",
+        )
     )
     before = repo.state()
 
@@ -161,10 +167,11 @@ def test_dry_run_lists_what_is_missing_and_changes_nothing(repo: Repo) -> None:
         f"would create service account {OPERATOR}",
         f"would grant roles/run.admin to {OPERATOR}",
         f"would grant roles/storage.admin to {OPERATOR}",
+        f"would let user:ana@example.org impersonate {OPERATOR}",
         "would create bucket gs://demo-tfstate in us-central1, versioned",
         "would create Docker repository images in us-central1",
     ]
-    assert result.stdout.splitlines()[-1] == "Changes: 10"
+    assert result.stdout.splitlines()[-1] == "Changes: 11"
     assert {**repo.state(), "calls": [], "configs": []} == before
     assert repo.changing_calls() == []
     assert not repo.outputs.exists()
@@ -176,6 +183,7 @@ def test_counts_only_what_is_missing(repo: Repo) -> None:
         setup_env(
             apis="run.googleapis.com",
             roles="roles/run.admin\nroles/storage.admin",
+            users="user:ana@example.org\nuser:bo@example.org",
             operator="deployer",
             bucket_suffix="state",
         )
@@ -184,6 +192,7 @@ def test_counts_only_what_is_missing(repo: Repo) -> None:
         apis=[*OWN_APIS, "run.googleapis.com"],
         accounts=[operator],
         bindings=[["roles/run.admin", f"serviceAccount:{operator}"], ["roles/storage.admin", "user:someone@x.org"]],
+        sa_bindings=[[operator, "roles/iam.serviceAccountTokenCreator", "user:ana@example.org"]],
         buckets=["demo-state"],
         versioned=["demo-state"],
     )
@@ -193,9 +202,10 @@ def test_counts_only_what_is_missing(repo: Repo) -> None:
     assert result.returncode == 0, result.stderr
     assert changes(result) == [
         f"would grant roles/storage.admin to {operator}",
+        f"would let user:bo@example.org impersonate {operator}",
         "would create Docker repository images in us-central1",
     ]
-    assert result.stdout.splitlines()[-1] == "Changes: 2"
+    assert result.stdout.splitlines()[-1] == "Changes: 3"
 
 
 def test_turns_on_versioning_in_an_existing_bucket(repo: Repo) -> None:
@@ -226,7 +236,7 @@ def test_empty_lists_enable_and_grant_nothing(repo: Repo) -> None:
 
 
 def test_apply_creates_everything_and_a_new_run_finds_nothing(repo: Repo) -> None:
-    repo.write_env(setup_env(apis="run.googleapis.com", roles="roles/run.admin"))
+    repo.write_env(setup_env(apis="run.googleapis.com", roles="roles/run.admin", users="user:ana@example.org"))
 
     applied = repo.run("--env", "dev", "--apply", CLOUDSDK_ACTIVE_CONFIG_NAME="idea-agro-dev")
 
@@ -248,6 +258,16 @@ def test_apply_creates_everything_and_a_new_run_finds_nothing(repo: Repo) -> Non
             "demo",
             f"--member=serviceAccount:{OPERATOR}",
             "--role=roles/run.admin",
+            "--condition=None",
+        ],
+        [
+            "iam",
+            "service-accounts",
+            "add-iam-policy-binding",
+            OPERATOR,
+            "--project=demo",
+            "--member=user:ana@example.org",
+            "--role=roles/iam.serviceAccountTokenCreator",
             "--condition=None",
         ],
         [
