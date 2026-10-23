@@ -275,6 +275,18 @@ def test_every_response_carries_security_headers(client: TestClient) -> None:
     assert docs.headers["strict-transport-security"].startswith("max-age=")
 
 
+@pytest.mark.parametrize("method", ["GET", "POST", "PUT", "PATCH", "DELETE"])
+def test_every_method_the_api_uses_crosses_origins(client: TestClient, method: str) -> None:
+    document = cast(FastAPI, client.app).openapi()
+    used = {method.upper() for path in document["paths"].values() for method in path}
+    response = client.options(
+        "/v1/me",
+        headers={"Origin": "https://example.org", "Access-Control-Request-Method": method},
+    )
+    assert method in used
+    assert response.status_code == 200
+
+
 def test_a_token_crosses_origins(client: TestClient) -> None:
     response = client.options(
         "/v1/me",
