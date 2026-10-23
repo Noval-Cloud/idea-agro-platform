@@ -1,4 +1,14 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import type { Department } from "@idea-agro/api-client";
 import { ArrowLeft, Download } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
@@ -34,12 +44,14 @@ import {
 } from "@/components/explorer/lib/i18n";
 import { decodeGray, zonalCounts, zonalMean } from "@/components/explorer/lib/raster";
 import { readCustomZone } from "@/components/explorer/lib/session";
+import AddToProject from "./AddToProject";
 
 interface Props {
   locale: Locale;
   catalog: AppCatalog;
   explorePath: string;
   signInPath: string;
+  projectsPath: string;
 }
 
 type Target =
@@ -77,6 +89,14 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
   if (saved && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(saved))
     return { target: { kind: "saved", id: saved }, indicator, year };
   return { target: null, indicator, year };
+}
+
+/** The zone as a project item: projects hold references to zones, never copies. */
+function projectItem(target: Exclude<Target, { kind: "custom" }>): ComponentProps<typeof AddToProject>["item"] {
+  if (target.kind === "saved") return { kind: "saved", zone_id: target.id };
+  if (target.kind === "padron")
+    return { kind: "padron", department: target.department as Department, padron: target.padron };
+  return { kind: "division", division: target.division, zone_id: target.id };
 }
 
 /** Loads a value once its inputs are known; `undefined` while loading, `null` on failure. */
@@ -122,7 +142,7 @@ function downloadCsv(name: string, header: string[], rows: (string | number | nu
   URL.revokeObjectURL(url);
 }
 
-export default function ZoneApp({ locale, catalog, explorePath, signInPath }: Props) {
+export default function ZoneApp({ locale, catalog, explorePath, signInPath, projectsPath }: Props) {
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
@@ -316,6 +336,14 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath }: Pr
                       />
                     )}
                   </dl>
+                  {zone.target.kind !== "custom" && (
+                    <AddToProject
+                      t={t}
+                      item={projectItem(zone.target)}
+                      projectsPath={projectsPath}
+                      signInPath={signInPath}
+                    />
+                  )}
                 </div>
                 {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
                 <a
