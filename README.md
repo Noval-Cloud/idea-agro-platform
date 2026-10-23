@@ -55,6 +55,8 @@ Everything runs from the root through `make`; `make` alone lists the targets.
 | `make web-deploy ENV=<env>` | Build the website and deploy its image to the environment's Cloud Run                            |
 | `make api-dev`              | Run the API locally, serving the website's prototype data                                        |
 | `make api-deploy ENV=<env>` | Build the API's image and deploy it to the environment's Cloud Run                               |
+| `make ci-checks ENV=<env>`  | Run `make check` on the environment's Cloud Build, as a pull request does                        |
+| `make ci-image ENV=<env>`   | Build the environment's CI image on Cloud Build                                                  |
 
 Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to a script, in `scripts/` or in the part it belongs to, such as `infrastructure/setup/`.
 

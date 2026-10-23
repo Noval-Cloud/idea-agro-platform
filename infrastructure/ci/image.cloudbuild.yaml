@@ -1,0 +1,20 @@
+# Builds the CI image with the tool versions read from the files where the repository pins them.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        node="$(cat .node-version)"
+        pnpm="$(sed -n 's/.*"packageManager": "pnpm@\([^"]*\)".*/\1/p' package.json)"
+        uv="$(sed -n 's/^required-version = "~=\(.*\)"/\1/p' pyproject.toml)"
+        python="$(cat .python-version)"
+        terraform="$(sed -n 's/.*required_version = "\(.*\)"/\1/p' infrastructure/terraform/providers.tf)"
+        docker build infrastructure/ci \
+          --build-arg "NODE_VERSION=$node" --build-arg "PNPM_VERSION=$pnpm" --build-arg "UV_VERSION=$uv" \
+          --build-arg "PYTHON_VERSION=$python" --build-arg "TERRAFORM_VERSION=$terraform" \
+          --tag "${_CI_IMAGE}"
+images: ["${_CI_IMAGE}"]
+options:
+  logging: CLOUD_LOGGING_ONLY

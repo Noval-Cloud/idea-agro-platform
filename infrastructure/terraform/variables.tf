@@ -39,3 +39,9 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "github_connection" {
+  description = "Full name of the Cloud Build connection to GitHub, once made in the console; empty creates no triggers"
+  type        = string
+  default     = ""
+}
