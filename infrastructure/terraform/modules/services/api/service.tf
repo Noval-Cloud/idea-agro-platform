@@ -39,7 +39,11 @@ resource "google_cloud_run_v2_service" "api" {
       }
       env {
         name  = "RECORDS_SOURCE"
-        value = "firestore://${var.accounts_database}"
+        value = "firestore://${var.records_database}"
+      }
+      env {
+        name  = "GEOMETRIES_SOURCE"
+        value = "gs://${google_storage_bucket.geometries.name}"
       }
       env {
         name  = "IDENTITY_ADMIN"
