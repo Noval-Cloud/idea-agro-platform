@@ -92,7 +92,7 @@ export default function AccountApp({
             <p className="text-sm text-ink-muted">{me.email}</p>
           </div>
         </div>
-        <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+        <dl className="mt-6 grid gap-4 text-sm">
           <div>
             <dt className="text-ink-subtle">{t("account.profile.roles")}</dt>
             <dd className="mt-1 flex flex-wrap gap-1.5">
@@ -102,10 +102,6 @@ export default function AccountApp({
                 </span>
               ))}
             </dd>
-          </div>
-          <div>
-            <dt className="text-ink-subtle">{t("account.profile.email")}</dt>
-            <dd className="mt-1 text-ink">{me.email}</dd>
           </div>
         </dl>
         <p className="mt-6 text-xs text-ink-subtle">{t("account.profile.since", { date: date(me.created_at) })}</p>
