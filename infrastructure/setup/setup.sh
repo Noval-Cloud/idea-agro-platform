@@ -38,13 +38,13 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 2
 fi
 # Only the environment's file decides, never a value left in the shell.
-unset GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET \
+unset GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET_SUFFIX \
   GCP_APIS TF_SA_ROLES
 # shellcheck source=/dev/null
 . "$ENV_FILE"
 
 missing=""
-for name in GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY; do
+for name in GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET_SUFFIX; do
   [ -n "${!name:-}" ] || missing="$missing $name"
 done
 if [ -n "$missing" ]; then
@@ -55,9 +55,9 @@ fi
 PROJECT="$GCP_PROJECT_ID"
 REGION="$GCP_REGION"
 REGISTRY="$ARTIFACT_REGISTRY"
-OPERATOR="${TF_SA:-terraform-operator}"
+OPERATOR="$TF_SA"
 OPERATOR_EMAIL="$OPERATOR@$PROJECT.iam.gserviceaccount.com"
-STATE_BUCKET="${TF_STATE_BUCKET:-$PROJECT-tfstate}"
+STATE_BUCKET="$PROJECT-$TF_STATE_BUCKET_SUFFIX"
 # The APIs this script works through, so they are not left to setup.env.
 OWN_APIS="
 iam.googleapis.com
