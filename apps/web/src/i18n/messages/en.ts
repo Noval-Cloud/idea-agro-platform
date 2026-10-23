@@ -789,7 +789,7 @@ export const en = {
     title: "Your account",
     loading: "Loading your account…",
     failed: "We could not load your account. Try again in a moment.",
-    profile: { title: "Profile", email: "Email", roles: "Roles", since: "Account created on {date}" },
+    profile: { title: "Profile", roles: "Roles", since: "Account created on {date}" },
     roles: { client: "Client", editor: "Editor", admin: "Administrator" },
     sessions: {
       title: "Sessions",

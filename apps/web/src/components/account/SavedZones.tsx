@@ -122,12 +122,14 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
                         .join(" · ")}
                     </p>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => setEditing({ id: zone.id, name: zone.name })}>
-                    {t("account.zones.rename")}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(zone)}>
-                    {t("account.zones.delete")}
-                  </Button>
+                  <div className="flex shrink-0 gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setEditing({ id: zone.id, name: zone.name })}>
+                      {t("account.zones.rename")}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(zone)}>
+                      {t("account.zones.delete")}
+                    </Button>
+                  </div>
                 </>
               )}
             </li>
