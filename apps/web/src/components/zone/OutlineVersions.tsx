@@ -27,6 +27,8 @@ export default function OutlineVersions({ t, locale, zoneId }: Props) {
   // A single version has no history to show.
   if (!versions || versions.length < 2) return null;
 
+  const hectares = (value: number) =>
+    new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
   const when = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
@@ -61,7 +63,7 @@ export default function OutlineVersions({ t, locale, zoneId }: Props) {
               <p className="text-xs text-ink-subtle">
                 {[
                   t("zone.versions.by", { name: v.by_name || t("zone.versions.someone"), date: when(v.created_at) }),
-                  `${v.area_ha} ha`,
+                  `${hectares(v.area_ha)} ha`,
                   v.restored_from ? t("zone.versions.restoredFrom", { number: v.restored_from }) : null,
                 ]
                   .filter(Boolean)

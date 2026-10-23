@@ -160,7 +160,7 @@ function RoleControl({
   const [role, setRole] = useState<MemberRole>(member.role);
   useEffect(() => setRole(member.role), [member.role]);
   return (
-    <>
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
       <select
         className={field}
         value={role}
@@ -181,6 +181,6 @@ function RoleControl({
       <Button size="sm" variant="ghost" aria-label={removeLabel} onClick={onRemove}>
         {t("project.members.remove")}
       </Button>
-    </>
+    </div>
   );
 }
