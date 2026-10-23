@@ -240,7 +240,7 @@ export const en = {
     custom: {
       name: "Your areas",
       detail:
-        "Draw a paddock or upload a KML, GeoJSON or Shapefile. For now they stay in this session; with accounts they will be saved and shared.",
+        "Draw a paddock or upload a KML, GeoJSON or Shapefile. They stay in this session until you save them to your account, where they can also join your projects.",
     },
     padrones: {
       name: "Rural land parcels",
@@ -876,7 +876,7 @@ export const en = {
     title: "Your account",
     loading: "Loading your account…",
     failed: "We could not load your account. Try again in a moment.",
-    profile: { title: "Profile", email: "Email", roles: "Roles", since: "Account created on {date}" },
+    profile: { title: "Profile", roles: "Roles", since: "Account created on {date}" },
     roles: { client: "Client", editor: "Editor", admin: "Administrator" },
     sessions: {
       title: "Sessions",

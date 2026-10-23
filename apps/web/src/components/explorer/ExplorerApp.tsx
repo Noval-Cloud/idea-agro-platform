@@ -625,7 +625,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     return lines.length ? lines : null;
   }, [pointer, wide, records, frame, indicatorId, indicatorManifest, manifest, i18n, t]);
 
-  // Files and drawings stay in this browser session until accounts exist.
+  // Files and drawings stay in this browser session until they are saved to the account.
   const addLayer = (layer: CustomLayer) => {
     setCustom((all) => [...all.filter((l) => l.key !== layer.key), layer]);
     update({ regions: "mine", selection: null });

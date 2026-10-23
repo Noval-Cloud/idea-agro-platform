@@ -238,7 +238,7 @@ export const es = {
     custom: {
       name: "Tus zonas",
       detail:
-        "Dibujá un potrero o subí un KML, GeoJSON o Shapefile. Por ahora quedan en esta sesión; con las cuentas se van a guardar y compartir.",
+        "Dibujá un potrero o subí un KML, GeoJSON o Shapefile. Quedan en esta sesión hasta que las guardás en tu cuenta, donde también podés sumarlas a tus proyectos.",
     },
     padrones: {
       name: "Padrones rurales",
@@ -869,7 +869,7 @@ export const es = {
     title: "Tu cuenta",
     loading: "Cargando tu cuenta…",
     failed: "No pudimos cargar tu cuenta. Intentá de nuevo en un momento.",
-    profile: { title: "Perfil", email: "Correo", roles: "Roles", since: "Cuenta creada el {date}" },
+    profile: { title: "Perfil", roles: "Roles", since: "Cuenta creada el {date}" },
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     sessions: {
       title: "Sesiones",
