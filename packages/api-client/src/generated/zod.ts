@@ -6,7 +6,14 @@
  * Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
  * and backed by research from INIA, Udelar and the University of Buenos Aires.
  *
- * The API is public and read-only: any site or app may call it, with no key.
+ * The API is public: any site or app may call it. Its data needs no key; only the routes about your own
+ * account, zones and projects ask you to sign in.
+ *
+ * ## Signing in
+ *
+ * Private routes take a token from the sign-in provider in the `Authorization` header, as `Bearer <token>`.
+ * Tokens last an hour and are renewed by the provider's client. After "log out everywhere", tokens issued
+ * before it are refused.
  *
  * ## Versions
  *
@@ -21,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
 import * as zod from 'zod';
 
@@ -67,3 +74,23 @@ export const GetZoneSeasonalResponse = zod.object({
   "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
 }).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
 }).describe('The seasonal series of a zone. An indicator without data in the zone is left out.')
+
+
+/**
+ * @summary Your account
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.string().describe('The account\'s id in IDEA-Agro.'),
+  "email": zod.union([zod.string(),zod.null()]).describe('The email your sign-in provider reports.'),
+  "name": zod.union([zod.string(),zod.null()]).describe('Your name, as your sign-in provider reports it.'),
+  "picture": zod.union([zod.string(),zod.null()]).describe('URL of your picture, as your sign-in provider reports it.'),
+  "roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Your roles: always `client`, plus `editor` or `admin` if given.'),
+  "created_at": zod.iso.datetime({"offset":true}).describe('When the account was created, on its first sign-in.')
+}).describe('Your account.')
+
+
+/**
+ * Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.
+ * @summary Log out everywhere
+ */
+export const RevokeMySessionsResponse = zod.void()

@@ -4,6 +4,7 @@ import Menu from "@lucide/astro/icons/menu";
 import Wordmark from "@/components/brand/Wordmark.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import LanguageMenu from "./LanguageMenu.astro";
+import AccountMenu from "./AccountMenu.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createTranslator, languageSwitchPath, localizePath, stripLocale, type Locale } from "@/i18n";
@@ -64,12 +65,7 @@ const section = currentPath.startsWith("/explore")
     <div class="ml-auto flex items-center gap-1">
       <LanguageMenu locale={locale} path={languageSwitchPath(Astro.url.pathname)} id="nav-language" />
       <ThemeToggle locale={locale} />
-      <a href={localizePath("/login", locale)} class={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden md:inline-flex")}>
-        {t("nav.login")}
-      </a>
-      <a href={localizePath("/register", locale)} class={cn(buttonVariants({ variant: "primary", size: "sm" }), "hidden sm:inline-flex")}>
-        {t("nav.register")}
-      </a>
+      <AccountMenu locale={locale} />
       <button
         class={cn(buttonVariants({ variant: "ghost", size: "icon" }), "lg:hidden")}
         type="button"

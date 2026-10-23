@@ -27,3 +27,9 @@ variable "artifact_registry" {
   description = "Id of the Docker repository in Artifact Registry, created by the setup"
   type        = string
 }
+
+variable "auth_local_origins" {
+  description = "Origins besides the website's that may sign in, such as a local dev server"
+  type        = list(string)
+  default     = []
+}

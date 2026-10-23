@@ -1,0 +1,87 @@
+---
+import LogOut from "@lucide/astro/icons/log-out";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import { iconSize } from "@/design/tokens";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+const account = localizePath("/account/", locale);
+const items = [
+  { href: account, label: t("account.menu.profile") },
+  { href: `${account}#zones`, label: t("account.menu.zones") },
+  { href: `${account}#projects`, label: t("account.menu.projects") },
+  { href: `${account}#content`, label: t("account.menu.content"), role: "editor" },
+  { href: `${account}#users`, label: t("account.menu.users"), role: "admin" },
+];
+const itemClass = "flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm text-ink hover:bg-action-soft";
+---
+
+<a href={localizePath("/login/", locale)} data-account-signin class={cn(buttonVariants({ variant: "primary", size: "sm" }), "hidden sm:inline-flex")}>
+  {t("nav.login")}
+</a>
+<div class="account-menu relative" data-account-menu data-home={localizePath("/", locale)} hidden>
+  <button
+    type="button"
+    popovertarget="nav-account"
+    aria-label={t("account.menu.open")}
+    class="account-trigger flex size-9 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-sunken text-sm font-medium text-ink"
+  >
+    <img data-account-picture alt="" class="size-full object-cover" referrerpolicy="no-referrer" hidden />
+    <span data-account-initial aria-hidden="true"></span>
+  </button>
+  <div id="nav-account" popover class="account-popover">
+    <div class="px-2 pt-1.5 pb-2">
+      <p data-account-name class="text-sm font-medium text-ink"></p>
+      <p data-account-email class="text-xs text-ink-subtle"></p>
+    </div>
+    <ul class="grid gap-0.5 border-t border-line pt-1">
+      {
+        items.map((item) => (
+          <li data-role={item.role} hidden={item.role ? true : undefined}>
+            <a href={item.href} class={itemClass}>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <button type="button" data-account-signout class={itemClass}>
+          <LogOut size={iconSize.sm} aria-hidden="true" />
+          {t("account.menu.signOut")}
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<style is:global>
+  .account-trigger {
+    anchor-name: --account-menu;
+  }
+  .account-popover {
+    position-anchor: --account-menu;
+    margin: 0;
+    inset: auto;
+    inset-block-start: anchor(bottom);
+    inset-inline-end: anchor(right);
+    margin-block-start: calc(var(--spacing) * 1.5);
+    min-inline-size: calc(var(--spacing) * 56);
+    padding: calc(var(--spacing) * 1);
+    border: 1px solid var(--ia-line);
+    border-radius: var(--ia-radius-md);
+    background-color: var(--ia-surface);
+    box-shadow: var(--ia-shadow-overlay);
+    color: var(--ia-ink);
+  }
+</style>
+
+<script>
+  import { initAccountMenu } from "@/scripts/account-menu";
+  initAccountMenu();
+</script>

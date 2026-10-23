@@ -81,9 +81,6 @@ const yearTicks = (years: number[]) =>
 const groups = (["structure", "environment"] as const).map((group) => ({ group, ids: indicatorsByGroup(group) }));
 const initial: IndicatorId = "ppna";
 
-const panelRules = indicatorIds
-  .map((id) => `.atlas:has(#indicator-${id}:checked) [data-panel="${id}"]{display:grid}`)
-  .join("");
 ---
 
 {
@@ -450,10 +447,22 @@ const panelRules = indicatorIds
   </div>
 </section>
 
-<style is:inline set:html={panelRules}></style>
-
 <style is:global>
   @reference "../../styles/global.css";
+
+  /* The checked indicator shows its panel: one selector per id in `indicatorIds`. */
+  .atlas:has(#indicator-apar:checked) [data-panel="apar"],
+  .atlas:has(#indicator-cob:checked) [data-panel="cob"],
+  .atlas:has(#indicator-ppna:checked) [data-panel="ppna"],
+  .atlas:has(#indicator-compn:checked) [data-panel="compn"],
+  .atlas:has(#indicator-rh:checked) [data-panel="rh"],
+  .atlas:has(#indicator-et:checked) [data-panel="et"],
+  .atlas:has(#indicator-iose:checked) [data-panel="iose"],
+  .atlas:has(#indicator-divtfe:checked) [data-panel="divtfe"],
+  .atlas:has(#indicator-csue:checked) [data-panel="csue"],
+  .atlas:has(#indicator-ahppn:checked) [data-panel="ahppn"] {
+    display: grid;
+  }
 
   /* Below lg the chips scroll sideways; faded edges say there is more. */
   @variant max-lg {

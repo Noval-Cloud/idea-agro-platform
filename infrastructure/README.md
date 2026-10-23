@@ -11,7 +11,8 @@ infrastructure/
 │   └── outputs/              the values setup.sh wrote, ignored by git
 ├── terraform/                one root for every environment
 │   └── modules/
-│       ├── platform/         what every service shares: the build identity and its sources bucket
+│       ├── platform/         what every service shares: the build identity, its sources bucket, Firestore
+│       ├── identity/         sign-in: Firebase Authentication on Identity Platform, and the browser's key
 │       └── services/<name>/  one module per service: its identity, its Cloud Run service, its access
 └── environments/
     └── <env>/                dev, qa, prd
@@ -81,6 +82,12 @@ make tf-apply ENV=dev    # applies exactly that plan
 - Cloud Run services are created with a placeholder image. The image belongs to the deploy (`make web-deploy ENV=dev`), and Terraform never changes it.
 - A module grants itself what it needs from others, in its own `iam.tf`.
 - Every value comes from a variable, with a default wherever one makes sense, so an environment's `terraform.tfvars` holds only what differs.
+
+### Sign-in
+
+The `identity` module adds Firebase to the project, turns on Identity Platform with the authorized domains (the website's and `auth_local_origins`), and creates the browser's key, restricted to the sign-in APIs and to those origins. The API verifies tokens with `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL`, which this module outputs.
+
+Google as a provider is the one step done by hand, once per environment, because only the Firebase console creates its OAuth client: Firebase console → the project → Authentication → Sign-in method → Google → Enable, with the support email. Until then, the sign-in page answers that Google sign-in is not enabled.
 
 ## `setup.env`
 

@@ -48,3 +48,15 @@ variable "build_sources_retention_days" {
   type        = number
   default     = 7
 }
+
+variable "firestore_delete_protection" {
+  description = "Whether the database refuses to be deleted"
+  type        = bool
+  default     = true
+}
+
+variable "firestore_backup_retention_days" {
+  description = "Days each daily backup of the database is kept"
+  type        = number
+  default     = 7
+}

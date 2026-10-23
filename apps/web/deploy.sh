@@ -22,11 +22,21 @@ REGION="$(tf output -raw region)"
 SERVICE="$(tf output -raw web_service)"
 URL="$(tf output -raw web_url)"
 API_URL="$(tf output -raw api_url)"
+AUTH_DOMAIN="$(tf output -raw auth_domain)"
+AUTH_KEY="$(tf output -raw auth_browser_key)"
+CSP="$(tf output -json auth_csp)"
+csp() { jq -r ".$1 | join(\" \")" <<<"$CSP"; }
+CSP_CONNECT="$(csp connect)"
+CSP_FRAME="$(csp frame)"
+CSP_SCRIPT="$(csp script)"
+CSP_IMAGES="$(csp images)"
 BUILDER="$(tf output -raw builder_email)"
 SOURCES="$(tf output -raw build_sources_bucket)"
 IMAGES="$(tf output -raw image_repository)"
 
-SITE_URL="$URL" PUBLIC_API_URL="$API_URL" pnpm --filter @idea-agro/web build
+SITE_URL="$URL" PUBLIC_API_URL="$API_URL" PUBLIC_AUTH_DOMAIN="$AUTH_DOMAIN" PUBLIC_AUTH_KEY="$AUTH_KEY" \
+  AUTH_CSP_CONNECT="$CSP_CONNECT" AUTH_CSP_FRAME="$CSP_FRAME" AUTH_CSP_SCRIPT="$CSP_SCRIPT" AUTH_CSP_IMAGES="$CSP_IMAGES" \
+  pnpm --filter @idea-agro/web build
 gcloud builds submit apps/web --project="$PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
   --service-account="projects/$PROJECT/serviceAccounts/$BUILDER" \
   --gcs-source-staging-dir="gs://$SOURCES/source" \

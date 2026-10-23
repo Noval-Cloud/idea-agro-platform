@@ -6,7 +6,14 @@
  * Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
  * and backed by research from INIA, Udelar and the University of Buenos Aires.
  *
- * The API is public and read-only: any site or app may call it, with no key.
+ * The API is public: any site or app may call it. Its data needs no key; only the routes about your own
+ * account, zones and projects ask you to sign in.
+ *
+ * ## Signing in
+ *
+ * Private routes take a token from the sign-in provider in the `Authorization` header, as `Bearer <token>`.
+ * Tokens last an hour and are renewed by the provider's client. After "log out everywhere", tokens issued
+ * before it are refused.
  *
  * ## Versions
  *
@@ -21,24 +28,40 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import { apiFetch } from '../fetcher';
+/**
+ * `client` is every account; `editor` manages content and `admin` manages accounts. They combine.
+ */
+export type AccountRole = typeof AccountRole[keyof typeof AccountRole];
+
+
+export const AccountRole = {
+  client: 'client',
+  editor: 'editor',
+  admin: 'admin',
+} as const;
+
 /**
  * A predefined division of Uruguay into zones.
  */
@@ -57,6 +80,24 @@ export const Division = {
 export interface Health {
   /** `ok` when the service answers. */
   status: string;
+}
+
+/**
+ * Your account.
+ */
+export interface Me {
+  /** The account's id in IDEA-Agro. */
+  id: string;
+  /** The email your sign-in provider reports. */
+  email: string | null;
+  /** Your name, as your sign-in provider reports it. */
+  name: string | null;
+  /** URL of your picture, as your sign-in provider reports it. */
+  picture: string | null;
+  /** Your roles: always `client`, plus `editor` or `admin` if given. */
+  roles: AccountRole[];
+  /** When the account was created, on its first sign-in. */
+  created_at: string;
 }
 
 /**
@@ -376,3 +417,248 @@ export function useGetZoneSeasonal<TData = Awaited<ReturnType<typeof getZoneSeas
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
+
+
+export type getMeResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type getMeResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getMeResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getMeResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getMeResponseSuccess = (getMeResponse200) & {
+  headers: Headers;
+};
+export type getMeResponseError = (getMeResponse401 | getMeResponse403 | getMeResponse429) & {
+  headers: Headers;
+};
+
+export type getMeResponse = (getMeResponseSuccess | getMeResponseError)
+
+export const getGetMeUrl = () => {
+
+
+
+
+  return `/v1/me`
+}
+
+/**
+ * @summary Your account
+ */
+export const getMe = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getMeResponse> => {
+
+  return apiFetch<getMeResponse>(getGetMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMeQueryKey = () => {
+    return [
+    `/v1/me`
+    ] as const;
+    }
+
+
+export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({ signal }) => getMe({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
+export type GetMeQueryError = Problem
+
+
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMe>>,
+          TError,
+          Awaited<ReturnType<typeof getMe>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMe>>,
+          TError,
+          Awaited<ReturnType<typeof getMe>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Your account
+ */
+
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMeQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type revokeMySessionsResponse204 = {
+  data: void
+  status: 204
+}
+
+export type revokeMySessionsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type revokeMySessionsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type revokeMySessionsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type revokeMySessionsResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type revokeMySessionsResponseSuccess = (revokeMySessionsResponse204) & {
+  headers: Headers;
+};
+export type revokeMySessionsResponseError = (revokeMySessionsResponse401 | revokeMySessionsResponse403 | revokeMySessionsResponse429 | revokeMySessionsResponse503) & {
+  headers: Headers;
+};
+
+export type revokeMySessionsResponse = (revokeMySessionsResponseSuccess | revokeMySessionsResponseError)
+
+export const getRevokeMySessionsUrl = () => {
+
+
+
+
+  return `/v1/me/sessions/revoke`
+}
+
+/**
+ * Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.
+ * @summary Log out everywhere
+ */
+export const revokeMySessions = async ( options?: Parameters<typeof apiFetch>[1]): Promise<revokeMySessionsResponse> => {
+
+  return apiFetch<revokeMySessionsResponse>(getRevokeMySessionsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeMySessionsMutationKey = () => ['revokeMySessions'] as const;
+
+export const getRevokeMySessionsMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySessions>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeMySessions>>, TError,void, TContext> => {
+
+const mutationKey = getRevokeMySessionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeMySessions>>, void> = () => {
+
+
+          return  revokeMySessions(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeMySessionsMutationResult = NonNullable<Awaited<ReturnType<typeof revokeMySessions>>>
+
+    export type RevokeMySessionsMutationError = Problem
+
+
+    /**
+ * @summary Log out everywhere
+ */
+export const useRevokeMySessions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySessions>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof revokeMySessions>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRevokeMySessionsMutationOptions(options), queryClient);
+    }

@@ -2,12 +2,12 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IDEA-Agro API",
-    "description": "\nEnvironmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery\nand backed by research from INIA, Udelar and the University of Buenos Aires.\n\nThe API is public and read-only: any site or app may call it, with no key.\n\n## Versions\n\n- The major version is part of the path: `/v1/...`.\n- Within a major version every change is backward compatible: new endpoints, new optional fields,\n  new values in a response. Clients ignore the fields they do not know.\n- A breaking change ships as a new major version, such as `/v2/...`. The previous one keeps answering\n  through a deprecation period, announced in the `Deprecation` and `Sunset` response headers.\n- `info.version` of this document follows semantic versioning.\n\n## Errors\n\nEvery error is a Problem Details object (RFC 9457), served as `application/problem+json`.\n",
+    "description": "\nEnvironmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery\nand backed by research from INIA, Udelar and the University of Buenos Aires.\n\nThe API is public: any site or app may call it. Its data needs no key; only the routes about your own\naccount, zones and projects ask you to sign in.\n\n## Signing in\n\nPrivate routes take a token from the sign-in provider in the `Authorization` header, as `Bearer <token>`.\nTokens last an hour and are renewed by the provider's client. After \"log out everywhere\", tokens issued\nbefore it are refused.\n\n## Versions\n\n- The major version is part of the path: `/v1/...`.\n- Within a major version every change is backward compatible: new endpoints, new optional fields,\n  new values in a response. Clients ignore the fields they do not know.\n- A breaking change ships as a new major version, such as `/v2/...`. The previous one keeps answering\n  through a deprecation period, announced in the `Deprecation` and `Sunset` response headers.\n- `info.version` of this document follows semantic versioning.\n\n## Errors\n\nEvery error is a Problem Details object (RFC 9457), served as `application/problem+json`.\n",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/health": {
@@ -99,10 +99,136 @@
           }
         }
       }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your account",
+        "operationId": "get_me",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me/sessions/revoke": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Log out everywhere",
+        "description": "Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.",
+        "operationId": "revoke_my_sessions",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service it depends on did not answer: try again later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "AccountRole": {
+        "type": "string",
+        "enum": [
+          "client",
+          "editor",
+          "admin"
+        ],
+        "title": "AccountRole",
+        "description": "`client` is every account; `editor` manages content and `admin` manages accounts. They combine."
+      },
       "Division": {
         "type": "string",
         "enum": [
@@ -132,6 +258,76 @@
           "status"
         ],
         "title": "Health"
+      },
+      "Me": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The account's id in IDEA-Agro."
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email your sign-in provider reports."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Your name, as your sign-in provider reports it."
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture",
+            "description": "URL of your picture, as your sign-in provider reports it."
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/AccountRole"
+            },
+            "type": "array",
+            "title": "Roles",
+            "description": "Your roles: always `client`, plus `editor` or `admin` if given."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When the account was created, on its first sign-in."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "picture",
+          "roles",
+          "created_at"
+        ],
+        "title": "Me",
+        "description": "Your account."
       },
       "Problem": {
         "properties": {
@@ -315,12 +511,23 @@
         "title": "ZoneSeasonal",
         "description": "The seasonal series of a zone. An indicator without data in the zone is left out."
       }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "A token from the sign-in provider, as `Bearer <token>`.",
+        "scheme": "bearer"
+      }
     }
   },
   "tags": [
     {
       "name": "Zones",
       "description": "Indicator values of the predefined zones of each division."
+    },
+    {
+      "name": "Account",
+      "description": "Your own account. Requires signing in."
     },
     {
       "name": "Service",

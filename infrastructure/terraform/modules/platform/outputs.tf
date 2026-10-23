@@ -13,3 +13,7 @@ output "build_sources_bucket" {
 output "image_repository" {
   value = local.image_repository
 }
+
+output "firestore_database" {
+  value = google_firestore_database.main.name
+}

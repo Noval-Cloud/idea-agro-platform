@@ -37,3 +37,16 @@ output "api_url" {
 output "zones_bucket" {
   value = module.api.zones_bucket
 }
+
+output "auth_domain" {
+  value = module.identity.auth_domain
+}
+
+output "auth_browser_key" {
+  value     = module.identity.browser_key
+  sensitive = true
+}
+
+output "auth_csp" {
+  value = module.identity.csp
+}

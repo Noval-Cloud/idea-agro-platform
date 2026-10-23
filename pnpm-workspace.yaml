@@ -14,6 +14,7 @@ catalog:
   cmdk: 1.1.1
   culori: 4.0.2
   d3-geo: 3.1.1
+  firebase: 13.1.0
   flag-icons: 7.5.0
   lucide-react: 1.52.0
   "@lucide/astro": 1.59.0
@@ -50,6 +51,9 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
 
-# Its platform binary comes as an optional dependency, so its install script is not needed.
+# Install scripts nothing here needs: esbuild's binary comes as an optional dependency, and the others
+# set up Firebase Hosting defaults or check versions.
 allowBuilds:
   esbuild: false
+  "@firebase/util": false
+  protobufjs: false

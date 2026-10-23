@@ -179,8 +179,13 @@ const panelClass =
       </ul>
     </div>
     <div class="grid gap-3 border-t border-line pt-6">
-      <a href={localizePath("/register", locale)} class={buttonVariants({ variant: "primary", size: "lg" })}>{t("nav.register")}</a>
-      <a href={localizePath("/login", locale)} class={buttonVariants({ variant: "outline", size: "lg" })}>{t("nav.login")}</a>
+      <a
+        href={localizePath("/login/", locale)}
+        data-account-link
+        data-account-href={localizePath("/account/", locale)}
+        data-account-label={t("account.title")}
+        class={buttonVariants({ variant: "primary", size: "lg" })}>{t("nav.login")}</a
+      >
     </div>
     <div>
       <p class="mb-2 text-sm font-medium text-ink-subtle">{t("a11y.languages")}</p>

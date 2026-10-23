@@ -25,6 +25,26 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ZONES_SOURCE"
         value = "gs://${google_storage_bucket.zones.name}"
       }
+      env {
+        name  = "AUTH_ISSUER"
+        value = var.auth_issuer
+      }
+      env {
+        name  = "AUTH_AUDIENCE"
+        value = var.auth_audience
+      }
+      env {
+        name  = "AUTH_JWKS_URL"
+        value = var.auth_jwks_url
+      }
+      env {
+        name  = "RECORDS_SOURCE"
+        value = "firestore://${var.accounts_database}"
+      }
+      env {
+        name  = "IDENTITY_ADMIN"
+        value = "identity-platform://${var.project}"
+      }
 
       resources {
         cpu_idle = var.cpu_idle
