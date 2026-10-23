@@ -240,7 +240,7 @@ export const pt = {
     custom: {
       name: "Suas zonas",
       detail:
-        "Desenhe um potreiro ou envie um KML, GeoJSON ou Shapefile. Por enquanto elas ficam nesta sessão; com as contas, poderão ser salvas e compartilhadas.",
+        "Desenhe um potreiro ou envie um KML, GeoJSON ou Shapefile. Elas ficam nesta sessão até você salvá-las na sua conta, onde também podem entrar nos seus projetos.",
     },
     padrones: {
       name: "Padrones rurais",
