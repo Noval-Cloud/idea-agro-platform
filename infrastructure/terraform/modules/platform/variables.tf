@@ -60,3 +60,9 @@ variable "firestore_backup_retention_days" {
   type        = number
   default     = 7
 }
+
+variable "values_dataset" {
+  description = "Id of the BigQuery dataset of the zones' values"
+  type        = string
+  default     = "zone_values"
+}

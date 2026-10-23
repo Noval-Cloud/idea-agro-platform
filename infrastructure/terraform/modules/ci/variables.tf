@@ -72,6 +72,17 @@ variable "api_files" {
   default     = ["services/api/**", "pyproject.toml", "uv.lock", ".python-version"]
 }
 
+variable "jobs_job" {
+  description = "Cloud Run job of the data jobs"
+  type        = string
+}
+
+variable "jobs_files" {
+  description = "Files whose changes redeploy the data jobs"
+  type        = list(string)
+  default     = ["services/jobs/**", "pyproject.toml", "uv.lock", ".python-version"]
+}
+
 variable "external_pull_requests" {
   description = "When pull requests from outside the team run the checks: only after a collaborator comments /gcbrun"
   type        = string

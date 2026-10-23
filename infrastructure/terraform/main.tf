@@ -34,6 +34,16 @@ module "api" {
   admin_emails     = var.admin_emails
 }
 
+module "jobs" {
+  source = "./modules/services/jobs"
+
+  project        = var.project
+  region         = var.region
+  builder_member = module.platform.builder_member
+  values_dataset = module.platform.values_dataset
+  zones_bucket   = module.api.zones_bucket
+}
+
 module "ci" {
   source = "./modules/ci"
 
@@ -43,6 +53,7 @@ module "ci" {
   builder_email     = module.platform.builder_email
   image_repository  = module.platform.image_repository
   api_service       = module.api.service
+  jobs_job          = module.jobs.job
   web_service       = module.web.service
   web_settings = {
     site_url    = module.web.url
