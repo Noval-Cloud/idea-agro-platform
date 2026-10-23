@@ -1,9 +1,10 @@
 import type { PolygonGeometry } from "./data";
 import { areaKm2 } from "./geo";
 
-/** A polygon the reader brought: from a file or drawn on the map. Lives in the session until accounts exist. */
+/** A polygon the reader brought: from a file, drawn on the map, or saved to their account. */
 export type CustomZone = { key: string; name: string; areaKm2: number; geometry: PolygonGeometry };
-export type CustomLayer = { key: string; name: string; source: "file" | "drawn"; zones: CustomZone[] };
+/** File and drawn layers live in the session until saved; the saved one comes from the account. */
+export type CustomLayer = { key: string; name: string; source: "file" | "drawn" | "saved"; zones: CustomZone[] };
 
 type AnyGeoJson = {
   type: string;

@@ -41,6 +41,11 @@ import {
 } from "./lib/state";
 import { mapMarks, mapTheme, useTheme } from "./lib/theme";
 import { saveCustomZone } from "./lib/session";
+import { readHint } from "@/lib/account-hint";
+import { signInProviders } from "@/lib/sign-in-providers";
+
+/** The API takes at most this many zones in one import. */
+const IMPORT_BATCH = 100;
 
 interface Props {
   locale: Locale;
@@ -105,6 +110,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const [anchor, setAnchor] = useState<[number, number] | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [custom, setCustom] = useState<CustomLayer[]>([]);
+  const [signedIn, setSignedIn] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+  const preparedSignIn = useRef<(() => Promise<unknown>) | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [zones, setZones] = useState<ZoneCollection | null>(null);
@@ -211,12 +219,99 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     }
   }, [neededDepartments, padrones]);
 
-  // "Mis zonas" shows every file and drawing of the session at once.
-  // The reader's zones reach the zone page through the session (a new tab gets a copy of it).
+  // "Mis zonas" shows every file and drawing of the session at once, and the zones saved to the account.
+  // Unsaved zones reach the zone page through the session (a new tab gets a copy of it).
   useEffect(() => {
     for (const layer of custom)
-      for (const z of layer.zones) saveCustomZone({ key: z.key, name: z.name, geometry: z.geometry });
+      if (layer.source !== "saved")
+        for (const z of layer.zones) saveCustomZone({ key: z.key, name: z.name, geometry: z.geometry });
   }, [custom]);
+
+  useEffect(() => {
+    const update = () => setSignedIn(readHint() !== null);
+    update();
+    addEventListener("account-change", update);
+    return () => removeEventListener("account-change", update);
+  }, []);
+
+  const loadSaved = useCallback(async () => {
+    const [{ privately, SignedOut }, { getSavedZoneFeatures }] = await Promise.all([
+      import("@/lib/account"),
+      import("@idea-agro/api-client"),
+    ]);
+    try {
+      const response = await privately((init) => getSavedZoneFeatures(init));
+      if (response.status !== 200) throw new Error(`${response.status}`);
+      const zones = response.data.features.map((f) => ({
+        key: f.id,
+        name: f.properties.name,
+        areaKm2: f.properties.area_ha / 100,
+        geometry: f.geometry as PolygonGeometry,
+      }));
+      const saved: CustomLayer[] = zones.length
+        ? [{ key: "saved", name: t("explorer.regions.saved"), source: "saved", zones }]
+        : [];
+      setCustom((all) => [...saved, ...all.filter((l) => l.source !== "saved")]);
+    } catch (error) {
+      if (!(error instanceof SignedOut)) setNotice(t("explorer.regions.loadSavedFailed"));
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (state.regions === "mine" && signedIn) void loadSaved();
+  }, [state.regions, signedIn, loadSaved]);
+
+  // Signed out with zones to save: the sign-in loads ahead, so the save click can open the provider's window.
+  const unsaved = custom.some((l) => l.source !== "saved");
+  useEffect(() => {
+    if (signedIn || !unsaved || preparedSignIn.current) return;
+    void import("@/lib/account")
+      .then(({ prepareSignIn }) => prepareSignIn(signInProviders[0]))
+      .then((signIn) => (preparedSignIn.current = signIn));
+  }, [signedIn, unsaved]);
+
+  const onSave = async (key: string) => {
+    const layer = custom.find((l) => l.key === key);
+    if (!layer || layer.source === "saved") return;
+    setNotice(null);
+    if (!readHint()) {
+      const signIn = preparedSignIn.current;
+      if (!signIn)
+        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
+      try {
+        await signIn();
+      } catch {
+        return;
+      }
+    }
+    setSaving(key);
+    try {
+      const [{ privately }, { importSavedZones }] = await Promise.all([
+        import("@/lib/account"),
+        import("@idea-agro/api-client"),
+      ]);
+      const zones = layer.zones.map((z) => ({
+        name: z.name,
+        source: layer.source === "drawn" ? ("drawn" as const) : ("uploaded" as const),
+        geometry: z.geometry,
+      }));
+      for (let start = 0; start < zones.length; start += IMPORT_BATCH) {
+        const batch = zones.slice(start, start + IMPORT_BATCH);
+        const response = await privately((init) => importSavedZones({ zones: batch }, init));
+        if (response.status !== 201) {
+          const detail = (response.data as { detail?: string | null }).detail ?? String(response.status);
+          return setNotice(t("explorer.regions.saveFailed", { reason: detail }));
+        }
+      }
+      setCustom((all) => all.filter((l) => l.key !== key));
+      setNotice(t("explorer.regions.saveDone", { count: zones.length }));
+      await loadSaved();
+    } catch {
+      setNotice(t("explorer.regions.saveFailed", { reason: "" }));
+    } finally {
+      setSaving(null);
+    }
+  };
 
   /** Every zone currently on the map, by its feature key. */
   const records = useMemo(() => {
@@ -443,6 +538,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       params.set("d", record.division);
       params.set("id", record.id);
     } else if (record.kind === "padron") params.set("padron", record.id);
+    else if (record.selection.kind === "custom" && record.selection.layer === "saved") params.set("saved", record.id);
     else params.set("custom", record.key);
     if (indicatorId) params.set("ind", indicatorId);
     if (year !== null) params.set("year", String(year));
@@ -459,7 +555,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
               ? t("explorer.zone.kinds.seccionales")
               : selected.kind === "padron"
                 ? t("explorer.zone.kinds.padrones")
-                : t("explorer.zone.kinds.custom"),
+                : selected.selection.kind === "custom" && selected.selection.layer === "saved"
+                  ? t("explorer.zone.kinds.saved")
+                  : t("explorer.zone.kinds.custom"),
         title: selected.title,
         subtitle: selected.subtitle,
         area:
@@ -647,6 +745,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             layers={custom}
             counts={counts}
             signInHref={signInPath}
+            signedIn={signedIn}
+            saving={saving}
+            onSave={(key) => void onSave(key)}
             drawing={drawing}
             onRegions={(regions) => update({ regions, selection: null })}
             onGrade={(grade) => update({ grade, selection: null })}

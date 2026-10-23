@@ -22,6 +22,7 @@ const { t } = createTranslator(locale);
       locale={locale}
       catalog={pickAppCatalog(catalogs[locale])}
       explorePath={localizePath("/explore/", locale)}
+      signInPath={localizePath("/login/", locale)}
     />
   </main>
   <SiteFooter locale={locale} />
