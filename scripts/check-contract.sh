@@ -15,3 +15,4 @@ if [ "$(digest)" != "$before" ]; then
   echo "packages/api-client is out of date: run make generate" >&2
   exit 1
 fi
+scripts/check-breaking.sh
