@@ -3,25 +3,34 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import SiteHeader from "@/components/site/SiteHeader.astro";
 import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
 import AccountApp from "./AccountApp";
-import { pickAccountCatalog } from "./i18n";
+import { accountSections, pickAccountCatalog, type AccountSection } from "./i18n";
 import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
 
 interface Props {
   locale: Locale;
+  section: AccountSection;
 }
-const { locale } = Astro.props;
+const { locale, section } = Astro.props;
 const { t } = createTranslator(locale);
+const account = localizePath("/account/", locale);
+const sectionPaths = Object.fromEntries(
+  accountSections.map((s) => [s, s === "profile" ? account : `${account}${s}/`]),
+) as Record<AccountSection, string>;
+const title =
+  section === "profile" ? t("meta.accountTitle") : `${t(`account.sections.${section}`)} · ${t("meta.accountTitle")}`;
 ---
 
-<BaseLayout locale={locale} title={t("meta.accountTitle")} description={t("meta.description")} noindex>
+<BaseLayout locale={locale} title={title} description={t("meta.description")} noindex>
   <SiteHeader locale={locale} />
-  <main id="main" class="mx-auto w-full max-w-3xl px-gutter py-12">
+  <main id="main" class="mx-auto w-full max-w-5xl px-gutter py-12">
     <h1 class="font-display text-3xl font-medium tracking-tight text-ink">{t("account.title")}</h1>
     <div class="mt-8">
       <AccountApp
         client:load
         locale={locale}
         catalog={pickAccountCatalog(catalogs[locale])}
+        section={section}
+        sectionPaths={sectionPaths}
         signInPath={localizePath("/login/", locale)}
         homePath={localizePath("/", locale)}
         zonePath={localizePath("/zone/", locale)}

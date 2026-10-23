@@ -34,7 +34,7 @@ export default function Projects({ t, projectPath, signInPath }: Props) {
       setProblem(response.status === 409 ? "full" : "failed");
     } catch (error) {
       if (error instanceof (await import("@/lib/account")).SignedOut)
-        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + "#projects")}`);
+        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname)}`);
       setProblem("failed");
     }
     setCreating(false);
