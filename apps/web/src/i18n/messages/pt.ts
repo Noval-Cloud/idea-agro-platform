@@ -240,7 +240,7 @@ export const pt = {
     custom: {
       name: "Suas zonas",
       detail:
-        "Desenhe um potreiro ou envie um KML, GeoJSON ou Shapefile. Elas ficam nesta sessão até você salvá-las na sua conta, onde também podem entrar nos seus projetos.",
+        "Desenhe um potreiro ou envie um GeoJSON, KML, KMZ ou Shapefile. Elas ficam nesta sessão até você salvá-las na sua conta, onde também podem entrar nos seus projetos.",
     },
     padrones: {
       name: "Padrones rurais",
@@ -486,7 +486,7 @@ export const pt = {
       mineSignIn: "Entre para ver as zonas salvas na sua conta.",
       mineSignInLink: "Entrar",
       upload: "Enviar arquivo",
-      uploadHint: "KML, GeoJSON ou Shapefile em .zip",
+      uploadHint: "GeoJSON, KML, KMZ ou Shapefile em .zip",
       uploadError: "Não conseguimos ler {name}. Tente com um KML, um GeoJSON ou um Shapefile em .zip.",
       uploadEmpty: "{name} não tem polígonos.",
       draw: "Desenhar uma zona",
@@ -837,7 +837,7 @@ export const pt = {
   account: {
     zones: {
       title: "Minhas zonas",
-      empty: "Você ainda não salvou zonas. Desenhe ou envie no mapa e salve na sua conta.",
+      empty: "Você ainda não salvou zonas. Importe de um arquivo ou desenhe no mapa.",
       toMap: "Ir para o mapa",
       open: "Ver indicadores",
       rename: "Renomear",
@@ -848,6 +848,20 @@ export const pt = {
       confirmDelete: "Excluir “{name}”? Não é possível desfazer.",
       area: "{value} ha",
       failed: "Não conseguimos concluir a alteração. Tente de novo.",
+      import: {
+        action: "Importar de um arquivo",
+        hint: "GeoJSON, KML, KMZ ou Shapefile em .zip. Para desenhar uma zona, use o mapa.",
+        found: { one: "{count} zona em “{name}”", other: "{count} zonas em “{name}”" },
+        save: { one: "Salvar {count} zona", other: "Salvar {count} zonas" },
+        saving: "Salvando…",
+        cancel: "Cancelar",
+        saved: { one: "Salvamos {count} zona.", other: "Salvamos {count} zonas." },
+        empty: "Não encontramos polígonos em “{name}”.",
+        unreadable: "Não conseguimos ler “{name}”. Confira que seja GeoJSON, KML, KMZ ou um Shapefile em .zip.",
+        failed: "Não conseguimos salvar as zonas: {reason}",
+        interrupted: "Não conseguimos salvar todas as zonas. As que faltam continuam na lista: tente de novo.",
+        unnamed: "Zona {number}",
+      },
     },
     projects: {
       title: "Meus projetos",

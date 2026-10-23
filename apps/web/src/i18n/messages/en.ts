@@ -240,7 +240,7 @@ export const en = {
     custom: {
       name: "Your areas",
       detail:
-        "Draw a paddock or upload a KML, GeoJSON or Shapefile. They stay in this session until you save them to your account, where they can also join your projects.",
+        "Draw a paddock or upload a GeoJSON, KML, KMZ or Shapefile. They stay in this session until you save them to your account, where they can also join your projects.",
     },
     padrones: {
       name: "Rural land parcels",
@@ -488,7 +488,7 @@ export const en = {
       mineSignIn: "Sign in to see the areas saved in your account.",
       mineSignInLink: "Sign in",
       upload: "Upload a file",
-      uploadHint: "KML, GeoJSON or a zipped Shapefile",
+      uploadHint: "GeoJSON, KML, KMZ or a zipped Shapefile",
       uploadError: "We could not read {name}. Try a KML, a GeoJSON or a zipped Shapefile.",
       uploadEmpty: "{name} has no polygons.",
       draw: "Draw an area",
@@ -839,7 +839,7 @@ export const en = {
   account: {
     zones: {
       title: "My areas",
-      empty: "You have not saved any areas yet. Draw or upload them on the map and save them to your account.",
+      empty: "You have not saved any areas yet. Import them from a file or draw them on the map.",
       toMap: "Go to the map",
       open: "See indicators",
       rename: "Rename",
@@ -850,6 +850,20 @@ export const en = {
       confirmDelete: "Delete “{name}”? This cannot be undone.",
       area: "{value} ha",
       failed: "We could not make the change. Try again.",
+      import: {
+        action: "Import from a file",
+        hint: "GeoJSON, KML, KMZ or a zipped Shapefile. To draw an area, use the map.",
+        found: { one: "{count} area in “{name}”", other: "{count} areas in “{name}”" },
+        save: { one: "Save {count} area", other: "Save {count} areas" },
+        saving: "Saving…",
+        cancel: "Cancel",
+        saved: { one: "We saved {count} area.", other: "We saved {count} areas." },
+        empty: "We found no polygons in “{name}”.",
+        unreadable: "We could not read “{name}”. Check that it is GeoJSON, KML, KMZ or a zipped Shapefile.",
+        failed: "We could not save the areas: {reason}",
+        interrupted: "We could not save every area. The rest are still listed: try again.",
+        unnamed: "Area {number}",
+      },
     },
     projects: {
       title: "My projects",

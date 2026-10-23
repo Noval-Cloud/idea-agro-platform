@@ -4,7 +4,7 @@ import { Check, ChevronDown, CloudUpload, Info, PenLine, Trash2, Upload } from "
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import { basinGrades, type BasinGrade, type Manifest } from "./lib/data";
-import type { CustomLayer } from "./lib/files";
+import { zoneFileTypes, type CustomLayer } from "./lib/files";
 import { useI18n } from "./lib/i18n";
 import type { SearchResult } from "./lib/search";
 import { regionKinds, type RegionKind } from "./lib/state";
@@ -184,7 +184,7 @@ export default function RegionBar(props: Props) {
             <input
               ref={file}
               type="file"
-              accept=".kml,.geojson,.json,.zip"
+              accept={zoneFileTypes}
               className="sr-only"
               tabIndex={-1}
               aria-hidden="true"

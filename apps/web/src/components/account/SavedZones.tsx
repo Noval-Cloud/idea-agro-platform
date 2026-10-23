@@ -3,6 +3,7 @@ import type { SavedZoneOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountTranslator } from "./i18n";
+import ImportZones from "./ImportZones";
 
 type Props = {
   t: AccountTranslator["t"];
@@ -14,7 +15,7 @@ type Props = {
 
 const card = "rounded-lg border border-line bg-surface p-6";
 
-/** The zones saved to the account: open, rename, delete. */
+/** The zones saved to the account: open, rename, delete, and import more from a file. */
 export default function SavedZones({ t, number, zonePath, explorePath, signInPath }: Props) {
   const [zones, setZones] = useState<SavedZoneOut[] | null | undefined>(undefined);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
@@ -82,7 +83,7 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
           </a>
         </p>
       ) : (
-        <ul className="mt-4 grid divide-y divide-line">
+        <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] divide-y divide-line">
           {zones.map((zone) => (
             <li key={zone.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
               {editing?.id === zone.id ? (
@@ -140,6 +141,14 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
         <p role="alert" className="mt-3 text-sm text-danger">
           {t("account.zones.failed")}
         </p>
+      )}
+      {zones !== undefined && zones !== null && (
+        <ImportZones
+          t={t}
+          number={number}
+          signInPath={signInPath}
+          onSaved={(saved) => setZones((all) => [...saved, ...(all ?? [])])}
+        />
       )}
     </section>
   );

@@ -238,7 +238,7 @@ export const es = {
     custom: {
       name: "Tus zonas",
       detail:
-        "Dibujá un potrero o subí un KML, GeoJSON o Shapefile. Quedan en esta sesión hasta que las guardás en tu cuenta, donde también podés sumarlas a tus proyectos.",
+        "Dibujá un potrero o subí un GeoJSON, KML, KMZ o Shapefile. Quedan en esta sesión hasta que las guardás en tu cuenta, donde también podés sumarlas a tus proyectos.",
     },
     padrones: {
       name: "Padrones rurales",
@@ -480,7 +480,7 @@ export const es = {
       mineSignIn: "Ingresá para ver las zonas guardadas en tu cuenta.",
       mineSignInLink: "Ingresar",
       upload: "Subir archivo",
-      uploadHint: "KML, GeoJSON o Shapefile en .zip",
+      uploadHint: "GeoJSON, KML, KMZ o Shapefile en .zip",
       uploadError: "No pudimos leer {name}. Probá con un KML, un GeoJSON o un Shapefile en .zip.",
       uploadEmpty: "{name} no tiene polígonos.",
       draw: "Dibujar una zona",
@@ -832,7 +832,7 @@ export const es = {
   account: {
     zones: {
       title: "Mis zonas",
-      empty: "Todavía no guardaste zonas. Dibujalas o subilas en el mapa y guardalas en tu cuenta.",
+      empty: "Todavía no guardaste zonas. Importalas desde un archivo o dibujalas en el mapa.",
       toMap: "Ir al mapa",
       open: "Ver indicadores",
       rename: "Renombrar",
@@ -843,6 +843,20 @@ export const es = {
       confirmDelete: "¿Eliminar «{name}»? No se puede deshacer.",
       area: "{value} ha",
       failed: "No pudimos completar el cambio. Intentá de nuevo.",
+      import: {
+        action: "Importar desde un archivo",
+        hint: "GeoJSON, KML, KMZ o Shapefile en .zip. Para dibujar una zona, usá el mapa.",
+        found: { one: "{count} zona en «{name}»", other: "{count} zonas en «{name}»" },
+        save: { one: "Guardar {count} zona", other: "Guardar {count} zonas" },
+        saving: "Guardando…",
+        cancel: "Cancelar",
+        saved: { one: "Guardamos {count} zona.", other: "Guardamos {count} zonas." },
+        empty: "No encontramos polígonos en «{name}».",
+        unreadable: "No pudimos leer «{name}». Revisá que sea GeoJSON, KML, KMZ o un Shapefile en .zip.",
+        failed: "No pudimos guardar las zonas: {reason}",
+        interrupted: "No pudimos guardar todas las zonas. Las que faltan siguen en la lista: intentá de nuevo.",
+        unnamed: "Zona {number}",
+      },
     },
     projects: {
       title: "Mis proyectos",
