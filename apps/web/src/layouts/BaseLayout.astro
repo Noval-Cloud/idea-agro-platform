@@ -9,9 +9,11 @@ interface Props {
   locale: Locale;
   title: string;
   description: string;
+  /** Personal pages, such as the account, stay out of search engines. */
+  noindex?: boolean;
 }
 
-const { locale, title, description } = Astro.props;
+const { locale, title, description, noindex = false } = Astro.props;
 const { t } = createTranslator(locale);
 const path = stripLocale(Astro.url.pathname);
 
@@ -28,6 +30,7 @@ const tokenHex = (theme: "light" | "dark") => {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    {noindex && <meta name="robots" content="noindex" />}
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content={tokenHex("light")} />

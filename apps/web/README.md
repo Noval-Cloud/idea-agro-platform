@@ -35,6 +35,14 @@ src/
 scripts/prototype-data/  extraction of the explorer's data from Earth Engine
 ```
 
+## Sign-in
+
+`src/lib/account.ts` is the only module that knows the sign-in provider (Firebase Authentication): the rest of the site signs in, signs out and gets tokens through it. Its SDK loads on first use, never with the page; the header draws the account from what `src/lib/account-hint.ts` remembers.
+
+Sign-in needs `PUBLIC_AUTH_KEY` and `PUBLIC_AUTH_DOMAIN` at build time (`make web-deploy` takes them from Terraform); without them, the sign-in page says it is not available. `PUBLIC_API_URL` is the API's origin.
+
+Every page carries a Content Security Policy: Astro hashes each script and style it emits (`security.csp` in `astro.config.mjs`), and `deploy/security-headers.conf` adds the headers a `<meta>` cannot carry.
+
 ## Prototype data
 
 The explorer and the zone page read `public/explorer/` (about 200 MB), which git ignores. It stands in for the platform API: the fetchers in `src/components/explorer/lib/data.ts` keep the shapes the API will serve.
