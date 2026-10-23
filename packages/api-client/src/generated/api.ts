@@ -138,7 +138,7 @@ export interface AuditOut {
   target: string;
   /** Its email at the time. */
   target_email: string;
-  /** The roles given, for a role change. */
+  /** The roles given, for a role change; `provider_failed` when the sign-in provider did not take it. */
   detail: string;
 }
 
@@ -4379,7 +4379,7 @@ export const getListAccountsUrl = (params?: ListAccountsParams,) => {
 }
 
 /**
- * For admins: the newest accounts, or those whose name or email contains the search.
+ * For admins: the newest accounts, or those whose email or name starts with the search.
  * @summary Accounts
  */
 export const listAccounts = async (params?: ListAccountsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listAccountsResponse> => {
@@ -4760,10 +4760,15 @@ export type changeAccountAccessResponse429 = {
   status: 429
 }
 
+export type changeAccountAccessResponse503 = {
+  data: Problem
+  status: 503
+}
+
 export type changeAccountAccessResponseSuccess = (changeAccountAccessResponse200) & {
   headers: Headers;
 };
-export type changeAccountAccessResponseError = (changeAccountAccessResponse401 | changeAccountAccessResponse403 | changeAccountAccessResponse404 | changeAccountAccessResponse409 | changeAccountAccessResponse422 | changeAccountAccessResponse429) & {
+export type changeAccountAccessResponseError = (changeAccountAccessResponse401 | changeAccountAccessResponse403 | changeAccountAccessResponse404 | changeAccountAccessResponse409 | changeAccountAccessResponse422 | changeAccountAccessResponse429 | changeAccountAccessResponse503) & {
   headers: Headers;
 };
 

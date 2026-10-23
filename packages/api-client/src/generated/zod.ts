@@ -1027,7 +1027,7 @@ export const ChangeProjectZoneGeometryResponse = zod.object({
 
 
 /**
- * For admins: the newest accounts, or those whose name or email contains the search.
+ * For admins: the newest accounts, or those whose email or name starts with the search.
  * @summary Accounts
  */
 export const listAccountsQueryQDefault = ``;
@@ -1133,6 +1133,6 @@ export const ListAuditResponseItem = zod.object({
   "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent']),
   "target": zod.string().describe('The account acted on.'),
   "target_email": zod.string().describe('Its email at the time.'),
-  "detail": zod.string().describe('The roles given, for a role change.')
+  "detail": zod.string().describe('The roles given, for a role change; `provider_failed` when the sign-in provider did not take it.')
 }).describe('One admin action.')
 export const ListAuditResponse = zod.array(ListAuditResponseItem)

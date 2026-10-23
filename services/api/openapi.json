@@ -2534,7 +2534,7 @@
           "Admin"
         ],
         "summary": "Accounts",
-        "description": "For admins: the newest accounts, or those whose name or email contains the search.",
+        "description": "For admins: the newest accounts, or those whose email or name starts with the search.",
         "operationId": "list_accounts",
         "security": [
           {
@@ -2926,6 +2926,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "A service it depends on did not answer: try again later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -3278,7 +3288,7 @@
           "detail": {
             "type": "string",
             "title": "Detail",
-            "description": "The roles given, for a role change."
+            "description": "The roles given, for a role change; `provider_failed` when the sign-in provider did not take it."
           }
         },
         "type": "object",
