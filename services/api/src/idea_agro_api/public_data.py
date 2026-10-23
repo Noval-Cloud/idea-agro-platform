@@ -49,6 +49,10 @@ def zone(division: Division, id: str) -> str:
     return f"divisions/{division}/{id}.json"
 
 
+def series(division: Division, id: str) -> str:
+    return f"series/{division}/{id}.json"
+
+
 def values(division: Division, indicator: Indicator) -> str:
     return f"values/{division}/{indicator}.json"
 

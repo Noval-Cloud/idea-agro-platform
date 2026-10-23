@@ -4,8 +4,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
+from idea_agro_api.series import ZoneStore
 from idea_agro_api.services import services_for_tests
-from idea_agro_api.zones import LocalFiles, ZoneStore
+from idea_agro_api.zones import LocalFiles
 
 
 @pytest.fixture

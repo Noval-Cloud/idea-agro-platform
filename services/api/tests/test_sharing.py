@@ -35,8 +35,8 @@ def client(tmp_path: Path, verifier: OidcVerifier) -> TestClient:
     (tmp_path / "divisions" / "seccionales.geojson").write_text(
         json.dumps({"type": "FeatureCollection", "features": [district]})
     )
-    (tmp_path / "series" / "seccionales").mkdir(parents=True)
-    (tmp_path / "series" / "seccionales" / "1406.json").write_text("{}")
+    (tmp_path / "divisions" / "seccionales").mkdir(parents=True)
+    (tmp_path / "divisions" / "seccionales" / "1406.json").write_text("{}")
     services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, limits=Limits())
     return TestClient(create_app(services))
 

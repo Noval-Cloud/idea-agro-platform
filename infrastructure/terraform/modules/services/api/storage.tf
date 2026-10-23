@@ -13,6 +13,25 @@ resource "google_storage_bucket_iam_member" "api_reads_zones" {
   member = google_service_account.api.member
 }
 
+# The API rebuilds a zone's series file from BigQuery when it falls behind.
+resource "google_storage_bucket_iam_member" "api_writes_series" {
+  bucket = google_storage_bucket.zones.name
+  role   = var.series_role
+  member = google_service_account.api.member
+
+  condition {
+    title      = "series-only"
+    expression = "resource.name.startsWith(\"projects/_/buckets/${google_storage_bucket.zones.name}/objects/series/\")"
+  }
+}
+
+resource "google_bigquery_dataset_iam_member" "api_reads_values" {
+  project    = var.project
+  dataset_id = var.values_dataset
+  role       = var.values_role
+  member     = google_service_account.api.member
+}
+
 # The outlines of saved zones, one file per version: people's own land, reachable only through the API.
 resource "google_storage_bucket" "geometries" {
   name                        = "${var.project}-${var.geometries_bucket_suffix}"

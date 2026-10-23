@@ -19,8 +19,8 @@ PADRON = {"kind": "padron", "department": "rocha", "padron": 1234}
 
 
 def client_with(tmp_path: Path, verifier: OidcVerifier, **limits: Any) -> TestClient:
-    (tmp_path / "series" / "seccionales").mkdir(parents=True)
-    (tmp_path / "series" / "seccionales" / "1406.json").write_text(json.dumps({"ppna": []}))
+    (tmp_path / "divisions" / "seccionales").mkdir(parents=True)
+    (tmp_path / "divisions" / "seccionales" / "1406.json").write_text(json.dumps({"properties": {"id": "1406"}}))
     services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, limits=Limits(**limits))
     return TestClient(create_app(services))
 

@@ -75,7 +75,14 @@ The API serves the public data from `ZONES_SOURCE`, a bucket (`gs://<project>-zo
 | `maps/<indicator>/[lite/]<period>.webp`       | An indicator's map of a year (or `static`), full or light              |
 | `maps/thumbnails/<indicator>-<theme>.webp`    | A small picture of each indicator's map                                |
 
-Until the data jobs write it from Earth Engine, it comes from the prototype's data (`apps/web/.cache/prototype-data/explorer/`):
+The data jobs (`services/jobs`) write it, and keep every zone's values in BigQuery. The series files are a cache of BigQuery that the API keeps itself:
+
+- When a zone's file is missing, or shorter than the catalog's calendars, the API builds it from the dataset in `VALUES_SOURCE` (`bigquery://<project>/<dataset>`) and saves it. In the bucket, it may write only `series/`.
+- If BigQuery fails, a file that is behind is served as it is.
+- Without `VALUES_SOURCE`, as in `make api-dev`, the files are served as they are.
+- The catalog is reread every five minutes, so a new composite reaches the zone pages without a deploy.
+
+Until the data jobs compute it from Earth Engine, it comes from the prototype's data (`apps/web/.cache/prototype-data/explorer/`):
 
 ```bash
 make public-data   # writes .cache/public-data, which make api-dev serves
