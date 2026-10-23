@@ -10,7 +10,9 @@ export function createProjectTranslator(locale: Locale, catalog: ProjectCatalog)
   const translator = createCatalogTranslator(locale, catalog);
   const number = (value: number) =>
     new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
-  return { ...translator, number };
+  const moment = (value: string) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return { ...translator, number, moment };
 }
 
 export type ProjectTranslator = ReturnType<typeof createProjectTranslator>;

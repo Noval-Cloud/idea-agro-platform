@@ -45,6 +45,7 @@ import {
 import { decodeGray, zonalCounts, zonalMean } from "@/components/explorer/lib/raster";
 import { readCustomZone } from "@/components/explorer/lib/session";
 import AddToProject from "./AddToProject";
+import OutlineVersions from "./OutlineVersions";
 
 interface Props {
   locale: Locale;
@@ -52,13 +53,14 @@ interface Props {
   explorePath: string;
   signInPath: string;
   projectsPath: string;
+  outlinePath: string;
 }
 
 type Target =
   | { kind: "division"; division: DivisionId; id: string }
   | { kind: "padron"; department: string; padron: number }
   | { kind: "custom"; key: string }
-  | { kind: "saved"; id: string };
+  | { kind: "saved"; id: string; project?: string };
 
 type Zone = {
   target: Target;
@@ -68,6 +70,8 @@ type Zone = {
   department?: string;
   areaKm2: number;
   geometry: PolygonGeometry;
+  /** For saved zones: whether it is the reader's own, and whether they may change its outline. */
+  access?: { own: boolean; editable: boolean };
 };
 
 function readTarget(search: string): { target: Target | null; indicator: IndicatorId; year: number | null } {
@@ -85,11 +89,18 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
   const custom = params.get("custom");
   if (custom) return { target: { kind: "custom", key: custom }, indicator, year };
   const saved = params.get("saved");
-  // Saved zone ids are UUIDs; anything else would end up in an API path.
-  if (saved && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(saved))
-    return { target: { kind: "saved", id: saved }, indicator, year };
+  // Ids are UUIDs; anything else would end up in an API path.
+  const project = params.get("project");
+  if (saved && UUID.test(saved))
+    return {
+      target: { kind: "saved", id: saved, ...(project && UUID.test(project) ? { project } : {}) },
+      indicator,
+      year,
+    };
   return { target: null, indicator, year };
 }
+
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 /** The zone as a project item: projects hold references to zones, never copies. */
 function projectItem(target: Exclude<Target, { kind: "custom" }>): ComponentProps<typeof AddToProject>["item"] {
@@ -142,7 +153,7 @@ function downloadCsv(name: string, header: string[], rows: (string | number | nu
   URL.revokeObjectURL(url);
 }
 
-export default function ZoneApp({ locale, catalog, explorePath, signInPath, projectsPath }: Props) {
+export default function ZoneApp({ locale, catalog, explorePath, signInPath, projectsPath, outlinePath }: Props) {
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
@@ -207,11 +218,25 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
       void Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]).then(
         async ([{ privately, SignedOut }, api]) => {
           try {
-            const [meta, outline] = await Promise.all([
-              privately((init) => api.getSavedZone(target.id, init)),
-              privately((init) => api.getSavedZoneGeometry(target.id, init)),
-            ]);
+            // The library route answers only the zone's owner; members reach it through the project.
+            const own = await privately((init) => api.getSavedZone(target.id, init));
+            const project = target.project;
+            const meta =
+              own.status === 200 || !project
+                ? own
+                : await privately((init) => api.getProjectZone(project, target.id, init));
+            const outline = await privately((init) =>
+              own.status === 200 || !project
+                ? api.getSavedZoneGeometry(target.id, init)
+                : api.getProjectZoneGeometry(project, target.id, init),
+            );
             if (meta.status !== 200 || outline.status !== 200) return done(null);
+            const role =
+              own.status === 200 || !project
+                ? null
+                : await privately((init) => api.getProject(project, init)).then((r) =>
+                    r.status === 200 ? r.data.role : null,
+                  );
             done({
               target,
               kind: t("explorer.zone.kinds.saved"),
@@ -219,6 +244,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
               department: meta.data.department ?? undefined,
               areaKm2: meta.data.area_ha / 100,
               geometry: outline.data as PolygonGeometry,
+              access: { own: own.status === 200, editable: own.status === 200 || (role !== null && role !== "viewer") },
             });
           } catch (error) {
             if (error instanceof SignedOut) setSignedOut(true);
@@ -336,7 +362,18 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                       />
                     )}
                   </dl>
-                  {zone.target.kind !== "custom" && (
+                  {zone.target.kind === "saved" && zone.access?.editable && (
+                    <a
+                      href={`${outlinePath}?${new URLSearchParams({
+                        saved: zone.target.id,
+                        ...(zone.target.project ? { project: zone.target.project } : {}),
+                      })}`}
+                      className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
+                    >
+                      {t("zone.outline.edit")}
+                    </a>
+                  )}
+                  {zone.target.kind !== "custom" && (zone.target.kind !== "saved" || zone.access?.own) && (
                     <AddToProject
                       t={t}
                       item={projectItem(zone.target)}
@@ -357,6 +394,9 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                   {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
                 </a>
               </header>
+              {zone.target.kind === "saved" && zone.access?.own && (
+                <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
+              )}
             </div>
             <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">
               <div className="lg:sticky lg:top-(--ia-layout-header) lg:pt-6">

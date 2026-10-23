@@ -178,7 +178,9 @@ def detail(services: Services, project: Project, caller: Caller) -> ProjectOut:
         role=project.role_of(me) or "viewer",
         owner_name=names.of(project.owner),
         members=[
-            MemberOut(email=m.email, name=names.of(m.account), role=m.role, pending=m.account is None)
+            MemberOut(
+                email=m.email, name=names.of(m.account), role=m.role, pending=m.account is None, you=m.account == me
+            )
             for m in project.members
         ],
         others_can_edit=project.others_can_edit(me),

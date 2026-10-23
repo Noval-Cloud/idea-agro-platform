@@ -552,7 +552,8 @@ export const CreateProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -613,7 +614,8 @@ export const GetProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -685,7 +687,8 @@ export const ChangeProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -776,7 +779,8 @@ export const AddProjectItemResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -864,7 +868,8 @@ export const ShareProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),

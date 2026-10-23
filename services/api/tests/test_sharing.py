@@ -68,11 +68,16 @@ def test_an_invitation_is_accepted_when_the_invitee_opens_their_projects(client:
     listed = client.get("/v1/projects", headers=BO).json()
     after = client.get(f"/v1/projects/{id}", headers=ANA).json()
 
-    assert shared["members"] == [{"email": "bo@example.org", "name": None, "role": "viewer", "pending": True}]
+    assert shared["members"] == [
+        {"email": "bo@example.org", "name": None, "role": "viewer", "pending": True, "you": False}
+    ]
     # Opening it directly accepts it too.
     assert before.status_code == 200
     assert [(p["id"], p["role"], p["owner_name"]) for p in listed] == [(id, "viewer", "Ana")]
-    assert after["members"] == [{"email": "bo@example.org", "name": "Bo", "role": "viewer", "pending": False}]
+    assert after["members"] == [
+        {"email": "bo@example.org", "name": "Bo", "role": "viewer", "pending": False, "you": False}
+    ]
+    assert client.get(f"/v1/projects/{id}", headers=BO).json()["members"][0]["you"] is True
 
 
 def test_an_unverified_email_does_not_accept_an_invitation(client: TestClient) -> None:

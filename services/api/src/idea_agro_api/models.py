@@ -235,6 +235,7 @@ class MemberOut(BaseModel):
     name: str | None = Field(description="Their name, once they joined.")
     role: MemberRole
     pending: bool = Field(description="Invited, and not yet joined: they join when they open their projects.")
+    you: bool = Field(description="Whether this member is you.")
 
 
 class ProjectOut(BaseModel):

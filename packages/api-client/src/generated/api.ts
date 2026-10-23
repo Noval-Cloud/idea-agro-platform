@@ -214,6 +214,8 @@ export interface MemberOut {
   role: MemberRole;
   /** Invited, and not yet joined: they join when they open their projects. */
   pending: boolean;
+  /** Whether this member is you. */
+  you: boolean;
 }
 
 export interface MultiPolygon {

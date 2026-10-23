@@ -1,0 +1,28 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
+import OutlineEditor from "./OutlineEditor";
+import { pickOutlineCatalog } from "./i18n";
+import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+---
+
+<BaseLayout locale={locale} title={t("outline.metaTitle")} description={t("meta.description")} noindex>
+  <SiteHeader locale={locale} />
+  <main id="main" class="mx-auto w-full max-w-5xl px-gutter py-10">
+    <OutlineEditor
+      client:load
+      locale={locale}
+      catalog={pickOutlineCatalog(catalogs[locale])}
+      signInPath={localizePath("/login/", locale)}
+      zonePath={localizePath("/zone/", locale)}
+    />
+  </main>
+  <SiteNavPanels locale={locale} />
+</BaseLayout>

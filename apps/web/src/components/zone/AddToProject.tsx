@@ -40,8 +40,9 @@ export default function AddToProject({ t, item, projectsPath, signInPath }: Prop
         setProjects(undefined);
         return failed();
       }
-      setProjects(response.data);
-      setChosen(response.data[0]?.id ?? "");
+      const editable = response.data.filter((p) => p.role !== "viewer");
+      setProjects(editable);
+      setChosen(editable[0]?.id ?? "");
     } catch (error) {
       if (error instanceof (await import("@/lib/account")).SignedOut) return signIn();
       setProjects(undefined);
@@ -52,6 +53,8 @@ export default function AddToProject({ t, item, projectsPath, signInPath }: Prop
   const add = async () => {
     const project = projects?.find((p) => p.id === chosen);
     if (!project) return;
+    // Others could reshape the person's own land: they confirm it first.
+    if (item.kind === "saved" && project.others_can_edit && !window.confirm(t("zone.projects.warnShared"))) return;
     setMessage(null);
     try {
       const [{ privately }, client] = await api();

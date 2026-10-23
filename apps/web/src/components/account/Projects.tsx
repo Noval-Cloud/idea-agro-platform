@@ -66,7 +66,12 @@ export default function Projects({ t, projectPath, signInPath }: Props) {
                 {project.name}
               </a>
               <p className="text-xs text-ink-subtle">
-                {[t("account.projects.zoneCount", { count: project.zone_count }), project.description]
+                {[
+                  t("account.projects.zoneCount", { count: project.zone_count }),
+                  project.role !== "owner" && t("account.projects.sharedBy", { name: project.owner_name ?? "" }),
+                  project.role !== "owner" && t(`account.projects.roles.${project.role}`),
+                  project.description,
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
