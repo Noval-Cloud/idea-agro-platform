@@ -60,6 +60,29 @@ resource "google_cloudbuild_trigger" "api" {
   }
 }
 
+resource "google_cloudbuild_trigger" "jobs" {
+  count = local.enabled
+
+  location        = var.region
+  name            = "jobs"
+  description     = "Builds the data jobs' image and updates their Cloud Run job"
+  filename        = "services/jobs/cloudbuild.yaml"
+  included_files  = var.jobs_files
+  service_account = local.service_account
+  substitutions = {
+    _IMAGE_REPOSITORY = var.image_repository
+    _JOB              = var.jobs_job
+    _REGION           = var.region
+  }
+
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.platform[0].id
+    push {
+      branch = var.main_branch
+    }
+  }
+}
+
 resource "google_cloudbuild_trigger" "web" {
   count = local.enabled
 

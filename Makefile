@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help setup lint format typecheck test build generate contract specs check tf-setup tf-plan tf-apply web-deploy \
-	public-data api-dev api-deploy ci-image ci-checks
+	public-data api-dev api-deploy jobs-deploy jobs-run ci-image ci-checks
 
 TF := terraform -chdir=infrastructure/terraform
 # Terraform starts from the person's gcloud credentials, then impersonates the operator account.
@@ -82,6 +82,14 @@ api-dev: ## Run the API locally on port 8080, serving .cache/public-data (make p
 api-deploy: ## Build the API's image from git and deploy it to ENV's Cloud Run
 	$(require_env)
 	services/api/deploy.sh $(ENV)
+
+jobs-deploy: ## Build the data jobs' image from git and deploy it to ENV's Cloud Run job
+	$(require_env)
+	services/jobs/deploy.sh $(ENV)
+
+jobs-run: ## Run ENV's data job once: ARGS="values --source public-files", or the job's own arguments
+	$(require_env)
+	services/jobs/run.sh $(ENV) $(ARGS)
 
 ci-image: ## Build ENV's CI image on Cloud Build, as its trigger does
 	$(require_env)

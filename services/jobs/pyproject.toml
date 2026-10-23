@@ -1,0 +1,13 @@
+[project]
+name = "idea-agro-jobs"
+version = "0.1.0"
+description = "The data jobs of IDEA-Agro: zone values and public files from Earth Engine"
+requires-python = ">=3.15,<3.16"
+dependencies = ["google-cloud-bigquery==3.46.2", "google-cloud-storage==3.17.1"]
+
+[project.scripts]
+idea-agro-jobs = "idea_agro_jobs.__main__:main"
+
+[build-system]
+requires = ["uv_build==0.13.5"]
+build-backend = "uv_build"

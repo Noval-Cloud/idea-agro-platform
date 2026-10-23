@@ -34,6 +34,14 @@ output "api_url" {
   value = module.api.url
 }
 
+output "jobs_job" {
+  value = module.jobs.job
+}
+
+output "values_dataset" {
+  value = module.platform.values_dataset
+}
+
 output "zones_bucket" {
   value = module.api.zones_bucket
 }

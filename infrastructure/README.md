@@ -11,9 +11,10 @@ infrastructure/
 │   └── outputs/              the values setup.sh wrote, ignored by git
 ├── terraform/                one root for every environment
 │   └── modules/
-│       ├── platform/         what every service shares: the build identity, its sources bucket, Firestore
+│       ├── platform/         what every service shares: the build identity, its sources bucket, Firestore, BigQuery
 │       ├── identity/         sign-in: Firebase Authentication on Identity Platform, and the browser's key
-│       └── services/<name>/  one module per service: its identity, its Cloud Run service, its access
+│       ├── ci/               the Cloud Build triggers
+│       └── services/<name>/  one module per service or job: its identity, its Cloud Run resource, its access
 └── environments/
     └── <env>/                dev, qa, prd
         ├── setup.env         what setup.sh puts in place before Terraform

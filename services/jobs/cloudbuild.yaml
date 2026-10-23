@@ -1,0 +1,17 @@
+# Builds the data jobs' image from the repository, pushes it and updates only the Cloud Run job's image.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "--file", "services/jobs/Dockerfile", "--tag", "${_IMAGE_REPOSITORY}/${_JOB}:${BUILD_ID}", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "${_IMAGE_REPOSITORY}/${_JOB}:${BUILD_ID}"]
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - update
+      - ${_JOB}
+      - --region=${_REGION}
+      - --image=${_IMAGE_REPOSITORY}/${_JOB}:${BUILD_ID}
+options:
+  logging: CLOUD_LOGGING_ONLY

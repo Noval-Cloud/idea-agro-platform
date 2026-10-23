@@ -29,4 +29,4 @@ include = ["services", "scripts", "infrastructure"]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
-pythonpath = ["scripts", "services/api/tests"]
+pythonpath = ["scripts", "services/api/tests", "services/jobs/tests"]
