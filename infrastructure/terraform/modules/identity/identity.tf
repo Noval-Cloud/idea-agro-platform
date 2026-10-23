@@ -9,8 +9,18 @@ resource "google_identity_platform_config" "this" {
   project            = var.project
   authorized_domains = local.authorized_domains
 
+  # Google only: email and phone sign-in arrive later, with two-factor authentication.
   sign_in {
     allow_duplicate_emails = false
+
+    email {
+      enabled           = false
+      password_required = false
+    }
+
+    phone_number {
+      enabled = false
+    }
   }
 
   depends_on = [google_firebase_project.this]
