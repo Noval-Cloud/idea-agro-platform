@@ -32,11 +32,10 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
   /** Runs a change; a refusal or a network failure shows the error, an ended session leads to sign-in. */
   const change = async (run: (modules: Awaited<ReturnType<typeof api>>) => Promise<boolean>) => {
     setFailed(false);
-    const modules = await api();
     try {
-      setFailed(!(await run(modules)));
+      setFailed(!(await run(await api())));
     } catch (error) {
-      if (error instanceof modules[0].SignedOut)
+      if (error instanceof (await import("@/lib/account")).SignedOut)
         return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + "#zones")}`);
       setFailed(true);
     }

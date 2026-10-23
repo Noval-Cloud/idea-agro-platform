@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.2.0
+ * OpenAPI spec version: 1.3.0
  */
 import * as zod from 'zod';
 
@@ -333,7 +333,7 @@ export const RenameSavedZoneResponse = zod.object({
 
 
 /**
- * Deletes the zone and every version of its outline.
+ * Deletes the zone and every version of its outline, and takes it out of every project.
  * @summary Delete a saved zone
  */
 export const DeleteSavedZoneParams = zod.object({
@@ -372,3 +372,287 @@ export const GetSavedZoneGeometryResponse = zod.union([zod.object({
   "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
   "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMin).max(getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(getSavedZoneGeometryResponseTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
 })]).describe('A GeoJSON geometry, in WGS 84.')
+
+
+/**
+ * @summary Your projects
+ */
+export const ListProjectsResponseItem = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "zone_count": zod.int().describe('How many zones the project holds.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('One of your projects, without its zones.')
+export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
+
+
+/**
+ * @summary Create a project
+ */
+export const createProjectBodyNameMax = 120;
+
+export const createProjectBodyDescriptionDefault = ``;
+export const createProjectBodyDescriptionMax = 2000;
+
+
+
+export const CreateProjectBody = zod.object({
+  "name": zod.string().min(1).max(createProjectBodyNameMax).describe('The project\'s name.'),
+  "description": zod.string().max(createProjectBodyDescriptionMax).default(createProjectBodyDescriptionDefault).describe('What the project is about.')
+}).describe('A new project.')
+
+export const createProjectResponseItemsItemOneZoneOneBboxMin = 4;
+export const createProjectResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const createProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const createProjectResponseItemsItemThreePadronMin = 0;
+export const createProjectResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const CreateProjectResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(createProjectResponseItemsItemOneZoneOneBboxMin).max(createProjectResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(createProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(createProjectResponseItemsItemThreePadronMin).max(createProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * @summary One of your projects
+ */
+export const GetProjectParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const getProjectResponseItemsItemOneZoneOneBboxMin = 4;
+export const getProjectResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const getProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const getProjectResponseItemsItemThreePadronMin = 0;
+export const getProjectResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const GetProjectResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(getProjectResponseItemsItemOneZoneOneBboxMin).max(getProjectResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(getProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(getProjectResponseItemsItemThreePadronMin).max(getProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * @summary Rename or describe a project
+ */
+export const ChangeProjectParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const changeProjectBodyNameOneMax = 120;
+
+export const changeProjectBodyDescriptionOneMax = 2000;
+
+
+
+export const ChangeProjectBody = zod.object({
+  "name": zod.union([zod.string().min(1).max(changeProjectBodyNameOneMax),zod.null()]).optional().describe('The project\'s new name.'),
+  "description": zod.union([zod.string().max(changeProjectBodyDescriptionOneMax),zod.null()]).optional().describe('The project\'s new description.')
+}).describe('The fields to change; those left out keep their value.')
+
+export const changeProjectResponseItemsItemOneZoneOneBboxMin = 4;
+export const changeProjectResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const changeProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const changeProjectResponseItemsItemThreePadronMin = 0;
+export const changeProjectResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const ChangeProjectResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(changeProjectResponseItemsItemOneZoneOneBboxMin).max(changeProjectResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(changeProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(changeProjectResponseItemsItemThreePadronMin).max(changeProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * Deletes the project only: its zones stay where they are.
+ * @summary Delete a project
+ */
+export const DeleteProjectParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const DeleteProjectResponse = zod.void()
+
+
+/**
+ * Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied.
+ * @summary Add a zone to a project
+ */
+export const AddProjectItemParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const addProjectItemBodyTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const addProjectItemBodyThreePadronMin = 0;
+export const addProjectItemBodyThreePadronMax = 99999999;
+
+
+
+export const AddProjectItemBody = zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.')
+}).describe('A zone of your library.'),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(addProjectItemBodyTwoZoneIdRegExp).describe('The zone\'s id in its division.')
+}).describe('A zone of a predefined division.'),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(addProjectItemBodyThreePadronMin).max(addProjectItemBodyThreePadronMax).describe('The parcel\'s number in its department.')
+}).describe('A cadastral parcel (padrón) of a department.')])
+
+export const addProjectItemResponseItemsItemOneZoneOneBboxMin = 4;
+export const addProjectItemResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const addProjectItemResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const addProjectItemResponseItemsItemThreePadronMin = 0;
+export const addProjectItemResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const AddProjectItemResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(addProjectItemResponseItemsItemOneZoneOneBboxMin).max(addProjectItemResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(addProjectItemResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(addProjectItemResponseItemsItemThreePadronMin).max(addProjectItemResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * Removes the reference only: the zone itself stays.
+ * @summary Remove a zone from a project
+ */
+export const removeProjectItemPathItemIdMax = 80;
+
+
+
+export const RemoveProjectItemParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "item_id": zod.string().max(removeProjectItemPathItemIdMax).describe('The item\'s id, as the project lists it.')
+})
+
+export const RemoveProjectItemResponse = zod.void()

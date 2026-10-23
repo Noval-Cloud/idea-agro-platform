@@ -20,6 +20,7 @@ from idea_agro_api.models import (
     SavedZoneRename,
     SavedZonesImport,
 )
+from idea_agro_api.projects import saved_item
 from idea_agro_api.saved_zones import SavedZone, Source, new_zone_id
 from idea_agro_api.services import Services
 from idea_agro_api.shapes import InvalidShape, outline_from
@@ -191,12 +192,14 @@ def rename_saved_zone(
     "/v1/saved-zones/{zone_id}",
     status_code=204,
     summary="Delete a saved zone",
-    description="Deletes the zone and every version of its outline.",
+    description="Deletes the zone and every version of its outline, and takes it out of every project.",
     responses=problems(401, 403, 404, 422, 429),
 )
 def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Response:
     zone = owned(services, caller.account.id, zone_id)
     # The record goes first: an outline left behind by a failure is unreachable, a record without one is not.
+    # References go last: a project left holding one shows the zone as deleted.
     services.saved_zones.delete(zone.id)
     services.geometries.delete_all(zone.id)
+    services.projects.remove_everywhere(saved_item(zone.id))
     return Response(status_code=204)

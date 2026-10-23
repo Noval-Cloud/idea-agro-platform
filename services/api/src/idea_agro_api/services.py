@@ -8,6 +8,7 @@ from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
+from idea_agro_api.projects import MemoryProjects, ProjectStore, projects_from
 from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zones_from
 from idea_agro_api.security import RateLimit
 from idea_agro_api.shapes import Departments
@@ -24,6 +25,8 @@ class Limits:
     library_bytes: int = 20_000_000
     zones_per_import: int = 100
     import_bytes: int = 5_000_000
+    projects_per_account: int = 50
+    zones_per_project: int = 500
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -36,6 +39,8 @@ class Limits:
             library_bytes=int(env.get("LIBRARY_MAX_BYTES", "20000000")),
             zones_per_import=int(env.get("ZONES_PER_IMPORT", "100")),
             import_bytes=int(env.get("IMPORT_MAX_BYTES", "5000000")),
+            projects_per_account=int(env.get("PROJECTS_PER_ACCOUNT", "50")),
+            zones_per_project=int(env.get("ZONES_PER_PROJECT", "500")),
         )
 
     def body_bytes(self, path: str) -> int:
@@ -48,6 +53,7 @@ class Services:
     zones: ZoneStore
     accounts: AccountStore
     saved_zones: SavedZoneStore
+    projects: ProjectStore
     geometries: GeometryStore
     departments: Departments
     # None when sign-in is not configured: private routes then answer 503.
@@ -75,6 +81,7 @@ class Services:
             zones=ZoneStore(files),
             accounts=accounts_from(records),
             saved_zones=saved_zones_from(records),
+            projects=projects_from(records),
             geometries=geometries_from(outlines),
             departments=Departments(files),
             verifier=verifier,
@@ -96,6 +103,7 @@ def services_for_tests(
         zones=zones or ZoneStore(found),
         accounts=MemoryAccounts(),
         saved_zones=MemorySavedZones(),
+        projects=MemoryProjects(),
         geometries=MemoryGeometries(),
         departments=Departments(found),
         verifier=verifier,

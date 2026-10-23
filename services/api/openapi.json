@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "paths": {
     "/health": {
@@ -720,7 +720,7 @@
           "Saved zones"
         ],
         "summary": "Delete a saved zone",
-        "description": "Deletes the zone and every version of its outline.",
+        "description": "Deletes the zone and every version of its outline, and takes it out of every project.",
         "operationId": "delete_saved_zone",
         "security": [
           {
@@ -903,6 +903,646 @@
           }
         }
       }
+    },
+    "/v1/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Your projects",
+        "operationId": "list_projects",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create a project",
+        "operationId": "create_project",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "One of your projects",
+        "operationId": "get_project",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Rename or describe a project",
+        "operationId": "change_project",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete a project",
+        "description": "Deletes the project only: its zones stay where they are.",
+        "operationId": "delete_project",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/items": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Add a zone to a project",
+        "description": "Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied.",
+        "operationId": "add_project_item",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SavedItemIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DivisionItemIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PadronItemIn"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "saved": "#/components/schemas/SavedItemIn",
+                    "division": "#/components/schemas/DivisionItemIn",
+                    "padron": "#/components/schemas/PadronItemIn"
+                  }
+                },
+                "title": "Item"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/items/{item_id}": {
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Remove a zone from a project",
+        "description": "Removes the reference only: the zone itself stays.",
+        "operationId": "remove_project_item",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "The item's id, as the project lists it.",
+              "title": "Item Id"
+            },
+            "description": "The item's id, as the project lists it."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -917,6 +1557,32 @@
         "title": "AccountRole",
         "description": "`client` is every account; `editor` manages content and `admin` manages accounts. They combine."
       },
+      "Department": {
+        "type": "string",
+        "enum": [
+          "artigas",
+          "canelones",
+          "cerro-largo",
+          "colonia",
+          "durazno",
+          "flores",
+          "florida",
+          "lavalleja",
+          "maldonado",
+          "montevideo",
+          "paysandu",
+          "rio-negro",
+          "rivera",
+          "rocha",
+          "salto",
+          "san-jose",
+          "soriano",
+          "tacuarembo",
+          "treinta-y-tres"
+        ],
+        "title": "Department",
+        "description": "A department of Uruguay, as cadastral parcels are filed by."
+      },
       "Division": {
         "type": "string",
         "enum": [
@@ -929,6 +1595,63 @@
         ],
         "title": "Division",
         "description": "A predefined division of Uruguay into zones."
+      },
+      "DivisionItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "division",
+            "title": "Kind"
+          },
+          "division": {
+            "$ref": "#/components/schemas/Division"
+          },
+          "zone_id": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z-]{1,40}$",
+            "title": "Zone Id",
+            "description": "The zone's id in its division."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The item's id in the project, used to remove it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "division",
+          "zone_id",
+          "id"
+        ],
+        "title": "DivisionItem"
+      },
+      "DivisionItemIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "division",
+            "title": "Kind"
+          },
+          "division": {
+            "$ref": "#/components/schemas/Division"
+          },
+          "zone_id": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z-]{1,40}$",
+            "title": "Zone Id",
+            "description": "The zone's id in its division."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "division",
+          "zone_id"
+        ],
+        "title": "DivisionItemIn",
+        "description": "A zone of a predefined division."
       },
       "Health": {
         "properties": {
@@ -1055,6 +1778,65 @@
         ],
         "title": "MultiPolygon"
       },
+      "PadronItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "padron",
+            "title": "Kind"
+          },
+          "department": {
+            "$ref": "#/components/schemas/Department"
+          },
+          "padron": {
+            "type": "integer",
+            "maximum": 99999999.0,
+            "minimum": 0.0,
+            "title": "Padron",
+            "description": "The parcel's number in its department."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The item's id in the project, used to remove it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "department",
+          "padron",
+          "id"
+        ],
+        "title": "PadronItem"
+      },
+      "PadronItemIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "padron",
+            "title": "Kind"
+          },
+          "department": {
+            "$ref": "#/components/schemas/Department"
+          },
+          "padron": {
+            "type": "integer",
+            "maximum": 99999999.0,
+            "minimum": 0.0,
+            "title": "Padron",
+            "description": "The parcel's number in its department."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "department",
+          "padron"
+        ],
+        "title": "PadronItemIn",
+        "description": "A cadastral parcel (padrón) of a department."
+      },
       "Polygon": {
         "properties": {
           "type": {
@@ -1162,6 +1944,234 @@
         ],
         "title": "Problem",
         "description": "An error, as Problem Details (RFC 9457)."
+      },
+      "ProjectChange": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The project's new name."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The project's new description."
+          }
+        },
+        "type": "object",
+        "title": "ProjectChange",
+        "description": "The fields to change; those left out keep their value."
+      },
+      "ProjectIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "description": "The project's name.",
+            "examples": [
+              "Campo Las Rosas"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "description": "What the project is about.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectIn",
+        "description": "A new project."
+      },
+      "ProjectOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The project's id."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "items": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SavedItem"
+                },
+                {
+                  "$ref": "#/components/schemas/DivisionItem"
+                },
+                {
+                  "$ref": "#/components/schemas/PadronItem"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "division": "#/components/schemas/DivisionItem",
+                  "padron": "#/components/schemas/PadronItem",
+                  "saved": "#/components/schemas/SavedItem"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "items",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProjectOut",
+        "description": "A project and its zones, in the order they were added."
+      },
+      "ProjectSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The project's id."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "zone_count": {
+            "type": "integer",
+            "title": "Zone Count",
+            "description": "How many zones the project holds."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "zone_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProjectSummary",
+        "description": "One of your projects, without its zones."
+      },
+      "SavedItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "saved",
+            "title": "Kind"
+          },
+          "zone_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Zone Id",
+            "description": "The saved zone's id."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The item's id in the project, used to remove it."
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedZoneOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The saved zone, or null if it was deleted meanwhile."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "zone_id",
+          "id",
+          "zone"
+        ],
+        "title": "SavedItem"
+      },
+      "SavedItemIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "saved",
+            "title": "Kind"
+          },
+          "zone_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Zone Id",
+            "description": "The saved zone's id."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "zone_id"
+        ],
+        "title": "SavedItemIn",
+        "description": "A zone of your library."
       },
       "SavedZoneFeature": {
         "properties": {
@@ -1523,6 +2533,10 @@
     {
       "name": "Saved zones",
       "description": "The zones you keep in your library. Requires signing in."
+    },
+    {
+      "name": "Projects",
+      "description": "Your groups of zones, from any source. Requires signing in."
     },
     {
       "name": "Service",
