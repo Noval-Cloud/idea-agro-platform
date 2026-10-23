@@ -1,0 +1,9 @@
+# Uploads from the repository root build the API: send only what its image needs (services/api/Dockerfile).
+*
+!.python-version
+!pyproject.toml
+!uv.lock
+!services/
+!services/api/
+!services/api/**
+**/__pycache__/

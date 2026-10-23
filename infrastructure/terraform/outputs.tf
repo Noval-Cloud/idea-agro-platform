@@ -25,3 +25,15 @@ output "web_service" {
 output "web_url" {
   value = module.web.url
 }
+
+output "api_service" {
+  value = module.api.service
+}
+
+output "api_url" {
+  value = module.api.url
+}
+
+output "zones_bucket" {
+  value = module.api.zones_bucket
+}

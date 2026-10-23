@@ -1,9 +1,10 @@
+import { getZoneSeasonal, setApiBaseUrl } from "@idea-agro/api-client";
 import type { IndicatorId } from "@/data/indicators";
 
 /*
- * Prototype data access. Every file here was extracted from Earth Engine into `public/explorer`
- * (see the README); the Python API replaces these fetchers with its generated client, keeping
- * the same shapes.
+ * Data access. A zone's seasonal series come from the API through its generated client; the rest are
+ * prototype files extracted from Earth Engine into `public/explorer` (see the README), which the API
+ * replaces fetcher by fetcher, keeping the same shapes.
  */
 
 export type Bounds = [west: number, south: number, east: number, north: number];
@@ -80,18 +81,26 @@ export type ZoneSeasonal = Partial<Record<SeasonalId, (number | null)[]>>;
 const base = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/explorer`;
 const cache = new Map<string, Promise<unknown>>();
 
-export function fetchJson<T>(path: string): Promise<T> {
-  let request = cache.get(path) as Promise<T> | undefined;
+setApiBaseUrl(import.meta.env.PUBLIC_API_URL ?? "http://localhost:8080");
+
+/** Loads once per key; a failed load is forgotten so the next call retries. */
+function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  let request = cache.get(key) as Promise<T> | undefined;
   if (!request) {
-    request = fetch(`${base}/${path}`).then((response) => {
-      if (!response.ok) throw new Error(`${response.status} ${path}`);
-      return response.json() as Promise<T>;
-    });
-    request.catch(() => cache.delete(path));
-    cache.set(path, request);
+    request = load();
+    request.catch(() => cache.delete(key));
+    cache.set(key, request);
   }
   return request;
 }
+
+export const fetchJson = <T>(path: string): Promise<T> =>
+  cached(path, () =>
+    fetch(`${base}/${path}`).then((response) => {
+      if (!response.ok) throw new Error(`${response.status} ${path}`);
+      return response.json() as Promise<T>;
+    }),
+  );
 
 export const loadManifest = () => fetchJson<Manifest>("manifest.json");
 export const loadZones = (division: DivisionId) => fetchJson<ZoneCollection>(`zones/${division}.json`);
@@ -102,7 +111,12 @@ export const loadSummaryStats = (division: DivisionId, indicator: IndicatorId) =
 export const loadHistogramStats = (division: DivisionId, indicator: "compn" | "divtfe") =>
   fetchJson<HistogramStats>(`stats/${division}/${indicator}.json`);
 export const loadZoneSeasonal = (division: DivisionId, id: string) =>
-  fetchJson<ZoneSeasonal>(`series/${division}/${id}.json`);
+  cached(`api/seasonal/${division}/${id}`, async (): Promise<ZoneSeasonal> => {
+    const response = await getZoneSeasonal(division, id);
+    if (response.status !== 200) throw new Error(`${response.status} seasonal ${division}/${id}`);
+    const { ppna, apar, et } = response.data;
+    return { ppna: ppna?.values, apar: apar?.values, et: et?.values };
+  });
 export type ZoneMeta = { properties: ZoneProperties & { parent?: string }; geometry: PolygonGeometry; bbox: Bounds };
 export const loadZoneMeta = (division: DivisionId, id: string) => fetchJson<ZoneMeta>(`zones/${division}/${id}.json`);
 export const loadSearchIndex = () => fetchJson<SearchEntry[]>("search.json");

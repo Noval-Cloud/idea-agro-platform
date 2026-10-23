@@ -1,5 +1,6 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format typecheck test build specs check tf-setup tf-plan tf-apply web-deploy
+.PHONY: help setup lint format typecheck test build generate contract specs check tf-setup tf-plan tf-apply web-deploy \
+	api-dev api-deploy
 
 TF := terraform -chdir=infrastructure/terraform
 # Terraform starts from the person's gcloud credentials, then impersonates the operator account.
@@ -12,7 +13,7 @@ help: ## List the available targets
 
 setup: ## Install every dependency
 	pnpm install --frozen-lockfile
-	uv sync --locked
+	uv sync --locked --all-packages
 
 lint: ## Check formatting and lint rules (read-only)
 	pnpm exec vp fmt --check
@@ -41,11 +42,18 @@ test: ## Run every test suite
 build: ## Build every app
 	pnpm -r --if-present build
 
+generate: ## Write the API's OpenAPI document and the client generated from it
+	uv run python -m idea_agro_api.openapi > services/api/openapi.json
+	pnpm --filter @idea-agro/api-client generate
+
+contract: ## Check that the OpenAPI document and the generated client are up to date
+	scripts/check-contract.sh
+
 specs: ## Validate the OpenSpec changes and specs, and that archived changes have no open task
 	pnpm openspec validate --all --strict --no-interactive
 	! grep -rl -e '- \[ \]' openspec/changes/archive
 
-check: lint typecheck test build specs ## Run lint, typecheck, test, build and specs
+check: lint typecheck test contract build specs ## Run lint, typecheck, test, contract, build and specs
 
 tf-setup: ## Prepare ENV's GCP project for Terraform: a dry run, or APPLY=1 to apply
 	$(require_env)
@@ -64,3 +72,10 @@ tf-apply: ## Apply the plan tf-plan saved for ENV
 web-deploy: ## Build the website and deploy its image to ENV's Cloud Run
 	$(require_env)
 	apps/web/deploy.sh $(ENV)
+
+api-dev: ## Run the API locally on port 8080, serving the website's prototype data
+	ZONES_SOURCE=apps/web/public/explorer uv run uvicorn --factory idea_agro_api.app:create_app_from_env --reload --port 8080
+
+api-deploy: ## Build the API's image from git and deploy it to ENV's Cloud Run
+	$(require_env)
+	services/api/deploy.sh $(ENV)

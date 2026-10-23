@@ -37,20 +37,24 @@ No version manager is needed: each tool reads its own pin.
 
 Everything runs from the root through `make`; `make` alone lists the targets.
 
-| Command                     | What it does                                                                          |
-| :-------------------------- | :------------------------------------------------------------------------------------ |
-| `make setup`                | Install every dependency from the lockfiles                                           |
-| `make lint`                 | Check formatting and lint rules, without changing files                               |
-| `make format`               | Format every file in place                                                            |
-| `make typecheck`            | Type-check TypeScript, Astro and Python                                               |
-| `make test`                 | Run every test suite                                                                  |
-| `make build`                | Build every app                                                                       |
-| `make specs`                | Validate the OpenSpec changes and specs                                               |
-| `make check`                | `lint`, `typecheck`, `test`, `build` and `specs`: the gate before every pull request  |
-| `make tf-setup ENV=<env>`   | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply |
-| `make tf-plan ENV=<env>`    | Save the environment's Terraform plan, read-only                                      |
-| `make tf-apply ENV=<env>`   | Apply the plan `tf-plan` saved                                                        |
-| `make web-deploy ENV=<env>` | Build the website and deploy its image to the environment's Cloud Run                 |
+| Command                     | What it does                                                                                     |
+| :-------------------------- | :----------------------------------------------------------------------------------------------- |
+| `make setup`                | Install every dependency from the lockfiles                                                      |
+| `make lint`                 | Check formatting and lint rules, without changing files                                          |
+| `make format`               | Format every file in place                                                                       |
+| `make typecheck`            | Type-check TypeScript, Astro and Python                                                          |
+| `make test`                 | Run every test suite                                                                             |
+| `make build`                | Build every app                                                                                  |
+| `make generate`             | Write the API's OpenAPI document and the client generated from it                                |
+| `make contract`             | Check that the OpenAPI document and the generated client are up to date                          |
+| `make specs`                | Validate the OpenSpec changes and specs                                                          |
+| `make check`                | `lint`, `typecheck`, `test`, `contract`, `build` and `specs`: the gate before every pull request |
+| `make tf-setup ENV=<env>`   | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply            |
+| `make tf-plan ENV=<env>`    | Save the environment's Terraform plan, read-only                                                 |
+| `make tf-apply ENV=<env>`   | Apply the plan `tf-plan` saved                                                                   |
+| `make web-deploy ENV=<env>` | Build the website and deploy its image to the environment's Cloud Run                            |
+| `make api-dev`              | Run the API locally, serving the website's prototype data                                        |
+| `make api-deploy ENV=<env>` | Build the API's image and deploy it to the environment's Cloud Run                               |
 
 Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to a script, in `scripts/` or in the part it belongs to, such as `infrastructure/setup/`.
 
