@@ -295,8 +295,11 @@ class EarthEngine:
                 for year in years
             ]
         )
-        found = cast(list[dict[str, float]], retry(f"range of {indicator}", percentiles.getInfo))
-        return min(p["v_p2"] for p in found), max(p["v_p98"] for p in found)
+        found = cast(list[dict[str, float | None]], retry(f"range of {indicator}", percentiles.getInfo))
+        # A year without pixels has no percentiles.
+        lows = [low for p in found if (low := p.get("v_p2")) is not None]
+        highs = [high for p in found if (high := p.get("v_p98")) is not None]
+        return min(lows), max(highs)
 
     def picture(
         self, indicator: Indicator, year: int | None, low: float, high: float, width: int, height: int
