@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { signInProviders } from "@/lib/sign-in-providers";
 import type { AccountTranslator } from "./i18n";
 
-type Props = { t: AccountTranslator["t"]; date: AccountTranslator["date"]; signInPath: string; me: string };
+type Props = { t: AccountTranslator["t"]; moment: AccountTranslator["moment"]; signInPath: string; me: string };
 type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
@@ -17,7 +17,7 @@ const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-c
 const nameOf = (account: AdminAccount) => account.name || account.email || account.id;
 
 /** For admins: search accounts, change their roles and access, and read what admins did. */
-export default function Users({ t, date, signInPath, me }: Props) {
+export default function Users({ t, moment, signInPath, me }: Props) {
   const [query, setQuery] = useState("");
   const [accounts, setAccounts] = useState<AdminAccount[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -247,7 +247,7 @@ export default function Users({ t, date, signInPath, me }: Props) {
                 })}
               </p>
               <time dateTime={entry.at} className="text-xs text-ink-subtle">
-                {date(entry.at)}
+                {moment(entry.at)}
               </time>
             </li>
           ))}

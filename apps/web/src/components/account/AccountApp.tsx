@@ -29,7 +29,7 @@ export default function AccountApp({
   projectPath,
   explorePath,
 }: Props) {
-  const { t, date, number } = createAccountTranslator(locale, catalog);
+  const { t, date, moment, number } = createAccountTranslator(locale, catalog);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [ending, setEnding] = useState<"idle" | "working" | "failed">("idle");
 
@@ -120,7 +120,7 @@ export default function AccountApp({
         </section>
       )}
 
-      {me.roles.includes("admin") && <Users t={t} date={date} signInPath={signInPath} me={me.id} />}
+      {me.roles.includes("admin") && <Users t={t} moment={moment} signInPath={signInPath} me={me.id} />}
 
       <section id="sessions" aria-labelledby="sessions-title" className={card}>
         <h2 id="sessions-title" className="text-lg font-medium text-ink">
