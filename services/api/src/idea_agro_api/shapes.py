@@ -65,19 +65,19 @@ def outline_from(geojson: dict[str, Any], within: tuple[float, float, float, flo
 
 
 class Departments:
-    """Which department a point falls in, from the police districts in `zones/seccionales.json`."""
+    """Which department a point falls in, from the police districts in `divisions/seccionales.geojson`."""
 
     def __init__(self, files: Files) -> None:
         self._files = files
 
     @cached_property
     def _index(self) -> tuple[STRtree, list[str]]:
-        content = self._files.read("zones/seccionales.json")
+        content = self._files.read("divisions/seccionales.geojson")
         if content is None:
             return STRtree([]), []
         features = cast(list[dict[str, Any]], json.loads(content)["features"])
         shapes: list[BaseGeometry] = [shape(f["geometry"]) for f in features]
-        names = [str(f["properties"]["dept"]) for f in features]
+        names = [str(f["properties"]["department"]) for f in features]
         return STRtree(shapes), names
 
     def of(self, point: tuple[float, float]) -> str | None:

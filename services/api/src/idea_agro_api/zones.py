@@ -1,7 +1,7 @@
 """The per-zone files the API serves: where they are read from and how they are shaped."""
 
 import json
-from datetime import date, timedelta
+from datetime import date
 from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
@@ -88,28 +88,22 @@ def files_from(source: str) -> Files:
     return LocalFiles(Path(source))
 
 
-def composite_start(band: str) -> date:
-    """The first day of a composite: `b2001-17` starts on day 17 of 2001."""
-    year, day = band.removeprefix("b").split("-")
-    return date(int(year), 1, 1) + timedelta(days=int(day) - 1)
-
-
 type Series = tuple[list[date], list[float | None]]
 
 
 class ZoneStore:
-    """The calendar in `manifest.json`, and one file per zone in `series/<division>/<zone>.json`."""
+    """The calendar in `catalog.json`, and one file per zone in `series/<division>/<zone>.json`."""
 
     def __init__(self, files: Files) -> None:
         self._files = files
 
     @cached_property
     def calendar(self) -> dict[SeasonalIndicator, list[date]]:
-        manifest = self._files.read("manifest.json")
-        if manifest is None:
-            raise RuntimeError("The zone store has no manifest.json")
-        bands = cast(dict[str, list[str]], json.loads(manifest)["seasonal"])
-        return {indicator: [composite_start(band) for band in bands[indicator]] for indicator in SeasonalIndicator}
+        catalog = self._files.read("catalog.json")
+        if catalog is None:
+            raise RuntimeError("The zone store has no catalog.json")
+        dates = cast(dict[str, list[str]], json.loads(catalog)["seasonal"])
+        return {indicator: [date.fromisoformat(d) for d in dates[indicator]] for indicator in SeasonalIndicator}
 
     def exists(self, division: Division, zone: str) -> bool:
         return self._files.read(f"series/{division}/{zone}.json") is not None

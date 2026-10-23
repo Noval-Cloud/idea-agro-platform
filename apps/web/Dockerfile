@@ -1,4 +1,4 @@
-# Static preview: the site is built locally (`pnpm build`, with public/explorer in place) and served by nginx.
+# The site, built before this image (cloudbuild.yaml), served by nginx.
 FROM nginx:1.29-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/security-headers.conf /etc/nginx/snippets/security-headers.conf

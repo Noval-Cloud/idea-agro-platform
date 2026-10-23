@@ -2,7 +2,7 @@
 // Usage: node zone-meta.mjs <web repo>
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 const [WEB] = process.argv.slice(2);
-const OUT = WEB + "/public/explorer";
+const OUT = WEB + "/.cache/prototype-data/explorer";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
 const manifest = readJson(`${OUT}/manifest.json`);
 const rings = (g) => (g.type === "Polygon" ? g.coordinates : g.coordinates.flat());

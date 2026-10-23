@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.5.0
+ * OpenAPI spec version: 1.6.0
  */
 import * as zod from 'zod';
 
@@ -41,6 +41,148 @@ export const GetHealthResponse = zod.object({
 
 
 /**
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.
+ * @summary What data exists
+ */
+export const getCatalogResponseBoundsMin = 4;
+export const getCatalogResponseBoundsMax = 4;
+
+export const getCatalogResponseSizeMin = 2;
+export const getCatalogResponseSizeMax = 2;
+
+export const getCatalogResponseLiteSizeMin = 2;
+export const getCatalogResponseLiteSizeMax = 2;
+
+export const getCatalogResponsePadronesBboxMin = 4;
+export const getCatalogResponsePadronesBboxMax = 4;
+
+
+
+export const GetCatalogResponse = zod.object({
+  "bounds": zod.array(zod.number()).min(getCatalogResponseBoundsMin).max(getCatalogResponseBoundsMax).describe('The area the map images cover: west, south, east and north, in degrees.'),
+  "size": zod.array(zod.int()).min(getCatalogResponseSizeMin).max(getCatalogResponseSizeMax).describe('Width and height of the full map images.'),
+  "lite_size": zod.array(zod.int()).min(getCatalogResponseLiteSizeMin).max(getCatalogResponseLiteSizeMax).describe('Width and height of the light map images.'),
+  "indicators": zod.record(zod.string(), zod.object({
+  "kind": zod.enum(['continuous', 'binary', 'categorical']).describe('`continuous` values, `binary` (present or not) or `categorical` (classes).'),
+  "years": zod.union([zod.array(zod.int()),zod.null()]).describe('The years with a value, or null for an indicator measured once.'),
+  "min": zod.union([zod.number(),zod.null()]).optional().describe('The lowest value on the map, for its color scale.'),
+  "max": zod.union([zod.number(),zod.null()]).optional().describe('The highest value on the map, for its color scale.'),
+  "classes": zod.union([zod.array(zod.int()),zod.null()]).optional().describe('The classes of a categorical indicator.')
+}).describe('What an indicator holds.')),
+  "seasonal": zod.record(zod.string(), zod.array(zod.iso.date())).describe('The first day of each seasonal indicator\'s composites, in the order zone series list them.'),
+  "divisions": zod.record(zod.string(), zod.int()).describe('How many zones each predefined division has.'),
+  "padrones": zod.record(zod.string(), zod.object({
+  "name": zod.string().describe('The department\'s name.'),
+  "count": zod.int().describe('How many rural parcels it has.'),
+  "bbox": zod.array(zod.number()).min(getCatalogResponsePadronesBboxMin).max(getCatalogResponsePadronesBboxMax).describe('West, south, east and north, in degrees.')
+})).describe('The departments with rural parcels.'),
+  "outline": zod.object({
+  "width": zod.number(),
+  "height": zod.number(),
+  "d": zod.string()
+}).describe('The country\'s outline as an SVG path, in the pixels of the full map images.')
+}).describe('What data exists, and the frame of the map images.')
+
+
+/**
+ * Each zone of the predefined divisions and each department, with a label and its extent.
+ * @summary Every zone and department, to search them
+ */
+export const getZoneIndexResponseBboxMin = 4;
+export const getZoneIndexResponseBboxMax = 4;
+
+
+
+export const GetZoneIndexResponseItem = zod.object({
+  "division": zod.union([zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),zod.literal("department")]),
+  "id": zod.string(),
+  "label": zod.string(),
+  "detail": zod.union([zod.string(),zod.null()]).optional(),
+  "bbox": zod.array(zod.number()).min(getZoneIndexResponseBboxMin).max(getZoneIndexResponseBboxMax).describe('West, south, east and north, in degrees.')
+}).describe('A zone, or a department to fly to, as the map\'s search lists them.')
+export const GetZoneIndexResponse = zod.array(GetZoneIndexResponseItem)
+
+
+/**
+ * Every zone of the division as GeoJSON, with outlines simplified for the map. Cacheable for an hour.
+ * @summary A division's zones
+ */
+export const GetDivisionZonesParams = zod.object({
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.')
+})
+
+export const GetDivisionZonesResponse = zod.unknown()
+
+
+/**
+ * For an indicator with years, each zone's yearly values; for one measured once, each zone's mean and quartiles; for a categorical one, each class's share of the zone. Cacheable for an hour.
+ * @summary An indicator's values in every zone of a division
+ */
+export const GetDivisionValuesParams = zod.object({
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
+})
+
+export const GetDivisionValuesResponse = zod.object({
+  "years": zod.union([zod.array(zod.int()),zod.null()]),
+  "values": zod.record(zod.string(), zod.union([zod.array(zod.union([zod.number(),zod.null()])),zod.object({
+  "mean": zod.union([zod.number(),zod.null()]),
+  "p25": zod.union([zod.number(),zod.null()]),
+  "p75": zod.union([zod.number(),zod.null()])
+}),zod.record(zod.string(), zod.number()),zod.null()]))
+}).describe('Each zone\'s value of an indicator, by zone id.\n\nFor an indicator with years, a list aligned with `years`; for one measured once, a summary; for a categorical\none, each class\'s share.')
+
+
+/**
+ * @summary A zone and its outline
+ */
+export const getZonePathZoneRegExp = new RegExp('^[0-9]{1,8}$');
+
+
+export const GetZoneParams = zod.object({
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
+  "zone": zod.string().regex(getZonePathZoneRegExp).describe('The zone\'s id within its division.')
+})
+
+export const getZoneResponseGeometryOneCoordinatesItemItemMin = 2;
+export const getZoneResponseGeometryOneCoordinatesItemItemMax = 3;
+
+export const getZoneResponseGeometryOneCoordinatesItemMin = 4;
+
+
+export const getZoneResponseGeometryTwoCoordinatesItemItemItemMin = 2;
+export const getZoneResponseGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const getZoneResponseGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+export const getZoneResponseBboxMin = 4;
+export const getZoneResponseBboxMax = 4;
+
+
+
+export const GetZoneResponse = zod.object({
+  "properties": zod.object({
+  "id": zod.string().describe('The zone\'s id within its division.'),
+  "name": zod.union([zod.string(),zod.null()]).describe('Its name, when it has one.'),
+  "area_km2": zod.number(),
+  "department": zod.union([zod.string(),zod.null()]).optional().describe('The department of a police district.'),
+  "section": zod.union([zod.int(),zod.null()]).optional().describe('The number of a police district in its department.'),
+  "parent": zod.union([zod.string(),zod.null()]).optional().describe('The basin a grade 5 sub-basin belongs to.')
+}),
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(getZoneResponseGeometryOneCoordinatesItemItemMin).max(getZoneResponseGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(getZoneResponseGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(getZoneResponseGeometryTwoCoordinatesItemItemItemMin).max(getZoneResponseGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(getZoneResponseGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.'),
+  "bbox": zod.array(zod.number()).min(getZoneResponseBboxMin).max(getZoneResponseBboxMax).describe('West, south, east and north, in degrees.')
+}).describe('A zone with its full outline.')
+
+
+/**
  * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). The response can be cached for an hour.
  * @summary Seasonal series of a zone
  */
@@ -48,7 +190,7 @@ export const getZoneSeasonalPathZoneRegExp = new RegExp('^[0-9]{1,8}$');
 
 
 export const GetZoneSeasonalParams = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division the zone belongs to.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
   "zone": zod.string().regex(getZoneSeasonalPathZoneRegExp).describe('The zone\'s id within its division.')
 })
 
@@ -74,6 +216,56 @@ export const GetZoneSeasonalResponse = zod.object({
   "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
 }).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
 }).describe('The seasonal series of a zone. An indicator without data in the zone is left out.')
+
+
+/**
+ * @summary A small picture of an indicator's map
+ */
+export const GetMapThumbnailParams = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
+})
+
+export const GetMapThumbnailQueryParams = zod.object({
+  "theme": zod.enum(['light', 'dark']).optional().describe('For a light or a dark page.')
+})
+
+export const GetMapThumbnailResponse = zod.unknown()
+
+
+/**
+ * A grayscale image of the indicator over the catalog's `bounds`, in Web Mercator: gray levels stand for values between the indicator's `min` and `max`, and transparency for no data. `full` is the catalog's `size`, `lite` its `lite_size`. Cacheable for a day.
+ * @summary An indicator's map of a period
+ */
+export const getMapPathPeriodRegExp = new RegExp('^([0-9]{4}|static)$');
+
+
+export const GetMapParams = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.'),
+  "period": zod.string().regex(getMapPathPeriodRegExp).describe('A year of the indicator, or `static` for one measured once.')
+})
+
+export const GetMapQueryParams = zod.object({
+  "size": zod.enum(['full', 'lite']).optional().describe('Full or light.')
+})
+
+export const GetMapResponse = zod.unknown()
+
+
+/**
+ * @summary The parcel numbers of each department
+ */
+export const GetPadronIndexResponse = zod.record(zod.string(), zod.array(zod.int())).describe('The parcel numbers of each department, sorted.')
+
+
+/**
+ * Their outlines as GeoJSON, with each parcel's number and area. Cacheable for an hour.
+ * @summary A department's rural parcels
+ */
+export const GetPadronesParams = zod.object({
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('The department.')
+})
+
+export const GetPadronesResponse = zod.unknown()
 
 
 /**

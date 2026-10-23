@@ -1,7 +1,24 @@
-# The site is built before the upload: this builds its image, pushes it and updates only the service's image.
+# Builds the site with the environment's settings, then its image, pushes it and updates only the service's image.
 steps:
+  - name: ${_CI_IMAGE}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        pnpm install --frozen-lockfile
+        pnpm --filter @idea-agro/web build
+    env:
+      - SITE_URL=${_SITE_URL}
+      - PUBLIC_API_URL=${_API_URL}
+      - PUBLIC_AUTH_DOMAIN=${_AUTH_DOMAIN}
+      - PUBLIC_AUTH_KEY=${_AUTH_KEY}
+      - AUTH_CSP_CONNECT=${_CSP_CONNECT}
+      - AUTH_CSP_FRAME=${_CSP_FRAME}
+      - AUTH_CSP_SCRIPT=${_CSP_SCRIPT}
+      - AUTH_CSP_IMAGES=${_CSP_IMAGES}
   - name: gcr.io/cloud-builders/docker
-    args: ["build", "--tag", "${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}", "."]
+    args: ["build", "--tag", "${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}", "apps/web"]
   - name: gcr.io/cloud-builders/docker
     args: ["push", "${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}"]
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -13,5 +30,6 @@ steps:
       - ${_SERVICE}
       - --region=${_REGION}
       - --image=${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}
+timeout: 1800s
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -39,7 +39,7 @@ Only the routes about the caller's own account, zones and projects are private. 
 
 A person's library of zones, apart from any project, under `/v1/saved-zones` (private).
 
-- **Checks on save:** the outline must be a valid Polygon or MultiPolygon that touches Uruguay. Its geodesic area, bounding box and department (from the police districts in `zones/seccionales.json` of `ZONES_SOURCE`) are computed on save.
+- **Checks on save:** the outline must be a valid Polygon or MultiPolygon that touches Uruguay. Its geodesic area, bounding box and department (from the police districts in `divisions/seccionales.geojson` of `ZONES_SOURCE`) are computed on save.
 - **Storage:**
   - each version of an outline is an immutable GeoJSON file, behind a `GeometryStore`: `GEOMETRIES_SOURCE` is `gs://<bucket>` (private, reachable only by the API) or `memory://`;
   - the metadata lives in the records store (`RECORDS_SOURCE`).
@@ -61,16 +61,25 @@ With it running, `pnpm dev` in `apps/web` reads from it. Private routes answer 5
 
 ## Data
 
-The API reads `ZONES_SOURCE`, a bucket (`gs://<project>-zones`) or a local folder, with:
+The API serves the public data from `ZONES_SOURCE`, a bucket (`gs://<project>-zones`) or a local folder, as it is stored (`public_data.py` names every file):
 
-- `manifest.json`, whose `seasonal` lists each indicator's composites (`b2001-17` starts on day 17 of 2001);
-- `series/<division>/<zone>.json`, each indicator's values in the zone, in the manifest's order.
+| File                                          | What it holds                                                          |
+| :-------------------------------------------- | :--------------------------------------------------------------------- |
+| `catalog.json`                                | Indicators, seasonal calendars, divisions, parcels and the maps' frame |
+| `divisions/<division>.geojson`                | A division's zones, simplified for the map                             |
+| `divisions/<division>/<zone>.json`            | A zone with its full outline                                           |
+| `values/<division>/<indicator>.json`          | An indicator's values in every zone of a division                      |
+| `series/<division>/<zone>.json`               | A zone's seasonal series, in the order of the catalog's calendars      |
+| `zone-index.json`                             | Every zone and department, for the map's search                        |
+| `padrones/index.json`, `<department>.geojson` | The parcel numbers of each department, and its parcels                 |
+| `maps/<indicator>/[lite/]<period>.webp`       | An indicator's map of a year (or `static`), full or light              |
+| `maps/thumbnails/<indicator>-<theme>.webp`    | A small picture of each indicator's map                                |
 
-To load the website's prototype data into an environment's bucket:
+Until the data jobs write it from Earth Engine, it comes from the prototype's data (`apps/web/.cache/prototype-data/explorer/`):
 
 ```bash
-gcloud storage cp apps/web/public/explorer/manifest.json gs://<project>-zones/
-gcloud storage cp -r apps/web/public/explorer/series gs://<project>-zones/
+make public-data   # writes .cache/public-data, which make api-dev serves
+gcloud storage rsync --recursive --delete-unmatched-destination-objects .cache/public-data gs://<project>-zones
 ```
 
 ## Deploy

@@ -53,7 +53,8 @@ Everything runs from the root through `make`; `make` alone lists the targets.
 | `make tf-plan ENV=<env>`    | Save the environment's Terraform plan, read-only                                                 |
 | `make tf-apply ENV=<env>`   | Apply the plan `tf-plan` saved                                                                   |
 | `make web-deploy ENV=<env>` | Build the website and deploy its image to the environment's Cloud Run                            |
-| `make api-dev`              | Run the API locally, serving the website's prototype data                                        |
+| `make public-data`          | Turn the prototype's data into the API's public data, in `.cache/public-data`                    |
+| `make api-dev`              | Run the API locally, serving `.cache/public-data`                                                |
 | `make api-deploy ENV=<env>` | Build the API's image and deploy it to the environment's Cloud Run                               |
 | `make ci-checks ENV=<env>`  | Run `make check` on the environment's Cloud Build, as a pull request does                        |
 | `make ci-image ENV=<env>`   | Build the environment's CI image on Cloud Build                                                  |

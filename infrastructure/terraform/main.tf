@@ -43,4 +43,12 @@ module "ci" {
   builder_email     = module.platform.builder_email
   image_repository  = module.platform.image_repository
   api_service       = module.api.service
+  web_service       = module.web.service
+  web_settings = {
+    site_url    = module.web.url
+    api_url     = module.api.url
+    auth_domain = module.identity.auth_domain
+    auth_key    = module.identity.browser_key
+    csp         = module.identity.csp
+  }
 }

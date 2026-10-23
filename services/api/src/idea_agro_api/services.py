@@ -11,6 +11,7 @@ from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
 from idea_agro_api.projects import MemoryProjects, ProjectStore, projects_from
+from idea_agro_api.public_data import PublicData
 from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zones_from
 from idea_agro_api.security import RateLimit
 from idea_agro_api.shapes import Departments
@@ -61,6 +62,7 @@ class Limits:
 @dataclass(frozen=True)
 class Services:
     zones: ZoneStore
+    public_data: PublicData
     accounts: AccountStore
     saved_zones: SavedZoneStore
     projects: ProjectStore
@@ -95,6 +97,7 @@ class Services:
             )
         return Services(
             zones=ZoneStore(files),
+            public_data=PublicData(files),
             accounts=accounts_from(records),
             saved_zones=saved_zones_from(records),
             projects=projects_from(records),
@@ -121,6 +124,7 @@ def services_for_tests(
     found = files or LocalFiles(Path("/nonexistent"))
     base = Services(
         zones=zones or ZoneStore(found),
+        public_data=PublicData(found),
         accounts=MemoryAccounts(),
         saved_zones=MemorySavedZones(),
         projects=MemoryProjects(),

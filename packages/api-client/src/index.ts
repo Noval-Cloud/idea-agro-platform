@@ -1,3 +1,3 @@
 export * from "./generated/api";
 export * as schemas from "./generated/zod";
-export { setApiBaseUrl } from "./fetcher";
+export { apiUrl, setApiBaseUrl } from "./fetcher";

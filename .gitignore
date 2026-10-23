@@ -15,9 +15,6 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# Prototype data extracted from Earth Engine, until the API serves it
-apps/web/public/explorer/
-
 # Terraform
 .terraform/
 *.tfstate

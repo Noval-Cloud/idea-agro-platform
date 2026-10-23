@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 const WEB = resolve(process.argv[2] ?? ".");
 const sharp = createRequire(WEB + "/package.json")("sharp");
 const OUT = WEB + "/src/assets/maps";
-const DATA = WEB + "/public/explorer";
+const DATA = WEB + "/.cache/prototype-data/explorer";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
 const manifest = readJson(`${DATA}/manifest.json`);
 const theme = readJson(`${WEB}/src/design/generated/map-theme.json`);

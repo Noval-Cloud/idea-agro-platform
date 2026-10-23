@@ -28,11 +28,11 @@ def zone(name: str = "Potrero 3", geometry: dict[str, Any] | None = None) -> dic
 def client_with(tmp_path: Path, verifier: OidcVerifier, **limits: Any) -> TestClient:
     district = {
         "type": "Feature",
-        "properties": {"dept": "Tacuarembó"},
+        "properties": {"department": "Tacuarembó"},
         "geometry": {"type": "Polygon", "coordinates": [DISTRICT]},
     }
-    (tmp_path / "zones").mkdir()
-    (tmp_path / "zones" / "seccionales.json").write_text(
+    (tmp_path / "divisions").mkdir()
+    (tmp_path / "divisions" / "seccionales.geojson").write_text(
         json.dumps({"type": "FeatureCollection", "features": [district]})
     )
     services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, limits=Limits(**limits))
@@ -232,7 +232,7 @@ class FailingGeometries(MemoryGeometries):
 
 
 def test_a_failed_import_leaves_nothing_behind(tmp_path: Path, verifier: OidcVerifier) -> None:
-    (tmp_path / "zones").mkdir()
+    (tmp_path / "divisions").mkdir()
     geometries = FailingGeometries()
     services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, geometries=geometries)
     client = TestClient(create_app(services), raise_server_exceptions=False)

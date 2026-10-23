@@ -5,16 +5,17 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
-from idea_agro_api.routes import admin, me, projects, saved_zones, service, zones
+from idea_agro_api.routes import admin, catalog, maps, me, padrones, projects, saved_zones, service, zones
 from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.5.0"
+API_VERSION = "1.6.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -44,7 +45,10 @@ Every error is a Problem Details object (RFC 9457), served as `application/probl
 """
 
 TAGS = [
-    {"name": "Zones", "description": "Indicator values of the predefined zones of each division."},
+    {"name": "Catalog", "description": "What data exists: indicators, divisions, parcels and the frame of the maps."},
+    {"name": "Zones", "description": "The predefined divisions and their zones, with their outlines and values."},
+    {"name": "Maps", "description": "Each indicator's map images, by period."},
+    {"name": "Parcels", "description": "The rural parcels (padrones) of each department."},
     {"name": "Account", "description": "Your own account. Requires signing in."},
     {"name": "Saved zones", "description": "The zones you keep in your library. Requires signing in."},
     {"name": "Projects", "description": "Your groups of zones, from any source. Requires signing in."},
@@ -76,9 +80,11 @@ def create_app(services: Services) -> FastAPI:
         allow_headers=["*"],
     )
     app.middleware("http")(security_headers)
+    # Geometries and indexes are megabytes of text; Cloud Run does not compress by itself.
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    for module in (service, zones, me, saved_zones, projects, admin):
+    for module in (service, catalog, zones, maps, padrones, me, saved_zones, projects, admin):
         app.include_router(module.router)
 
     def openapi() -> dict[str, Any]:
