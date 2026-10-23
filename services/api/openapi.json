@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.5.0"
+    "version": "1.6.0"
   },
   "paths": {
     "/health": {
@@ -31,6 +31,261 @@
         }
       }
     },
+    "/v1/catalog": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "What data exists",
+        "description": "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.",
+        "operationId": "get_catalog",
+        "responses": {
+          "200": {
+            "description": "The catalog.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zones/index": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Every zone and department, to search them",
+        "description": "Each zone of the predefined divisions and each department, with a label and its extent.",
+        "operationId": "get_zone_index",
+        "responses": {
+          "200": {
+            "description": "The index.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ZoneIndexEntry"
+                  },
+                  "type": "array",
+                  "title": "Response 200 Get Zone Index"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/divisions/{division}/zones": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "A division's zones",
+        "description": "Every zone of the division as GeoJSON, with outlines simplified for the map. Cacheable for an hour.",
+        "operationId": "get_division_zones",
+        "parameters": [
+          {
+            "name": "division",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Division",
+              "description": "The division."
+            },
+            "description": "The division."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The zones.",
+            "content": {
+              "application/geo+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneCollection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/divisions/{division}/values/{indicator}": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "An indicator's values in every zone of a division",
+        "description": "For an indicator with years, each zone's yearly values; for one measured once, each zone's mean and quartiles; for a categorical one, each class's share of the zone. Cacheable for an hour.",
+        "operationId": "get_division_values",
+        "parameters": [
+          {
+            "name": "division",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Division",
+              "description": "The division."
+            },
+            "description": "The division."
+          },
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The values, by zone id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionValues"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/zones/{division}/{zone}": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "A zone and its outline",
+        "operationId": "get_zone",
+        "parameters": [
+          {
+            "name": "division",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Division",
+              "description": "The division."
+            },
+            "description": "The division."
+          },
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,8}$",
+              "description": "The zone's id within its division.",
+              "examples": [
+                "1806"
+              ],
+              "title": "Zone"
+            },
+            "description": "The zone's id within its division."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The zone.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The zone does not exist in that division.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/zones/{division}/{zone}/seasonal": {
       "get": {
         "tags": [
@@ -46,9 +301,9 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/Division",
-              "description": "The division the zone belongs to."
+              "description": "The division."
             },
-            "description": "The division the zone belongs to."
+            "description": "The division."
           },
           {
             "name": "zone",
@@ -79,6 +334,228 @@
           },
           "404": {
             "description": "The zone does not exist in that division.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/maps/{indicator}/thumbnail": {
+      "get": {
+        "tags": [
+          "Maps"
+        ],
+        "summary": "A small picture of an indicator's map",
+        "operationId": "get_map_thumbnail",
+        "parameters": [
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          },
+          {
+            "name": "theme",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Theme",
+              "description": "For a light or a dark page.",
+              "default": "light"
+            },
+            "description": "For a light or a dark page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A WebP image.",
+            "content": {
+              "image/webp": {}
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/maps/{indicator}/{period}": {
+      "get": {
+        "tags": [
+          "Maps"
+        ],
+        "summary": "An indicator's map of a period",
+        "description": "A grayscale image of the indicator over the catalog's `bounds`, in Web Mercator: gray levels stand for values between the indicator's `min` and `max`, and transparency for no data. `full` is the catalog's `size`, `lite` its `lite_size`. Cacheable for a day.",
+        "operationId": "get_map",
+        "parameters": [
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^([0-9]{4}|static)$",
+              "description": "A year of the indicator, or `static` for one measured once.",
+              "examples": [
+                "2024"
+              ],
+              "title": "Period"
+            },
+            "description": "A year of the indicator, or `static` for one measured once."
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MapSize",
+              "description": "Full or light.",
+              "default": "full"
+            },
+            "description": "Full or light."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A WebP image.",
+            "content": {
+              "image/webp": {}
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/padrones": {
+      "get": {
+        "tags": [
+          "Parcels"
+        ],
+        "summary": "The parcel numbers of each department",
+        "operationId": "get_padron_index",
+        "responses": {
+          "200": {
+            "description": "The parcel numbers of each department, sorted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PadronIndex"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/padrones/{department}": {
+      "get": {
+        "tags": [
+          "Parcels"
+        ],
+        "summary": "A department's rural parcels",
+        "description": "Their outlines as GeoJSON, with each parcel's number and area. Cacheable for an hour.",
+        "operationId": "get_padrones",
+        "parameters": [
+          {
+            "name": "department",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Department",
+              "description": "The department."
+            },
+            "description": "The department."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The parcels.",
+            "content": {
+              "application/geo+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PadronCollection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3303,6 +3780,103 @@
         "title": "AuditOut",
         "description": "One admin action."
       },
+      "Catalog": {
+        "properties": {
+          "bounds": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Bounds",
+            "description": "The area the map images cover: west, south, east and north, in degrees."
+          },
+          "size": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Size",
+            "description": "Width and height of the full map images."
+          },
+          "lite_size": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Lite Size",
+            "description": "Width and height of the light map images."
+          },
+          "indicators": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/IndicatorRange"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Indicator"
+            },
+            "type": "object",
+            "title": "Indicators"
+          },
+          "seasonal": {
+            "additionalProperties": {
+              "items": {
+                "type": "string",
+                "format": "date"
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/SeasonalIndicator"
+            },
+            "type": "object",
+            "title": "Seasonal",
+            "description": "The first day of each seasonal indicator's composites, in the order zone series list them."
+          },
+          "divisions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Division"
+            },
+            "type": "object",
+            "title": "Divisions",
+            "description": "How many zones each predefined division has."
+          },
+          "padrones": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PadronDepartment"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Department"
+            },
+            "type": "object",
+            "title": "Padrones",
+            "description": "The departments with rural parcels."
+          },
+          "outline": {
+            "$ref": "#/components/schemas/MapOutline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bounds",
+          "size",
+          "lite_size",
+          "indicators",
+          "seasonal",
+          "divisions",
+          "padrones",
+          "outline"
+        ],
+        "title": "Catalog",
+        "description": "What data exists, and the frame of the map images."
+      },
       "Department": {
         "type": "string",
         "enum": [
@@ -3399,6 +3973,64 @@
         "title": "DivisionItemIn",
         "description": "A zone of a predefined division."
       },
+      "DivisionValues": {
+        "properties": {
+          "years": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years"
+          },
+          "values": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                {
+                  "$ref": "#/components/schemas/ValueSummary"
+                },
+                {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "years",
+          "values"
+        ],
+        "title": "DivisionValues",
+        "description": "Each zone's value of an indicator, by zone id.\n\nFor an indicator with years, a list aligned with `years`; for one measured once, a summary; for a categorical\none, each class's share."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3428,6 +4060,130 @@
           "status"
         ],
         "title": "Health"
+      },
+      "Indicator": {
+        "type": "string",
+        "enum": [
+          "apar",
+          "cob",
+          "ppna",
+          "compn",
+          "rh",
+          "et",
+          "iose",
+          "divtfe",
+          "csue",
+          "ahppn"
+        ],
+        "title": "Indicator",
+        "description": "An indicator with a map and values per zone."
+      },
+      "IndicatorRange": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "binary",
+              "categorical"
+            ],
+            "title": "Kind",
+            "description": "`continuous` values, `binary` (present or not) or `categorical` (classes)."
+          },
+          "years": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years",
+            "description": "The years with a value, or null for an indicator measured once."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "The lowest value on the map, for its color scale."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "The highest value on the map, for its color scale."
+          },
+          "classes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classes",
+            "description": "The classes of a categorical indicator."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "years"
+        ],
+        "title": "IndicatorRange",
+        "description": "What an indicator holds."
+      },
+      "MapOutline": {
+        "properties": {
+          "width": {
+            "type": "number",
+            "title": "Width"
+          },
+          "height": {
+            "type": "number",
+            "title": "Height"
+          },
+          "d": {
+            "type": "string",
+            "title": "D"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width",
+          "height",
+          "d"
+        ],
+        "title": "MapOutline",
+        "description": "The country's outline as an SVG path, in the pixels of the full map images."
+      },
+      "MapSize": {
+        "type": "string",
+        "enum": [
+          "full",
+          "lite"
+        ],
+        "title": "MapSize"
       },
       "Me": {
         "properties": {
@@ -3694,6 +4450,123 @@
         "title": "OutlineVersionOut",
         "description": "One version of a zone's outline."
       },
+      "PadronCollection": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "FeatureCollection",
+            "title": "Type",
+            "default": "FeatureCollection"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/PadronFeature"
+            },
+            "type": "array",
+            "title": "Features"
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "PadronCollection",
+        "description": "A department's rural parcels."
+      },
+      "PadronDepartment": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The department's name."
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "How many rural parcels it has."
+          },
+          "bbox": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Bbox",
+            "description": "West, south, east and north, in degrees."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "count",
+          "bbox"
+        ],
+        "title": "PadronDepartment"
+      },
+      "PadronFeature": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "Feature",
+            "title": "Type",
+            "default": "Feature"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/PadronProperties"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Polygon"
+              },
+              {
+                "$ref": "#/components/schemas/MultiPolygon"
+              }
+            ],
+            "title": "Geometry",
+            "description": "A GeoJSON geometry, in WGS 84.",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Polygon": "#/components/schemas/Polygon"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "properties",
+          "geometry"
+        ],
+        "title": "PadronFeature"
+      },
+      "PadronIndex": {
+        "additionalProperties": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "propertyNames": {
+          "$ref": "#/components/schemas/Department"
+        },
+        "type": "object",
+        "title": "PadronIndex",
+        "description": "The parcel numbers of each department, sorted."
+      },
       "PadronItem": {
         "properties": {
           "kind": {
@@ -3752,6 +4625,25 @@
         ],
         "title": "PadronItemIn",
         "description": "A cadastral parcel (padrón) of a department."
+      },
+      "PadronProperties": {
+        "properties": {
+          "padron": {
+            "type": "integer",
+            "title": "Padron",
+            "description": "The parcel's number in its department."
+          },
+          "area_ha": {
+            "type": "number",
+            "title": "Area Ha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "padron",
+          "area_ha"
+        ],
+        "title": "PadronProperties"
       },
       "Polygon": {
         "properties": {
@@ -4411,6 +5303,16 @@
         "title": "SavedZonesImport",
         "description": "Several zones to save at once, such as the polygons of an uploaded file."
       },
+      "SeasonalIndicator": {
+        "type": "string",
+        "enum": [
+          "ppna",
+          "apar",
+          "et"
+        ],
+        "title": "SeasonalIndicator",
+        "description": "An indicator with a seasonal series per zone."
+      },
       "SeasonalSeries": {
         "properties": {
           "unit": {
@@ -4464,6 +5366,14 @@
         "title": "SeasonalSeries",
         "description": "One indicator's seasonal series in a zone: the zone's mean for each composite of the satellite record."
       },
+      "Theme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark"
+        ],
+        "title": "Theme"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -4503,6 +5413,289 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ValueSummary": {
+        "properties": {
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "p25": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P25"
+          },
+          "p75": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P75"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "p25",
+          "p75"
+        ],
+        "title": "ValueSummary"
+      },
+      "ZoneCollection": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "FeatureCollection",
+            "title": "Type",
+            "default": "FeatureCollection"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/ZoneFeature"
+            },
+            "type": "array",
+            "title": "Features"
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "ZoneCollection",
+        "description": "A division's zones, with simplified outlines for the map."
+      },
+      "ZoneDetail": {
+        "properties": {
+          "properties": {
+            "$ref": "#/components/schemas/ZoneProperties"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Polygon"
+              },
+              {
+                "$ref": "#/components/schemas/MultiPolygon"
+              }
+            ],
+            "title": "Geometry",
+            "description": "A GeoJSON geometry, in WGS 84.",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Polygon": "#/components/schemas/Polygon"
+              }
+            }
+          },
+          "bbox": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Bbox",
+            "description": "West, south, east and north, in degrees."
+          }
+        },
+        "type": "object",
+        "required": [
+          "properties",
+          "geometry",
+          "bbox"
+        ],
+        "title": "ZoneDetail",
+        "description": "A zone with its full outline."
+      },
+      "ZoneFeature": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "Feature",
+            "title": "Type",
+            "default": "Feature"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "A number for the map's feature state."
+          },
+          "properties": {
+            "$ref": "#/components/schemas/ZoneProperties"
+          },
+          "geometry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Polygon"
+              },
+              {
+                "$ref": "#/components/schemas/MultiPolygon"
+              }
+            ],
+            "title": "Geometry",
+            "description": "A GeoJSON geometry, in WGS 84.",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Polygon": "#/components/schemas/Polygon"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "properties",
+          "geometry"
+        ],
+        "title": "ZoneFeature"
+      },
+      "ZoneIndexEntry": {
+        "properties": {
+          "division": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Division"
+              },
+              {
+                "type": "string",
+                "const": "department"
+              }
+            ],
+            "title": "Division"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "bbox": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Bbox",
+            "description": "West, south, east and north, in degrees."
+          }
+        },
+        "type": "object",
+        "required": [
+          "division",
+          "id",
+          "label",
+          "bbox"
+        ],
+        "title": "ZoneIndexEntry",
+        "description": "A zone, or a department to fly to, as the map's search lists them."
+      },
+      "ZoneProperties": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The zone's id within its division."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Its name, when it has one."
+          },
+          "area_km2": {
+            "type": "number",
+            "title": "Area Km2"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department",
+            "description": "The department of a police district."
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section",
+            "description": "The number of a police district in its department."
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent",
+            "description": "The basin a grade 5 sub-basin belongs to."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "area_km2"
+        ],
+        "title": "ZoneProperties"
       },
       "ZoneSeasonal": {
         "properties": {
@@ -4571,8 +5764,20 @@
   },
   "tags": [
     {
+      "name": "Catalog",
+      "description": "What data exists: indicators, divisions, parcels and the frame of the maps."
+    },
+    {
       "name": "Zones",
-      "description": "Indicator values of the predefined zones of each division."
+      "description": "The predefined divisions and their zones, with their outlines and values."
+    },
+    {
+      "name": "Maps",
+      "description": "Each indicator's map images, by period."
+    },
+    {
+      "name": "Parcels",
+      "description": "The rural parcels (padrones) of each department."
     },
     {
       "name": "Account",

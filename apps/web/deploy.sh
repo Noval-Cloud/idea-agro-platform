@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the website and deploys its image to an environment's Cloud Run service.
+# Builds the website on Cloud Build and deploys its image to an environment's Cloud Run service.
 set -euo pipefail
 
 case "${1:-}" in
@@ -34,11 +34,10 @@ BUILDER="$(tf output -raw builder_email)"
 SOURCES="$(tf output -raw build_sources_bucket)"
 IMAGES="$(tf output -raw image_repository)"
 
-SITE_URL="$URL" PUBLIC_API_URL="$API_URL" PUBLIC_AUTH_DOMAIN="$AUTH_DOMAIN" PUBLIC_AUTH_KEY="$AUTH_KEY" \
-  AUTH_CSP_CONNECT="$CSP_CONNECT" AUTH_CSP_FRAME="$CSP_FRAME" AUTH_CSP_SCRIPT="$CSP_SCRIPT" AUTH_CSP_IMAGES="$CSP_IMAGES" \
-  pnpm --filter @idea-agro/web build
-gcloud builds submit apps/web --project="$PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
+# The same pipeline as the trigger: the site is built on Cloud Build, from the repository as git sees it.
+gcloud builds submit . --project="$PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
+  --ignore-file=.ci.gcloudignore \
   --service-account="projects/$PROJECT/serviceAccounts/$BUILDER" \
   --gcs-source-staging-dir="gs://$SOURCES/source" \
-  --substitutions="_IMAGE_REPOSITORY=$IMAGES,_SERVICE=$SERVICE,_REGION=$REGION"
+  --substitutions="^@^_CI_IMAGE=$(tf output -raw ci_image)@_IMAGE_REPOSITORY=$IMAGES@_SERVICE=$SERVICE@_REGION=$REGION@_SITE_URL=$URL@_API_URL=$API_URL@_AUTH_DOMAIN=$AUTH_DOMAIN@_AUTH_KEY=$AUTH_KEY@_CSP_CONNECT=$CSP_CONNECT@_CSP_FRAME=$CSP_FRAME@_CSP_SCRIPT=$CSP_SCRIPT@_CSP_IMAGES=$CSP_IMAGES"
 echo "Deployed to $URL"

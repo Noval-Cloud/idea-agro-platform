@@ -77,3 +77,26 @@ variable "external_pull_requests" {
   type        = string
   default     = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
 }
+
+variable "web_service" {
+  description = "Cloud Run service of the website"
+  type        = string
+}
+
+variable "web_files" {
+  description = "Files whose changes redeploy the website"
+  type        = list(string)
+  default     = ["apps/web/**", "packages/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+}
+
+variable "web_settings" {
+  description = "What the website's build reads: its own and the API's addresses, and the sign-in provider's settings"
+  type = object({
+    site_url    = string
+    api_url     = string
+    auth_domain = string
+    auth_key    = string
+    csp         = map(list(string))
+  })
+  sensitive = true
+}

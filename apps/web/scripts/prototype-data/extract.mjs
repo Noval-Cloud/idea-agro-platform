@@ -1,6 +1,7 @@
 // One-off extraction of prototype data for the explorer (map) and zone pages.
 // Usage: node extract.mjs <old inia repo (node_modules + key)> <web repo> <phase> [...]
-// Phases: scale rasters zones stats seasonal padrones. Outputs land in <web>/public/explorer.
+// Phases: scale rasters zones stats seasonal padrones. Outputs land in <web>/.cache/prototype-data/explorer, which
+// scripts/seed_public_data.py turns into the API's public data.
 // Everything is resumable: files that already exist are skipped.
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,7 +10,7 @@ const [ROOT, WEB, ...phases] = process.argv.slice(2);
 const sharp = createRequire(WEB + "/package.json")("sharp");
 const ee = require(ROOT + "/node_modules/@google/earthengine");
 const key = require(ROOT + "/apps/inia-server/src/config/credentials/gee-key.json");
-const OUT = WEB + "/public/explorer";
+const OUT = WEB + "/.cache/prototype-data/explorer";
 // Intermediate files (seasonal series by division) stay out of the published folder.
 const RAW = WEB + "/.cache/prototype-data/";
 for (const d of [OUT, RAW]) mkdirSync(d, { recursive: true });

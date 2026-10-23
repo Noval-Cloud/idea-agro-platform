@@ -4,7 +4,7 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import maplibreVendor from "./plugins/maplibre-vendor.mjs";
 
-// Origins the pages may reach, besides their own: the API, the map's tiles, and those the sign-in provider
+// Origins the pages may reach, besides their own: the API (data and map images), the map's tiles, and those the sign-in provider
 // needs, which come from the infrastructure (`auth_csp` in Terraform) so no provider is named here. The map
 // reads the indicator images the page paints through `blob:` URLs.
 const apiOrigin = new URL(process.env.PUBLIC_API_URL ?? "http://localhost:8080").origin;
@@ -22,7 +22,7 @@ export default defineConfig({
       directives: [
         "default-src 'self'",
         `connect-src 'self' blob: ${apiOrigin} ${authConnect} https://tiles.openfreemap.org`,
-        `img-src 'self' data: blob: ${process.env.AUTH_CSP_IMAGES ?? ""}`,
+        `img-src 'self' data: blob: ${apiOrigin} ${process.env.AUTH_CSP_IMAGES ?? ""}`,
         "worker-src 'self' blob:",
         "font-src 'self'",
         `frame-src ${authFrame}`,

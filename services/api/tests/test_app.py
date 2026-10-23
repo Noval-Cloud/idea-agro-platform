@@ -5,22 +5,21 @@ import pytest
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
 from idea_agro_api.services import services_for_tests
-from idea_agro_api.zones import LocalFiles, ZoneStore, composite_start
+from idea_agro_api.zones import LocalFiles, ZoneStore
 
 
 @pytest.fixture
 def client(tmp_path: Path) -> TestClient:
-    seasonal = {"ppna": ["b2001-1", "b2001-17"], "apar": ["b2001-1", "b2001-17"], "et": ["b2001-1", "b2001-9"]}
-    (tmp_path / "manifest.json").write_text(json.dumps({"seasonal": seasonal}))
+    seasonal = {
+        "ppna": ["2001-01-01", "2001-01-17"],
+        "apar": ["2001-01-01", "2001-01-17"],
+        "et": ["2001-01-01", "2001-01-09"],
+    }
+    (tmp_path / "catalog.json").write_text(json.dumps({"seasonal": seasonal}))
     zones = tmp_path / "series" / "seccionales"
     zones.mkdir(parents=True)
     (zones / "1806.json").write_text(json.dumps({"ppna": [330.3, None], "et": [1.2, 1.4]}))
     return TestClient(create_app(services_for_tests(ZoneStore(LocalFiles(tmp_path)))))
-
-
-def test_a_composite_starts_on_its_day_of_the_year() -> None:
-    assert composite_start("b2001-17").isoformat() == "2001-01-17"
-    assert composite_start("b2024-353").isoformat() == "2024-12-18"
 
 
 def test_health(client: TestClient) -> None:
@@ -77,6 +76,6 @@ def test_the_document_publishes_problems_and_the_version() -> None:
 
     published = json.loads(document())
     responses = published["paths"]["/v1/zones/{division}/{zone}/seasonal"]["get"]["responses"]
-    assert published["info"]["version"] == "1.5.0"
+    assert published["info"]["version"] == "1.6.0"
     assert list(responses["404"]["content"]) == ["application/problem+json"]
     assert list(responses["422"]["content"]) == ["application/problem+json"]

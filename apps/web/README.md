@@ -51,17 +51,11 @@ Every page carries a Content Security Policy.
 - The provider's origins come from Terraform's `auth_csp` output, through `AUTH_CSP_*` at build time.
 - `deploy/security-headers.conf` adds the headers a `<meta>` cannot carry.
 
-## Prototype data
+## Data
 
-The explorer and the zone page read `public/explorer/` (about 200 MB), which git ignores. It stands in for the platform API: the fetchers in `src/components/explorer/lib/data.ts` keep the shapes the API will serve.
+The explorer and the zone page read everything through the API, with its generated client. `src/components/explorer/lib/data.ts` turns the API's answers into the website's types. Locally, the site calls `PUBLIC_API_URL`, `http://localhost:8080` by default, where `make api-dev` serves the data (see `services/api/README.md`).
 
-To run the site locally, copy the folder from a teammate, or regenerate it with Earth Engine credentials:
-
-```sh
-node scripts/prototype-data/extract.mjs <path with @google/earthengine and the service key> . scale rasters zones stats seasonal padrones
-node scripts/prototype-data/postprocess.mjs .
-node scripts/prototype-data/zone-meta.mjs .
-```
+The prototype's data, extracted once from Earth Engine by `scripts/prototype-data/`, lives in `.cache/prototype-data/explorer/`, which git ignores. `make public-data` turns it into what the API serves, until the data jobs regenerate it from Earth Engine.
 
 ## Deploy
 

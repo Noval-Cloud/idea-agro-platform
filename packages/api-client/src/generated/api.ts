@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.5.0
+ * OpenAPI spec version: 1.6.0
  */
 import {
   useMutation,
@@ -143,6 +143,80 @@ export interface AuditOut {
 }
 
 /**
+ * An indicator with a map and values per zone.
+ */
+export type Indicator = typeof Indicator[keyof typeof Indicator];
+
+
+export const Indicator = {
+  apar: 'apar',
+  cob: 'cob',
+  ppna: 'ppna',
+  compn: 'compn',
+  rh: 'rh',
+  et: 'et',
+  iose: 'iose',
+  divtfe: 'divtfe',
+  csue: 'csue',
+  ahppn: 'ahppn',
+} as const;
+
+/**
+ * `continuous` values, `binary` (present or not) or `categorical` (classes).
+ */
+export type IndicatorRangeKind = typeof IndicatorRangeKind[keyof typeof IndicatorRangeKind];
+
+
+export const IndicatorRangeKind = {
+  continuous: 'continuous',
+  binary: 'binary',
+  categorical: 'categorical',
+} as const;
+
+/**
+ * What an indicator holds.
+ */
+export interface IndicatorRange {
+  /** `continuous` values, `binary` (present or not) or `categorical` (classes). */
+  kind: IndicatorRangeKind;
+  /** The years with a value, or null for an indicator measured once. */
+  years: number[] | null;
+  /** The lowest value on the map, for its color scale. */
+  min?: number | null;
+  /** The highest value on the map, for its color scale. */
+  max?: number | null;
+  /** The classes of a categorical indicator. */
+  classes?: number[] | null;
+}
+
+/**
+ * An indicator with a seasonal series per zone.
+ */
+export type SeasonalIndicator = typeof SeasonalIndicator[keyof typeof SeasonalIndicator];
+
+
+export const SeasonalIndicator = {
+  ppna: 'ppna',
+  apar: 'apar',
+  et: 'et',
+} as const;
+
+/**
+ * A predefined division of Uruguay into zones.
+ */
+export type Division = typeof Division[keyof typeof Division];
+
+
+export const Division = {
+  seccionales: 'seccionales',
+  'cuencas-1': 'cuencas-1',
+  'cuencas-2': 'cuencas-2',
+  'cuencas-3': 'cuencas-3',
+  'cuencas-4': 'cuencas-4',
+  'cuencas-5': 'cuencas-5',
+} as const;
+
+/**
  * A department of Uruguay, as cadastral parcels are filed by.
  */
 export type Department = typeof Department[keyof typeof Department];
@@ -170,20 +244,59 @@ export const Department = {
   'treinta-y-tres': 'treinta-y-tres',
 } as const;
 
+export interface PadronDepartment {
+  /** The department's name. */
+  name: string;
+  /** How many rural parcels it has. */
+  count: number;
+  /**
+     * West, south, east and north, in degrees.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: number[];
+}
+
 /**
- * A predefined division of Uruguay into zones.
+ * The country's outline as an SVG path, in the pixels of the full map images.
  */
-export type Division = typeof Division[keyof typeof Division];
+export interface MapOutline {
+  width: number;
+  height: number;
+  d: string;
+}
 
-
-export const Division = {
-  seccionales: 'seccionales',
-  'cuencas-1': 'cuencas-1',
-  'cuencas-2': 'cuencas-2',
-  'cuencas-3': 'cuencas-3',
-  'cuencas-4': 'cuencas-4',
-  'cuencas-5': 'cuencas-5',
-} as const;
+/**
+ * What data exists, and the frame of the map images.
+ */
+export interface Catalog {
+  /**
+     * The area the map images cover: west, south, east and north, in degrees.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bounds: number[];
+  /**
+     * Width and height of the full map images.
+     * @minItems 2
+     * @maxItems 2
+     */
+  size: number[];
+  /**
+     * Width and height of the light map images.
+     * @minItems 2
+     * @maxItems 2
+     */
+  lite_size: number[];
+  indicators: Partial<Record<Indicator, IndicatorRange>>;
+  /** The first day of each seasonal indicator's composites, in the order zone series list them. */
+  seasonal: Partial<Record<SeasonalIndicator, string[]>>;
+  /** How many zones each predefined division has. */
+  divisions: Partial<Record<Division, number>>;
+  /** The departments with rural parcels. */
+  padrones: Partial<Record<Department, PadronDepartment>>;
+  outline: MapOutline;
+}
 
 export interface DivisionItem {
   kind: 'division';
@@ -210,6 +323,25 @@ export interface DivisionItemIn {
   zone_id: string;
 }
 
+export interface ValueSummary {
+  mean: number | null;
+  p25: number | null;
+  p75: number | null;
+}
+
+export type DivisionValuesValues = {[key: string]: (number | null)[] | ValueSummary | {[key: string]: number} | null};
+
+/**
+ * Each zone's value of an indicator, by zone id.
+ *
+ * For an indicator with years, a list aligned with `years`; for one measured once, a summary; for a categorical
+ * one, each class's share.
+ */
+export interface DivisionValues {
+  years: number[] | null;
+  values: DivisionValuesValues;
+}
+
 export type ValidationErrorCtx = { [key: string]: unknown };
 
 export interface ValidationError {
@@ -228,6 +360,14 @@ export interface Health {
   /** `ok` when the service answers. */
   status: string;
 }
+
+export type MapSize = typeof MapSize[keyof typeof MapSize];
+
+
+export const MapSize = {
+  full: 'full',
+  lite: 'lite',
+} as const;
 
 /**
  * Your account.
@@ -330,6 +470,33 @@ export interface OutlineVersionOut {
   restored_from: number | null;
   current: boolean;
 }
+
+export interface PadronProperties {
+  /** The parcel's number in its department. */
+  padron: number;
+  area_ha: number;
+}
+
+export interface PadronFeature {
+  type?: 'Feature';
+  id?: number | null;
+  properties: PadronProperties;
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+}
+
+/**
+ * A department's rural parcels.
+ */
+export interface PadronCollection {
+  type?: 'FeatureCollection';
+  features: PadronFeature[];
+}
+
+/**
+ * The parcel numbers of each department, sorted.
+ */
+export type PadronIndex = Partial<Record<Department, number[]>>;
 
 export interface PadronItem {
   kind: 'padron';
@@ -625,6 +792,76 @@ export interface SeasonalSeries {
   values: (number | null)[];
 }
 
+export type Theme = typeof Theme[keyof typeof Theme];
+
+
+export const Theme = {
+  light: 'light',
+  dark: 'dark',
+} as const;
+
+export interface ZoneProperties {
+  /** The zone's id within its division. */
+  id: string;
+  /** Its name, when it has one. */
+  name: string | null;
+  area_km2: number;
+  /** The department of a police district. */
+  department?: string | null;
+  /** The number of a police district in its department. */
+  section?: number | null;
+  /** The basin a grade 5 sub-basin belongs to. */
+  parent?: string | null;
+}
+
+export interface ZoneFeature {
+  type?: 'Feature';
+  /** A number for the map's feature state. */
+  id?: number | null;
+  properties: ZoneProperties;
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+}
+
+/**
+ * A division's zones, with simplified outlines for the map.
+ */
+export interface ZoneCollection {
+  type?: 'FeatureCollection';
+  features: ZoneFeature[];
+}
+
+/**
+ * A zone with its full outline.
+ */
+export interface ZoneDetail {
+  properties: ZoneProperties;
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+  /**
+     * West, south, east and north, in degrees.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: number[];
+}
+
+/**
+ * A zone, or a department to fly to, as the map's search lists them.
+ */
+export interface ZoneIndexEntry {
+  division: Division | 'department';
+  id: string;
+  label: string;
+  detail?: string | null;
+  /**
+     * West, south, east and north, in degrees.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: number[];
+}
+
 /**
  * The seasonal series of a zone. An indicator without data in the zone is left out.
  */
@@ -640,6 +877,20 @@ export interface ZoneSeasonal {
   /** Evapotranspiration, as a daily rate every 8 days. */
   et?: SeasonalSeries | null;
 }
+
+export type GetMapThumbnailParams = {
+/**
+ * For a light or a dark page.
+ */
+theme?: Theme;
+};
+
+export type GetMapParams = {
+/**
+ * Full or light.
+ */
+size?: MapSize;
+};
 
 export type ListAccountsParams = {
 /**
@@ -786,6 +1037,641 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
 
 
 
+export type getCatalogResponse200 = {
+  data: Catalog
+  status: 200
+}
+
+export type getCatalogResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getCatalogResponseSuccess = (getCatalogResponse200) & {
+  headers: Headers;
+};
+export type getCatalogResponseError = (getCatalogResponse404) & {
+  headers: Headers;
+};
+
+export type getCatalogResponse = (getCatalogResponseSuccess | getCatalogResponseError)
+
+export const getGetCatalogUrl = () => {
+
+
+
+
+  return `/v1/catalog`
+}
+
+/**
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.
+ * @summary What data exists
+ */
+export const getCatalog = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getCatalogResponse> => {
+
+  return apiFetch<getCatalogResponse>(getGetCatalogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCatalogQueryKey = () => {
+    return [
+    `/v1/catalog`
+    ] as const;
+    }
+
+
+export const getGetCatalogQueryOptions = <TData = Awaited<ReturnType<typeof getCatalog>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCatalogQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCatalog>>> = ({ signal }) => getCatalog({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof getCatalog>>>
+export type GetCatalogQueryError = Problem
+
+
+export function useGetCatalog<TData = Awaited<ReturnType<typeof getCatalog>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCatalog<TData = Awaited<ReturnType<typeof getCatalog>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCatalog<TData = Awaited<ReturnType<typeof getCatalog>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What data exists
+ */
+
+export function useGetCatalog<TData = Awaited<ReturnType<typeof getCatalog>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getZoneIndexResponse200 = {
+  data: ZoneIndexEntry[]
+  status: 200
+}
+
+export type getZoneIndexResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getZoneIndexResponseSuccess = (getZoneIndexResponse200) & {
+  headers: Headers;
+};
+export type getZoneIndexResponseError = (getZoneIndexResponse404) & {
+  headers: Headers;
+};
+
+export type getZoneIndexResponse = (getZoneIndexResponseSuccess | getZoneIndexResponseError)
+
+export const getGetZoneIndexUrl = () => {
+
+
+
+
+  return `/v1/zones/index`
+}
+
+/**
+ * Each zone of the predefined divisions and each department, with a label and its extent.
+ * @summary Every zone and department, to search them
+ */
+export const getZoneIndex = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getZoneIndexResponse> => {
+
+  return apiFetch<getZoneIndexResponse>(getGetZoneIndexUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetZoneIndexQueryKey = () => {
+    return [
+    `/v1/zones/index`
+    ] as const;
+    }
+
+
+export const getGetZoneIndexQueryOptions = <TData = Awaited<ReturnType<typeof getZoneIndex>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetZoneIndexQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getZoneIndex>>> = ({ signal }) => getZoneIndex({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetZoneIndexQueryResult = NonNullable<Awaited<ReturnType<typeof getZoneIndex>>>
+export type GetZoneIndexQueryError = Problem
+
+
+export function useGetZoneIndex<TData = Awaited<ReturnType<typeof getZoneIndex>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getZoneIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getZoneIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetZoneIndex<TData = Awaited<ReturnType<typeof getZoneIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getZoneIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getZoneIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetZoneIndex<TData = Awaited<ReturnType<typeof getZoneIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Every zone and department, to search them
+ */
+
+export function useGetZoneIndex<TData = Awaited<ReturnType<typeof getZoneIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZoneIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetZoneIndexQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getDivisionZonesResponse200 = {
+  data: ZoneCollection
+  status: 200
+}
+
+export type getDivisionZonesResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getDivisionZonesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getDivisionZonesResponseSuccess = (getDivisionZonesResponse200) & {
+  headers: Headers;
+};
+export type getDivisionZonesResponseError = (getDivisionZonesResponse404 | getDivisionZonesResponse422) & {
+  headers: Headers;
+};
+
+export type getDivisionZonesResponse = (getDivisionZonesResponseSuccess | getDivisionZonesResponseError)
+
+export const getGetDivisionZonesUrl = (division: Division,) => {
+
+
+
+
+  return `/v1/divisions/${division}/zones`
+}
+
+/**
+ * Every zone of the division as GeoJSON, with outlines simplified for the map. Cacheable for an hour.
+ * @summary A division's zones
+ */
+export const getDivisionZones = async (division: Division, options?: Parameters<typeof apiFetch>[1]): Promise<getDivisionZonesResponse> => {
+
+  return apiFetch<getDivisionZonesResponse>(getGetDivisionZonesUrl(division),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDivisionZonesQueryKey = (division: Division,) => {
+    return [
+    `/v1/divisions/${division}/zones`
+    ] as const;
+    }
+
+
+export const getGetDivisionZonesQueryOptions = <TData = Awaited<ReturnType<typeof getDivisionZones>>, TError = Problem>(division: Division, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDivisionZonesQueryKey(division);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDivisionZones>>> = ({ signal }) => getDivisionZones(division, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: division !== null && division !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDivisionZonesQueryResult = NonNullable<Awaited<ReturnType<typeof getDivisionZones>>>
+export type GetDivisionZonesQueryError = Problem
+
+
+export function useGetDivisionZones<TData = Awaited<ReturnType<typeof getDivisionZones>>, TError = Problem>(
+ division: Division, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDivisionZones>>,
+          TError,
+          Awaited<ReturnType<typeof getDivisionZones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDivisionZones<TData = Awaited<ReturnType<typeof getDivisionZones>>, TError = Problem>(
+ division: Division, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDivisionZones>>,
+          TError,
+          Awaited<ReturnType<typeof getDivisionZones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDivisionZones<TData = Awaited<ReturnType<typeof getDivisionZones>>, TError = Problem>(
+ division: Division, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A division's zones
+ */
+
+export function useGetDivisionZones<TData = Awaited<ReturnType<typeof getDivisionZones>>, TError = Problem>(
+ division: Division, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDivisionZonesQueryOptions(division,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getDivisionValuesResponse200 = {
+  data: DivisionValues
+  status: 200
+}
+
+export type getDivisionValuesResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getDivisionValuesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getDivisionValuesResponseSuccess = (getDivisionValuesResponse200) & {
+  headers: Headers;
+};
+export type getDivisionValuesResponseError = (getDivisionValuesResponse404 | getDivisionValuesResponse422) & {
+  headers: Headers;
+};
+
+export type getDivisionValuesResponse = (getDivisionValuesResponseSuccess | getDivisionValuesResponseError)
+
+export const getGetDivisionValuesUrl = (division: Division,
+    indicator: Indicator,) => {
+
+
+
+
+  return `/v1/divisions/${division}/values/${indicator}`
+}
+
+/**
+ * For an indicator with years, each zone's yearly values; for one measured once, each zone's mean and quartiles; for a categorical one, each class's share of the zone. Cacheable for an hour.
+ * @summary An indicator's values in every zone of a division
+ */
+export const getDivisionValues = async (division: Division,
+    indicator: Indicator, options?: Parameters<typeof apiFetch>[1]): Promise<getDivisionValuesResponse> => {
+
+  return apiFetch<getDivisionValuesResponse>(getGetDivisionValuesUrl(division,indicator),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDivisionValuesQueryKey = (division: Division,
+    indicator: Indicator,) => {
+    return [
+    `/v1/divisions/${division}/values/${indicator}`
+    ] as const;
+    }
+
+
+export const getGetDivisionValuesQueryOptions = <TData = Awaited<ReturnType<typeof getDivisionValues>>, TError = Problem>(division: Division,
+    indicator: Indicator, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDivisionValuesQueryKey(division,indicator);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDivisionValues>>> = ({ signal }) => getDivisionValues(division,indicator, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: division !== null && division !== undefined && indicator !== null && indicator !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDivisionValuesQueryResult = NonNullable<Awaited<ReturnType<typeof getDivisionValues>>>
+export type GetDivisionValuesQueryError = Problem
+
+
+export function useGetDivisionValues<TData = Awaited<ReturnType<typeof getDivisionValues>>, TError = Problem>(
+ division: Division,
+    indicator: Indicator, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDivisionValues>>,
+          TError,
+          Awaited<ReturnType<typeof getDivisionValues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDivisionValues<TData = Awaited<ReturnType<typeof getDivisionValues>>, TError = Problem>(
+ division: Division,
+    indicator: Indicator, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDivisionValues>>,
+          TError,
+          Awaited<ReturnType<typeof getDivisionValues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDivisionValues<TData = Awaited<ReturnType<typeof getDivisionValues>>, TError = Problem>(
+ division: Division,
+    indicator: Indicator, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary An indicator's values in every zone of a division
+ */
+
+export function useGetDivisionValues<TData = Awaited<ReturnType<typeof getDivisionValues>>, TError = Problem>(
+ division: Division,
+    indicator: Indicator, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDivisionValues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDivisionValuesQueryOptions(division,indicator,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getZoneResponse200 = {
+  data: ZoneDetail
+  status: 200
+}
+
+export type getZoneResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getZoneResponseSuccess = (getZoneResponse200) & {
+  headers: Headers;
+};
+export type getZoneResponseError = (getZoneResponse404 | getZoneResponse422) & {
+  headers: Headers;
+};
+
+export type getZoneResponse = (getZoneResponseSuccess | getZoneResponseError)
+
+export const getGetZoneUrl = (division: Division,
+    zone: string,) => {
+
+
+
+
+  return `/v1/zones/${division}/${zone}`
+}
+
+/**
+ * @summary A zone and its outline
+ */
+export const getZone = async (division: Division,
+    zone: string, options?: Parameters<typeof apiFetch>[1]): Promise<getZoneResponse> => {
+
+  return apiFetch<getZoneResponse>(getGetZoneUrl(division,zone),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetZoneQueryKey = (division: Division,
+    zone: string,) => {
+    return [
+    `/v1/zones/${division}/${zone}`
+    ] as const;
+    }
+
+
+export const getGetZoneQueryOptions = <TData = Awaited<ReturnType<typeof getZone>>, TError = Problem>(division: Division,
+    zone: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetZoneQueryKey(division,zone);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getZone>>> = ({ signal }) => getZone(division,zone, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: division !== null && division !== undefined && zone !== null && zone !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetZoneQueryResult = NonNullable<Awaited<ReturnType<typeof getZone>>>
+export type GetZoneQueryError = Problem
+
+
+export function useGetZone<TData = Awaited<ReturnType<typeof getZone>>, TError = Problem>(
+ division: Division,
+    zone: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getZone>>,
+          TError,
+          Awaited<ReturnType<typeof getZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetZone<TData = Awaited<ReturnType<typeof getZone>>, TError = Problem>(
+ division: Division,
+    zone: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getZone>>,
+          TError,
+          Awaited<ReturnType<typeof getZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetZone<TData = Awaited<ReturnType<typeof getZone>>, TError = Problem>(
+ division: Division,
+    zone: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A zone and its outline
+ */
+
+export function useGetZone<TData = Awaited<ReturnType<typeof getZone>>, TError = Problem>(
+ division: Division,
+    zone: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetZoneQueryOptions(division,zone,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type getZoneSeasonalResponse200 = {
   data: ZoneSeasonal
   status: 200
@@ -908,6 +1794,541 @@ export function useGetZoneSeasonal<TData = Awaited<ReturnType<typeof getZoneSeas
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetZoneSeasonalQueryOptions(division,zone,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getMapThumbnailResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getMapThumbnailResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getMapThumbnailResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getMapThumbnailResponseSuccess = (getMapThumbnailResponse200) & {
+  headers: Headers;
+};
+export type getMapThumbnailResponseError = (getMapThumbnailResponse404 | getMapThumbnailResponse422) & {
+  headers: Headers;
+};
+
+export type getMapThumbnailResponse = (getMapThumbnailResponseSuccess | getMapThumbnailResponseError)
+
+export const getGetMapThumbnailUrl = (indicator: Indicator,
+    params?: GetMapThumbnailParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/maps/${indicator}/thumbnail?${stringifiedParams}` : `/v1/maps/${indicator}/thumbnail`
+}
+
+/**
+ * @summary A small picture of an indicator's map
+ */
+export const getMapThumbnail = async (indicator: Indicator,
+    params?: GetMapThumbnailParams, options?: Parameters<typeof apiFetch>[1]): Promise<getMapThumbnailResponse> => {
+
+  return apiFetch<getMapThumbnailResponse>(getGetMapThumbnailUrl(indicator,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMapThumbnailQueryKey = (indicator: Indicator,
+    params?: GetMapThumbnailParams,) => {
+    return [
+    `/v1/maps/${indicator}/thumbnail`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMapThumbnailQueryOptions = <TData = Awaited<ReturnType<typeof getMapThumbnail>>, TError = Problem>(indicator: Indicator,
+    params?: GetMapThumbnailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMapThumbnailQueryKey(indicator,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMapThumbnail>>> = ({ signal }) => getMapThumbnail(indicator,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: indicator !== null && indicator !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMapThumbnailQueryResult = NonNullable<Awaited<ReturnType<typeof getMapThumbnail>>>
+export type GetMapThumbnailQueryError = Problem
+
+
+export function useGetMapThumbnail<TData = Awaited<ReturnType<typeof getMapThumbnail>>, TError = Problem>(
+ indicator: Indicator,
+    params: undefined |  GetMapThumbnailParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMapThumbnail>>,
+          TError,
+          Awaited<ReturnType<typeof getMapThumbnail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMapThumbnail<TData = Awaited<ReturnType<typeof getMapThumbnail>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapThumbnailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMapThumbnail>>,
+          TError,
+          Awaited<ReturnType<typeof getMapThumbnail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMapThumbnail<TData = Awaited<ReturnType<typeof getMapThumbnail>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapThumbnailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A small picture of an indicator's map
+ */
+
+export function useGetMapThumbnail<TData = Awaited<ReturnType<typeof getMapThumbnail>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapThumbnailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapThumbnail>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMapThumbnailQueryOptions(indicator,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getMapResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getMapResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getMapResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getMapResponseSuccess = (getMapResponse200) & {
+  headers: Headers;
+};
+export type getMapResponseError = (getMapResponse404 | getMapResponse422) & {
+  headers: Headers;
+};
+
+export type getMapResponse = (getMapResponseSuccess | getMapResponseError)
+
+export const getGetMapUrl = (indicator: Indicator,
+    period: string,
+    params?: GetMapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/maps/${indicator}/${period}?${stringifiedParams}` : `/v1/maps/${indicator}/${period}`
+}
+
+/**
+ * A grayscale image of the indicator over the catalog's `bounds`, in Web Mercator: gray levels stand for values between the indicator's `min` and `max`, and transparency for no data. `full` is the catalog's `size`, `lite` its `lite_size`. Cacheable for a day.
+ * @summary An indicator's map of a period
+ */
+export const getMap = async (indicator: Indicator,
+    period: string,
+    params?: GetMapParams, options?: Parameters<typeof apiFetch>[1]): Promise<getMapResponse> => {
+
+  return apiFetch<getMapResponse>(getGetMapUrl(indicator,period,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMapQueryKey = (indicator: Indicator,
+    period: string,
+    params?: GetMapParams,) => {
+    return [
+    `/v1/maps/${indicator}/${period}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMapQueryOptions = <TData = Awaited<ReturnType<typeof getMap>>, TError = Problem>(indicator: Indicator,
+    period: string,
+    params?: GetMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMapQueryKey(indicator,period,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMap>>> = ({ signal }) => getMap(indicator,period,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: indicator !== null && indicator !== undefined && period !== null && period !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMapQueryResult = NonNullable<Awaited<ReturnType<typeof getMap>>>
+export type GetMapQueryError = Problem
+
+
+export function useGetMap<TData = Awaited<ReturnType<typeof getMap>>, TError = Problem>(
+ indicator: Indicator,
+    period: string,
+    params: undefined |  GetMapParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMap>>,
+          TError,
+          Awaited<ReturnType<typeof getMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMap<TData = Awaited<ReturnType<typeof getMap>>, TError = Problem>(
+ indicator: Indicator,
+    period: string,
+    params?: GetMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMap>>,
+          TError,
+          Awaited<ReturnType<typeof getMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMap<TData = Awaited<ReturnType<typeof getMap>>, TError = Problem>(
+ indicator: Indicator,
+    period: string,
+    params?: GetMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary An indicator's map of a period
+ */
+
+export function useGetMap<TData = Awaited<ReturnType<typeof getMap>>, TError = Problem>(
+ indicator: Indicator,
+    period: string,
+    params?: GetMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMap>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMapQueryOptions(indicator,period,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getPadronIndexResponse200 = {
+  data: PadronIndex
+  status: 200
+}
+
+export type getPadronIndexResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getPadronIndexResponseSuccess = (getPadronIndexResponse200) & {
+  headers: Headers;
+};
+export type getPadronIndexResponseError = (getPadronIndexResponse404) & {
+  headers: Headers;
+};
+
+export type getPadronIndexResponse = (getPadronIndexResponseSuccess | getPadronIndexResponseError)
+
+export const getGetPadronIndexUrl = () => {
+
+
+
+
+  return `/v1/padrones`
+}
+
+/**
+ * @summary The parcel numbers of each department
+ */
+export const getPadronIndex = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getPadronIndexResponse> => {
+
+  return apiFetch<getPadronIndexResponse>(getGetPadronIndexUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPadronIndexQueryKey = () => {
+    return [
+    `/v1/padrones`
+    ] as const;
+    }
+
+
+export const getGetPadronIndexQueryOptions = <TData = Awaited<ReturnType<typeof getPadronIndex>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPadronIndexQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPadronIndex>>> = ({ signal }) => getPadronIndex({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPadronIndexQueryResult = NonNullable<Awaited<ReturnType<typeof getPadronIndex>>>
+export type GetPadronIndexQueryError = Problem
+
+
+export function useGetPadronIndex<TData = Awaited<ReturnType<typeof getPadronIndex>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPadronIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getPadronIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPadronIndex<TData = Awaited<ReturnType<typeof getPadronIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPadronIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getPadronIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPadronIndex<TData = Awaited<ReturnType<typeof getPadronIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The parcel numbers of each department
+ */
+
+export function useGetPadronIndex<TData = Awaited<ReturnType<typeof getPadronIndex>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadronIndex>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPadronIndexQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getPadronesResponse200 = {
+  data: PadronCollection
+  status: 200
+}
+
+export type getPadronesResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getPadronesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getPadronesResponseSuccess = (getPadronesResponse200) & {
+  headers: Headers;
+};
+export type getPadronesResponseError = (getPadronesResponse404 | getPadronesResponse422) & {
+  headers: Headers;
+};
+
+export type getPadronesResponse = (getPadronesResponseSuccess | getPadronesResponseError)
+
+export const getGetPadronesUrl = (department: Department,) => {
+
+
+
+
+  return `/v1/padrones/${department}`
+}
+
+/**
+ * Their outlines as GeoJSON, with each parcel's number and area. Cacheable for an hour.
+ * @summary A department's rural parcels
+ */
+export const getPadrones = async (department: Department, options?: Parameters<typeof apiFetch>[1]): Promise<getPadronesResponse> => {
+
+  return apiFetch<getPadronesResponse>(getGetPadronesUrl(department),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPadronesQueryKey = (department: Department,) => {
+    return [
+    `/v1/padrones/${department}`
+    ] as const;
+    }
+
+
+export const getGetPadronesQueryOptions = <TData = Awaited<ReturnType<typeof getPadrones>>, TError = Problem>(department: Department, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPadronesQueryKey(department);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPadrones>>> = ({ signal }) => getPadrones(department, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: department !== null && department !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPadronesQueryResult = NonNullable<Awaited<ReturnType<typeof getPadrones>>>
+export type GetPadronesQueryError = Problem
+
+
+export function useGetPadrones<TData = Awaited<ReturnType<typeof getPadrones>>, TError = Problem>(
+ department: Department, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPadrones>>,
+          TError,
+          Awaited<ReturnType<typeof getPadrones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPadrones<TData = Awaited<ReturnType<typeof getPadrones>>, TError = Problem>(
+ department: Department, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPadrones>>,
+          TError,
+          Awaited<ReturnType<typeof getPadrones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPadrones<TData = Awaited<ReturnType<typeof getPadrones>>, TError = Problem>(
+ department: Department, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A department's rural parcels
+ */
+
+export function useGetPadrones<TData = Awaited<ReturnType<typeof getPadrones>>, TError = Problem>(
+ department: Department, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPadrones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPadronesQueryOptions(department,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

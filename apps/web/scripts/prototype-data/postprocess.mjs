@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFile
 const [WEB, ...steps] = process.argv.slice(2);
 const require = createRequire(WEB + "/package.json");
 const sharp = require("sharp");
-const OUT = WEB + "/public/explorer";
+const OUT = WEB + "/.cache/prototype-data/explorer";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
 const writeJson = (p, o) => {
   mkdirSync(p.slice(0, p.lastIndexOf("/")), { recursive: true });

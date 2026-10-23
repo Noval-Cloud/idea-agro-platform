@@ -5,12 +5,13 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, RootModel, StringConstraints
 
 from idea_agro_api.activity import Action
 from idea_agro_api.audit import AuditAction
 from idea_agro_api.projects import MemberRole
-from idea_agro_api.zones import Department, Division
+from idea_agro_api.public_data import Indicator
+from idea_agro_api.zones import Department, Division, SeasonalIndicator
 
 
 class Health(BaseModel):
@@ -318,3 +319,130 @@ class AuditOut(BaseModel):
     detail: str = Field(
         description="The roles given, for a role change; `provider_failed` when the sign-in provider did not take it."
     )
+
+
+Bounds = Annotated[
+    list[float], Field(min_length=4, max_length=4, description="West, south, east and north, in degrees.")
+]
+
+
+class IndicatorRange(BaseModel):
+    """What an indicator holds."""
+
+    kind: Literal["continuous", "binary", "categorical"] = Field(
+        description="`continuous` values, `binary` (present or not) or `categorical` (classes)."
+    )
+    years: list[int] | None = Field(description="The years with a value, or null for an indicator measured once.")
+    min: float | None = Field(default=None, description="The lowest value on the map, for its color scale.")
+    max: float | None = Field(default=None, description="The highest value on the map, for its color scale.")
+    classes: list[int] | None = Field(default=None, description="The classes of a categorical indicator.")
+
+
+class PadronDepartment(BaseModel):
+    name: str = Field(description="The department's name.")
+    count: int = Field(description="How many rural parcels it has.")
+    bbox: Bounds
+
+
+class MapOutline(BaseModel):
+    """The country's outline as an SVG path, in the pixels of the full map images."""
+
+    width: float
+    height: float
+    d: str
+
+
+class Catalog(BaseModel):
+    """What data exists, and the frame of the map images."""
+
+    bounds: Bounds = Field(description="The area the map images cover: west, south, east and north, in degrees.")
+    size: list[int] = Field(min_length=2, max_length=2, description="Width and height of the full map images.")
+    lite_size: list[int] = Field(min_length=2, max_length=2, description="Width and height of the light map images.")
+    indicators: dict[Indicator, IndicatorRange]
+    seasonal: dict[SeasonalIndicator, list[date]] = Field(
+        description="The first day of each seasonal indicator's composites, in the order zone series list them."
+    )
+    divisions: dict[Division, int] = Field(description="How many zones each predefined division has.")
+    padrones: dict[Department, PadronDepartment] = Field(description="The departments with rural parcels.")
+    outline: MapOutline
+
+
+class ZoneProperties(BaseModel):
+    id: str = Field(description="The zone's id within its division.")
+    name: str | None = Field(description="Its name, when it has one.")
+    area_km2: float
+    department: str | None = Field(default=None, description="The department of a police district.")
+    section: int | None = Field(default=None, description="The number of a police district in its department.")
+    parent: str | None = Field(default=None, description="The basin a grade 5 sub-basin belongs to.")
+
+
+class ZoneFeature(BaseModel):
+    type: Literal["Feature"] = "Feature"
+    id: int | None = Field(default=None, description="A number for the map's feature state.")
+    properties: ZoneProperties
+    geometry: Geometry
+
+
+class ZoneCollection(BaseModel):
+    """A division's zones, with simplified outlines for the map."""
+
+    type: Literal["FeatureCollection"] = "FeatureCollection"
+    features: list[ZoneFeature]
+
+
+class ZoneDetail(BaseModel):
+    """A zone with its full outline."""
+
+    properties: ZoneProperties
+    geometry: Geometry
+    bbox: Bounds
+
+
+class ValueSummary(BaseModel):
+    mean: float | None
+    p25: float | None
+    p75: float | None
+
+
+class DivisionValues(BaseModel):
+    """Each zone's value of an indicator, by zone id.
+
+    For an indicator with years, a list aligned with `years`; for one measured once, a summary; for a categorical
+    one, each class's share.
+    """
+
+    years: list[int] | None
+    values: dict[str, list[float | None] | ValueSummary | dict[str, float] | None]
+
+
+class ZoneIndexEntry(BaseModel):
+    """A zone, or a department to fly to, as the map's search lists them."""
+
+    division: Division | Literal["department"]
+    id: str
+    label: str
+    detail: str | None = None
+    bbox: Bounds
+
+
+class PadronIndex(RootModel[dict[Department, list[int]]]):
+    """The parcel numbers of each department, sorted."""
+
+
+class PadronProperties(BaseModel):
+    padron: int = Field(description="The parcel's number in its department.")
+    area_ha: float
+
+
+class PadronFeature(BaseModel):
+    type: Literal["Feature"] = "Feature"
+    id: int | None = None
+    properties: PadronProperties
+    geometry: Geometry
+
+
+class PadronCollection(BaseModel):
+    """A department's rural parcels."""
+
+    type: Literal["FeatureCollection"] = "FeatureCollection"
+    features: list[PadronFeature]

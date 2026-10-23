@@ -26,13 +26,13 @@ def square(side: float = 0.01) -> dict[str, Any]:
 
 @pytest.fixture
 def client(tmp_path: Path, verifier: OidcVerifier) -> TestClient:
-    (tmp_path / "zones").mkdir()
+    (tmp_path / "divisions").mkdir()
     district = {
         "type": "Feature",
-        "properties": {"dept": "Tacuarembó"},
+        "properties": {"department": "Tacuarembó"},
         "geometry": {"type": "Polygon", "coordinates": [DISTRICT]},
     }
-    (tmp_path / "zones" / "seccionales.json").write_text(
+    (tmp_path / "divisions" / "seccionales.geojson").write_text(
         json.dumps({"type": "FeatureCollection", "features": [district]})
     )
     (tmp_path / "series" / "seccionales").mkdir(parents=True)

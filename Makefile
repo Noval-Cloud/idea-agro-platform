@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help setup lint format typecheck test build generate contract specs check tf-setup tf-plan tf-apply web-deploy \
-	api-dev api-deploy ci-image ci-checks
+	public-data api-dev api-deploy ci-image ci-checks
 
 TF := terraform -chdir=infrastructure/terraform
 # Terraform starts from the person's gcloud credentials, then impersonates the operator account.
@@ -73,8 +73,11 @@ web-deploy: ## Build the website and deploy its image to ENV's Cloud Run
 	$(require_env)
 	apps/web/deploy.sh $(ENV)
 
-api-dev: ## Run the API locally on port 8080, serving the website's prototype data
-	ZONES_SOURCE=apps/web/public/explorer uv run uvicorn --factory idea_agro_api.app:create_app_from_env --reload --port 8080
+public-data: ## Turn the prototype's data into the API's public data, in .cache/public-data
+	uv run python scripts/seed_public_data.py apps/web/.cache/prototype-data/explorer .cache/public-data
+
+api-dev: ## Run the API locally on port 8080, serving .cache/public-data (make public-data)
+	ZONES_SOURCE=.cache/public-data uv run uvicorn --factory idea_agro_api.app:create_app_from_env --reload --port 8080
 
 api-deploy: ## Build the API's image from git and deploy it to ENV's Cloud Run
 	$(require_env)
