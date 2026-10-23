@@ -41,10 +41,11 @@ Everything runs from the root through `make`; `make` alone lists the targets.
 | `make setup`              | Install every dependency from the lockfiles                                           |
 | `make lint`               | Check formatting and lint rules, without changing files                               |
 | `make format`             | Format every file in place                                                            |
-| `make typecheck`          | Type-check TypeScript and Python                                                      |
+| `make typecheck`          | Type-check TypeScript, Astro and Python                                               |
 | `make test`               | Run every test suite                                                                  |
+| `make build`              | Build every app                                                                       |
 | `make specs`              | Validate the OpenSpec changes and specs                                               |
-| `make check`              | `lint`, `typecheck`, `test` and `specs`: the gate before every pull request           |
+| `make check`              | `lint`, `typecheck`, `test`, `build` and `specs`: the gate before every pull request  |
 | `make tf-setup ENV=<env>` | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply |
 
 Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to a script, in `scripts/` or in the part it belongs to, such as `infrastructure/setup/`.

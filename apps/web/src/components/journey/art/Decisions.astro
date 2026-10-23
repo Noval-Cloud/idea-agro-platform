@@ -1,0 +1,76 @@
+---
+import Tractor from "@lucide/astro/icons/tractor";
+import ClipboardList from "@lucide/astro/icons/clipboard-list";
+import Landmark from "@lucide/astro/icons/landmark";
+import { iconSize } from "@/design/tokens";
+import { createTranslator, type Locale } from "@/i18n";
+import { lastCompleteYearStart, ppnaSeasonal, ppnaStats } from "@/data/series";
+import { linePath, linear } from "@/components/charts/scale";
+import { STAGE } from "./ground";
+
+interface Props {
+  locale: Locale;
+}
+const i18n = createTranslator(Astro.props.locale);
+const { t } = i18n;
+const year = `${lastCompleteYearStart}–${String((lastCompleteYearStart + 1) % 100).padStart(2, "0")}`;
+
+// The national grass curve of the last growing year against its average, as shared in a meeting.
+const values = [...ppnaSeasonal.lastYear, ...ppnaSeasonal.average].filter((v): v is number => v !== null);
+const y = linear([0, Math.max(...values)], [100, 8]);
+const x = (i: number) => (i / (ppnaSeasonal.lastYear.length - 1)) * 100;
+const lastYear = linePath(ppnaSeasonal.lastYear, x, y);
+const average = linePath(ppnaSeasonal.average, x, y);
+// One reading, three decisions: each card is a role and what it can do with the same data.
+const roles = [
+  { key: "farmer", decision: "load", icon: Tractor, x: 16 },
+  { key: "technician", decision: "plan", icon: ClipboardList, x: 50 },
+  { key: "agency", decision: "policy", icon: Landmark, x: 84 },
+] as const;
+---
+
+<div class="relative aspect-16/10 w-full" aria-hidden="true">
+  <svg viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} class="absolute inset-0 size-full">
+    {
+      roles.map((r, i) => (
+        <path
+          pathLength="1"
+          class="j-stroke j-faint j-draw"
+          style={`--d: ${6 + i}`}
+          d={`M320,176C320,220 ${(r.x / 100) * STAGE.width},210 ${(r.x / 100) * STAGE.width},262`}
+        />
+      ))
+    }
+  </svg>
+  <div
+    class="j-rise absolute left-1/2 -translate-x-1/2 rounded-md border border-line bg-surface p-4 shadow-overlay max-sm:p-2"
+    style="top: 2%; width: 56%; --d: 1"
+  >
+    <p class="text-2xs text-ink-muted">{t("journey.scenes.decisions.chart", { year })}</p>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="mt-2 h-20 w-full overflow-visible max-sm:h-10">
+      <path d={average} class="chart-line" style="--series-color: var(--ia-viz-series-reference)" vector-effect="non-scaling-stroke" />
+      <path
+        d={lastYear}
+        pathLength="1"
+        class="chart-line j-draw"
+        style="--series-color: var(--ia-family-productivity); --d: 2"
+        vector-effect="non-scaling-stroke"
+      />
+    </svg>
+    <p class="mt-1 text-xs font-medium text-ink">{t("journey.scenes.decisions.delta", { delta: i18n.signedPercent(ppnaStats.delta) })}</p>
+  </div>
+  {
+    roles.map((r, i) => (
+      <div
+        class="j-rise absolute -translate-x-1/2 rounded-md border border-line bg-surface p-3 max-sm:p-2"
+        style={`left: ${r.x}%; top: 66%; width: 29%; --d: ${9 + i * 2}`}
+      >
+        <p class="flex items-center gap-2 text-2xs text-ink-subtle">
+          <r.icon size={iconSize.sm} />
+          {t(`journey.scenes.decisions.roles.${r.key}`)}
+        </p>
+        <p class="mt-1 text-sm font-medium text-ink max-sm:text-xs">{t(`journey.scenes.decisions.${r.decision}`)}</p>
+      </div>
+    ))
+  }
+</div>

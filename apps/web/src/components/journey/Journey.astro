@@ -1,0 +1,514 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Pause from "@lucide/astro/icons/pause";
+import Play from "@lucide/astro/icons/play";
+import { iconSize } from "@/design/tokens";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import landcover from "@/data/snapshot/landcover.json";
+import { sectionals } from "@/data/geo";
+import { ppnaAnnual } from "@/data/series";
+import Grassland from "./art/Grassland.astro";
+import Field from "./art/Field.astro";
+import Science from "./art/Science.astro";
+import Satellites from "./art/Satellites.astro";
+import Processing from "./art/Processing.astro";
+import Indicators from "./art/Indicators.astro";
+import Zones from "./art/Zones.astro";
+import Decisions from "./art/Decisions.astro";
+import Open from "./art/Open.astro";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const i18n = createTranslator(locale);
+const { t } = i18n;
+const path = (p: string) => localizePath(p, locale);
+
+// Natural grassland share of the mapped country, first and last year of MapBiomas Pampa.
+const share = (entry: (typeof landcover.byYear)[number]) => {
+  const km2 = entry.km2 as Record<string, number>;
+  return km2["12"] / Object.values(km2).reduce((a, b) => a + b, 0);
+};
+const first = landcover.byYear[0];
+const last = landcover.byYear[landcover.byYear.length - 1];
+
+const scenes = [
+  {
+    key: "grassland",
+    Art: Grassland,
+    values: { now: i18n.percent(share(last)), before: i18n.percent(share(first)) },
+    source: t("journey.scenes.grassland.source", { year: last.year }),
+    links: [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link") }],
+  },
+  { key: "field", Art: Field },
+  { key: "science", Art: Science, links: [{ href: `${path("/resources/")}#science`, label: t("journey.scenes.science.link") }] },
+  { key: "satellites", Art: Satellites },
+  {
+    key: "processing",
+    Art: Processing,
+    values: { years: i18n.number(ppnaAnnual.length) },
+    links: [{ href: path("/indicators/"), label: t("journey.scenes.processing.link") }],
+  },
+  { key: "indicators", Art: Indicators },
+  { key: "zones", Art: Zones, values: { sectionals: i18n.number(sectionals.length) } },
+  {
+    key: "decisions",
+    Art: Decisions,
+    links: [{ href: `${path("/zone/")}?d=seccionales&id=1806&ind=ppna`, label: t("journey.scenes.decisions.link") }],
+  },
+  { key: "open", Art: Open, links: [{ href: `${path("/resources/")}#open`, label: t("journey.scenes.open.link") }] },
+] as const satisfies readonly {
+  key: string;
+  Art: unknown;
+  values?: Record<string, string>;
+  source?: string;
+  links?: { href: string; label: string }[];
+}[];
+
+type SceneKey = (typeof scenes)[number]["key"];
+const sceneText = (key: SceneKey, field: "name" | "title" | "text", values?: Record<string, string>) =>
+  t(`journey.scenes.${key}.${field}`, values);
+---
+
+<section
+  class="journey surface-inverse border-b border-line bg-canvas text-ink"
+  aria-roledescription="carousel"
+  aria-label={t("journey.label")}
+  data-journey
+>
+  <div class="px-gutter pt-10 pb-10 lg:pt-14">
+    <div class="grid gap-6 lg:grid-cols-12 lg:items-end">
+      <div class="lg:col-span-8">
+        <p class="text-sm text-ink-subtle">{t("journey.eyebrow")}</p>
+        <h1 class="mt-3 font-display text-display font-medium tracking-tight text-balance text-ink">{t("journey.title")}</h1>
+      </div>
+      <div class="lg:col-span-4">
+        <p class="max-w-measure text-base text-ink-muted">{t("journey.lead")}</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a
+            href={path("/explore/")}
+            class="inline-flex h-11 items-center gap-2 rounded-sm bg-action px-5 text-sm font-medium text-action-ink transition-colors duration-(--ia-motion-fast) hover:bg-action-hover"
+          >
+            {t("journey.primary")}
+            <ArrowRight size={iconSize.sm} aria-hidden="true" />
+          </a>
+          <a
+            href={path("/indicators/")}
+            class="inline-flex h-11 items-center rounded-sm border border-line-strong px-5 text-sm font-medium text-ink transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
+          >
+            {t("journey.secondary")}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="journey-slides mt-10 grid overflow-hidden rounded-lg border border-line bg-surface">
+      {
+        scenes.map((scene, i) => (
+          <div
+            id={`journey-slide-${i}`}
+            class:list={["journey-slide grid gap-6 p-5 sm:p-6 lg:grid-cols-12 lg:gap-10 lg:p-8", i === 0 && "is-active is-settled"]}
+            role="tabpanel"
+            aria-roledescription={t("journey.chapters")}
+            aria-labelledby={`journey-tab-${i}`}
+            inert={i !== 0}
+            data-slide={i}
+          >
+            <div class="lg:col-span-4 lg:self-center">
+              <p class="text-xs text-ink-subtle">{t("journey.chapter", { number: i + 1, total: scenes.length })}</p>
+              <h2 class="mt-2 font-display text-3xl font-medium tracking-tight text-ink">
+                {sceneText(scene.key, "title", "values" in scene ? scene.values : undefined)}
+              </h2>
+              <p class="mt-4 max-w-measure text-base text-ink-muted">
+                {sceneText(scene.key, "text", "values" in scene ? scene.values : undefined)}
+              </p>
+              {"source" in scene && <p class="mt-2 text-2xs text-ink-subtle">{scene.source}</p>}
+              {"links" in scene && (
+                <ul class="mt-5 grid gap-2">
+                  {scene.links.map((link) => (
+                    <li>
+                      <a
+                        href={link.href}
+                        class="inline-flex items-center gap-2 text-sm font-medium text-link underline-offset-(--ia-link-underline-offset) hover:underline"
+                      >
+                        {link.label}
+                        <ArrowRight size={iconSize.sm} aria-hidden="true" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div class="min-w-0 lg:col-span-8">
+              <scene.Art locale={locale} />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="journey-controls mt-4 flex items-center gap-3">
+      <button
+        type="button"
+        class="inline-flex size-10 shrink-0 items-center justify-center rounded-pill border border-line-strong text-ink hover:bg-action-soft"
+        aria-label={t("journey.pause")}
+        data-label-pause={t("journey.pause")}
+        data-label-play={t("journey.play")}
+        data-journey-toggle
+      >
+        <Pause size={iconSize.sm} aria-hidden="true" class="journey-icon-pause" />
+        <Play size={iconSize.sm} aria-hidden="true" class="journey-icon-play" />
+      </button>
+      <div role="tablist" aria-label={t("journey.chapters")} class="flex min-w-0 grow gap-1 overflow-x-auto" data-journey-tabs>
+        {
+          scenes.map((scene, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`journey-tab-${i}`}
+              aria-controls={`journey-slide-${i}`}
+              aria-selected={i === 0 ? "true" : "false"}
+              tabindex={i === 0 ? 0 : -1}
+              class="journey-tab group grid grow gap-2 rounded-xs py-2 text-left sm:min-w-20"
+              data-chapter={i}
+            >
+              <span class="journey-track block h-0.5 overflow-hidden rounded-pill bg-line">
+                <span class="journey-progress block h-full rounded-pill bg-ink" />
+              </span>
+              <span class="truncate text-2xs text-ink-subtle group-aria-selected:text-ink max-sm:sr-only">{sceneText(scene.key, "name")}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<noscript>
+  <style is:inline>
+    .journey-controls {
+      display: none;
+    }
+  </style>
+</noscript>
+
+<style is:global>
+  @reference "../../styles/global.css";
+
+  /* Slides share one grid cell; only the active one shows (and runs its animations). */
+  .journey-slide {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--ia-motion-base) var(--ia-motion-ease-out),
+      visibility var(--ia-motion-base);
+  }
+  .journey-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+  /* The slide on screen at load is drawn finished; nothing animates before the reader looks. */
+  .journey-slide.is-settled * {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  .journey-icon-play {
+    display: none;
+  }
+  [data-journey][data-paused] .journey-icon-play {
+    display: block;
+  }
+  [data-journey][data-paused] .journey-icon-pause {
+    display: none;
+  }
+  /* Scaled, not resized: a transform animates off the main thread. */
+  .journey-progress {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .journey-tab[aria-selected="true"] .journey-progress {
+    animation: journey-progress var(--ia-motion-scene) linear forwards;
+  }
+  [data-journey]:is([data-paused], [data-held]) .journey-tab[aria-selected="true"] .journey-progress {
+    animation-play-state: paused;
+  }
+  [data-journey][data-static] .journey-tab[aria-selected="true"] .journey-progress {
+    animation: none;
+    transform: none;
+  }
+  .journey-tab:focus-visible {
+    outline: var(--ia-focus-width) solid var(--ia-focus);
+    outline-offset: var(--ia-focus-offset);
+  }
+  @keyframes journey-progress {
+    to {
+      transform: none;
+    }
+  }
+
+  /* Line art. Color appears only on data and on the things the story points at. */
+  .journey .j-fill-far {
+    fill: var(--ia-surface-muted);
+  }
+  .journey .j-fill-mid {
+    fill: var(--ia-surface);
+  }
+  .journey .j-fill-near {
+    fill: var(--ia-canvas);
+  }
+  .journey .j-stroke {
+    fill: none;
+    stroke: var(--ia-ink-subtle);
+    stroke-width: calc(var(--ia-viz-mark-outline-width) * 1px);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .journey .j-strong {
+    stroke: var(--ia-ink-muted);
+    stroke-width: calc(var(--ia-viz-mark-hover-width) * 1px);
+  }
+  .journey .j-faint {
+    opacity: var(--ia-viz-mark-dim-opacity);
+  }
+  .journey .j-accent {
+    stroke: var(--ia-family-productivity);
+  }
+  .journey .j-water {
+    stroke: var(--ia-family-water);
+  }
+  .journey .j-leader {
+    stroke: var(--ia-line-strong);
+  }
+  .journey .j-silhouette {
+    stroke: var(--ia-surface);
+  }
+  .journey .j-panel {
+    fill: var(--ia-family-water);
+    opacity: var(--ia-viz-mark-dim-opacity);
+  }
+  .journey .j-swath {
+    fill: var(--ia-ink);
+    opacity: var(--ia-viz-mark-area-opacity);
+  }
+  .journey .j-star {
+    fill: var(--ia-ink-subtle);
+  }
+  .journey .j-dash {
+    stroke-dasharray: var(--ia-viz-mark-reference-dash);
+  }
+  .journey .j-bar {
+    fill: var(--ia-family-productivity);
+  }
+  .journey .j-tag {
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    border: calc(var(--ia-viz-mark-outline-width) * 1px) solid var(--ia-line);
+    border-radius: var(--ia-radius-sm);
+    background-color: var(--ia-surface);
+    color: var(--ia-ink);
+    font-size: var(--ia-text-2xs);
+    line-height: var(--ia-text-2xs-leading);
+    white-space: nowrap;
+  }
+  .journey .j-link {
+    display: inline-flex;
+    padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3);
+    border: calc(var(--ia-viz-mark-outline-width) * 1px) solid var(--ia-line-strong);
+    border-radius: var(--ia-radius-pill);
+    color: var(--ia-ink);
+    font-size: var(--ia-text-sm);
+    transition: background-color var(--ia-motion-fast) var(--ia-motion-ease-out);
+  }
+  .journey .j-link:hover {
+    background-color: var(--ia-action-soft);
+  }
+
+  /* Entrances replay every time a slide becomes active. `--d` staggers them. */
+  .journey .j-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .journey .j-rise,
+  .journey .j-pixel {
+    opacity: 0;
+  }
+  /* transform, not translate: Tailwind's -translate-x-1/2 centering uses the translate property. */
+  .journey .j-rise {
+    transform: translateY(calc(var(--spacing) * 2));
+  }
+  .journey .j-bar {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    scale: 1 0;
+  }
+  /* The map fills in behind the swath's tilted leading edge (the swath crosses the track at 24°). */
+  .journey .j-reveal {
+    clip-path: polygon(0 0, 0 0, -48% 100%, 0 100%);
+  }
+  .journey .j-pass {
+    translate: var(--x0) var(--y0);
+  }
+  .journey .j-spikelet,
+  .journey .j-clipped {
+    fill: var(--ia-family-productivity);
+    opacity: 0;
+  }
+  .journey .j-ghost {
+    filter: grayscale(1);
+    opacity: var(--ia-viz-mark-area-opacity);
+  }
+  .journey-slide.is-active .j-draw {
+    animation: journey-draw var(--ia-motion-draw) var(--ia-motion-ease-out) forwards;
+    animation-delay: calc(var(--d, 0) * var(--ia-motion-stagger));
+  }
+  .journey-slide.is-active .j-draw.j-slow {
+    animation-duration: calc(var(--ia-motion-draw) * 2);
+  }
+  .journey-slide.is-active .j-rise,
+  .journey-slide.is-active .j-pixel {
+    animation: journey-rise var(--ia-motion-enter) var(--ia-motion-ease-out) forwards;
+    animation-delay: calc(var(--d, 0) * var(--ia-motion-stagger));
+  }
+  .journey-slide.is-active .j-bar {
+    animation: journey-grow var(--ia-motion-enter) var(--ia-motion-ease-out) forwards;
+    animation-delay: calc(var(--d, 0) * var(--ia-motion-stagger));
+  }
+  .journey-slide.is-active .j-pass {
+    animation: journey-pass calc(var(--ia-motion-scene) * 0.8) linear forwards;
+  }
+  .journey-slide.is-active .j-spikelet {
+    animation: journey-fade var(--ia-motion-enter) var(--ia-motion-ease-out) forwards;
+    animation-delay: calc(var(--d, 0) * var(--ia-motion-stagger));
+  }
+  .journey-slide.is-active .j-clipped {
+    animation: journey-clip var(--ia-motion-enter) var(--ia-motion-ease-out) forwards;
+    animation-delay: calc(var(--ia-motion-stagger) * 12);
+  }
+  .journey-slide.is-active .j-reveal {
+    animation: journey-reveal calc(var(--ia-motion-scene) * 0.51) linear forwards;
+    animation-delay: calc(var(--ia-motion-scene) * 0.23);
+  }
+  .journey-slide.is-active .j-drift {
+    animation: journey-drift var(--ia-motion-drift) var(--ia-motion-ease-in-out) infinite alternate;
+  }
+  .journey-slide.is-active .j-drift-slow {
+    animation-duration: calc(var(--ia-motion-drift) * 1.4);
+  }
+  .journey-slide.is-active .j-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: journey-pulse calc(var(--ia-motion-draw) * 1.2) var(--ia-motion-ease-out) infinite;
+  }
+  /* Data flowing from the platform to each application. */
+  .journey .j-flow {
+    fill: none;
+    stroke: var(--ia-family-productivity);
+    stroke-width: calc(var(--ia-viz-mark-line-width) * 1px);
+    stroke-linecap: round;
+    stroke-dasharray: 0.04 0.16;
+  }
+  .journey-slide.is-active .j-flow {
+    animation: journey-flow var(--ia-motion-draw) linear infinite;
+    animation-delay: calc(var(--d, 0) * var(--ia-motion-stagger));
+  }
+  /* The indicators take turns on the map, and their names light up with them. */
+  .journey .j-cycle {
+    opacity: 0;
+  }
+  .journey-slide.is-active .j-cycle {
+    animation: journey-cycle var(--ia-motion-scene) linear infinite;
+    animation-delay: calc(var(--i) * var(--ia-motion-scene) / 4);
+  }
+  .journey-slide.is-active .j-cycle-chip {
+    animation: journey-chip var(--ia-motion-scene) linear infinite;
+    animation-delay: calc(var(--i) * var(--ia-motion-scene) / 4);
+  }
+
+  @keyframes journey-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes journey-rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes journey-grow {
+    to {
+      scale: 1 1;
+    }
+  }
+  @keyframes journey-pass {
+    to {
+      translate: var(--x1) var(--y1);
+    }
+  }
+  @keyframes journey-fade {
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes journey-clip {
+    to {
+      opacity: var(--ia-viz-mark-dim-opacity);
+    }
+  }
+  @keyframes journey-reveal {
+    to {
+      clip-path: polygon(0 0, 148% 0, 100% 100%, 0 100%);
+    }
+  }
+  @keyframes journey-drift {
+    to {
+      translate: calc(var(--spacing) * 1) 0;
+    }
+  }
+  @keyframes journey-pulse {
+    from {
+      opacity: 1;
+      scale: 0.6;
+    }
+    to {
+      opacity: 0;
+      scale: 1.4;
+    }
+  }
+  @keyframes journey-flow {
+    to {
+      stroke-dashoffset: -0.2;
+    }
+  }
+  @keyframes journey-cycle {
+    0%,
+    27% {
+      opacity: 1;
+    }
+    31%,
+    96% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes journey-chip {
+    0%,
+    27% {
+      background-color: var(--ia-action-soft);
+      color: var(--ia-ink);
+    }
+    31%,
+    100% {
+      background-color: transparent;
+    }
+  }
+</style>
+
+<script>
+  import { initJourney } from "@/scripts/journey";
+  initJourney();
+</script>

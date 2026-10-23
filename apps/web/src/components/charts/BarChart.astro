@@ -1,0 +1,101 @@
+---
+import type { DataFamily } from "@/design/tokens";
+import { linear, niceTicks } from "./scale";
+
+interface Props {
+  id: string;
+  title: string;
+  summary: string;
+  instructions: string;
+  bars: { label: string; value: number }[];
+  family: DataFamily;
+  format: (value: number) => string;
+  tableLabel: string;
+  xHeader: string;
+  valueHeader: string;
+  /** Show an x label every `labelEvery` bars (first and last are always shown). */
+  labelEvery?: number;
+}
+
+const { id, title, summary, instructions, bars, family, format, tableLabel, xHeader, valueHeader, labelEvery = 5 } = Astro.props;
+const color = `var(--ia-family-${family})`;
+const ticks = niceTicks(0, Math.max(...bars.map((b) => b.value)), 4);
+const y = linear([0, ticks[ticks.length - 1]], [0, 100]);
+const maxIndex = bars.reduce((best, b, i) => (b.value > bars[best].value ? i : best), 0);
+const lastIndex = bars.length - 1;
+// Label the last bar and the tallest one, unless the tallest sits too close to the last.
+const labelled = new Set(lastIndex - maxIndex > 2 ? [maxIndex, lastIndex] : [lastIndex]);
+const showX = (i: number) => i === 0 || i === lastIndex || i % labelEvery === 0;
+const tooltipData = {
+  mode: "band",
+  points: bars.length,
+  series: [{ label: title, color }],
+  rows: bars.map((b) => ({ title: b.label, values: [format(b.value)] })),
+};
+---
+
+<figure class="chart" data-chart={id} style={`--series-color: ${color}`}>
+  <figcaption class="sr-only">{title}. {summary}</figcaption>
+  <div class="relative h-44 pt-5 pb-7 pl-11">
+    <div class="absolute inset-x-0 top-5 bottom-7 left-11">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 size-full overflow-visible" aria-hidden="true">
+        {ticks.map((tick) => <line x1="0" x2="100" y1={100 - y(tick)} y2={100 - y(tick)} class="chart-grid" vector-effect="non-scaling-stroke" />)}
+      </svg>
+      {
+        ticks.map((tick) => (
+          <span class="absolute right-full -translate-y-1/2 pr-2 text-2xs text-ink-subtle" style={`top: ${100 - y(tick)}%`} aria-hidden="true">
+            {format(tick)}
+          </span>
+        ))
+      }
+      <div class="absolute inset-0 flex items-end gap-0.5" data-hit-band>
+        {
+          bars.map((b, i) => (
+            <div class="relative flex h-full flex-1 items-end justify-center" data-bar={i}>
+              <div class="chart-bar" style={`height: ${y(b.value)}%`} />
+              {labelled.has(i) && (
+                <span class="absolute -translate-y-full pb-1 text-2xs whitespace-nowrap text-ink-muted" style={`bottom: ${y(b.value)}%`} aria-hidden="true">
+                  {format(b.value)}
+                </span>
+              )}
+              {showX(i) && (
+                <span class="absolute top-full pt-2 text-2xs whitespace-nowrap text-ink-subtle" aria-hidden="true">
+                  {b.label}
+                </span>
+              )}
+            </div>
+          ))
+        }
+      </div>
+      <div class="chart-tooltip" data-tooltip hidden></div>
+      <div class="absolute inset-0 cursor-default rounded-xs" tabindex="0" role="group" data-hit aria-label={title} aria-describedby={`${id}-keys`}></div>
+    </div>
+  </div>
+  <p id={`${id}-keys`} class="sr-only">{instructions}</p>
+  <p class="sr-only" aria-live="polite" data-live></p>
+  <script type="application/json" data-chart-data set:html={JSON.stringify(tooltipData)} />
+  <details class="mt-3 text-xs">
+    <summary class="cursor-pointer text-link underline-offset-(--ia-link-underline-offset) hover:underline">{tableLabel}</summary>
+    <div class="mt-3 max-h-60 overflow-auto">
+      <table class="data-table">
+        <caption class="sr-only">{title}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{xHeader}</th>
+            <th scope="col">{valueHeader}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            bars.map((b) => (
+              <tr>
+                <th scope="row">{b.label}</th>
+                <td>{format(b.value)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>

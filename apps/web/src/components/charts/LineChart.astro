@@ -1,0 +1,304 @@
+---
+import type { DataFamily } from "@/design/tokens";
+import { finite, linear, linePath, niceTicks } from "./scale";
+
+export type Tone = "reference" | "emphasis" | DataFamily;
+export type LineSeries = {
+  key: string;
+  label: string;
+  values: (number | null)[];
+  tone: Tone;
+  area?: boolean;
+  endLabel?: boolean;
+};
+/** A labelled point on a series (for example the peak of the year). */
+export type Annotation = { seriesKey: string; index: number; label: string; placement: "above" | "below" };
+
+interface Props {
+  id: string;
+  title: string;
+  summary: string;
+  instructions: string;
+  xLabels: string[];
+  xTicks: { index: number; label: string; minor?: boolean }[];
+  series: LineSeries[];
+  annotations?: Annotation[];
+  format: (value: number) => string;
+  tableCaption: string;
+  tableLabel: string;
+  xHeader: string;
+  height?: "sm" | "md" | "lg";
+  yFromZero?: boolean;
+}
+
+const {
+  id,
+  title,
+  summary,
+  instructions,
+  xLabels,
+  xTicks,
+  series,
+  annotations = [],
+  format,
+  tableCaption,
+  tableLabel,
+  xHeader,
+  height = "md",
+  yFromZero = true,
+} = Astro.props;
+
+const toneColor: Record<Tone, string> = {
+  reference: "var(--ia-viz-series-reference)",
+  emphasis: "var(--ia-viz-series-emphasis)",
+  productivity: "var(--ia-family-productivity)",
+  water: "var(--ia-family-water)",
+  soil: "var(--ia-family-soil)",
+  ecosystem: "var(--ia-family-ecosystem)",
+  human: "var(--ia-family-human)",
+};
+
+const all = series.flatMap((s) => finite(s.values));
+const ticks = niceTicks(yFromZero ? 0 : Math.min(...all), Math.max(...all), 4);
+const domain: [number, number] = [ticks[0], ticks[ticks.length - 1]];
+const n = xLabels.length;
+const x = (i: number) => (n === 1 ? 50 : (i / (n - 1)) * 100);
+const yScale = linear(domain, [100, 0]);
+
+const lastIndex = (values: (number | null)[]) => values.reduce<number>((last, v, i) => (v === null ? last : i), -1);
+const lines = series.map((s) => {
+  const end = lastIndex(s.values);
+  const first = s.values.findIndex((v) => v !== null);
+  return {
+    ...s,
+    color: toneColor[s.tone],
+    d: linePath(s.values, x, yScale),
+    // An area only reads honestly against a zero baseline.
+    area:
+      s.area && yFromZero
+        ? `${linePath(s.values, x, yScale)}L${x(end).toFixed(2)},100L${x(first).toFixed(2)},100Z`
+        : null,
+    endIndex: end,
+    end: end >= 0 ? { left: x(end), top: yScale(s.values[end] as number) } : null,
+  };
+});
+
+/*
+ * Direct labels ride the line ends of multi-series charts (a single series is named by the title).
+ * A label is dropped when it would sit on another label or on another line; the legend carries it.
+ */
+const LABEL_CLEARANCE = 9;
+const placed: number[] = [];
+const endLabels = lines.map((l) => {
+  if (!l.end || series.length < 2 || series.length > 4 || l.endLabel === false) return false;
+  const top = l.end.top;
+  const onLabel = placed.some((p) => Math.abs(p - top) < LABEL_CLEARANCE);
+  const onLine = lines.some(
+    (other) =>
+      other !== l &&
+      [l.endIndex, l.endIndex + 1, l.endIndex + 2].some((i) => {
+        const v = other.values[i];
+        return v !== null && v !== undefined && Math.abs(yScale(v) - top) < LABEL_CLEARANCE * 1.5;
+      }),
+  );
+  if (onLabel || onLine) return false;
+  placed.push(top);
+  return true;
+});
+
+/*
+ * The data moves every composite, so the final side of a note is decided here: a note that would
+ * leave the plot (over the axis labels, or above the frame) sits beside its point instead.
+ * Small screens have no room for boxes over the lines: the notes become a list under the plot.
+ */
+const NOTE_ROOM = 20;
+const notes = annotations
+  .map((a) => {
+    const line = lines.find((l) => l.key === a.seriesKey);
+    const value = line?.values[a.index];
+    if (!line || value === null || value === undefined) return null;
+    const top = yScale(value);
+    const cramped = a.placement === "below" ? top > 100 - NOTE_ROOM : top < NOTE_ROOM;
+    return { ...a, color: line.color, left: x(a.index), top, side: cramped };
+  })
+  .filter((a): a is NonNullable<typeof a> => a !== null);
+
+const heightClass = { sm: "h-44", md: "h-60", lg: "h-72" }[height];
+const tooltipData = {
+  mode: "line",
+  points: n,
+  series: lines.map((l) => ({ label: l.label, color: l.color })),
+  rows: xLabels.map((label, i) => ({
+    title: label,
+    values: lines.map((l) => (l.values[i] === null ? null : format(l.values[i] as number))),
+  })),
+};
+---
+
+<figure class="chart" data-chart={id}>
+  <figcaption class="sr-only">{title}. {summary}</figcaption>
+  {
+    series.length > 1 && (
+      <ul class="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-muted" aria-hidden="true">
+        {lines.map((l) => (
+          <li class="flex items-center gap-2">
+            <span class="chart-key" style={`--series-color: ${l.color}`} />
+            {l.label}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  <div class:list={["relative pb-7 pl-11", heightClass]}>
+    <div class="absolute inset-y-0 right-0 bottom-7 left-11">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        class="absolute inset-0 size-full overflow-visible"
+        aria-hidden="true"
+      >
+        {
+          ticks.map((tick) => (
+            <line
+              x1="0"
+              x2="100"
+              y1={yScale(tick)}
+              y2={yScale(tick)}
+              class="chart-grid"
+              vector-effect="non-scaling-stroke"
+            />
+          ))
+        }
+        {lines.map((l) => l.area && <path d={l.area} class="chart-area" style={`--series-color: ${l.color}`} />)}
+        {
+          lines.map((l) => (
+            <path d={l.d} class="chart-line" style={`--series-color: ${l.color}`} vector-effect="non-scaling-stroke" />
+          ))
+        }
+      </svg>
+
+      {
+        ticks.map((tick) => (
+          <span
+            class="absolute right-full -translate-y-1/2 pr-2 text-2xs text-ink-subtle"
+            style={`top: ${yScale(tick)}%`}
+            aria-hidden="true"
+          >
+            {format(tick)}
+          </span>
+        ))
+      }
+      {
+        xTicks.map((tick) => (
+          <span
+            class:list={[
+              "absolute top-full -translate-x-1/2 pt-2 text-2xs whitespace-nowrap text-ink-subtle",
+              tick.minor && "max-sm:hidden",
+            ]}
+            style={`left: ${x(tick.index)}%`}
+            aria-hidden="true"
+          >
+            {tick.label}
+          </span>
+        ))
+      }
+      {
+        lines.map(
+          (l, i) =>
+            l.end && (
+              <>
+                <span
+                  class="chart-dot"
+                  style={`left: ${l.end.left}%; top: ${l.end.top}%; --series-color: ${l.color}`}
+                  aria-hidden="true"
+                />
+                {endLabels[i] && (
+                  <span
+                    class:list={["chart-end-label max-md:hidden", l.end.left > 75 && "is-left"]}
+                    style={`left: ${l.end.left}%; top: ${l.end.top}%`}
+                    aria-hidden="true"
+                  >
+                    {l.label}
+                  </span>
+                )}
+              </>
+            ),
+        )
+      }
+      {
+        notes.map((note) => (
+          <>
+            <span
+              class="chart-dot"
+              style={`left: ${note.left}%; top: ${note.top}%; --series-color: ${note.color}`}
+              aria-hidden="true"
+            />
+            <span
+              class:list={[
+                "chart-note max-sm:hidden",
+                note.side ? "is-side" : note.placement === "below" && "is-below",
+                note.left > 60 && "is-left",
+              ]}
+              style={`left: ${note.left}%; top: ${note.top}%`}
+            >
+              {note.label}
+            </span>
+          </>
+        ))
+      }
+      <div class="chart-crosshair" data-crosshair hidden></div>
+      <div class="chart-tooltip" data-tooltip hidden></div>
+      <div
+        class="absolute inset-0 cursor-crosshair rounded-xs"
+        tabindex="0"
+        role="group"
+        data-hit
+        aria-label={title}
+        aria-describedby={`${id}-keys`}
+      >
+      </div>
+    </div>
+  </div>
+  {
+    notes.length > 0 && (
+      <ul class="mt-3 grid gap-1 text-2xs text-ink-muted sm:hidden">
+        {notes.map((note) => (
+          <li class="flex items-center gap-2">
+            <span class="chart-dot static shrink-0 translate-none" style={`--series-color: ${note.color}`} aria-hidden="true" />
+            {note.label}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  <p id={`${id}-keys`} class="sr-only">{instructions}</p>
+  <p class="sr-only" aria-live="polite" data-live></p>
+  <script type="application/json" data-chart-data set:html={JSON.stringify(tooltipData)} />
+
+  <details class="mt-3 text-xs">
+    <summary class="cursor-pointer text-link underline-offset-(--ia-link-underline-offset) hover:underline">{tableLabel}</summary>
+    <div class="mt-3 max-h-72 overflow-auto">
+      <table class="data-table">
+        <caption class="sr-only">{tableCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{xHeader}</th>
+            {series.map((s) => <th scope="col">{s.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            xLabels.map((label, i) => (
+              <tr>
+                <th scope="row">{label}</th>
+                {series.map((s) => (
+                  <td>{s.values[i] === null ? "" : format(s.values[i] as number)}</td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>

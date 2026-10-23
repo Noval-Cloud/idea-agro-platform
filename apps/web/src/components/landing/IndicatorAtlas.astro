@@ -1,0 +1,484 @@
+---
+import type { ImageMetadata } from "astro";
+import ThemedImage from "@/components/media/ThemedImage.astro";
+import { minWidth } from "@/design/tokens";
+import BarChart from "@/components/charts/BarChart.astro";
+import LineChart from "@/components/charts/LineChart.astro";
+import RangeStrip from "@/components/charts/RangeStrip.astro";
+import { monthTicks } from "@/components/charts/month-ticks";
+import { createTranslator, localizePath, type Locale, type MessageKey } from "@/i18n";
+import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
+import { references, doiUrl } from "@/data/references";
+import {
+  aparSeasonal,
+  compositeDate,
+  etAnnual,
+  ioseAnnual,
+  lastCompleteYearStart,
+  ppnaAnnual,
+  rhAnnual,
+  seasonalLayout,
+  firstYearStart,
+} from "@/data/series";
+import mapStats from "@/data/snapshot/map-stats.json";
+import landcover from "@/data/snapshot/landcover.json";
+import { familyBackground } from "@/design/family-classes";
+
+interface Props {
+  locale: Locale;
+  /** "page" when the atlas is the page itself (its title is then the h1). */
+  as?: "page" | "section";
+}
+
+const i18n = createTranslator(Astro.props.locale);
+// On its own page the atlas title is the h1, so every heading below moves up a level.
+const page = Astro.props.as === "page";
+const Heading = page ? "h1" : "h2";
+const PanelHeading = page ? "h2" : "h3";
+const SubHeading = page ? "h3" : "h4";
+const explore = localizePath("/explore/", Astro.props.locale);
+const { t } = i18n;
+const item = (id: IndicatorId, field: string) => t(`indicators.items.${id}.${field}` as MessageKey);
+const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
+
+const maps = import.meta.glob<{ default: ImageMetadata }>("/src/assets/maps/*.webp", { eager: true });
+const mapImage = (name: string) => maps[`/src/assets/maps/${name}.webp`]?.default;
+
+const yearRange = (start: number) =>
+  t("indicators.yearRange", { from: String(start), to: String(start + 1).slice(-2) });
+const fixed = (digits: number) => (value: number) =>
+  i18n.number(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const whole = (value: number) => i18n.number(value, { maximumFractionDigits: 0 });
+
+const mapYears = { from: String(mapStats.productiveYear), to: String(mapStats.productiveYear + 1).slice(-2) };
+const stats = mapStats.stats as Record<string, { p2: number; p10: number; p50: number; p90: number; p98: number }>;
+
+// Land cover: natural grassland (MapBiomas class 12) as a share of the country, per year.
+const grasslandShare = landcover.byYear.map((d) => {
+  const km2 = d.km2 as Record<string, number>;
+  const total = Object.values(km2).reduce((sum, v) => sum + v, 0);
+  return { year: d.year, value: (km2["12"] ?? 0) / total };
+});
+
+// Grassland communities mapped in the raster (class value → catalog key), largest first.
+const communityKm2 = landcover.communitiesKm2 as Record<string, number>;
+const communityTotal = Object.values(communityKm2).reduce((sum, v) => sum + v, 0);
+const communities = Object.entries(communityKm2)
+  .map(([cls, km2]) => ({ cls, share: km2 / communityTotal }))
+  .sort((a, b) => b.share - a.share);
+const communityName = (cls: string) => t("communities.label", { order: t(`communities.${cls}.order` as MessageKey) });
+
+const seasonDates = seasonalLayout.map((p) => compositeDate(lastCompleteYearStart + p.yearOffset, p.doy));
+const seasonLabels = seasonDates.map((d) => i18n.date(d, { day: "numeric", month: "long" }));
+const seasonTicks = monthTicks(seasonDates[0], 16, seasonDates.length, (d) => i18n.date(d, { month: "short" }));
+
+/** Year ticks: first, last and each decade that does not crowd the last one. */
+const yearTicks = (years: number[]) =>
+  years
+    .map((year, index) => ({ index, label: String(year) }))
+    .filter((d, i, all) => i === 0 || i === all.length - 1 || (Number(d.label) % 10 === 0 && all.length - 1 - i > 3));
+
+const groups = (["structure", "environment"] as const).map((group) => ({ group, ids: indicatorsByGroup(group) }));
+const initial: IndicatorId = "ppna";
+
+const panelRules = indicatorIds
+  .map((id) => `.atlas:has(#indicator-${id}:checked) [data-panel="${id}"]{display:grid}`)
+  .join("");
+---
+
+{
+  page && (
+    // On its own page the title sits in the same header band as the other content pages.
+    <div class="border-b border-line pt-section pb-12">
+      <div class="px-gutter">
+        <h1 id="indicators-title" class="font-display text-4xl font-medium tracking-tight text-ink">
+          {t("indicators.title")}
+        </h1>
+        <p class="mt-5 max-w-2xl text-lg text-ink-muted">{t("indicators.lead")}</p>
+      </div>
+    </div>
+  )
+}
+<section
+  id="indicators"
+  class:list={["border-b border-line", page ? "pt-12 pb-section" : "py-section"]}
+  aria-labelledby="indicators-title"
+>
+  <div class="px-gutter">
+    {
+      !page && (
+        <div class="max-w-2xl">
+          <Heading id="indicators-title" class="font-display text-3xl font-medium tracking-tight text-ink">
+            {t("indicators.title")}
+          </Heading>
+          <p class="mt-5 text-base text-ink-muted">{t("indicators.lead")}</p>
+        </div>
+      )
+    }
+
+    <div class:list={["atlas grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8", !page && "mt-10 lg:mt-12"]}>
+      <fieldset
+        class="atlas-chips -mx-gutter flex min-w-0 gap-2 overflow-x-auto px-gutter pt-1 pb-2 lg:col-span-3 lg:mx-0 lg:block lg:px-0"
+        data-atlas-chips
+      >
+        <legend class="sr-only">{t("indicators.pickerLabel")}</legend>
+        {
+          groups.map(({ group, ids }) => (
+            <div class="contents lg:mb-6 lg:block">
+              <p class="mb-2 hidden px-3 text-xs font-medium text-ink-subtle lg:block">{t(`nav.groups.${group}`)}</p>
+              <div class="contents lg:grid lg:gap-0.5">
+                {ids.map((id) => (
+                  <label class="atlas-option relative flex shrink-0 cursor-pointer items-center gap-2.5 rounded-pill border border-line px-3 py-1.5 text-sm whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink lg:gap-3 lg:rounded-sm lg:border-transparent lg:py-2 lg:whitespace-normal">
+                    <input
+                      type="radio"
+                      name="indicator"
+                      id={`indicator-${id}`}
+                      value={id}
+                      checked={id === initial}
+                      class="sr-only"
+                    />
+                    <span
+                      class:list={["size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family]]}
+                      aria-hidden="true"
+                    />
+                    <span class="grow">{item(id, "name")}</span>
+                    <span class="hidden text-xs text-ink-subtle lg:inline">{item(id, "short")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </fieldset>
+
+      <div class="min-w-0 lg:col-span-9">
+        {
+          indicatorIds.map((id) => {
+            const config = indicators[id];
+            const stat = stats[id];
+            const factor = config.legendFactor ?? 1;
+            const format = fixed(config.digits);
+            const family = config.family;
+            const ramp = Array.from({ length: 7 }, (_, i) => `var(--ia-viz-${family}-${i + 1})`).join(", ");
+            const light = mapImage(`${id}-light`);
+            const dark = mapImage(`${id}-dark`);
+            const name = item(id, "longName");
+            const summary = t("indicators.fields.chartFor", { name });
+            return (
+              <article
+                data-panel={id}
+                class="atlas-panel hidden grid-cols-1 gap-x-10 gap-y-8 rounded-lg border border-line bg-surface p-5 sm:p-8 md:grid-cols-2"
+                aria-labelledby={`panel-${id}-title`}
+              >
+                <div>
+                  <p class="flex items-center gap-2 text-xs text-ink-muted">
+                    <span class:list={["size-2.5 rounded-xs", familyBackground[family]]} aria-hidden="true" />
+                    {t(`indicators.families.${family}`)}
+                    <span class="text-ink-subtle">{item(id, "short")}</span>
+                  </p>
+                  <PanelHeading id={`panel-${id}-title`} class="mt-3 font-display text-2xl font-medium tracking-snug text-ink">
+                    {name}
+                  </PanelHeading>
+
+                  <dl class="mt-6 grid gap-5 text-sm">
+                    <div>
+                      <dt class="font-medium text-ink">{t("indicators.fields.measures")}</dt>
+                      <dd class="mt-1 max-w-measure text-ink-muted">{item(id, "measures")}</dd>
+                    </div>
+                    <div>
+                      <dt class="font-medium text-ink">{t("indicators.fields.method")}</dt>
+                      <dd class="mt-1 max-w-measure text-ink-muted">{item(id, "method")}</dd>
+                    </div>
+                  </dl>
+                  <a
+                    href={`${explore}?ind=${id}`}
+                    class="mt-6 inline-flex h-10 items-center gap-2 rounded-sm bg-action px-4 text-sm font-medium text-action-ink transition-colors duration-(--ia-motion-fast) hover:bg-action-hover"
+                  >
+                    {t("indicatorsPage.openMap")}
+                  </a>
+                  <dl class="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line pt-5 text-sm">
+                    {(["unit", "cadence", "period", "resolution"] as const).map((field) => (
+                      <div>
+                        <dt class="text-xs text-ink-subtle">{t(`indicators.fields.${field}`)}</dt>
+                        <dd class="text-ink">{item(id, field)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+
+                  <div class="mt-8 border-t border-line pt-5">
+                    <SubHeading class="text-xs font-medium text-ink-subtle">{t("indicators.fields.reference")}</SubHeading>
+                    <ul class="mt-2 grid max-w-measure gap-3 text-xs text-ink-muted">
+                      {config.references.map((ref) => {
+                        const r = references[ref];
+                        return (
+                          <li>
+                            {r.authors} ({r.year}). <span lang={r.lang}>{withPeriod(r.title)}</span>{" "}
+                            <span class="text-ink-subtle">{withPeriod(r.source)}</span>
+                            {"doi" in r && r.doi && (
+                              <a
+                                class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline"
+                                href={doiUrl(r.doi)}
+                                rel="noopener"
+                                target="_blank"
+                              >
+                                {t("science.doi", { doi: r.doi })}
+                                <span class="sr-only"> {t("a11y.externalLink")}</span>
+                              </a>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+                <div>
+                  <figure>
+                    {config.chart === "communities" ? (
+                      <div class="grid grid-cols-3 gap-3">
+                        {communities.map((c) => {
+                          const cl = mapImage(`community-${c.cls}-light`);
+                          const cd = mapImage(`community-${c.cls}-dark`);
+                          return (
+                            <div>
+                              {cl && cd && (
+                                <ThemedImage
+                                  light={cl}
+                                  dark={cd}
+                                  widths={[160, 240, 320]}
+                                  sizes={`${minWidth("lg")} 10vw, ${minWidth("md")} 14vw, 28vw`}
+                                  alt={communityName(c.cls)}
+                                  class="h-auto w-full"
+                                />
+                              )}
+                              <p class="mt-1 text-xs text-ink-muted">{communityName(c.cls)}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      light &&
+                      dark && (
+                        <ThemedImage
+                          light={light}
+                          dark={dark}
+                          widths={[360, 480, 600, 720, 960]}
+                          sizes={`${minWidth("lg")} 30vw, ${minWidth("md")} 42vw, 85vw`}
+                          alt={t("indicators.mapAlt", { name })}
+                          class="h-auto w-full"
+                        />
+                      )
+                    )}
+                    <figcaption class="mt-4">
+                      {id === "cob" ? (
+                        <p class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-muted">
+                          <span class="flex items-center gap-2">
+                            <span class="chart-swatch" style="--series-color: var(--ia-viz-ecosystem-5)" />
+                            {t("landcover.grassland")}
+                          </span>
+                          <span class="flex items-center gap-2">
+                            <span class="chart-swatch" style="--series-color: var(--ia-surface-muted)" />
+                            {t("landcover.otherUses")}
+                          </span>
+                        </p>
+                      ) : id === "compn" ? null : stat ? (
+                        <>
+                          <div
+                            class="h-2.5 rounded-xs"
+                            style={`background-image: linear-gradient(to right, ${ramp})`}
+                            aria-hidden="true"
+                          />
+                          <div class="mt-1.5 flex justify-between text-2xs text-ink-subtle">
+                            <span>{format(stat.p2 * factor)}</span>
+                            <span>{item(id, "unit")}</span>
+                            <span>{format(stat.p98 * factor)}</span>
+                          </div>
+                        </>
+                      ) : null}
+                      <p class="mt-2 text-xs text-ink-muted">
+                        <span class="text-ink-subtle">{t("indicators.fields.mapShows")}: </span>
+                        {t(`indicators.items.${id}.mapShows` as MessageKey, mapYears)}
+                      </p>
+                    </figcaption>
+                  </figure>
+
+                  <div class="mt-8 border-t border-line pt-5">
+                    <SubHeading class="text-sm font-semibold text-ink">{item(id, "chartTitle")}</SubHeading>
+                    <p class="mb-4 text-xs text-ink-muted">{item(id, "chartUnit")}</p>
+                    {config.chart === "annualBars" && (
+                      <BarChart
+                        id={`chart-${id}`}
+                        title={item(id, "chartTitle")}
+                        summary={summary}
+                        instructions={t("a11y.chartKeys")}
+                        family={family}
+                        format={whole}
+                        tableLabel={t("a11y.tableView")}
+                        xHeader={t("indicators.yearHeader")}
+                        valueHeader={item(id, "chartUnit")}
+                        bars={(id === "ppna"
+                          ? ppnaAnnual
+                          : id === "et"
+                            ? etAnnual
+                            : rhAnnual.map((d) => ({ start: d.year, value: d.value }))
+                        ).map((d) => ({
+                          label: id === "rh" ? String(d.start) : yearRange(d.start),
+                          value: d.value,
+                        }))}
+                        labelEvery={6}
+                      />
+                    )}
+                    {config.chart === "seasonal" && (
+                      <LineChart
+                        id={`chart-${id}`}
+                        title={item(id, "chartTitle")}
+                        summary={summary}
+                        instructions={t("a11y.chartKeys")}
+                        xLabels={seasonLabels}
+                        xTicks={seasonTicks}
+                        series={[
+                          {
+                            key: "average",
+                            label: t("seasonChart.seriesAverage", {
+                              from: String(firstYearStart),
+                              to: String(lastCompleteYearStart + 1),
+                            }),
+                            values: aparSeasonal.average,
+                            tone: "reference",
+                            area: true,
+                            endLabel: false,
+                          },
+                          {
+                            key: "last",
+                            label: t("seasonChart.seriesYear", {
+                              from: String(lastCompleteYearStart),
+                              to: String(lastCompleteYearStart + 1).slice(-2),
+                            }),
+                            values: aparSeasonal.lastYear,
+                            tone: family,
+                          },
+                        ]}
+                        format={whole}
+                        height="sm"
+                        tableLabel={t("a11y.tableView")}
+                        tableCaption={item(id, "chartTitle")}
+                        xHeader={t("seasonChart.tableDate")}
+                      />
+                    )}
+                    {config.chart === "yearlyLine" && (
+                      <LineChart
+                        id={`chart-${id}`}
+                        title={item(id, "chartTitle")}
+                        summary={summary}
+                        instructions={t("a11y.chartKeys")}
+                        xLabels={(id === "cob" ? grasslandShare : ioseAnnual).map((d) => String(d.year))}
+                        xTicks={yearTicks((id === "cob" ? grasslandShare : ioseAnnual).map((d) => d.year))}
+                        series={[
+                          {
+                            key: id,
+                            label: item(id, "name"),
+                            values: (id === "cob" ? grasslandShare : ioseAnnual).map((d) => d.value),
+                            tone: family,
+                          },
+                        ]}
+                        format={id === "cob" ? (v: number) => i18n.percent(v) : fixed(2)}
+                        height="sm"
+                        yFromZero={false}
+                        tableLabel={t("a11y.tableView")}
+                        tableCaption={item(id, "chartTitle")}
+                        xHeader={t("indicators.yearHeader")}
+                      />
+                    )}
+                    {config.chart === "range" && stat && (
+                      <>
+                        <RangeStrip
+                          family={family}
+                          p2={stat.p2 * factor}
+                          p10={stat.p10 * factor}
+                          p50={stat.p50 * factor}
+                          p90={stat.p90 * factor}
+                          p98={stat.p98 * factor}
+                          format={format}
+                          medianLabel={t("indicators.fields.median")}
+                          summary={t("indicators.fields.distributionSummary", {
+                            median: format(stat.p50 * factor),
+                            low: format(stat.p10 * factor),
+                            high: format(stat.p90 * factor),
+                          })}
+                        />
+                        <p class="mt-4 text-xs text-ink-muted">
+                          {t("indicators.fields.distributionSummary", {
+                            median: format(stat.p50 * factor),
+                            low: format(stat.p10 * factor),
+                            high: format(stat.p90 * factor),
+                          })}
+                        </p>
+                      </>
+                    )}
+                    {config.chart === "communities" && (
+                      <>
+                        <ul class="grid gap-3">
+                          {communities.map((c) => (
+                            <li class="text-xs">
+                              <div class="flex items-baseline justify-between gap-3">
+                                <span class="text-ink">
+                                  {communityName(c.cls)}
+                                  <span class="text-ink-muted"> {t(`communities.${c.cls}.name` as MessageKey)}</span>
+                                </span>
+                                <span class="shrink-0 text-ink">{i18n.percent(c.share)}</span>
+                              </div>
+                              <div class="mt-1 h-1.5 rounded-pill bg-surface-muted">
+                                <div
+                                  class="h-full rounded-pill bg-family-ecosystem"
+                                  style={`width: ${(c.share * 100).toFixed(1)}%`}
+                                />
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <p class="mt-4 text-xs text-ink-subtle">{t("communities.missing")}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+              </article>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:inline set:html={panelRules}></style>
+
+<style is:global>
+  @reference "../../styles/global.css";
+
+  /* Below lg the chips scroll sideways; faded edges say there is more. */
+  @variant max-lg {
+    .atlas-chips {
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        black var(--ia-space-gutter),
+        black calc(100% - var(--ia-space-gutter)),
+        transparent
+      );
+    }
+  }
+  .atlas-option:has(input:checked) {
+    border-color: var(--ia-line-strong);
+    background-color: var(--ia-surface);
+    color: var(--ia-ink);
+  }
+  .atlas-option:has(input:focus-visible) {
+    outline: var(--ia-focus-width) solid var(--ia-focus);
+    outline-offset: var(--ia-focus-offset);
+  }
+</style>
+
+<script>
+  import { initAtlas } from "@/scripts/atlas";
+  initAtlas();
+</script>

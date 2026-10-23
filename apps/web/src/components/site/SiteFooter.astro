@@ -1,0 +1,46 @@
+---
+import Wordmark from "@/components/brand/Wordmark.astro";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import { latestDate } from "@/data/series";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const i18n = createTranslator(locale);
+const { t } = i18n;
+const links = [
+  { label: t("nav.explore"), href: localizePath("/explore/", locale) },
+  { label: t("nav.indicators"), href: localizePath("/indicators/", locale) },
+  { label: t("nav.resources"), href: localizePath("/resources/", locale) },
+  { label: t("nav.login"), href: localizePath("/login", locale) },
+  { label: t("nav.register"), href: localizePath("/register", locale) },
+];
+---
+
+<footer class="border-t border-line bg-surface">
+  <div class="grid gap-10 px-gutter py-14 lg:grid-cols-12">
+    <div class="lg:col-span-5">
+      <Wordmark name={t("meta.siteName")} />
+      <p class="mt-4 max-w-sm text-sm text-ink-muted">{t("footer.tagline")}</p>
+    </div>
+    <nav aria-label={t("a11y.footerNav")} class="lg:col-span-3">
+      <ul class="grid gap-2 text-sm">
+        {
+          links.map((l) => (
+            <li>
+              <a href={l.href} class="text-ink-muted underline-offset-(--ia-link-underline-offset) hover:text-ink hover:underline">
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="grid content-start gap-2 text-sm text-ink-muted lg:col-span-4">
+      <p>{t("footer.dataSources")}</p>
+      <p>{t("footer.updated", { date: i18n.date(latestDate) })}</p>
+      <p>{t("footer.license")}</p>
+    </div>
+  </div>
+</footer>

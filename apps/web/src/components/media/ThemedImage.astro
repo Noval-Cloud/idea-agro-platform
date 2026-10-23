@@ -1,0 +1,55 @@
+---
+import type { ImageMetadata } from "astro";
+import { getImage } from "astro:assets";
+
+/**
+ * One picture, two renderings (light and dark ramps). The dark sources carry a color-scheme media
+ * query, so the browser downloads only the image the reader will see; `src/scripts/theme.ts`
+ * rewrites that query when the reader picks a theme by hand.
+ */
+interface Props {
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+  widths: number[];
+  sizes: string;
+  class?: string;
+  /** Above the fold (a page's largest paint): load eagerly and first. */
+  priority?: boolean;
+}
+
+const { light, dark, alt, widths, sizes, class: className, priority = false } = Astro.props;
+const formats = ["avif", "webp"] as const;
+const quality = 62;
+
+const variant = async (src: ImageMetadata, format: (typeof formats)[number]) => {
+  const images = await Promise.all(widths.map((width) => getImage({ src, width, format, quality })));
+  return images.map((image, i) => `${image.src} ${widths[i]}w`).join(", ");
+};
+
+const [darkAvif, darkWebp, lightAvif, lightWebp] = await Promise.all([
+  variant(dark, "avif"),
+  variant(dark, "webp"),
+  variant(light, "avif"),
+  variant(light, "webp"),
+]);
+const fallback = await getImage({ src: light, width: widths[widths.length - 1], format: "webp", quality });
+---
+
+<picture>
+  <source data-theme-dark media="(prefers-color-scheme: dark)" type="image/avif" srcset={darkAvif} sizes={sizes} />
+  <source data-theme-dark media="(prefers-color-scheme: dark)" type="image/webp" srcset={darkWebp} sizes={sizes} />
+  <source type="image/avif" srcset={lightAvif} sizes={sizes} />
+  <img
+    src={fallback.src}
+    srcset={lightWebp}
+    sizes={sizes}
+    alt={alt}
+    width={light.width}
+    height={light.height}
+    loading={priority ? "eager" : "lazy"}
+    fetchpriority={priority ? "high" : undefined}
+    decoding="async"
+    class={className}
+  />
+</picture>

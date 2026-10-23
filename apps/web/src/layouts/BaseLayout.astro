@@ -1,0 +1,78 @@
+---
+import "@/styles/global.css";
+import { Font } from "astro:assets";
+import { formatHex } from "culori";
+import { createTranslator, defaultLocale, htmlLang, locales, localizePath, stripLocale, type Locale } from "@/i18n";
+import { primitives, semanticColors } from "@/design/tokens";
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+}
+
+const { locale, title, description } = Astro.props;
+const { t } = createTranslator(locale);
+const path = stripLocale(Astro.url.pathname);
+
+const tokenHex = (theme: "light" | "dark") => {
+  const [scale, step] = semanticColors.canvas[theme].split(".") as [keyof typeof primitives, string];
+  const [l, c, h] = (primitives[scale] as Record<string, readonly [number, number, number]>)[step];
+  return formatHex({ mode: "oklch", l, c, h });
+};
+---
+
+<!doctype html>
+<html lang={htmlLang[locale]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={tokenHex("light")} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={tokenHex("dark")} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {
+      Astro.site && (
+        <>
+          <link rel="canonical" href={new URL(localizePath(path, locale), Astro.site).href} />
+          {locales.map((l) => (
+            <link rel="alternate" hreflang={htmlLang[l]} href={new URL(localizePath(path, l), Astro.site).href} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={new URL(localizePath(path, defaultLocale), Astro.site).href} />
+        </>
+      )
+    }
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    {
+      Astro.site && (
+        <>
+          <meta property="og:image" content={new URL("/og.png", Astro.site).href} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta name="twitter:card" content="summary_large_image" />
+        </>
+      )
+    }
+    <Font cssVariable="--font-newsreader" preload />
+    <Font cssVariable="--font-schibsted" preload />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem("ia-theme");
+        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
+  </head>
+  <body class="min-h-dvh bg-canvas text-ink">
+    <a
+      href="#main"
+      class="sr-only z-(--ia-layer-tooltip) rounded-sm bg-action px-4 py-2 text-sm text-action-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+    >
+      {t("a11y.skipToContent")}
+    </a>
+    <slot />
+  </body>
+</html>

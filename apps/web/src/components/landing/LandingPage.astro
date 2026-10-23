@@ -1,0 +1,17 @@
+---
+import SitePage from "@/layouts/SitePage.astro";
+import Journey from "@/components/journey/Journey.astro";
+import Entry from "./Entry.astro";
+import { createTranslator, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+---
+
+<SitePage locale={locale} title={t("meta.title")} description={t("meta.description")}>
+  <Journey locale={locale} />
+  <Entry locale={locale} />
+</SitePage>

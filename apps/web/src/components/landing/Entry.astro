@@ -1,0 +1,54 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ThemedImage from "@/components/media/ThemedImage.astro";
+import { iconSize, minWidth } from "@/design/tokens";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import ppnaLight from "@/assets/maps/ppna-light.webp";
+import ppnaDark from "@/assets/maps/ppna-dark.webp";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+const cards = [
+  { key: "indicators", href: localizePath("/indicators/", locale) },
+  { key: "resources", href: localizePath("/resources/", locale) },
+] as const;
+const card =
+  "group flex flex-col justify-between gap-6 rounded-lg border border-line bg-surface p-6 transition-colors duration-(--ia-motion-fast) hover:border-line-strong sm:p-8";
+---
+
+<section class="py-section" aria-labelledby="entry-title">
+  <div class="px-gutter">
+    <h2 id="entry-title" class="font-display text-3xl font-medium tracking-tight text-ink">{t("entry.title")}</h2>
+    <div class="mt-10 grid gap-4 lg:grid-cols-3 lg:grid-rows-2">
+      <a href={localizePath("/explore/", locale)} class:list={[card, "lg:col-span-2 lg:row-span-2 lg:flex-row lg:items-end"]}>
+        <div class="max-w-sm">
+          <p class="font-display text-2xl font-medium text-ink">{t("entry.explore.name")}</p>
+          <p class="mt-2 text-base text-ink-muted">{t("entry.explore.detail")}</p>
+          <ArrowRight size={iconSize.lg} class="mt-6 text-ink transition-transform duration-(--ia-motion-fast) group-hover:translate-x-1" aria-hidden="true" />
+        </div>
+        <ThemedImage
+          light={ppnaLight}
+          dark={ppnaDark}
+          widths={[280, 360, 480]}
+          sizes={`${minWidth("lg")} 26vw, 70vw`}
+          alt=""
+          class="mx-auto h-auto w-full max-w-xs lg:mr-0"
+        />
+      </a>
+      {
+        cards.map((c) => (
+          <a href={c.href} class={card}>
+            <div>
+              <p class="font-display text-2xl font-medium text-ink">{t(`entry.${c.key}.name`)}</p>
+              <p class="mt-2 text-base text-ink-muted">{t(`entry.${c.key}.detail`)}</p>
+            </div>
+            <ArrowRight size={iconSize.lg} class="text-ink transition-transform duration-(--ia-motion-fast) group-hover:translate-x-1" aria-hidden="true" />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

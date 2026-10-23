@@ -1,0 +1,123 @@
+---
+import Check from "@lucide/astro/icons/check";
+import { buttonVariants } from "@/components/ui/button";
+import { createTranslator, htmlLang, locales, localizePath, type Locale } from "@/i18n";
+import { iconSize } from "@/design/tokens";
+import { flags, flagSize } from "./flags";
+
+interface Props {
+  locale: Locale;
+  /** The page's path without its locale prefix: each language links to the same page. */
+  path: string;
+  /** Id of the menu; a page has one (its anchor name is shared). */
+  id: string;
+}
+
+const { locale, path, id } = Astro.props;
+const { t } = createTranslator(locale);
+const current = t(`languages.${locale}`);
+---
+
+<div class="language-menu relative">
+  <button
+    type="button"
+    popovertarget={id}
+    aria-label={t("a11y.language", { language: current })}
+    class:list={[buttonVariants({ variant: "ghost", size: "icon" }), "language-trigger"]}
+  >
+    <img src={flags[locale]} alt="" {...flagSize} class="flag" />
+  </button>
+  <span class="language-tip" aria-hidden="true">{current}</span>
+
+  <div id={id} popover class="language-popover">
+    <ul aria-label={t("a11y.languages")} class="grid gap-0.5">
+      {
+        locales.map((l) => (
+          <li>
+            <a
+              href={localizePath(path, l)}
+              hreflang={htmlLang[l]}
+              lang={htmlLang[l]}
+              data-keep-state
+              aria-current={l === locale ? "page" : undefined}
+              class="flex items-center gap-3 rounded-sm py-2 pr-3 pl-2 text-sm text-ink hover:bg-action-soft aria-[current=page]:font-medium"
+            >
+              <img src={flags[l]} alt="" {...flagSize} loading="lazy" class="flag" />
+              <span class="grow whitespace-nowrap">{t(`languages.${l}`)}</span>
+              <Check size={iconSize.sm} aria-hidden="true" class:list={["shrink-0", l !== locale && "invisible"]} />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</div>
+
+<style is:global>
+  .flag {
+    inline-size: calc(var(--spacing) * 5);
+    block-size: auto;
+    border-radius: calc(var(--ia-radius-sm) / 2);
+    /* A hairline keeps light flags (Uruguay's white stripes) from melting into the surface. */
+    box-shadow: 0 0 0 1px var(--ia-line);
+  }
+
+  /* The language's name, shown on hover or keyboard focus while the menu is closed. */
+  .language-tip {
+    position: absolute;
+    inset-block-start: calc(100% + var(--spacing) * 1.5);
+    inset-inline-end: 0;
+    z-index: var(--ia-layer-tooltip);
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    border: 1px solid var(--ia-line);
+    border-radius: var(--ia-radius-sm);
+    background-color: var(--ia-surface);
+    box-shadow: var(--ia-shadow-overlay);
+    color: var(--ia-ink);
+    font-size: var(--ia-text-xs);
+    line-height: var(--ia-text-xs-leading);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--ia-motion-fast) var(--ia-motion-ease-out);
+  }
+  .language-trigger {
+    anchor-name: --language-menu;
+  }
+  .language-trigger:is(:hover, :focus-visible) + .language-tip {
+    opacity: 1;
+  }
+  .language-menu:has(:popover-open) .language-tip {
+    opacity: 0;
+  }
+
+  .language-popover {
+    position-anchor: --language-menu;
+    margin: 0;
+    inset: auto;
+    inset-block-start: anchor(bottom);
+    inset-inline-end: anchor(right);
+    margin-block-start: calc(var(--spacing) * 1.5);
+    padding: calc(var(--spacing) * 1);
+    border: 1px solid var(--ia-line);
+    border-radius: var(--ia-radius-md);
+    background-color: var(--ia-surface);
+    box-shadow: var(--ia-shadow-overlay);
+    color: var(--ia-ink);
+  }
+</style>
+
+<script>
+  // Browsers without CSS anchor positioning get the menu placed under its button by script.
+  if (!CSS.supports("anchor-name", "--a")) {
+    for (const menu of document.querySelectorAll<HTMLElement>(".language-popover")) {
+      menu.addEventListener("beforetoggle", (event) => {
+        if ((event as ToggleEvent).newState !== "open") return;
+        const box = document.querySelector(`[popovertarget="${menu.id}"]`)?.getBoundingClientRect();
+        if (!box) return;
+        menu.style.insetBlockStart = `${box.bottom}px`;
+        menu.style.insetInlineEnd = `${document.documentElement.clientWidth - box.right}px`;
+      });
+    }
+  }
+</script>

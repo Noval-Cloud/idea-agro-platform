@@ -1,0 +1,21 @@
+---
+import { createTranslator, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+const partners = ["inia", "fagro", "fcien", "fauba", "ifeva", "ipa", "mgap", "ma"] as const;
+---
+
+<section id="partners" class="py-section" aria-labelledby="partners-title">
+  <div class="grid gap-x-12 gap-y-8 px-gutter lg:grid-cols-12">
+    <div class="lg:col-span-4">
+      <h2 id="partners-title" class="font-display text-3xl font-medium tracking-tight text-ink">{t("partners.title")}</h2>
+      <p class="mt-5 text-base text-ink-muted">{t("partners.lead")}</p>
+    </div>
+    <ul class="grid gap-x-10 sm:grid-cols-2 lg:col-span-8">
+      {partners.map((p) => <li class="border-b border-line py-4 text-base text-ink">{t(`partners.list.${p}`)}</li>)}
+    </ul>
+  </div>
+</section>

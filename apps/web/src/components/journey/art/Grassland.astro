@@ -1,0 +1,65 @@
+---
+import { createTranslator, type Locale } from "@/i18n";
+import { STAGE } from "./ground";
+import { specimen } from "./botany";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+
+/*
+ * A botanical plate of four species of the Uruguayan natural grassland, standing on the line
+ * of the horizon. Line art in ink; only the flowering parts wear the productivity color.
+ */
+const GROUND = 318;
+const plants = [
+  { key: "notatum", x: 104, height: 178 },
+  { key: "affinis", x: 248, height: 156 },
+  { key: "selloana", x: 392, height: 172 },
+  { key: "neesiana", x: 536, height: 182 },
+] as const;
+const drawn = plants.map((p, i) => ({ ...p, i, art: specimen(p.key, [p.x, GROUND], p.height) }));
+---
+
+<div class="relative aspect-16/10 w-full" aria-hidden="true">
+  <svg viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} class="absolute inset-0 size-full">
+    <path class="j-stroke j-strong" d={`M0,${GROUND}L640,${GROUND}`} />
+    {
+      drawn.map(({ art, i }) => (
+        <g>
+          <path pathLength="1" class="j-stroke j-draw" style={`--d: ${i * 2}`} d={art.leaves} />
+          <path pathLength="1" class="j-stroke j-strong j-draw" style={`--d: ${i * 2 + 1}`} d={art.culm} />
+          <path pathLength="1" class="j-stroke j-accent j-draw" style={`--d: ${i * 2 + 3}`} d={art.axes} />
+          {art.awns && <path pathLength="1" class="j-stroke j-accent j-draw j-slow" style={`--d: ${i * 2 + 4}`} d={art.awns} />}
+          <g class="j-spikelet" style={`--d: ${i * 2 + 5}`}>
+            {art.spikelets.map((s) => (
+              <ellipse
+                cx={s.cx}
+                cy={s.cy}
+                rx={s.rx}
+                ry={s.ry}
+                transform={`rotate(${s.angle.toFixed(0)} ${s.cx.toFixed(1)} ${s.cy.toFixed(1)})`}
+              />
+            ))}
+          </g>
+        </g>
+      ))
+    }
+  </svg>
+  {
+    drawn.map(({ key, x, i }) => (
+      <p
+        class="j-rise absolute -translate-x-1/2 text-center"
+        style={`left: ${(x / STAGE.width) * 100}%; top: ${((GROUND + 14) / STAGE.height) * 100}%; width: 22%; --d: ${i * 2 + 5}`}
+      >
+        <i lang="la" class="block text-xs text-ink max-sm:text-2xs">
+          {t(`journey.scenes.grassland.species.${key}.latin`)}
+        </i>
+        {t(`journey.scenes.grassland.species.${key}.common`) && (
+          <span class="block text-2xs text-ink-subtle max-sm:hidden">{t(`journey.scenes.grassland.species.${key}.common`)}</span>
+        )}
+      </p>
+    ))
+  }
+</div>

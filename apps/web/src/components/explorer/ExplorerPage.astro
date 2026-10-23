@@ -1,0 +1,43 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
+import ExplorerApp from "./ExplorerApp";
+import ThemedImage from "@/components/media/ThemedImage.astro";
+import ppnaLight from "@/assets/maps/ppna-light.webp";
+import ppnaDark from "@/assets/maps/ppna-dark.webp";
+import { pickAppCatalog } from "./lib/i18n";
+import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+---
+
+<BaseLayout locale={locale} title={t("explorer.metaTitle")} description={t("explorer.metaDescription")}>
+  <SiteHeader locale={locale} />
+  <main id="main">
+    <ExplorerApp
+      client:load
+      locale={locale}
+      catalog={pickAppCatalog(catalogs[locale])}
+      zonePath={localizePath("/zone/", locale)}
+      signInPath={localizePath("/login/", locale)}
+      indicatorsPath={localizePath("/indicators/", locale)}
+    >
+      <!-- Painted before the map loads (and is the page's largest paint): the default background, PPNA. -->
+      <ThemedImage
+        light={ppnaLight}
+        dark={ppnaDark}
+        widths={[360, 540, 720]}
+        sizes="(min-width: 64rem) 40vw, 80vw"
+        alt=""
+        priority
+        class="size-full object-contain"
+      />
+    </ExplorerApp>
+  </main>
+  <SiteNavPanels locale={locale} />
+</BaseLayout>

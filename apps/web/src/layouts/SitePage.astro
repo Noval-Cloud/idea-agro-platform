@@ -1,0 +1,23 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteFooter from "@/components/site/SiteFooter.astro";
+import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
+import type { Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+}
+const { locale, title, description } = Astro.props;
+---
+
+<BaseLayout locale={locale} title={title} description={description}>
+  <SiteHeader locale={locale} />
+  <main id="main">
+    <slot />
+  </main>
+  <SiteFooter locale={locale} />
+  <SiteNavPanels locale={locale} />
+</BaseLayout>

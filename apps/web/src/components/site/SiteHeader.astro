@@ -1,0 +1,84 @@
+---
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import Menu from "@lucide/astro/icons/menu";
+import Wordmark from "@/components/brand/Wordmark.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+import LanguageMenu from "./LanguageMenu.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { createTranslator, languageSwitchPath, localizePath, stripLocale, type Locale } from "@/i18n";
+import { iconSize } from "@/design/tokens";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+const home = localizePath("/", locale);
+const currentPath = stripLocale(Astro.url.pathname);
+
+const triggerClass =
+  "inline-flex h-10 items-center gap-1 rounded-sm px-3 text-sm font-medium whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:underline-offset-(--ia-link-underline-offset)";
+// The section the page belongs to, for the menu (a trigger cannot be the current page, so it carries the state).
+const section = currentPath.startsWith("/explore")
+  ? "explore"
+  : currentPath.startsWith("/indicators")
+    ? "indicators"
+    : currentPath.startsWith("/resources")
+      ? "resources"
+      : null;
+---
+
+<header class="sticky top-0 z-(--ia-layer-header) border-b border-line bg-canvas">
+  <div class="flex h-(--ia-layout-header) items-center gap-6 px-gutter">
+    <a href={home} class="shrink-0 rounded-sm whitespace-nowrap" aria-label={t("a11y.home")}>
+      <Wordmark name={t("meta.siteName")} />
+    </a>
+
+    <nav aria-label={t("a11y.mainNav")} class="hidden lg:block">
+      <ul class="flex items-center gap-1">
+        <li>
+          <a href={localizePath("/explore/", locale)} class={triggerClass} aria-current={section === "explore" ? "page" : undefined}>
+            {t("nav.explore")}
+          </a>
+        </li>
+        <li>
+          <button type="button" class={triggerClass} popovertarget="nav-indicators" aria-current={section === "indicators" ? "page" : undefined}>
+            {t("nav.indicators")}<ChevronDown size={iconSize.sm} aria-hidden="true" />
+          </button>
+        </li>
+        <li>
+          <button type="button" class={triggerClass} popovertarget="nav-zones">
+            {t("nav.zones")}<ChevronDown size={iconSize.sm} aria-hidden="true" />
+          </button>
+        </li>
+        <li>
+          <button type="button" class={triggerClass} popovertarget="nav-resources" aria-current={section === "resources" ? "page" : undefined}>
+            {t("nav.resources")}<ChevronDown size={iconSize.sm} aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="ml-auto flex items-center gap-1">
+      <LanguageMenu locale={locale} path={languageSwitchPath(Astro.url.pathname)} id="nav-language" />
+      <ThemeToggle locale={locale} />
+      <a href={localizePath("/login", locale)} class={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden md:inline-flex")}>
+        {t("nav.login")}
+      </a>
+      <a href={localizePath("/register", locale)} class={cn(buttonVariants({ variant: "primary", size: "sm" }), "hidden sm:inline-flex")}>
+        {t("nav.register")}
+      </a>
+      <button
+        class={cn(buttonVariants({ variant: "ghost", size: "icon" }), "lg:hidden")}
+        type="button"
+        popovertarget="nav-mobile"
+        aria-label={t("a11y.openMenu")}
+      >
+        <Menu size={iconSize.lg} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+</header>

@@ -1,0 +1,30 @@
+---
+import { references, type Reference } from "@/data/references";
+import { createTranslator, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+
+/* Three of the papers behind the indicators, oldest first. */
+const papers: Reference[] = [references.monteith1972, references.pineiro2006, references.paruelo2016];
+---
+
+<div class="relative flex aspect-16/10 w-full items-center justify-center" aria-hidden="true">
+  <ol class="grid w-4/5 gap-3 max-sm:w-full">
+    {
+      papers.map((paper, i) => (
+        <li class="j-rise rounded-md border border-line bg-surface px-5 py-4 shadow-raised max-sm:px-3 max-sm:py-2" style={`--d: ${1 + i * 3}`}>
+          <p class="text-2xs text-ink-subtle">
+            {paper.year} · {paper.source}
+          </p>
+          <p lang={paper.lang} class="mt-1 line-clamp-2 font-display text-lg leading-snug text-ink max-sm:text-sm">
+            {paper.title}
+          </p>
+          {paper.doi && <p class="mt-1 text-2xs text-ink-subtle">{t("science.doi", { doi: paper.doi })}</p>}
+        </li>
+      ))
+    }
+  </ol>
+</div>
