@@ -1,0 +1,20 @@
+---
+import SitePage from "@/layouts/SitePage.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { createTranslator, localizePath } from "@/i18n";
+
+// One page serves every unknown address; it speaks the default language (the language menu leads home).
+const locale = "es";
+const { t } = createTranslator(locale);
+---
+
+<SitePage locale={locale} title={t("notFound.metaTitle")} description={t("notFound.text")}>
+  <section class="flex min-h-(--ia-layout-app) flex-col justify-center px-gutter py-section">
+    <h1 class="font-display text-4xl font-medium tracking-tight text-ink">{t("notFound.title")}</h1>
+    <p class="mt-5 max-w-prose text-lg text-ink-muted">{t("notFound.text")}</p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href={localizePath("/explore/", locale)} class={buttonVariants({ variant: "primary", size: "md" })}>{t("notFound.explore")}</a>
+      <a href={localizePath("/", locale)} class={buttonVariants({ variant: "outline", size: "md" })}>{t("notFound.home")}</a>
+    </div>
+  </section>
+</SitePage>

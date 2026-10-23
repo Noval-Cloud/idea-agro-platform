@@ -1,0 +1,25 @@
+---
+import SitePage from "@/layouts/SitePage.astro";
+import Science from "./Science.astro";
+import OpenPlatform from "./OpenPlatform.astro";
+import Partners from "./Partners.astro";
+import { createTranslator, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+---
+
+<SitePage locale={locale} title={t("resources.metaTitle")} description={t("resources.metaDescription")}>
+  <div class="border-b border-line pt-section pb-12">
+    <div class="px-gutter">
+      <h1 class="font-display text-4xl font-medium tracking-tight text-ink">{t("resources.title")}</h1>
+      <p class="mt-5 max-w-2xl text-lg text-ink-muted">{t("resources.lead")}</p>
+    </div>
+  </div>
+  <Science locale={locale} />
+  <OpenPlatform locale={locale} />
+  <Partners locale={locale} />
+</SitePage>

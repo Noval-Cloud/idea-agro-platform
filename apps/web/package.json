@@ -1,0 +1,49 @@
+{
+  "name": "@idea-agro/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Website of IDEA-Agro, the open platform of environmental and productive indicators for Uruguay.",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "tokens": "node scripts/build-tokens.ts",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "catalog:",
+    "@lucide/astro": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tmcw/togeojson": "catalog:",
+    "astro": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "cmdk": "catalog:",
+    "flag-icons": "catalog:",
+    "lucide-react": "catalog:",
+    "maplibre-gl": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sharp": "catalog:",
+    "shpjs": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tailwindcss": "catalog:",
+    "terra-draw": "catalog:",
+    "terra-draw-maplibre-gl-adapter": "catalog:"
+  },
+  "devDependencies": {
+    "@astrojs/check": "catalog:",
+    "@types/culori": "catalog:",
+    "@types/d3-geo": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "culori": "catalog:",
+    "d3-geo": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

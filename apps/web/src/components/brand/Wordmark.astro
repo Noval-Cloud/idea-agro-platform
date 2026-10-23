@@ -1,0 +1,28 @@
+---
+import { markCell, markPixels, markRadius, markViewBox } from "@/design/brand-mark";
+
+/** The pixel sprout beside the name set in the display face. */
+interface Props {
+  name: string;
+  class?: string;
+}
+const { name, class: className } = Astro.props;
+---
+
+<span class:list={["inline-flex items-center gap-2.5", className]}>
+  <svg viewBox={`0 0 ${markViewBox} ${markViewBox}`} class="size-6 shrink-0" aria-hidden="true">
+    {
+      markPixels.map((p) => (
+        <rect
+          x={p.x}
+          y={p.y}
+          width={markCell}
+          height={markCell}
+          rx={markRadius}
+          style={`fill: var(--ia-viz-productivity-${p.ramp})`}
+        />
+      ))
+    }
+  </svg>
+  <span class="font-display text-xl font-medium tracking-snug whitespace-nowrap">{name}</span>
+</span>

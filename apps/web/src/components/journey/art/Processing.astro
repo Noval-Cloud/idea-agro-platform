@@ -1,0 +1,70 @@
+---
+import { join } from "node:path";
+import sharp from "sharp";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import { iconSize } from "@/design/tokens";
+import { createTranslator, type Locale } from "@/i18n";
+import { ppnaAnnual } from "@/data/series";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+
+/*
+ * Pixels → model → series, laid out as a row so nothing covers anything else.
+ * The pixels are a coarse grid sampled from the national PPNA map, in its own colors;
+ * the bars are the national series that comes out of the model, one per productive year.
+ */
+const COLS = 18;
+const ROWS = 18;
+const { data, info } = await sharp(join(process.cwd(), "src/assets/maps/ppna-dark.webp"))
+  .resize(COLS, ROWS, { fit: "fill", kernel: "nearest" })
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
+const cells: { x: number; y: number; fill: string; col: number }[] = [];
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    const i = (r * info.width + c) * 4;
+    const [red, green, blue] = [data[i], data[i + 1], data[i + 2]];
+    // The map's land color stands for "no data": those cells stay empty.
+    if (data[i + 3] < 200 || (Math.abs(red - green) < 6 && Math.abs(green - blue) < 10)) continue;
+    cells.push({ x: c * 11, y: r * 11, fill: `rgb(${red} ${green} ${blue})`, col: c });
+  }
+}
+const max = Math.max(...ppnaAnnual.map((d) => d.value));
+const bars = ppnaAnnual.map((d, i) => ({ x: i * 8, h: (d.value / max) * 180 }));
+const step = (label: string, d: number) => ({ label, d });
+const labels = [
+  step(t("journey.scenes.processing.pixels"), 3),
+  step(t("journey.scenes.processing.model"), 9),
+  step(t("journey.scenes.processing.series"), 13),
+];
+---
+
+<div class="relative flex aspect-16/10 w-full items-center" aria-hidden="true">
+  <div class="grid w-full items-center gap-3 max-sm:gap-1.5" style="grid-template-columns: 1fr auto auto auto 1fr">
+    <figure class="grid gap-2">
+      <svg viewBox="0 0 197 197" class="h-auto w-full">
+        {cells.map((c) => <rect x={c.x} y={c.y} width="10" height="10" rx="1" fill={c.fill} class="j-pixel" style={`--d: ${c.col / 3}`} />)}
+      </svg>
+      <figcaption class="j-rise j-tag justify-self-start" style={`--d: ${labels[0].d}`}>{labels[0].label}</figcaption>
+    </figure>
+    <ArrowRight size={iconSize.lg} class="j-rise text-ink-muted" style="--d: 7" />
+    <figure class="j-rise grid gap-2" style="--d: 8">
+      <div class="rounded-md border border-line bg-surface px-4 py-3 text-center shadow-overlay max-sm:px-2 max-sm:py-2">
+        <p class="font-display text-lg whitespace-nowrap text-ink max-sm:text-xs">{t("journey.scenes.processing.formula")}</p>
+      </div>
+      <figcaption class="j-tag justify-self-center">{labels[1].label}</figcaption>
+    </figure>
+    <ArrowRight size={iconSize.lg} class="j-rise text-ink-muted" style="--d: 11" />
+    <figure class="grid gap-2">
+      <svg viewBox="0 0 200 197" class="h-auto w-full">
+        <line x1="0" x2="200" y1="196" y2="196" class="j-stroke" />
+        {bars.map((b, i) => <rect x={b.x} y={196 - b.h} width="6" height={b.h} rx="1.5" class="j-bar" style={`--d: ${12 + i / 3}`} />)}
+      </svg>
+      <figcaption class="j-rise j-tag justify-self-end" style={`--d: ${labels[2].d}`}>{labels[2].label}</figcaption>
+    </figure>
+  </div>
+</div>

@@ -1,0 +1,237 @@
+---
+import Wordmark from "@/components/brand/Wordmark.astro";
+import { buttonVariants } from "@/components/ui/button";
+import Check from "@lucide/astro/icons/check";
+import { createTranslator, htmlLang, languageSwitchPath, locales, localizePath, type Locale } from "@/i18n";
+import { iconSize } from "@/design/tokens";
+import { flags, flagSize } from "./flags";
+import { indicators, indicatorsByGroup } from "@/data/indicators";
+import { familyBackground } from "@/design/family-classes";
+import { basinCounts } from "@/data/geo";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, number } = createTranslator(locale);
+const switchPath = languageSwitchPath(Astro.url.pathname);
+const explore = localizePath("/explore/", locale);
+const resources = localizePath("/resources/", locale);
+
+// Every indicator and every kind of zone opens the map already set to it.
+const groups = (["structure", "environment"] as const).map((group) => ({
+  label: t(`nav.groups.${group}`),
+  items: indicatorsByGroup(group).map((id) => ({
+    id,
+    href: `${explore}?ind=${id}`,
+    name: t(`indicators.items.${id}.name`),
+    short: t(`indicators.items.${id}.short`),
+    swatch: familyBackground[indicators[id].family],
+  })),
+}));
+
+const zoneItems = [
+  { href: `${explore}?reg=seccionales`, name: t("explorer.regions.seccionales"), detail: t("zones.seccionales.detail") },
+  {
+    href: `${explore}?reg=cuencas`,
+    name: t("explorer.regions.cuencas"),
+    detail: t("zones.basins.detail", { count: number(basinCounts[5]) }),
+  },
+  { href: `${explore}?reg=padrones`, name: t("explorer.regions.padrones"), detail: t("zones.padrones.detail") },
+  { href: `${explore}?ind=compn`, name: t("zones.communities.name"), detail: t("zones.communities.detail") },
+  { href: `${explore}?reg=mine`, name: t("zones.custom.name"), detail: t("zones.custom.detail") },
+];
+
+const resourceItems = [
+  { key: "articles", href: `${resources}#science` },
+  { key: "open", href: `${resources}#open` },
+  { key: "partners", href: `${resources}#partners` },
+] as const;
+
+const panelClass =
+  "nav-panel fixed inset-x-0 top-(--ia-layout-header) bottom-auto m-0 w-full max-w-none border-0 border-b border-line bg-surface p-0 text-ink shadow-overlay";
+---
+
+<div id="nav-indicators" popover class={panelClass}>
+  <div class="grid max-w-page gap-x-12 gap-y-8 px-gutter py-10 lg:grid-cols-3">
+    <div>
+      <p class="max-w-xs font-display text-2xl text-ink">{t("nav.indicatorsIntro")}</p>
+      <a href={localizePath("/indicators/", locale)} class="mt-4 inline-block text-sm text-link underline-offset-(--ia-link-underline-offset) hover:underline">
+        {t("nav.allIndicators")}
+      </a>
+    </div>
+    <div class="grid gap-8 sm:grid-cols-2 lg:col-span-2">
+      {
+        groups.map((group) => (
+          <div>
+            <p class="mb-3 text-sm font-medium text-ink-subtle">{group.label}</p>
+            <ul class="grid gap-1">
+              {group.items.map((item) => (
+                <li>
+                  <a href={item.href} class="group flex items-center gap-3 rounded-sm px-2 py-2 hover:bg-action-soft">
+                    <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
+                    <span class="text-sm text-ink">{item.name}</span>
+                    <span class="text-xs text-ink-subtle">{item.short}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<div id="nav-zones" popover class={panelClass}>
+  <div class="grid max-w-page gap-x-12 gap-y-8 px-gutter py-10 lg:grid-cols-3">
+    <p class="max-w-xs font-display text-2xl text-ink">{t("nav.zonesIntro")}</p>
+    <ul class="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:col-span-2">
+      {
+        zoneItems.map((item) => (
+          <li>
+            <a href={item.href} class="block rounded-sm px-2 py-2 hover:bg-action-soft">
+              <span class="block text-sm font-medium text-ink">{item.name}</span>
+              <span class="block text-sm text-ink-muted">{item.detail}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</div>
+
+<div id="nav-resources" popover class={panelClass}>
+  <div class="grid max-w-page gap-x-12 gap-y-8 px-gutter py-10 lg:grid-cols-3">
+    <p class="max-w-xs font-display text-2xl text-ink">{t("nav.resourcesIntro")}</p>
+    <ul class="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:col-span-2">
+      {
+        resourceItems.map((item) => (
+          <li>
+            <a href={item.href} class="block rounded-sm px-2 py-2 hover:bg-action-soft">
+              <span class="block text-sm font-medium text-ink">{t(`nav.resourceItems.${item.key}.name`)}</span>
+              <span class="block text-sm text-ink-muted">{t(`nav.resourceItems.${item.key}.detail`)}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</div>
+
+<div
+  id="nav-mobile"
+  popover
+  class="nav-panel fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-canvas p-0 text-ink"
+>
+  <div class="flex h-(--ia-layout-header) items-center justify-between border-b border-line px-gutter">
+    <Wordmark name={t("meta.siteName")} />
+    <button type="button" class={buttonVariants({ variant: "ghost", size: "sm" })} popovertarget="nav-mobile" popovertargetaction="hide">
+      {t("a11y.closeMenu")}
+    </button>
+  </div>
+  <div class="grid gap-8 px-gutter py-8">
+    <a href={explore} class={buttonVariants({ variant: "primary", size: "lg" })}>{t("nav.explore")}</a>
+    {
+      groups.map((group) => (
+        <div>
+          <p class="mb-2 text-sm font-medium text-ink-subtle">{group.label}</p>
+          <ul class="grid gap-1">
+            {group.items.map((item) => (
+              <li>
+                <a href={item.href} class="flex items-center gap-3 rounded-sm py-2">
+                  <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
+                  <span class="text-base text-ink">{item.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <div>
+      <p class="mb-2 text-sm font-medium text-ink-subtle">{t("nav.zones")}</p>
+      <ul class="grid gap-1">
+        {
+          zoneItems.map((item) => (
+            <li>
+              <a href={item.href} class="block py-2 text-base text-ink">
+                {item.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div>
+      <p class="mb-2 text-sm font-medium text-ink-subtle">{t("nav.resources")}</p>
+      <ul class="grid gap-1">
+        {
+          resourceItems.map((item) => (
+            <li>
+              <a href={item.href} class="block py-2 text-base text-ink">
+                {t(`nav.resourceItems.${item.key}.name`)}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="grid gap-3 border-t border-line pt-6">
+      <a href={localizePath("/register", locale)} class={buttonVariants({ variant: "primary", size: "lg" })}>{t("nav.register")}</a>
+      <a href={localizePath("/login", locale)} class={buttonVariants({ variant: "outline", size: "lg" })}>{t("nav.login")}</a>
+    </div>
+    <div>
+      <p class="mb-2 text-sm font-medium text-ink-subtle">{t("a11y.languages")}</p>
+      <ul class="grid gap-1">
+        {
+          locales.map((l) => (
+            <li>
+              <a
+                href={localizePath(switchPath, l)}
+                hreflang={htmlLang[l]}
+                lang={htmlLang[l]}
+                data-keep-state
+                aria-current={l === locale ? "page" : undefined}
+                class="flex items-center gap-3 py-2 text-base text-ink aria-[current=page]:font-medium"
+              >
+                <img src={flags[l]} alt="" {...flagSize} loading="lazy" class="flag" />
+                <span class="grow">{t(`languages.${l}`)}</span>
+                {l === locale && <Check size={iconSize.sm} aria-hidden="true" />}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .nav-panel {
+    opacity: 0;
+    translate: 0 calc(var(--spacing) * -2);
+    transition:
+      opacity var(--ia-motion-base) var(--ia-motion-ease-out),
+      translate var(--ia-motion-base) var(--ia-motion-ease-out),
+      display var(--ia-motion-base) allow-discrete,
+      overlay var(--ia-motion-base) allow-discrete;
+  }
+  .nav-panel:popover-open {
+    opacity: 1;
+    translate: 0 0;
+  }
+  @starting-style {
+    .nav-panel:popover-open {
+      opacity: 0;
+      translate: 0 calc(var(--spacing) * -2);
+    }
+  }
+</style>
+
+<script>
+  import { initLanguageSwitch, initNavPanels } from "@/scripts/nav";
+  initNavPanels();
+  initLanguageSwitch();
+</script>

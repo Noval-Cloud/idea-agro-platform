@@ -1,0 +1,65 @@
+---
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import { basins, compactPath, fitBox, fitUruguay, padronSample, sectionals } from "@/data/geo";
+import { STAGE } from "./ground";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+const explore = localizePath("/explore/", locale);
+
+// The country on the left, at stage scale; a lens on the right zooms into a block of parcels.
+const national = fitUruguay(250);
+const offset = { x: 70, y: (STAGE.height - national.height) / 2 };
+const districts = sectionals.map((s) => compactPath(s.geometry, national.projection, 1)).join("");
+const basinLines = basins[2].map((g) => compactPath(g, national.projection, 1)).join("");
+const [west, south, east, north] = padronSample.bbox;
+const spot = national.projection([(west + east) / 2, (south + north) / 2]) ?? [0, 0];
+const lens = fitBox(padronSample.bbox, 220);
+const parcels = padronSample.geometries.map((g) => compactPath(g, lens.projection, 0.8)).join("");
+const lensCenter = { x: 470, y: 200, r: 118 };
+---
+
+<div class="relative aspect-16/10 w-full" aria-hidden="true">
+  <svg viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} class="absolute inset-0 size-full">
+    <defs>
+      <clipPath id="journey-lens"><circle cx={lensCenter.x} cy={lensCenter.y} r={lensCenter.r} /></clipPath>
+    </defs>
+    <g transform={`translate(${offset.x} ${offset.y})`}>
+      <path d={districts} class="j-fill-mid j-silhouette" />
+      <path d={districts} pathLength="1" class="j-stroke j-draw j-slow" style="--d: 0" />
+      <path d={basinLines} class="j-stroke j-water j-rise" style="--d: 9" />
+      <circle cx={spot[0]} cy={spot[1]} r="9" class="j-stroke j-accent j-strong j-rise" style="--d: 14" />
+    </g>
+    <path
+      pathLength="1"
+      class="j-stroke j-faint j-draw"
+      style="--d: 14"
+      d={`M${offset.x + spot[0] + 9},${offset.y + spot[1] - 4}L${lensCenter.x - lensCenter.r * 0.9},${lensCenter.y - lensCenter.r * 0.42}M${offset.x + spot[0] + 9},${offset.y + spot[1] + 4}L${lensCenter.x - lensCenter.r * 0.9},${lensCenter.y + lensCenter.r * 0.42}`}
+    />
+    <g class="j-rise" style="--d: 15">
+      <circle cx={lensCenter.x} cy={lensCenter.y} r={lensCenter.r} class="j-fill-near" />
+      <g clip-path="url(#journey-lens)">
+        <g transform={`translate(${lensCenter.x - lens.width / 2} ${lensCenter.y - lens.height / 2})`}>
+          <path d={parcels} class="j-stroke" />
+        </g>
+      </g>
+      <circle cx={lensCenter.x} cy={lensCenter.y} r={lensCenter.r} class="j-stroke j-accent j-strong" />
+    </g>
+  </svg>
+</div>
+<ul class="mt-3 flex flex-wrap gap-2">
+  <li>
+    <a class="j-link" href={`${explore}?reg=seccionales`}>{t("journey.scenes.zones.seccionales")}</a>
+  </li>
+  <li>
+    <a class="j-link" href={`${explore}?reg=cuencas&grade=3`}>{t("journey.scenes.zones.cuencas")}</a>
+  </li>
+  <li>
+    <a class="j-link" href={`${explore}?reg=padrones#map=12/${((south + north) / 2).toFixed(3)}/${((west + east) / 2).toFixed(3)}`}>
+      {t("journey.scenes.zones.padrones")}
+    </a>
+  </li>
+</ul>

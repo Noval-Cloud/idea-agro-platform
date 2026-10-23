@@ -1,0 +1,83 @@
+---
+import { createTranslator, type Locale } from "@/i18n";
+import { STAGE } from "./ground";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+
+/*
+ * A field survey seen from above, drawn like a site sketch: tussocks across the paddock,
+ * a transect with its sampling points, the 1 m² quadrat enlarged, and the survey position.
+ */
+function seeded(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+const random = seeded(41);
+const detail = { x: 430, y: 128, size: 180 };
+const tussock = (cx: number, cy: number, r: number) =>
+  Array.from({ length: 6 }, (_, k) => {
+    const a = (k / 6) * Math.PI * 2 + cx;
+    return `M${(cx + Math.cos(a) * r * 0.35).toFixed(1)},${(cy + Math.sin(a) * r * 0.35).toFixed(1)}L${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)}`;
+  }).join("");
+let field = "";
+for (let i = 0; i < 170; i++) {
+  const [x, y] = [24 + random() * 380, 24 + random() * 352];
+  field += tussock(x, y, 3 + random() * 5);
+}
+const transect: [number, number][] = [
+  [64, 330],
+  [124, 270],
+  [184, 210],
+  [244, 150],
+  [304, 90],
+];
+const quadrat = transect[2];
+let inside = "";
+for (let i = 0; i < 26; i++) inside += tussock(detail.x + 10 + random() * (detail.size - 20), detail.y + 10 + random() * (detail.size - 20), 4 + random() * 7);
+const cell = detail.size / 4;
+const clipped = [
+  [1, 1],
+  [2, 2],
+  [0, 3],
+];
+---
+
+<div class="relative aspect-16/10 w-full" aria-hidden="true">
+  <svg viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} class="absolute inset-0 size-full">
+    <path d={field} class="j-stroke j-faint" />
+    <path pathLength="1" class="j-stroke j-strong j-draw" style="--d: 0" d="M20,40L380,22L410,372L30,384Z" />
+
+    <path pathLength="1" class="j-stroke j-dash j-draw" style="--d: 2" d={`M${transect.map((p) => p.join(",")).join("L")}`} />
+    {transect.map(([x, y], i) => <circle cx={x} cy={y} r="5" class="j-stroke j-accent j-strong j-rise" style={`--d: ${3 + i}`} />)}
+
+    <rect x={quadrat[0] - 12} y={quadrat[1] - 12} width="24" height="24" class="j-stroke j-accent j-strong j-rise" style="--d: 8" />
+    <path
+      pathLength="1"
+      class="j-stroke j-faint j-draw"
+      style="--d: 9"
+      d={`M${quadrat[0] + 12},${quadrat[1] - 12}L${detail.x},${detail.y}M${quadrat[0] + 12},${quadrat[1] + 12}L${detail.x},${detail.y + detail.size}`}
+    />
+    <g class="j-rise" style="--d: 10">
+      <rect x={detail.x} y={detail.y} width={detail.size} height={detail.size} class="j-fill-near j-stroke j-accent j-strong" />
+      {clipped.map(([c, r]) => <rect x={detail.x + c * cell} y={detail.y + r * cell} width={cell} height={cell} class="j-clipped" />)}
+      {[1, 2, 3].map((k) => <path class="j-stroke j-faint" d={`M${detail.x + k * cell},${detail.y}v${detail.size}M${detail.x},${detail.y + k * cell}h${detail.size}`} />)}
+      <path d={inside} class="j-stroke" />
+    </g>
+
+    <g class="j-rise" style="--d: 12">
+      <circle cx="340" cy="56" r="18" class="j-stroke j-accent j-pulse" />
+      <path class="j-stroke j-accent j-strong" d="M340,44v24M328,56h24" />
+    </g>
+  </svg>
+  <p class="j-rise j-tag absolute" style={`left: ${(detail.x / STAGE.width) * 100}%; top: ${((detail.y + detail.size + 10) / STAGE.height) * 100}%; --d: 11`}>
+    {t("journey.scenes.field.quadrat")}
+  </p>
+  <p class="j-rise j-tag absolute max-sm:hidden" style="left: 3%; top: 58%; --d: 6">{t("journey.scenes.field.species")}</p>
+  <p class="j-rise j-tag absolute max-sm:hidden" style="left: 58%; top: 10%; --d: 13">{t("journey.scenes.field.position")}</p>
+</div>

@@ -1,0 +1,70 @@
+---
+import { createTranslator, type Locale, type MessageKey } from "@/i18n";
+import { framework, references, doiUrl, type ReferenceId } from "@/data/references";
+import { indicatorIds, indicators } from "@/data/indicators";
+import { familyBackground } from "@/design/family-classes";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
+
+// Each reference with the indicators it backs, oldest first.
+const backed = (Object.keys(references) as ReferenceId[])
+  .map((ref) => ({ ref, ...references[ref], indicators: indicatorIds.filter((id) => indicators[id].references.includes(ref)) }))
+  .sort((a, b) => a.year - b.year);
+---
+
+<section id="science" class="border-b border-line py-section" aria-labelledby="science-title">
+  <div class="grid gap-x-12 gap-y-10 px-gutter lg:grid-cols-12">
+    <div class="lg:col-span-4">
+      <h2 id="science-title" class="font-display text-3xl font-medium tracking-tight text-ink">{t("science.title")}</h2>
+      <p class="mt-5 text-base text-ink-muted">{t("science.lead")}</p>
+      <div class="mt-8 rounded-lg border border-line bg-surface p-6 lg:sticky lg:top-24">
+        <p class="text-xs font-medium text-ink-subtle">{t("science.frameworkLabel")}</p>
+        <p class="mt-3 font-display text-xl leading-snug text-ink" lang={framework.lang}>{framework.title}</p>
+        <p class="mt-2 text-sm text-ink-muted">{framework.authors} ({framework.year}). {framework.source}.</p>
+        <a class="mt-3 inline-block text-sm text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={doiUrl(framework.doi)} rel="noopener" target="_blank">
+          {t("science.doi", { doi: framework.doi })}
+          <span class="sr-only"> {t("a11y.externalLink")}</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="lg:col-span-8">
+      <h3 class="text-sm font-medium text-ink-subtle">{t("science.papersLabel")}</h3>
+      <ol class="mt-4 divide-y divide-line border-y border-line">
+        {
+          backed.map((r) => (
+            <li class="grid gap-2 py-5 sm:flex sm:gap-6">
+              <span class="w-14 shrink-0 font-display text-lg text-ink-subtle">{r.year}</span>
+              <div class="max-w-measure">
+                <p class="text-base text-ink" lang={r.lang}>{r.title}</p>
+                <p class="mt-1 text-sm text-ink-muted">
+                  {withPeriod(r.authors)} {r.source}.
+                  {"doi" in r && r.doi && (
+                    <a class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={doiUrl(r.doi)} rel="noopener" target="_blank">
+                      {t("science.doi", { doi: r.doi })}
+                      <span class="sr-only"> {t("a11y.externalLink")}</span>
+                    </a>
+                  )}
+                </p>
+                {r.indicators.length > 0 && (
+                  <ul class="mt-3 flex flex-wrap gap-2" aria-label={t("science.backsLabel")}>
+                    {r.indicators.map((id) => (
+                      <li class="inline-flex items-center gap-1.5 rounded-pill border border-line px-2.5 py-0.5 text-xs text-ink-muted">
+                        <span class:list={["size-2 rounded-xs", familyBackground[indicators[id].family]]} aria-hidden="true" />
+                        {t(`indicators.items.${id}.name` as MessageKey)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+</section>

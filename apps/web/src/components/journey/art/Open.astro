@@ -1,0 +1,57 @@
+---
+import Smartphone from "@lucide/astro/icons/smartphone";
+import LayoutDashboard from "@lucide/astro/icons/layout-dashboard";
+import SquareCode from "@lucide/astro/icons/square-code";
+import Bot from "@lucide/astro/icons/bot";
+import { iconSize } from "@/design/tokens";
+import { createTranslator, type Locale } from "@/i18n";
+import { STAGE } from "./ground";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+const center = { x: 320, y: 150 };
+// Four consumers around the platform; data flows along each line.
+const nodes = [
+  { key: "mobile", icon: Smartphone, x: 110, y: 70 },
+  { key: "dashboards", icon: LayoutDashboard, x: 530, y: 70 },
+  { key: "notebooks", icon: SquareCode, x: 110, y: 240 },
+  { key: "agents", icon: Bot, x: 530, y: 240 },
+] as const;
+---
+
+<div class="relative aspect-16/10 w-full" aria-hidden="true">
+  <svg viewBox={`0 0 ${STAGE.width} ${STAGE.height}`} class="absolute inset-0 size-full">
+    {
+      nodes.map((n, i) => (
+        <>
+          <path d={`M${center.x},${center.y}L${n.x},${n.y}`} class="j-stroke j-faint" />
+          <path d={`M${center.x},${center.y}L${n.x},${n.y}`} pathLength="1" class="j-flow" style={`--d: ${i}`} />
+        </>
+      ))
+    }
+  </svg>
+  <p
+    class="j-rise absolute -translate-x-1/2 -translate-y-1/2 rounded-md border border-line-strong bg-surface px-4 py-2 text-sm font-medium text-ink shadow-overlay"
+    style={`left: ${(center.x / STAGE.width) * 100}%; top: ${(center.y / STAGE.height) * 100}%; --d: 0`}
+  >
+    {t("journey.scenes.open.platform")}
+  </p>
+  {
+    nodes.map((n, i) => (
+      <p
+        class="j-rise j-tag absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"
+        style={`left: ${(n.x / STAGE.width) * 100}%; top: ${(n.y / STAGE.height) * 100}%; --d: ${2 + i}`}
+      >
+        <n.icon size={iconSize.sm} />
+        {t(`journey.scenes.open.${n.key}`)}
+      </p>
+    ))
+  }
+  <pre
+    class="j-rise absolute overflow-hidden rounded-md border border-line bg-surface-sunken px-4 py-3 font-mono text-2xs text-ink-muted max-sm:hidden"
+    style="left: 8%; right: 8%; bottom: 4%; --d: 7"><span class="text-ink">GET</span> /v1/zones/seccionales/1806/indicators/ppna?years=2001-2025
+<span class="text-ink-subtle">{"{"} "zone": "seccionales/1806", "indicator": "ppna", "years": [2001, …, 2025], "values": [ … ] {"}"}</span></pre>
+  <span class="j-rise j-tag absolute" style="top: 3%; right: 3%; --d: 8">{t("journey.inDevelopment")}</span>
+</div>

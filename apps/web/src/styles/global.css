@@ -1,0 +1,460 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Dark utilities follow the same rule as the tokens: the OS preference, unless the reader chose a theme. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme="dark"] *) {
+    @slot;
+  }
+}
+
+/*
+ * Tailwind only knows our tokens: its default palette, fonts, type scale, radii and shadows are
+ * removed, so a utility can only express a value that exists in src/design/tokens.ts.
+ */
+@theme inline {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --ease-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --font-weight-*: initial;
+
+  --color-canvas: var(--ia-canvas);
+  --color-surface: var(--ia-surface);
+  --color-surface-sunken: var(--ia-surface-sunken);
+  --color-surface-muted: var(--ia-surface-muted);
+  --color-ink: var(--ia-ink);
+  --color-ink-muted: var(--ia-ink-muted);
+  --color-ink-subtle: var(--ia-ink-subtle);
+  --color-line: var(--ia-line);
+  --color-line-strong: var(--ia-line-strong);
+  --color-action: var(--ia-action);
+  --color-action-hover: var(--ia-action-hover);
+  --color-action-ink: var(--ia-action-ink);
+  --color-action-soft: var(--ia-action-soft);
+  --color-link: var(--ia-link);
+  --color-focus: var(--ia-focus);
+  --color-danger: var(--ia-danger);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-family-productivity: var(--ia-family-productivity);
+  --color-family-water: var(--ia-family-water);
+  --color-family-soil: var(--ia-family-soil);
+  --color-family-ecosystem: var(--ia-family-ecosystem);
+  --color-family-human: var(--ia-family-human);
+
+  /* Aliases with shadcn/ui names, so generated components resolve to our tokens. */
+  --color-background: var(--ia-canvas);
+  --color-foreground: var(--ia-ink);
+  --color-card: var(--ia-surface);
+  --color-card-foreground: var(--ia-ink);
+  --color-popover: var(--ia-surface);
+  --color-popover-foreground: var(--ia-ink);
+  --color-primary: var(--ia-action);
+  --color-primary-foreground: var(--ia-action-ink);
+  --color-secondary: var(--ia-surface-muted);
+  --color-secondary-foreground: var(--ia-ink);
+  --color-muted: var(--ia-surface-muted);
+  --color-muted-foreground: var(--ia-ink-muted);
+  --color-accent: var(--ia-action-soft);
+  --color-accent-foreground: var(--ia-ink);
+  --color-destructive: var(--ia-danger);
+  --color-border: var(--ia-line);
+  --color-input: var(--ia-line-strong);
+  --color-ring: var(--ia-focus);
+
+  --font-display: var(--ia-font-display);
+  --font-sans: var(--ia-font-sans);
+  --font-mono: var(--ia-font-mono);
+
+  --text-2xs: var(--ia-text-2xs);
+  --text-2xs--line-height: var(--ia-text-2xs-leading);
+  --text-xs: var(--ia-text-xs);
+  --text-xs--line-height: var(--ia-text-xs-leading);
+  --text-sm: var(--ia-text-sm);
+  --text-sm--line-height: var(--ia-text-sm-leading);
+  --text-base: var(--ia-text-base);
+  --text-base--line-height: var(--ia-text-base-leading);
+  --text-lg: var(--ia-text-lg);
+  --text-lg--line-height: var(--ia-text-lg-leading);
+  --text-xl: var(--ia-text-xl);
+  --text-xl--line-height: var(--ia-text-xl-leading);
+  --text-2xl: var(--ia-text-2xl);
+  --text-2xl--line-height: var(--ia-text-2xl-leading);
+  --text-3xl: var(--ia-text-3xl);
+  --text-3xl--line-height: var(--ia-text-3xl-leading);
+  --text-4xl: var(--ia-text-4xl);
+  --text-4xl--line-height: var(--ia-text-4xl-leading);
+  --text-display: var(--ia-text-display);
+  --text-display--line-height: var(--ia-text-display-leading);
+
+  --tracking-tight: var(--ia-tracking-tight);
+  --tracking-snug: var(--ia-tracking-snug);
+  --tracking-normal: var(--ia-tracking-normal);
+  --tracking-wide: var(--ia-tracking-wide);
+
+  --leading-tight: var(--ia-leading-tight);
+  --leading-snug: var(--ia-leading-snug);
+  --leading-normal: var(--ia-leading-normal);
+
+  --font-weight-regular: var(--ia-weight-regular);
+  --font-weight-medium: var(--ia-weight-medium);
+  --font-weight-semibold: var(--ia-weight-semibold);
+  --font-weight-bold: var(--ia-weight-bold);
+
+  --radius-xs: var(--ia-radius-xs);
+  --radius-sm: var(--ia-radius-sm);
+  --radius-md: var(--ia-radius-md);
+  --radius-lg: var(--ia-radius-lg);
+  --radius-pill: var(--ia-radius-pill);
+
+  --shadow-raised: var(--ia-shadow-raised);
+  --shadow-overlay: var(--ia-shadow-overlay);
+
+  --ease-out: var(--ia-motion-ease-out);
+  --ease-in-out: var(--ia-motion-ease-in-out);
+
+  --spacing: var(--ia-space-unit);
+  --spacing-gutter: var(--ia-space-gutter);
+  --spacing-section: var(--ia-space-section);
+  --spacing-stack: var(--ia-space-stack);
+
+  --container-page: var(--ia-layout-page);
+  --container-prose: var(--ia-layout-prose);
+  --container-measure: var(--ia-layout-measure);
+}
+
+@layer base {
+  html {
+    background-color: var(--ia-canvas);
+    color: var(--ia-ink);
+    font-family: var(--ia-font-sans);
+    font-size: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    accent-color: var(--ia-action);
+    caret-color: var(--ia-action);
+    scroll-padding-top: calc(var(--spacing) * 24);
+  }
+
+  body {
+    font-size: var(--ia-text-base);
+    line-height: var(--ia-text-base-leading);
+  }
+
+  ::selection {
+    background-color: var(--ia-selection);
+    color: var(--ia-ink);
+  }
+
+  :focus-visible {
+    outline: var(--ia-focus-width) solid var(--ia-focus);
+    outline-offset: var(--ia-focus-offset);
+    border-radius: var(--ia-radius-xs);
+  }
+
+  a {
+    text-underline-offset: var(--ia-link-underline-offset);
+    text-decoration-thickness: var(--ia-link-underline-thickness);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: var(--ia-motion-instant) !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: var(--ia-motion-instant) !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Chart marks: thin, quiet chrome; the data is the only loud thing. */
+  .chart-grid {
+    stroke: var(--ia-viz-grid);
+    stroke-width: var(--ia-viz-mark-outline-width);
+  }
+  .chart-line {
+    fill: none;
+    stroke: var(--series-color);
+    stroke-width: var(--ia-viz-mark-line-width);
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .chart-area {
+    fill: var(--series-color);
+    opacity: var(--ia-viz-mark-area-opacity);
+  }
+  .chart-key {
+    display: inline-block;
+    inline-size: calc(var(--spacing) * 4);
+    block-size: 0;
+    border-block-start: calc(var(--ia-viz-mark-line-width) * 1px) solid var(--series-color);
+    border-radius: var(--ia-radius-pill);
+  }
+  .chart-swatch {
+    display: inline-block;
+    inline-size: calc(var(--spacing) * 2.5);
+    block-size: calc(var(--spacing) * 2.5);
+    border-radius: var(--ia-radius-xs);
+    background-color: var(--series-color);
+  }
+  .chart-dot {
+    position: absolute;
+    inline-size: calc(var(--ia-viz-mark-marker-radius) * 2px);
+    block-size: calc(var(--ia-viz-mark-marker-radius) * 2px);
+    translate: -50% -50%;
+    border-radius: var(--ia-radius-pill);
+    background-color: var(--series-color);
+    box-shadow: 0 0 0 calc(var(--ia-viz-mark-ring-width) * 1px) var(--ia-surface);
+  }
+  .chart-end-label {
+    position: absolute;
+    translate: calc(var(--spacing) * 2) calc(-100% - var(--spacing) * 1.5);
+    padding-inline: calc(var(--spacing) * 1);
+    border-radius: var(--ia-radius-xs);
+    background-color: var(--ia-surface);
+    color: var(--ia-ink-muted);
+    font-size: var(--ia-text-2xs);
+    line-height: var(--ia-text-2xs-leading);
+    white-space: nowrap;
+  }
+  .chart-end-label.is-left {
+    translate: calc(-100% - var(--spacing) * 2) calc(-100% - var(--spacing) * 1.5);
+  }
+  .chart-note {
+    position: absolute;
+    inline-size: max-content;
+    translate: calc(var(--spacing) * 2) calc(-100% - var(--spacing) * 2);
+    max-inline-size: min(calc(var(--spacing) * 48), 50%);
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    border-radius: var(--ia-radius-xs);
+    background-color: var(--ia-surface);
+    box-shadow: 0 0 0 calc(var(--ia-viz-mark-outline-width) * 1px) var(--ia-line);
+    color: var(--ia-ink);
+    font-size: var(--ia-text-2xs);
+    line-height: var(--ia-text-2xs-leading);
+    transition: opacity var(--ia-motion-fast) var(--ia-motion-ease-out);
+  }
+  .chart-note.is-below {
+    translate: calc(var(--spacing) * 2) calc(var(--spacing) * 2);
+  }
+  .chart-note.is-left {
+    translate: calc(-100% - var(--spacing) * 2) calc(-100% - var(--spacing) * 2);
+  }
+  .chart-note.is-left.is-below {
+    translate: calc(-100% - var(--spacing) * 2) calc(var(--spacing) * 2);
+  }
+  .chart-note.is-side {
+    translate: calc(var(--spacing) * 3) -50%;
+  }
+  .chart-note.is-left.is-side {
+    translate: calc(-100% - var(--spacing) * 3) -50%;
+  }
+  /* The tooltip repeats the values under the pointer, so notes step aside while it is open. */
+  .chart:has([data-tooltip]:not([hidden])) .chart-note {
+    opacity: 0;
+  }
+  .chart-crosshair {
+    position: absolute;
+    inset-block: 0;
+    inline-size: calc(var(--ia-viz-mark-outline-width) * 1px);
+    background-color: var(--ia-viz-axis);
+    pointer-events: none;
+  }
+  .chart-tooltip {
+    position: absolute;
+    inset-block-start: 0;
+    z-index: var(--ia-layer-tooltip);
+    min-inline-size: calc(var(--spacing) * 44);
+    padding: calc(var(--spacing) * 3);
+    border: calc(var(--ia-viz-mark-outline-width) * 1px) solid var(--ia-line);
+    border-radius: var(--ia-radius-sm);
+    background-color: var(--ia-surface);
+    box-shadow: var(--ia-shadow-overlay);
+    pointer-events: none;
+    font-size: var(--ia-text-xs);
+    line-height: var(--ia-text-xs-leading);
+  }
+  .chart-bar {
+    inline-size: 100%;
+    max-inline-size: calc(var(--ia-viz-mark-bar-max) * 1px);
+    border-start-start-radius: calc(var(--ia-viz-mark-bar-radius) * 1px);
+    border-start-end-radius: calc(var(--ia-viz-mark-bar-radius) * 1px);
+    background-color: var(--series-color);
+    transition: opacity var(--ia-motion-fast) var(--ia-motion-ease-out);
+  }
+  [data-chart]:has([data-bar].is-active) [data-bar]:not(.is-active) .chart-bar {
+    opacity: var(--ia-viz-mark-dim-opacity);
+  }
+
+  /* The table twin of every chart: plain, aligned numbers. */
+  .data-table {
+    inline-size: 100%;
+    text-align: start;
+  }
+  .data-table caption {
+    text-align: start;
+  }
+  .data-table th,
+  .data-table td {
+    padding-block: calc(var(--spacing) * 1);
+    padding-inline-end: calc(var(--spacing) * 4);
+  }
+  .data-table thead {
+    color: var(--ia-ink-subtle);
+  }
+  .data-table thead th {
+    font-weight: var(--ia-weight-medium);
+    white-space: nowrap;
+  }
+  .data-table thead th + th,
+  .data-table td {
+    text-align: end;
+  }
+  .data-table tbody tr {
+    border-block-start: calc(var(--ia-viz-mark-outline-width) * 1px) solid var(--ia-line);
+  }
+  .data-table tbody th {
+    font-weight: var(--ia-weight-regular);
+    color: var(--ia-ink);
+    text-align: start;
+  }
+  .data-table td {
+    color: var(--ia-ink-muted);
+  }
+
+  /* Land-parcel sketches (zones section and the sign-in aside). */
+  .zone-parcel {
+    fill: var(--ia-surface);
+    stroke: var(--ia-line-strong);
+    stroke-width: var(--ia-viz-mark-border-width);
+  }
+  .zone-parcel-selected {
+    fill: var(--ia-viz-productivity-3);
+    stroke: var(--ia-viz-productivity-6);
+    stroke-width: var(--ia-viz-mark-hover-width);
+  }
+  .zone-drawn {
+    fill: var(--ia-action);
+    fill-opacity: var(--ia-viz-mark-area-opacity);
+    stroke: var(--ia-action);
+    stroke-width: var(--ia-viz-mark-line-width);
+    stroke-linejoin: round;
+  }
+  .zone-vertex {
+    r: calc(var(--ia-viz-mark-marker-radius) * 1px);
+    fill: var(--ia-surface);
+    stroke: var(--ia-action);
+    stroke-width: var(--ia-viz-mark-line-width);
+  }
+  .zone-point {
+    r: calc(var(--ia-viz-mark-point-radius) * 1px);
+    fill: var(--ia-focus);
+    stroke: var(--ia-surface);
+    stroke-width: var(--ia-viz-mark-ring-width);
+  }
+  .zone-lines {
+    fill: none;
+    stroke: var(--ia-ink-subtle);
+    stroke-width: var(--ia-viz-mark-border-width);
+  }
+  .zone-country {
+    fill: none;
+    stroke: var(--ia-ink-muted);
+    stroke-width: var(--ia-viz-mark-outline-width);
+  }
+
+  /* Theme-specific twins (map rasters drawn with each theme's ramp). */
+  .only-dark {
+    display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .only-dark {
+      display: revert;
+    }
+    :root:not([data-theme="light"]) .only-light {
+      display: none;
+    }
+  }
+  :root[data-theme="dark"] .only-dark {
+    display: revert;
+  }
+  :root[data-theme="dark"] .only-light {
+    display: none;
+  }
+}
+
+/*
+ * MapLibre's own chrome, restyled with the tokens. Its stylesheet loads with the explorer island,
+ * so these rules sit outside the layers to win over it.
+ */
+.explorer-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: var(--ia-radius-md);
+  background: transparent;
+  box-shadow: none;
+}
+.explorer-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.explorer-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.explorer-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--ia-surface);
+}
+.explorer-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.explorer-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.explorer-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--ia-surface);
+}
+.explorer-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--ia-surface);
+}
+.explorer-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--ia-surface);
+}
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background-color: var(--ia-surface);
+  color: var(--ia-ink-muted);
+  font-family: var(--ia-font-sans);
+  font-size: var(--ia-text-2xs);
+}
+.maplibregl-ctrl.maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+.maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact,
+.maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  background-color: var(--ia-surface);
+}
+.maplibregl-ctrl-attrib-button,
+.maplibregl-ctrl-attrib-button:hover {
+  background-color: transparent;
+}
+.maplibregl-ctrl-attrib-button {
+  @variant dark {
+    filter: invert(1);
+  }
+}

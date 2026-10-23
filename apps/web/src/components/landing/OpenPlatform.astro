@@ -1,0 +1,23 @@
+---
+import { createTranslator, type Locale } from "@/i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+---
+
+<section id="open" class="border-b border-line bg-surface-sunken py-section" aria-labelledby="open-title">
+  <div class="grid gap-x-12 gap-y-6 px-gutter lg:grid-cols-12">
+    <h2 id="open-title" class="font-display text-3xl font-medium tracking-tight text-ink lg:col-span-4">
+      {t("open.title")}
+    </h2>
+    <div class="max-w-prose lg:col-span-8">
+      <p class="font-display text-2xl leading-snug text-ink">{t("open.lead")}</p>
+      <p class="mt-6 text-base text-ink-muted">
+        <a href="/data/sectionals-ppna.csv" download class="text-link underline-offset-(--ia-link-underline-offset) hover:underline">{t("open.now")}</a>
+      </p>
+      <p class="mt-2 text-base text-ink-muted">{t("open.next")}</p>
+    </div>
+  </div>
+</section>

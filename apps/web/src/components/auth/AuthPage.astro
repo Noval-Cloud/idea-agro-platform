@@ -1,0 +1,176 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Wordmark from "@/components/brand/Wordmark.astro";
+import ThemeToggle from "@/components/site/ThemeToggle.astro";
+import LanguageMenu from "@/components/site/LanguageMenu.astro";
+import ProviderIcon from "./ProviderIcon.astro";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import { fitBox, compactPath, padronSample } from "@/data/geo";
+
+interface Props {
+  locale: Locale;
+  mode: "login" | "register";
+}
+
+const { locale, mode } = Astro.props;
+const { t, parts } = createTranslator(locale);
+const home = localizePath("/", locale);
+const providers = ["google", "microsoft", "orcid", "github"] as const;
+const uses = ["research", "government", "production", "teaching", "other"] as const;
+const switchKey = mode === "login" ? "auth.login.noAccount" : "auth.register.hasAccount";
+const switchLink = mode === "login" ? { href: localizePath("/register", locale), label: t("auth.login.noAccountLink") } : { href: localizePath("/login", locale), label: t("auth.register.hasAccountLink") };
+
+// The aside reuses the land-parcel sketch: your areas, drawn over real padrones.
+const lens = fitBox(padronSample.bbox, 520);
+const parcels = padronSample.geometries.map((g) => compactPath(g, lens.projection, 0.9)).join("");
+const [cx, cy] = [lens.width * 0.55, lens.height * 0.48];
+const drawn = [
+  [cx - 110, cy - 60],
+  [cx + 30, cy - 96],
+  [cx + 118, cy - 12],
+  [cx + 60, cy + 92],
+  [cx - 84, cy + 64],
+].map(([x, y]) => [Math.round(x), Math.round(y)]);
+const drawnPath = `M${drawn.map((p) => p.join(",")).join("L")}Z`;
+const field = "grid gap-2";
+---
+
+<BaseLayout locale={locale} title={t(mode === "login" ? "meta.loginTitle" : "meta.registerTitle")} description={t("meta.description")}>
+  <div class="grid min-h-dvh lg:grid-cols-2">
+    <div class="flex flex-col px-gutter py-6">
+      <header class="flex items-center justify-between">
+        <a href={home} aria-label={t("a11y.home")} class="rounded-sm"><Wordmark name={t("meta.siteName")} /></a>
+        <div class="flex items-center gap-1">
+          <LanguageMenu locale={locale} path={mode === "login" ? "/login" : "/register"} id="auth-language" />
+          <ThemeToggle locale={locale} />
+        </div>
+      </header>
+
+      <main id="main" class="mx-auto w-full max-w-sm py-12 lg:my-auto">
+        <h1 class="font-display text-3xl font-medium tracking-tight text-ink">{t(`auth.${mode}.title`)}</h1>
+        <p class="mt-3 text-base text-ink-muted">{t(`auth.${mode}.lead`)}</p>
+
+        <div class="mt-8 grid gap-2.5">
+          {
+            providers.map((provider) => (
+              <button type="button" data-auth-preview class={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full justify-start gap-3")}>
+                <ProviderIcon provider={provider} />
+                {t(`auth.providers.${provider}`)}
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="my-7 flex items-center gap-4 text-xs text-ink-subtle">
+          <span class="h-px grow bg-line"></span>
+          {t("auth.orDivider")}
+          <span class="h-px grow bg-line"></span>
+        </div>
+
+        <form class="grid gap-5" data-auth-form>
+          {
+            mode === "register" && (
+              <div class={field}>
+                <Label htmlFor="auth-name">{t("auth.register.name")}</Label>
+                <Input id="auth-name" name="name" autoComplete="name" required />
+              </div>
+            )
+          }
+          <div class={field}>
+            <Label htmlFor="auth-email">{t(`auth.${mode}.email`)}</Label>
+            <Input id="auth-email" name="email" type="email" autoComplete="email" required aria-describedby={mode === "login" ? "auth-email-hint" : undefined} />
+            {mode === "login" && <p id="auth-email-hint" class="text-xs text-ink-subtle">{t("auth.login.emailHint")}</p>}
+          </div>
+          {
+            mode === "register" && (
+              <>
+                <div class={field}>
+                  <Label htmlFor="auth-institution">
+                    {t("auth.register.institution")}<span class="ml-1.5 font-normal text-ink-subtle">{t("auth.register.institutionHint")}</span>
+                  </Label>
+                  <Input id="auth-institution" name="institution" autoComplete="organization" />
+                </div>
+                <fieldset class="grid gap-2">
+                  <legend class="mb-2 text-sm font-medium text-ink">{t("auth.register.useLabel")}</legend>
+                  <div class="flex flex-wrap gap-2">
+                    {uses.map((use) => (
+                      <label class="use-pill relative cursor-pointer rounded-pill border border-line-strong px-3 py-1.5 text-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:text-ink">
+                        <input type="radio" name="use" value={use} class="sr-only" />
+                        {t(`auth.register.uses.${use}`)}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <label class="flex items-start gap-3 text-sm text-ink-muted">
+                  <input type="checkbox" name="terms" required class="mt-0.5 size-4 shrink-0" />
+                  {t("auth.register.terms")}
+                </label>
+              </>
+            )
+          }
+          <button type="submit" class={cn(buttonVariants({ variant: "primary", size: "lg" }), "w-full")}>{t(`auth.${mode}.submit`)}</button>
+        </form>
+
+        <p class="mt-5 rounded-md bg-surface-sunken px-4 py-3 text-xs text-ink-muted" role="status" data-auth-notice>
+          {t("auth.preview")}
+        </p>
+
+        <p class="mt-8 text-sm text-ink-muted">
+          {
+            parts(switchKey).map((part) =>
+              "slot" in part ? (
+                <a href={switchLink.href} class="font-medium text-link underline-offset-(--ia-link-underline-offset) hover:underline">
+                  {switchLink.label}
+                </a>
+              ) : (
+                part.text
+              ),
+            )
+          }
+        </p>
+      </main>
+
+      <footer>
+        <a href={home} class="text-sm text-ink-muted underline-offset-(--ia-link-underline-offset) hover:text-ink hover:underline">{t("auth.backHome")}</a>
+      </footer>
+    </div>
+
+    <aside class="relative hidden overflow-hidden border-l border-line bg-surface-sunken lg:flex lg:flex-col lg:justify-end">
+      <svg viewBox={`0 0 ${lens.width} ${lens.height}`} class="absolute inset-0 size-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path d={parcels} class="zone-parcel" />
+        <path d={drawnPath} class="zone-drawn" />
+        {drawn.map(([x, y]) => <circle cx={x} cy={y} class="zone-vertex" />)}
+      </svg>
+      <div class="relative m-10 max-w-md rounded-lg border border-line bg-surface p-8 shadow-overlay">
+        <p class="font-display text-2xl leading-snug text-ink">{t("auth.asideTitle")}</p>
+        <p class="mt-3 text-sm text-ink-muted">{t("auth.asideBody")}</p>
+      </div>
+    </aside>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .use-pill:has(input:checked) {
+    border-color: var(--ia-action);
+    background-color: var(--ia-action-soft);
+    color: var(--ia-ink);
+  }
+  .use-pill:has(input:focus-visible) {
+    outline: var(--ia-focus-width) solid var(--ia-focus);
+    outline-offset: var(--ia-focus-offset);
+  }
+  [data-auth-notice][data-active] {
+    background-color: var(--ia-action-soft);
+    box-shadow: inset 0 0 0 calc(var(--ia-viz-mark-outline-width) * 1px) var(--ia-action);
+    color: var(--ia-ink);
+  }
+</style>
+
+<script>
+  import { initAuthPreview } from "@/scripts/auth-preview";
+  initAuthPreview();
+</script>

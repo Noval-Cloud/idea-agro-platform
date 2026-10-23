@@ -1,0 +1,29 @@
+---
+import Sun from "@lucide/astro/icons/sun";
+import Moon from "@lucide/astro/icons/moon";
+import { buttonVariants } from "@/components/ui/button";
+import { createTranslator, type Locale } from "@/i18n";
+import { iconSize } from "@/design/tokens";
+
+interface Props {
+  locale: Locale;
+}
+const { t } = createTranslator(Astro.props.locale);
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  data-label-to-light={t("a11y.themeToLight")}
+  data-label-to-dark={t("a11y.themeToDark")}
+  aria-label={t("a11y.theme")}
+  class={buttonVariants({ variant: "ghost", size: "icon" })}
+>
+  <Sun size={iconSize.md} class="only-dark" aria-hidden="true" />
+  <Moon size={iconSize.md} class="only-light" aria-hidden="true" />
+</button>
+
+<script>
+  import { initThemeToggle } from "@/scripts/theme";
+  initThemeToggle();
+</script>

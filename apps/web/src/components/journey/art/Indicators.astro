@@ -1,0 +1,51 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import { createTranslator, localizePath, type Locale } from "@/i18n";
+import { indicatorIds, indicators } from "@/data/indicators";
+import { familyBackground } from "@/design/family-classes";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const { t } = createTranslator(locale);
+const maps = import.meta.glob<{ default: ImageMetadata }>("/src/assets/maps/*-dark.webp", { eager: true });
+// Four maps take turns while the scene is on; each one's name lights up in the list.
+const cycle = ["ppna", "et", "iose", "ahppn"] as const;
+const explore = localizePath("/explore/", locale);
+---
+
+<div class="relative grid aspect-16/10 w-full grid-cols-1 gap-4 sm:grid-cols-5">
+  <div class="relative col-span-3 max-sm:hidden" aria-hidden="true">
+    {
+      cycle.map((id, i) => (
+        <Image
+          src={maps[`/src/assets/maps/${id}-dark.webp`].default}
+          alt=""
+          widths={[280, 420, 560]}
+          sizes="(min-width: 64rem) 28vw, 50vw"
+          quality={62}
+          class="j-cycle absolute inset-0 m-auto h-full w-auto object-contain"
+          style={`--i: ${i}`}
+        />
+      ))
+    }
+  </div>
+  <ul class="col-span-2 grid content-center gap-1">
+    {
+      indicatorIds.map((id, i) => (
+        <li class="j-rise" style={`--d: ${i / 2}`}>
+          <a
+            href={`${explore}?ind=${id}`}
+            class:list={["j-chip flex items-center gap-2 rounded-sm px-2 py-1 text-sm text-ink hover:bg-action-soft", cycle.includes(id as never) && "j-cycle-chip"]}
+            style={`--i: ${cycle.indexOf(id as (typeof cycle)[number])}`}
+          >
+            <span class:list={["size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family]]} aria-hidden="true" />
+            {t(`indicators.items.${id}.name`)}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
