@@ -1,0 +1,20 @@
+{
+  "name": "@idea-agro/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed client of the IDEA-Agro API, generated with Orval from its OpenAPI document.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "orval"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "orval": "catalog:"
+  }
+}

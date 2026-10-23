@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@astrojs/react": "catalog:",
+    "@idea-agro/api-client": "workspace:*",
     "@lucide/astro": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tmcw/togeojson": "catalog:",

@@ -8,6 +8,8 @@ const generated = [
   "apps/web/src/design/generated/**",
   "apps/web/src/styles/tokens.css",
   "apps/web/public/favicon.svg",
+  "packages/api-client/src/generated/**",
+  "services/api/openapi.json",
 ];
 
 export default defineConfig({
