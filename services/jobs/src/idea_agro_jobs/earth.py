@@ -8,6 +8,7 @@ one image with a band per year, or a single map.
 
 import logging
 import math
+import re
 import time
 from collections.abc import Callable, Mapping
 from datetime import date, timedelta
@@ -61,6 +62,11 @@ def complete_years(bands: list[str], per_year: int) -> dict[int, list[str]]:
     for band in bands:
         years.setdefault(productive_year(band, per_year), []).append(band)
     return {year: found for year, found in sorted(years.items()) if len(found) == per_year}
+
+
+def band_years(bands: list[str], prefix: str) -> list[int]:
+    """The years of an image with a band per year, named `<prefix><year>`; other bands are not years."""
+    return sorted(int(b.removeprefix(prefix)) for b in bands if re.fullmatch(rf"{re.escape(prefix)}\d{{4}}", b))
 
 
 def zone_id(value: object) -> str:
@@ -125,8 +131,8 @@ class EarthEngine:
     ) -> ZoneValues:
         zones, id_property = self._zones(division)
         reduced = image.reduceRegions(collection=zones, reducer=reducer, scale=scale, tileScale=4)
-        # Only the values travel back, not the outlines.
-        found = reduced.select([id_property, *outputs], retainGeometry=False)
+        # Only the values travel back, not the outlines. Empty zones lack some outputs, so none is named.
+        found = reduced.select([".*"], retainGeometry=False)
         result = cast(dict[str, Any], retry(f"{division} {list(outputs.values())[:3]}", found.getInfo))
         return zone_values(cast(list[dict[str, Any]], result["features"]), id_property, outputs, digits)
 
@@ -138,8 +144,8 @@ class EarthEngine:
             asset, per_year = SEASONAL[indicator]
             return list(complete_years(self._band_names(ASSETS + asset), per_year))
         if indicator == Indicator.COB:
-            return sorted(int(b.removeprefix("classification_")) for b in self._band_names(MAPBIOMAS))
-        return sorted(int(b.removeprefix("b")) for b in self._band_names(ASSETS + self._yearly_asset(indicator)))
+            return band_years(self._band_names(MAPBIOMAS), "classification_")
+        return band_years(self._band_names(ASSETS + self._yearly_asset(indicator)), "b")
 
     @staticmethod
     def _yearly_asset(indicator: Indicator) -> str:
@@ -180,7 +186,7 @@ class EarthEngine:
             zones, id_property = self._zones(division)
             reduced = image.reduceRegions(
                 collection=zones, reducer=ee.Reducer.frequencyHistogram(), scale=SCALE[indicator], tileScale=4
-            ).select([id_property, "histogram"], retainGeometry=False)
+            ).select([".*"], retainGeometry=False)
             result = cast(dict[str, Any], retry(f"{division} {indicator}", reduced.getInfo))
             values: ZoneValues = {}
             for feature in cast(list[dict[str, Any]], result["features"]):

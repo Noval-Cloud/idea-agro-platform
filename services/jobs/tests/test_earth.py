@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from idea_agro_jobs.earth import band_start, complete_years, productive_year, zone_id, zone_values
+from idea_agro_jobs.earth import band_start, band_years, complete_years, productive_year, zone_id, zone_values
 
 
 def bands(days: int, until: date) -> list[str]:
@@ -53,3 +53,8 @@ def test_reduced_values_are_rounded_and_named_by_period() -> None:
         "44510": {date(2026, 9, 14): 12.35, date(2026, 9, 30): None},
         "44520": {date(2026, 9, 14): 1.0, date(2026, 9, 30): None},
     }
+
+
+def test_years_come_only_from_bands_named_after_them() -> None:
+    assert band_years(["b2021", "b2003", "b2003_count", "mean"], "b") == [2003, 2021]
+    assert band_years(["classification_1985", "classification_2021"], "classification_") == [1985, 2021]
