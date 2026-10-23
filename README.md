@@ -28,7 +28,8 @@ Folders are added as their parts arrive.
 | Python           | 3.15     | `.python-version` (uv downloads it when missing)                       |
 | uv               | 0.13     | `required-version` in `pyproject.toml`                                 |
 | GNU Make         | any      |                                                                        |
-| Google Cloud CLI | any      | Only for the infrastructure targets                                    |
+| Google Cloud CLI | any      | Only for the infrastructure and deploy targets                         |
+| Terraform        | 1.17     | `required_version` in `infrastructure/terraform/providers.tf`          |
 
 No version manager is needed: each tool reads its own pin.
 
@@ -36,17 +37,20 @@ No version manager is needed: each tool reads its own pin.
 
 Everything runs from the root through `make`; `make` alone lists the targets.
 
-| Command                   | What it does                                                                          |
-| :------------------------ | :------------------------------------------------------------------------------------ |
-| `make setup`              | Install every dependency from the lockfiles                                           |
-| `make lint`               | Check formatting and lint rules, without changing files                               |
-| `make format`             | Format every file in place                                                            |
-| `make typecheck`          | Type-check TypeScript, Astro and Python                                               |
-| `make test`               | Run every test suite                                                                  |
-| `make build`              | Build every app                                                                       |
-| `make specs`              | Validate the OpenSpec changes and specs                                               |
-| `make check`              | `lint`, `typecheck`, `test`, `build` and `specs`: the gate before every pull request  |
-| `make tf-setup ENV=<env>` | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply |
+| Command                     | What it does                                                                          |
+| :-------------------------- | :------------------------------------------------------------------------------------ |
+| `make setup`                | Install every dependency from the lockfiles                                           |
+| `make lint`                 | Check formatting and lint rules, without changing files                               |
+| `make format`               | Format every file in place                                                            |
+| `make typecheck`            | Type-check TypeScript, Astro and Python                                               |
+| `make test`                 | Run every test suite                                                                  |
+| `make build`                | Build every app                                                                       |
+| `make specs`                | Validate the OpenSpec changes and specs                                               |
+| `make check`                | `lint`, `typecheck`, `test`, `build` and `specs`: the gate before every pull request  |
+| `make tf-setup ENV=<env>`   | Prepare the environment's GCP project for Terraform: a dry run, or `APPLY=1` to apply |
+| `make tf-plan ENV=<env>`    | Save the environment's Terraform plan, read-only                                      |
+| `make tf-apply ENV=<env>`   | Apply the plan `tf-plan` saved                                                        |
+| `make web-deploy ENV=<env>` | Build the website and deploy its image to the environment's Cloud Run                 |
 
 Targets only delegate to each language's tools (`vp`, `uv`, `terraform`); logic longer than one line goes to a script, in `scripts/` or in the part it belongs to, such as `infrastructure/setup/`.
 

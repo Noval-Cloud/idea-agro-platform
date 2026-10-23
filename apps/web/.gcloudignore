@@ -1,0 +1,7 @@
+# Upload only what the image needs (see Dockerfile).
+*
+!Dockerfile
+!deploy/
+!deploy/**
+!dist/
+!dist/**

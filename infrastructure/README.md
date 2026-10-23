@@ -9,6 +9,10 @@ infrastructure/
 ├── setup/
 │   ├── setup.sh              prepares a GCP project for Terraform
 │   └── outputs/              the values setup.sh wrote, ignored by git
+├── terraform/                one root for every environment
+│   └── modules/
+│       ├── platform/         what every service shares: the build identity and its sources bucket
+│       └── services/<name>/  one module per service: its identity, its Cloud Run service, its access
 └── environments/
     └── <env>/                dev, qa, prd
         ├── setup.env         what setup.sh puts in place before Terraform
@@ -20,7 +24,6 @@ infrastructure/
 
 - Every environment has the same files, so bringing one up is only filling its values.
 - `environments/` sits outside the Terraform root: an environment carries more than Terraform variables.
-- `terraform.tfvars` and `backend.tfvars` stay empty while there is no Terraform root.
 
 ## Setup
 
@@ -64,6 +67,20 @@ On a refusal or an error, it stops with a non-zero exit status and prints the ca
   gcloud services disable <api> --project=<project>
   gcloud projects remove-iam-policy-binding <project> --member=serviceAccount:<operator email> --role=<role>
   ```
+
+## Terraform
+
+One root for every environment; each environment's state lives in its own bucket, chosen at init from its `backend.tfvars`. Terraform starts from your gcloud credentials and runs as the operator service account, so your account must be in the environment's `TF_SA_USERS`.
+
+```bash
+make tf-plan ENV=dev     # saves the plan to infrastructure/terraform/dev.tfplan; read-only
+make tf-apply ENV=dev    # applies exactly that plan
+```
+
+- Read the plan before applying it. A plan saved before the state changed is refused at apply.
+- Cloud Run services are created with a placeholder image. The image belongs to the deploy (`make web-deploy ENV=dev`), and Terraform never changes it.
+- A module grants itself what it needs from others, in its own `iam.tf`.
+- Every value comes from a variable, with a default wherever one makes sense, so an environment's `terraform.tfvars` holds only what differs.
 
 ## `setup.env`
 
