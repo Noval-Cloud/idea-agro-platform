@@ -1,7 +1,7 @@
 import type { PolygonGeometry } from "./data";
 
 /*
- * Until accounts exist, a zone the reader uploaded or drew reaches the zone page through this
+ * Until it is saved to the account, a zone the reader uploaded or drew reaches the zone page through this
  * browser session (the zone page opens in the same tab or a new one of the same session).
  */
 const KEY = "ia-custom-zones";
