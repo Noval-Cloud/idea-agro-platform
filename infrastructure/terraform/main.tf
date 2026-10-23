@@ -31,6 +31,7 @@ module "api" {
   auth_audience    = module.identity.audience
   auth_jwks_url    = module.identity.jwks_url
   records_database = module.platform.firestore_database
+  values_dataset   = module.platform.values_dataset
   admin_emails     = var.admin_emails
 }
 

@@ -1,11 +1,8 @@
-"""The per-zone files the API serves: where they are read from and how they are shaped."""
+"""The divisions and departments zones belong to, and where the public files are read from."""
 
-import json
-from datetime import date
 from enum import StrEnum
-from functools import cached_property
 from pathlib import Path
-from typing import Protocol, cast
+from typing import Protocol
 
 from google.api_core.exceptions import NotFound
 from google.cloud import storage  # pyright: ignore[reportMissingTypeStubs]
@@ -59,6 +56,8 @@ class Files(Protocol):
         """The file's bytes, or None when it does not exist."""
         ...
 
+    def write(self, name: str, content: bytes) -> None: ...
+
 
 class LocalFiles:
     def __init__(self, root: Path) -> None:
@@ -67,6 +66,11 @@ class LocalFiles:
     def read(self, name: str) -> bytes | None:
         path = self._root / name
         return path.read_bytes() if path.is_file() else None
+
+    def write(self, name: str, content: bytes) -> None:
+        path = self._root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
 
 
 # google-cloud-storage is only partly typed; this class is its only user.
@@ -80,42 +84,12 @@ class BucketFiles:
         except NotFound:
             return None
 
+    def write(self, name: str, content: bytes) -> None:
+        self._bucket.blob(name).upload_from_string(content, content_type="application/json")  # pyright: ignore[reportUnknownMemberType]
+
 
 def files_from(source: str) -> Files:
     """`gs://<bucket>` reads from Cloud Storage; any other value is a local folder."""
     if source.startswith("gs://"):
         return BucketFiles(source.removeprefix("gs://").rstrip("/"))
     return LocalFiles(Path(source))
-
-
-type Series = tuple[list[date], list[float | None]]
-
-
-class ZoneStore:
-    """The calendar in `catalog.json`, and one file per zone in `series/<division>/<zone>.json`."""
-
-    def __init__(self, files: Files) -> None:
-        self._files = files
-
-    @cached_property
-    def calendar(self) -> dict[SeasonalIndicator, list[date]]:
-        catalog = self._files.read("catalog.json")
-        if catalog is None:
-            raise RuntimeError("The zone store has no catalog.json")
-        dates = cast(dict[str, list[str]], json.loads(catalog)["seasonal"])
-        return {indicator: [date.fromisoformat(d) for d in dates[indicator]] for indicator in SeasonalIndicator}
-
-    def exists(self, division: Division, zone: str) -> bool:
-        return self._files.read(f"series/{division}/{zone}.json") is not None
-
-    def seasonal(self, division: Division, zone: str) -> dict[SeasonalIndicator, Series] | None:
-        """Each indicator's dates and values in the zone, or None when the zone does not exist."""
-        content = self._files.read(f"series/{division}/{zone}.json")
-        if content is None:
-            return None
-        values = cast(dict[str, list[float | None]], json.loads(content))
-        return {
-            indicator: (self.calendar[indicator], values[indicator])
-            for indicator in SeasonalIndicator
-            if indicator in values
-        }

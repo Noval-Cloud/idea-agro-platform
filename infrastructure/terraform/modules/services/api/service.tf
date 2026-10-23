@@ -26,6 +26,10 @@ resource "google_cloud_run_v2_service" "api" {
         value = "gs://${google_storage_bucket.zones.name}"
       }
       env {
+        name  = "VALUES_SOURCE"
+        value = "bigquery://${var.project}/${var.values_dataset}"
+      }
+      env {
         name  = "AUTH_ISSUER"
         value = var.auth_issuer
       }

@@ -460,6 +460,7 @@ source = { editable = "services/api" }
 dependencies = [
     { name = "fastapi" },
     { name = "google-auth", extra = ["requests"] },
+    { name = "google-cloud-bigquery" },
     { name = "google-cloud-firestore" },
     { name = "google-cloud-storage" },
     { name = "pyjwt", extra = ["crypto"] },
@@ -477,6 +478,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = "==0.161.1" },
     { name = "google-auth", extras = ["requests"], specifier = "==2.62.0" },
+    { name = "google-cloud-bigquery", specifier = "==3.46.2" },
     { name = "google-cloud-firestore", specifier = "==2.34.1" },
     { name = "google-cloud-storage", specifier = "==3.17.1" },
     { name = "pyjwt", extras = ["crypto"], specifier = "==2.15.1" },

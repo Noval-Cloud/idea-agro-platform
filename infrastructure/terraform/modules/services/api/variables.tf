@@ -118,9 +118,26 @@ variable "records_database" {
 }
 
 variable "project_roles" {
-  description = "Roles of the API on the project: reading and writing records"
+  description = "Roles of the API on the project: reading and writing records, and querying BigQuery"
   type        = list(string)
-  default     = ["roles/datastore.user"]
+  default     = ["roles/datastore.user", "roles/bigquery.jobUser"]
+}
+
+variable "values_dataset" {
+  description = "The BigQuery dataset of the zones' values, which the data jobs keep"
+  type        = string
+}
+
+variable "values_role" {
+  description = "Role that lets the API read the zones' values"
+  type        = string
+  default     = "roles/bigquery.dataViewer"
+}
+
+variable "series_role" {
+  description = "Role that lets the API write the per-zone series it builds, and only those"
+  type        = string
+  default     = "roles/storage.objectUser"
 }
 
 variable "identity_role_id" {

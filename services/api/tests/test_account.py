@@ -14,8 +14,9 @@ from idea_agro_api.accounts import MemoryAccounts, Role
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
 from idea_agro_api.security import RateLimit
+from idea_agro_api.series import ZoneStore
 from idea_agro_api.services import Services, services_for_tests
-from idea_agro_api.zones import LocalFiles, ZoneStore
+from idea_agro_api.zones import LocalFiles
 
 OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 token = make_token

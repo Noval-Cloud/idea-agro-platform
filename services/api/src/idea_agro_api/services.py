@@ -14,8 +14,9 @@ from idea_agro_api.projects import MemoryProjects, ProjectStore, projects_from
 from idea_agro_api.public_data import PublicData
 from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zones_from
 from idea_agro_api.security import RateLimit
+from idea_agro_api.series import ZoneStore, values_from
 from idea_agro_api.shapes import Departments
-from idea_agro_api.zones import Files, LocalFiles, ZoneStore, files_from
+from idea_agro_api.zones import Files, LocalFiles, files_from
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,10 @@ class Services:
 
     @staticmethod
     def from_env() -> Services:
-        """`ZONES_SOURCE` is required; sign-in needs `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL`."""
+        """`ZONES_SOURCE` is required; sign-in needs `AUTH_ISSUER`, `AUTH_AUDIENCE` and `AUTH_JWKS_URL`.
+
+        `VALUES_SOURCE` rebuilds the zones' series from BigQuery; without it they are served as stored.
+        """
         env = os.environ
         verifier = None
         if issuer := env.get("AUTH_ISSUER"):
@@ -96,7 +100,7 @@ class Services:
                 "Sign-in needs RECORDS_SOURCE and GEOMETRIES_SOURCE, unless ALLOW_MEMORY_RECORDS=1 for a local run."
             )
         return Services(
-            zones=ZoneStore(files),
+            zones=ZoneStore(files, values_from(env.get("VALUES_SOURCE", "none"))),
             public_data=PublicData(files),
             accounts=accounts_from(records),
             saved_zones=saved_zones_from(records),
