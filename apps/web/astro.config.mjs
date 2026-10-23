@@ -4,10 +4,12 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import maplibreVendor from "./plugins/maplibre-vendor.mjs";
 
-// Origins the pages may reach, besides their own: the API, the sign-in provider and the map's tiles.
+// Origins the pages may reach, besides their own: the API, the map's tiles, and those the sign-in provider
+// needs, which come from the infrastructure (`auth_csp` in Terraform) so no provider is named here.
 const apiOrigin = new URL(process.env.PUBLIC_API_URL ?? "http://localhost:8080").origin;
-const authFrame = process.env.PUBLIC_AUTH_DOMAIN ? `https://${process.env.PUBLIC_AUTH_DOMAIN}` : "'none'";
-const signInApis = "https://identitytoolkit.googleapis.com https://securetoken.googleapis.com";
+const authConnect = process.env.AUTH_CSP_CONNECT ?? "";
+const authFrame = process.env.AUTH_CSP_FRAME || "'none'";
+const authScript = process.env.AUTH_CSP_SCRIPT ?? "";
 
 export default defineConfig({
   // Absolute URLs (canonical, hreflang) are emitted once the public domain is set.
@@ -18,16 +20,15 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self'",
-        `connect-src 'self' ${apiOrigin} ${signInApis} https://tiles.openfreemap.org`,
-        "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+        `connect-src 'self' ${apiOrigin} ${authConnect} https://tiles.openfreemap.org`,
+        `img-src 'self' data: blob: ${process.env.AUTH_CSP_IMAGES ?? ""}`,
         "worker-src 'self' blob:",
         "font-src 'self'",
         `frame-src ${authFrame}`,
         "form-action 'self'",
         "object-src 'none'",
       ],
-      // The provider's popup sign-in loads Google's iframe helper.
-      scriptDirective: { resources: ["'self'", "https://apis.google.com"] },
+      scriptDirective: { resources: ["'self'", ...authScript.split(" ").filter(Boolean)] },
       // Inline style attributes, as in server-rendered charts; style elements still need their hash.
       styleDirective: { resources: ["'self'", { resource: "'unsafe-inline'", kind: "attribute" }] },
     },

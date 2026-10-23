@@ -574,10 +574,15 @@ export type revokeMySessionsResponse429 = {
   status: 429
 }
 
+export type revokeMySessionsResponse503 = {
+  data: Problem
+  status: 503
+}
+
 export type revokeMySessionsResponseSuccess = (revokeMySessionsResponse204) & {
   headers: Headers;
 };
-export type revokeMySessionsResponseError = (revokeMySessionsResponse401 | revokeMySessionsResponse403 | revokeMySessionsResponse429) & {
+export type revokeMySessionsResponseError = (revokeMySessionsResponse401 | revokeMySessionsResponse403 | revokeMySessionsResponse429 | revokeMySessionsResponse503) & {
   headers: Headers;
 };
 
@@ -592,7 +597,7 @@ export const getRevokeMySessionsUrl = () => {
 }
 
 /**
- * Ends every session of your account, on every device: the next request of each must sign in again.
+ * Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.
  * @summary Log out everywhere
  */
 export const revokeMySessions = async ( options?: Parameters<typeof apiFetch>[1]): Promise<revokeMySessionsResponse> => {

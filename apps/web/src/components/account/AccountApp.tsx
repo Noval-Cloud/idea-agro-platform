@@ -27,12 +27,13 @@ export default function AccountApp({ locale, catalog, signInPath, homePath }: Pr
   const endSessions = async () => {
     if (!window.confirm(t("account.sessions.confirm"))) return;
     setEnding("working");
+    const { signOutEverywhere, SignedOut } = await import("@/lib/account");
     try {
-      const { signOutEverywhere } = await import("@/lib/account");
       await signOutEverywhere();
       location.assign(homePath);
-    } catch {
-      setEnding("failed");
+    } catch (error) {
+      if (error instanceof SignedOut) location.assign(signInPath);
+      else setEnding("failed");
     }
   };
 

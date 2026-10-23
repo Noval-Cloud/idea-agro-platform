@@ -37,11 +37,19 @@ scripts/prototype-data/  extraction of the explorer's data from Earth Engine
 
 ## Sign-in
 
-`src/lib/account.ts` is the only module that knows the sign-in provider (Firebase Authentication): the rest of the site signs in, signs out and gets tokens through it. Its SDK loads on first use, never with the page; the header draws the account from what `src/lib/account-hint.ts` remembers.
+`src/lib/account.ts` is the only module that knows the sign-in provider (Firebase Authentication).
+
+- **What goes through it:** the rest of the site signs in and signs out through it, and makes every private API call through `privately()`. Public data calls never carry a token.
+- **Expired sessions:** a refused token is renewed once; if the provider refuses too, the session ends on this device as well.
+- **Loading:** its SDK loads on first use, never with the page. The header draws the account from what `src/lib/account-hint.ts` remembers.
 
 Sign-in needs `PUBLIC_AUTH_KEY` and `PUBLIC_AUTH_DOMAIN` at build time (`make web-deploy` takes them from Terraform); without them, the sign-in page says it is not available. `PUBLIC_API_URL` is the API's origin.
 
-Every page carries a Content Security Policy: Astro hashes each script and style it emits (`security.csp` in `astro.config.mjs`), and `deploy/security-headers.conf` adds the headers a `<meta>` cannot carry.
+Every page carries a Content Security Policy.
+
+- Astro hashes each script and style it emits (`security.csp` in `astro.config.mjs`).
+- The provider's origins come from Terraform's `auth_csp` output, through `AUTH_CSP_*` at build time.
+- `deploy/security-headers.conf` adds the headers a `<meta>` cannot carry.
 
 ## Prototype data
 

@@ -90,7 +90,7 @@ export const GetMeResponse = zod.object({
 
 
 /**
- * Ends every session of your account, on every device: the next request of each must sign in again.
+ * Ends every session of your account, on every device: tokens from a sign-in before now are refused, and the sign-in provider stops renewing them.
  * @summary Log out everywhere
  */
 export const RevokeMySessionsResponse = zod.void()

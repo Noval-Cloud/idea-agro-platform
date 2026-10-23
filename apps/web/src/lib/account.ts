@@ -1,15 +1,18 @@
 /*
  * The only module that knows the sign-in provider (Firebase Authentication). The rest of the site signs in,
- * signs out and gets tokens through it, so swapping providers rewrites this file alone. The provider's SDK
- * loads on first use, never with the page.
+ * signs out and makes private API calls through it, so swapping providers rewrites this file alone. The
+ * provider's SDK loads on first use, never with the page.
  */
 import type { Auth } from "firebase/auth";
-import { getMe, revokeMySessions, setAccessToken, setApiBaseUrl, type Me } from "@idea-agro/api-client";
+import { getMe, revokeMySessions, setApiBaseUrl, type Me } from "@idea-agro/api-client";
 import { readHint, writeHint, type SignedIn } from "./account-hint";
 
 export type { Role, SignedIn } from "./account-hint";
 
 export type SignInError = "notConfigured" | "notEnabled" | "popupBlocked" | "cancelled" | "network" | "unknown";
+
+/** No session, or one the provider no longer honours: the person has to sign in again. */
+export class SignedOut extends Error {}
 
 const config = { apiKey: import.meta.env.PUBLIC_AUTH_KEY, authDomain: import.meta.env.PUBLIC_AUTH_DOMAIN };
 
@@ -23,30 +26,48 @@ function provider(): Promise<Auth> {
   return loading;
 }
 
-/** The signed-in person's token, renewed by the provider before it expires; null when signed out. */
-export async function accessToken(): Promise<string | null> {
-  if (!configured()) return null;
-  const auth = await provider();
-  await auth.authStateReady();
-  return auth.currentUser ? auth.currentUser.getIdToken() : null;
-}
-
 setApiBaseUrl(import.meta.env.PUBLIC_API_URL ?? "http://localhost:8080");
-setAccessToken(accessToken);
 
 export const configured = (): boolean => Boolean(config.apiKey && config.authDomain);
 
+async function authorization(renew = false): Promise<RequestInit> {
+  if (!configured()) throw new SignedOut();
+  const auth = await provider();
+  await auth.authStateReady();
+  if (!auth.currentUser) throw new SignedOut();
+  return { headers: { Authorization: `Bearer ${await auth.currentUser.getIdToken(renew)}` } };
+}
+
+/**
+ * Runs a private API call with the person's token. A refused token is renewed once; when the provider refuses
+ * to renew it too (a log-out on another device, for example), the session ends here as well.
+ */
+export async function privately<R extends { status: number }>(call: (init: RequestInit) => Promise<R>): Promise<R> {
+  const response = await call(await authorization());
+  if (response.status !== 401) return response;
+  try {
+    const retried = await call(await authorization(true));
+    if (retried.status !== 401) return retried;
+  } catch {
+    // The provider refused to renew: fall through and sign out.
+  }
+  await signOut();
+  throw new SignedOut();
+}
+
 /** The account from the API, remembered for the header; null when signed out. */
 export async function loadMe(): Promise<Me | null> {
-  if (!(await accessToken())) {
+  try {
+    const response = await privately((init) => getMe(init));
+    if (response.status !== 200) throw new Error(`${response.status} /v1/me`);
+    const me = response.data;
+    writeHint({ name: me.name ?? null, email: me.email ?? null, picture: me.picture ?? null, roles: me.roles });
+    return me;
+  } catch (error) {
+    if (!(error instanceof SignedOut)) throw error;
     writeHint(null);
     return null;
   }
-  const response = await getMe();
-  if (response.status !== 200) throw new Error(`${response.status} /v1/me`);
-  const me = response.data;
-  writeHint({ name: me.name ?? null, email: me.email ?? null, picture: me.picture ?? null, roles: me.roles });
-  return me;
 }
 
 export async function loadAccount(): Promise<SignedIn | null> {
@@ -56,8 +77,9 @@ export async function loadAccount(): Promise<SignedIn | null> {
 
 /** Ends every session of the account, on every device, this one included. */
 export async function signOutEverywhere(): Promise<void> {
-  const response = await revokeMySessions();
-  if (response.status !== 204) throw new Error(`${response.status} /v1/me/sessions/revoke`);
+  const response = await privately((init) => revokeMySessions(init));
+  // 503: our own record ended the sessions, though the provider did not answer.
+  if (response.status !== 204 && response.status !== 503) throw new Error(`${response.status} revoke`);
   await signOut();
 }
 

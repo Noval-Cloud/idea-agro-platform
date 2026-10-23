@@ -1,10 +1,8 @@
 import type { SignInError, SignedIn } from "@/lib/account";
+import { nextPath } from "@/lib/next-path";
 
-/** Where to go once signed in: a path of this site from `?next=`, never another site. */
-function next(fallback: string): string {
-  const wanted = new URLSearchParams(location.search).get("next") ?? "";
-  return wanted.startsWith("/") && !wanted.startsWith("//") && !wanted.startsWith("/\\") ? wanted : fallback;
-}
+const next = (fallback: string) =>
+  nextPath(new URLSearchParams(location.search).get("next"), location.origin, fallback);
 
 export function initSignIn() {
   const button = document.querySelector<HTMLButtonElement>("[data-sign-in]");
