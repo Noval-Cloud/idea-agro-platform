@@ -38,13 +38,13 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 2
 fi
 # Only the environment's file decides, never a value left in the shell.
-unset GOOGLE_CLOUD_PROJECT GOOGLE_CLOUD_REGION SETUP_REGISTRY SETUP_OPERATOR_SA SETUP_STATE_BUCKET \
-  SETUP_APIS SETUP_OPERATOR_ROLES
+unset GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET \
+  GCP_APIS TF_SA_ROLES
 # shellcheck source=/dev/null
 . "$ENV_FILE"
 
 missing=""
-for name in GOOGLE_CLOUD_PROJECT GOOGLE_CLOUD_REGION SETUP_REGISTRY; do
+for name in GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY; do
   [ -n "${!name:-}" ] || missing="$missing $name"
 done
 if [ -n "$missing" ]; then
@@ -52,12 +52,12 @@ if [ -n "$missing" ]; then
   exit 2
 fi
 
-PROJECT="$GOOGLE_CLOUD_PROJECT"
-REGION="$GOOGLE_CLOUD_REGION"
-REGISTRY="$SETUP_REGISTRY"
-OPERATOR="${SETUP_OPERATOR_SA:-terraform-operator}"
+PROJECT="$GCP_PROJECT_ID"
+REGION="$GCP_REGION"
+REGISTRY="$ARTIFACT_REGISTRY"
+OPERATOR="${TF_SA:-terraform-operator}"
 OPERATOR_EMAIL="$OPERATOR@$PROJECT.iam.gserviceaccount.com"
-STATE_BUCKET="${SETUP_STATE_BUCKET:-$PROJECT-tfstate}"
+STATE_BUCKET="${TF_STATE_BUCKET:-$PROJECT-tfstate}"
 # The APIs this script works through, so they are not left to setup.env.
 OWN_APIS="
 iam.googleapis.com
@@ -160,13 +160,13 @@ if ! FOUND="$(gcloud projects describe "$PROJECT" --format='value(projectId)')";
   exit 1
 fi
 if [ "$FOUND" != "$PROJECT" ]; then
-  echo "GOOGLE_CLOUD_PROJECT must be the project id: $FOUND" >&2
+  echo "GCP_PROJECT_ID must be the project id: $FOUND" >&2
   exit 2
 fi
 
 ENABLED="$(gcloud services list --enabled --project="$PROJECT" --format='value(config.name)')"
 enable_apis "$OWN_APIS"
-enable_apis "${SETUP_APIS:-}"
+enable_apis "${GCP_APIS:-}"
 
 ACCOUNTS=""
 if api_on iam.googleapis.com; then
@@ -188,7 +188,7 @@ while read -r role; do
   GRANTED="$GRANTED
 $role"
   change "grant $role to $OPERATOR_EMAIL" grant "$role"
-done <<<"$(items "${SETUP_OPERATOR_ROLES:-}")"
+done <<<"$(items "${TF_SA_ROLES:-}")"
 
 BUCKETS=""
 if api_on storage.googleapis.com; then
