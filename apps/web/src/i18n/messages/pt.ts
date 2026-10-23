@@ -782,6 +782,7 @@ export const pt = {
       role: "Papel",
       roleHelp: "Colaborador: adiciona e remove zonas e muda seus contornos. Leitor: só olha.",
       roleOf: "Papel de {name}",
+      changeRole: "Mudar o papel",
       invite: "Compartilhar",
       remove: "Remover",
       removeLabel: "Remover {name} do projeto",

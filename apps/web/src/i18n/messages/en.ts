@@ -784,6 +784,7 @@ export const en = {
       role: "Role",
       roleHelp: "Collaborator: adds and removes areas and changes their outlines. Viewer: only looks.",
       roleOf: "Role of {name}",
+      changeRole: "Change the role",
       invite: "Share",
       remove: "Remove",
       removeLabel: "Remove {name} from the project",

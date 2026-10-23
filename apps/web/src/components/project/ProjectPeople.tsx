@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MemberOut, MemberRole, ProjectOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,28 +80,14 @@ export function People({
               </p>
             </div>
             {owner ? (
-              <>
-                <select
-                  className={field}
-                  value={member.role}
-                  aria-label={t("project.members.roleOf", { name: nameOf(member) })}
-                  onChange={(event) => share(member.email, event.currentTarget.value as MemberRole)}
-                >
-                  {roles.map((r) => (
-                    <option key={r} value={r}>
-                      {t(`project.roles.${r}`)}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label={t("project.members.removeLabel", { name: nameOf(member) })}
-                  onClick={() => remove(member)}
-                >
-                  {t("project.members.remove")}
-                </Button>
-              </>
+              <RoleControl
+                t={t}
+                member={member}
+                label={t("project.members.roleOf", { name: nameOf(member) })}
+                onChange={(next) => share(member.email, next)}
+                onRemove={() => remove(member)}
+                removeLabel={t("project.members.removeLabel", { name: nameOf(member) })}
+              />
             ) : (
               <p className="text-sm text-ink-subtle">{t(`project.roles.${member.role}`)}</p>
             )}
@@ -152,5 +138,49 @@ export function People({
         </form>
       )}
     </section>
+  );
+}
+
+/** A member's role, applied only with its button: moving through the options with the keyboard changes nothing. */
+function RoleControl({
+  t,
+  member,
+  label,
+  removeLabel,
+  onChange,
+  onRemove,
+}: {
+  t: ProjectTranslator["t"];
+  member: MemberOut;
+  label: string;
+  removeLabel: string;
+  onChange: (role: MemberRole) => void;
+  onRemove: () => void;
+}) {
+  const [role, setRole] = useState<MemberRole>(member.role);
+  useEffect(() => setRole(member.role), [member.role]);
+  return (
+    <>
+      <select
+        className={field}
+        value={role}
+        aria-label={label}
+        onChange={(event) => setRole(event.currentTarget.value as MemberRole)}
+      >
+        {roles.map((r) => (
+          <option key={r} value={r}>
+            {t(`project.roles.${r}`)}
+          </option>
+        ))}
+      </select>
+      {role !== member.role && (
+        <Button size="sm" variant="outline" onClick={() => onChange(role)}>
+          {t("project.members.changeRole")}
+        </Button>
+      )}
+      <Button size="sm" variant="ghost" aria-label={removeLabel} onClick={onRemove}>
+        {t("project.members.remove")}
+      </Button>
+    </>
   );
 }

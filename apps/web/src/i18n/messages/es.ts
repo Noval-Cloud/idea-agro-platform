@@ -777,6 +777,7 @@ export const es = {
       role: "Rol",
       roleHelp: "Colaborador: agrega y quita zonas y cambia sus contornos. Lector: solo mira.",
       roleOf: "Rol de {name}",
+      changeRole: "Cambiar el rol",
       invite: "Compartir",
       remove: "Quitar",
       removeLabel: "Quitar a {name} del proyecto",

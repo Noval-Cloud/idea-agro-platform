@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -18,7 +18,7 @@ type Props = {
 };
 
 type Target = { zone: string; project?: string };
-type Loaded = { name: string; geometry: PolygonGeometry };
+type Loaded = { name: string; version: number; geometry: PolygonGeometry };
 
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
@@ -44,7 +44,8 @@ const geometryOf = (features: GeoJSONStoreFeatures[]): PolygonGeometry | null =>
 
 /** Changes a saved zone's outline on a map. Saving keeps the previous outline as a version. */
 export default function OutlineEditor({ locale, catalog, signInPath, zonePath }: Props) {
-  const { t } = createCatalogTranslator(locale, catalog);
+  // Stable across renders: the map is rebuilt whenever `t` changes.
+  const { t } = useMemo(() => createCatalogTranslator(locale, catalog), [locale, catalog]);
   const theme = useTheme();
   const [target, setTarget] = useState<Target | null>(null);
   const [state, setState] = useState<"loading" | "signedOut" | "failed" | "ready">("loading");
@@ -79,7 +80,7 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
               privately((init) => client.getSavedZoneGeometry(id, init)),
             ]);
         if (meta.status !== 200 || outline.status !== 200) return setState("failed");
-        setZone({ name: meta.data.name, geometry: outline.data as PolygonGeometry });
+        setZone({ name: meta.data.name, version: meta.data.version, geometry: outline.data as PolygonGeometry });
         setState("ready");
       } catch (error) {
         const { SignedOut } = await import("@/lib/account");
@@ -127,8 +128,14 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
         map.addControl(new AttributionControl({ compact: true }), "bottom-right");
         map.getCanvas().setAttribute("aria-label", t("outline.mapLabel"));
         const loaded = map;
+        let ready = false;
+        // A style or tiles that fail before the map loads leave nothing to edit.
+        loaded.on("error", () => {
+          if (!ready) setProblem("outline.noMap");
+        });
         loaded.on("load", () => {
           if (cancelled) return;
+          ready = true;
           const color = mapTheme[theme].chrome["zone-own"] as `#${string}`;
           const instance = new td.TerraDraw({
             adapter: new adapter.TerraDrawMapLibreGLAdapter({ map: loaded }),
@@ -200,8 +207,8 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
       const { zone: id, project } = target;
       const response = await privately((init) =>
         project
-          ? client.changeProjectZoneGeometry(project, id, { geometry }, init)
-          : client.changeSavedZoneGeometry(id, { geometry }, init),
+          ? client.changeProjectZoneGeometry(project, id, { version: zone?.version ?? 0, geometry }, init)
+          : client.changeSavedZoneGeometry(id, { version: zone?.version ?? 0, geometry }, init),
       );
       if (response.status === 200) return location.assign(back());
       const detail = (response.data as { detail?: string | null }).detail ?? "";

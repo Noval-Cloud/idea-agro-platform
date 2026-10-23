@@ -102,7 +102,12 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
       focusSoon("zones-title");
       return {
         status: 204,
-        apply: (project: ProjectOut) => ({ ...project, items: project.items.filter((i) => i.id !== item.id) }),
+        // A new time, so the activity reloads.
+        apply: (project: ProjectOut) => ({
+          ...project,
+          items: project.items.filter((i) => i.id !== item.id),
+          updated_at: new Date().toISOString(),
+        }),
       };
     });
 

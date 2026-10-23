@@ -366,7 +366,8 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                     <a
                       href={`${outlinePath}?${new URLSearchParams({
                         saved: zone.target.id,
-                        ...(zone.target.project ? { project: zone.target.project } : {}),
+                        // Owners change their zones through their library, whatever their role in the project.
+                        ...(zone.target.project && !zone.access.own ? { project: zone.target.project } : {}),
                       })}`}
                       className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
                     >
