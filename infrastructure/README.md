@@ -26,7 +26,7 @@ infrastructure/
 
 `setup/setup.sh` does only what Terraform cannot do for itself: Terraform cannot create the bucket its own state lives in, and the APIs must be on before its first plan. From the environment's `setup.env`, it puts in place:
 
-- the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage and Artifact Registry), always, and then the ones in `SETUP_APIS`;
+- the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage and Artifact Registry), always, and then the ones in `GCP_APIS`;
 - the operator service account and its project roles;
 - the Terraform state bucket, versioned, in the region (it turns versioning on in an existing one);
 - the Docker repository in Artifact Registry.
@@ -57,7 +57,7 @@ On a refusal or an error, it stops with a non-zero exit status and prints the ca
 
 ### Adding or removing an API or a role
 
-- **Adding:** add the line to `SETUP_APIS` or `SETUP_OPERATOR_ROLES` in each environment that needs it. Run the dry run to see it listed, then apply.
+- **Adding:** add the line to `GCP_APIS` or `TF_SA_ROLES` in each environment that needs it. Run the dry run to see it listed, then apply.
 - **Removing:** delete the line, then disable the API or revoke the role by hand, because the script only adds:
 
   ```bash
@@ -67,19 +67,19 @@ On a refusal or an error, it stops with a non-zero exit status and prints the ca
 
 ## `setup.env`
 
-Shell `KEY=value` lines that `setup/setup.sh` sources. The last column says what an empty value means.
+Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except the two lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` grants nothing.
 
-| Variable               | What it is                                                                                                  | When empty                               |
-| :--------------------- | :---------------------------------------------------------------------------------------------------------- | :--------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT` | The GCP project id                                                                                          | Required                                 |
-| `GOOGLE_CLOUD_REGION`  | The region of the project's regional resources                                                              | Required                                 |
-| `SETUP_REGISTRY`       | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path       | Required                                 |
-| `SETUP_OPERATOR_SA`    | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as | `terraform-operator`                     |
-| `SETUP_STATE_BUCKET`   | The name of the bucket that holds the Terraform state, without `gs://`                                      | `<project>-tfstate`, with the project id |
-| `SETUP_APIS`           | Only the APIs the project needs, one per line. The setup's own APIs are always enabled and are not listed   | No extra API is enabled                  |
-| `SETUP_OPERATOR_ROLES` | The roles granted to the operator service account, one per line                                             | No role is granted                       |
+| Variable                 | What it is                                                                                                  |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------- |
+| `GCP_PROJECT_ID`         | The GCP project id                                                                                          |
+| `GCP_REGION`             | The region of the project's regional resources                                                              |
+| `ARTIFACT_REGISTRY`      | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path       |
+| `TF_SA`                  | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as |
+| `TF_STATE_BUCKET_SUFFIX` | The suffix of the Terraform state bucket, whose name is `<GCP_PROJECT_ID>-<suffix>`                         |
+| `GCP_APIS`               | Only the APIs the project needs, one per line. The setup's own APIs are always enabled and are not listed   |
+| `TF_SA_ROLES`            | The roles granted to the operator service account, one per line                                             |
 
-`SETUP_APIS` and `SETUP_OPERATOR_ROLES` are quoted strings that span several lines, one item per line. Blank lines are ignored.
+`GCP_APIS` and `TF_SA_ROLES` are quoted strings that span several lines, one item per line. Blank lines are ignored.
 
 ## Secrets
 

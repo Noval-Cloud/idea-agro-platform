@@ -23,13 +23,15 @@ def setup_env(
     project: str = "demo",
     region: str = "us-central1",
     registry: str = "images",
+    operator: str = "terraform-operator",
+    bucket_suffix: str = "tfstate",
     apis: str = "",
     roles: str = "",
-    extra: str = "",
 ) -> str:
     return (
-        f"GOOGLE_CLOUD_PROJECT={project}\nGOOGLE_CLOUD_REGION={region}\nSETUP_REGISTRY={registry}\n{extra}\n"
-        f'SETUP_APIS="\n{apis}\n"\nSETUP_OPERATOR_ROLES="\n{roles}\n"\n'
+        f"GCP_PROJECT_ID={project}\nGCP_REGION={region}\nARTIFACT_REGISTRY={registry}\n"
+        f"TF_SA={operator}\nTF_STATE_BUCKET_SUFFIX={bucket_suffix}\n"
+        f'GCP_APIS="\n{apis}\n"\nTF_SA_ROLES="\n{roles}\n"\n'
     )
 
 
@@ -112,7 +114,9 @@ def test_refuses_an_unknown_environment(repo: Repo, args: list[str]) -> None:
     assert repo.calls() == []
 
 
-@pytest.mark.parametrize("name", ["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_REGION", "SETUP_REGISTRY"])
+@pytest.mark.parametrize(
+    "name", ["GCP_PROJECT_ID", "GCP_REGION", "ARTIFACT_REGISTRY", "TF_SA", "TF_STATE_BUCKET_SUFFIX"]
+)
 def test_refuses_a_missing_required_value(repo: Repo, name: str) -> None:
     repo.write_env(setup_env().replace(f"{name}=", f"{name}=\n#"))
     result = repo.run("--env", "dev")
@@ -122,10 +126,10 @@ def test_refuses_a_missing_required_value(repo: Repo, name: str) -> None:
 
 
 def test_takes_values_only_from_setup_env(repo: Repo) -> None:
-    repo.write_env(setup_env().replace("GOOGLE_CLOUD_PROJECT=demo\n", ""))
-    result = repo.run("--env", "dev", GOOGLE_CLOUD_PROJECT="demo")
+    repo.write_env(setup_env().replace("GCP_PROJECT_ID=demo\n", ""))
+    result = repo.run("--env", "dev", GCP_PROJECT_ID="demo")
     assert result.returncode != 0
-    assert "GOOGLE_CLOUD_PROJECT" in result.stderr
+    assert "GCP_PROJECT_ID" in result.stderr
 
 
 def test_refuses_a_project_the_account_cannot_read(repo: Repo) -> None:
@@ -172,7 +176,8 @@ def test_counts_only_what_is_missing(repo: Repo) -> None:
         setup_env(
             apis="run.googleapis.com",
             roles="roles/run.admin\nroles/storage.admin",
-            extra="SETUP_OPERATOR_SA=deployer\nSETUP_STATE_BUCKET=demo-state",
+            operator="deployer",
+            bucket_suffix="state",
         )
     )
     repo.save(
