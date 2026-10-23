@@ -13,11 +13,10 @@ const { locale } = Astro.props;
 const { t } = createTranslator(locale);
 const account = localizePath("/account/", locale);
 const items = [
-  { href: account, label: t("account.menu.profile") },
-  { href: `${account}#zones`, label: t("account.menu.zones") },
-  { href: `${account}#projects`, label: t("account.menu.projects") },
-  { href: `${account}#content`, label: t("account.menu.content"), role: "editor" },
-  { href: `${account}#users`, label: t("account.menu.users"), role: "admin" },
+  { href: account, label: t("account.sections.profile") },
+  { href: `${account}zones/`, label: t("account.sections.zones") },
+  { href: `${account}content/`, label: t("account.sections.content"), role: "editor" },
+  { href: `${account}admin/`, label: t("account.sections.admin"), role: "admin" },
 ];
 const itemClass = "flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm text-ink hover:bg-action-soft";
 ---

@@ -186,7 +186,7 @@ export default function Users({ t, moment, signInPath, me }: Props) {
         </p>
       )}
       {accounts?.length === 0 && <p className="mt-3 text-sm text-ink-muted">{t("account.users.empty")}</p>}
-      <ul className="mt-4 grid divide-y divide-line">
+      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] divide-y divide-line">
         {accounts?.map((account) => (
           <li key={account.id} className="py-3">
             <div className="flex items-center gap-x-4">

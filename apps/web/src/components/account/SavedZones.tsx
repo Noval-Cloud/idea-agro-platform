@@ -36,7 +36,7 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
       setFailed(!(await run(await api())));
     } catch (error) {
       if (error instanceof (await import("@/lib/account")).SignedOut)
-        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + "#zones")}`);
+        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname)}`);
       setFailed(true);
     }
   };
