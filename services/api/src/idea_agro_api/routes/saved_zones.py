@@ -198,7 +198,8 @@ def rename_saved_zone(
 def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Response:
     zone = owned(services, caller.account.id, zone_id)
     # The record goes first: an outline left behind by a failure is unreachable, a record without one is not.
+    # References go last: a project left holding one shows the zone as deleted.
     services.saved_zones.delete(zone.id)
-    services.projects.remove_everywhere(saved_item(zone.id))
     services.geometries.delete_all(zone.id)
+    services.projects.remove_everywhere(saved_item(zone.id))
     return Response(status_code=204)

@@ -176,7 +176,7 @@ class PadronItemIn(BaseModel):
 
     kind: Literal["padron"]
     department: Department
-    padron: int = Field(ge=1, le=99_999_999, description="The parcel's number in its department.")
+    padron: int = Field(ge=0, le=99_999_999, description="The parcel's number in its department.")
 
 
 ProjectItemIn = Annotated[SavedItemIn | DivisionItemIn | PadronItemIn, Field(discriminator="kind")]

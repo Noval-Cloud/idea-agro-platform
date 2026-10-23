@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -29,6 +30,7 @@ from idea_agro_api.services import Services
 from idea_agro_api.zones import Department, Division
 
 router = APIRouter(tags=["Projects"])
+log = logging.getLogger("idea_agro_api")
 
 ProjectId = Annotated[UUID, PathParam(description="The project's id.")]
 ItemId = Annotated[str, PathParam(description="The item's id, as the project lists it.", max_length=80)]
@@ -53,15 +55,20 @@ def item_key(item: SavedItemIn | DivisionItemIn | PadronItemIn) -> str:
             return f"padron:{item.department}:{item.padron}"
 
 
-def item_out(key: str, zones: dict[str, SavedZone]) -> ProjectItem:
+def item_out(key: str, zones: dict[str, SavedZone]) -> ProjectItem | None:
+    """The item a stored key names, or None for a key this version cannot read, which is logged and skipped."""
     kind, _, rest = key.partition(":")
-    if kind == "saved":
-        zone = zones.get(rest)
-        return SavedItem(kind="saved", id=key, zone_id=UUID(rest), zone=saved_zone_out(zone) if zone else None)
-    if kind == "padron":
-        department, _, number = rest.partition(":")
-        return PadronItem(kind="padron", id=key, department=Department(department), padron=int(number))
-    return DivisionItem(kind="division", id=key, division=Division(kind), zone_id=rest)
+    try:
+        if kind == "saved":
+            zone = zones.get(rest)
+            return SavedItem(kind="saved", id=key, zone_id=UUID(rest), zone=saved_zone_out(zone) if zone else None)
+        if kind == "padron":
+            department, _, number = rest.partition(":")
+            return PadronItem(kind="padron", id=key, department=Department(department), padron=int(number))
+        return DivisionItem(kind="division", id=key, division=Division(kind), zone_id=rest)
+    except ValueError:
+        log.warning("Skipped the unreadable project item %r", key)
+        return None
 
 
 def summary(project: Project) -> ProjectSummary:
@@ -82,7 +89,7 @@ def detail(services: Services, project: Project) -> ProjectOut:
         id=project.id,
         name=project.name,
         description=project.description,
-        items=[item_out(key, zones) for key in project.items],
+        items=[item for key in project.items if (item := item_out(key, zones))],
         created_at=project.created_at,
         updated_at=project.updated_at,
     )

@@ -170,7 +170,7 @@ export interface PadronItem {
   department: Department;
   /**
      * The parcel's number in its department.
-     * @minimum 1
+     * @minimum 0
      * @maximum 99999999
      */
   padron: number;
@@ -186,7 +186,7 @@ export interface PadronItemIn {
   department: Department;
   /**
      * The parcel's number in its department.
-     * @minimum 1
+     * @minimum 0
      * @maximum 99999999
      */
   padron: number;

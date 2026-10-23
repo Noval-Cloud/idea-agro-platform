@@ -1791,7 +1791,7 @@
           "padron": {
             "type": "integer",
             "maximum": 99999999.0,
-            "minimum": 1.0,
+            "minimum": 0.0,
             "title": "Padron",
             "description": "The parcel's number in its department."
           },
@@ -1823,7 +1823,7 @@
           "padron": {
             "type": "integer",
             "maximum": 99999999.0,
-            "minimum": 1.0,
+            "minimum": 0.0,
             "title": "Padron",
             "description": "The parcel's number in its department."
           }

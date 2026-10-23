@@ -1,6 +1,7 @@
 """Projects: a person's groups of zones. Items reference zones by key and never copy them."""
 
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Protocol, cast
@@ -164,7 +165,9 @@ class FirestoreProjects:
     def remove_everywhere(self, item: str) -> None:
         query = self._projects.where(filter=firestore.FieldFilter("items", "array_contains", item))  # pyright: ignore[reportUnknownMemberType]
         for document in query.stream():  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            document.reference.update({"items": firestore.ArrayRemove([item])})  # pyright: ignore[reportUnknownMemberType]
+            # A project deleted meanwhile has nothing left to clean.
+            with suppress(NotFound):
+                document.reference.update({"items": firestore.ArrayRemove([item])})  # pyright: ignore[reportUnknownMemberType]
 
     def delete(self, id: str) -> None:
         self._projects.document(id).delete()  # pyright: ignore[reportUnknownMemberType]

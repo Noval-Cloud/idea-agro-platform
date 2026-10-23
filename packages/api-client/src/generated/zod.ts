@@ -407,6 +407,7 @@ export const createProjectResponseItemsItemOneZoneOneBboxMin = 4;
 export const createProjectResponseItemsItemOneZoneOneBboxMax = 4;
 
 export const createProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const createProjectResponseItemsItemThreePadronMin = 0;
 export const createProjectResponseItemsItemThreePadronMax = 99999999;
 
 
@@ -438,7 +439,7 @@ export const CreateProjectResponse = zod.object({
 }),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
   "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
-  "padron": zod.int().min(1).max(createProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "padron": zod.int().min(createProjectResponseItemsItemThreePadronMin).max(createProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -457,6 +458,7 @@ export const getProjectResponseItemsItemOneZoneOneBboxMin = 4;
 export const getProjectResponseItemsItemOneZoneOneBboxMax = 4;
 
 export const getProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const getProjectResponseItemsItemThreePadronMin = 0;
 export const getProjectResponseItemsItemThreePadronMax = 99999999;
 
 
@@ -488,7 +490,7 @@ export const GetProjectResponse = zod.object({
 }),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
   "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
-  "padron": zod.int().min(1).max(getProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "padron": zod.int().min(getProjectResponseItemsItemThreePadronMin).max(getProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -518,6 +520,7 @@ export const changeProjectResponseItemsItemOneZoneOneBboxMin = 4;
 export const changeProjectResponseItemsItemOneZoneOneBboxMax = 4;
 
 export const changeProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const changeProjectResponseItemsItemThreePadronMin = 0;
 export const changeProjectResponseItemsItemThreePadronMax = 99999999;
 
 
@@ -549,7 +552,7 @@ export const ChangeProjectResponse = zod.object({
 }),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
   "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
-  "padron": zod.int().min(1).max(changeProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "padron": zod.int().min(changeProjectResponseItemsItemThreePadronMin).max(changeProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
   "created_at": zod.iso.datetime({"offset":true}),
@@ -577,6 +580,7 @@ export const AddProjectItemParams = zod.object({
 })
 
 export const addProjectItemBodyTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const addProjectItemBodyThreePadronMin = 0;
 export const addProjectItemBodyThreePadronMax = 99999999;
 
 
@@ -591,13 +595,14 @@ export const AddProjectItemBody = zod.union([zod.object({
 }).describe('A zone of a predefined division.'),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
   "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
-  "padron": zod.int().min(1).max(addProjectItemBodyThreePadronMax).describe('The parcel\'s number in its department.')
+  "padron": zod.int().min(addProjectItemBodyThreePadronMin).max(addProjectItemBodyThreePadronMax).describe('The parcel\'s number in its department.')
 }).describe('A cadastral parcel (padrón) of a department.')])
 
 export const addProjectItemResponseItemsItemOneZoneOneBboxMin = 4;
 export const addProjectItemResponseItemsItemOneZoneOneBboxMax = 4;
 
 export const addProjectItemResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const addProjectItemResponseItemsItemThreePadronMin = 0;
 export const addProjectItemResponseItemsItemThreePadronMax = 99999999;
 
 
@@ -629,7 +634,7 @@ export const AddProjectItemResponse = zod.object({
 }),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
   "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
-  "padron": zod.int().min(1).max(addProjectItemResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "padron": zod.int().min(addProjectItemResponseItemsItemThreePadronMin).max(addProjectItemResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
   "created_at": zod.iso.datetime({"offset":true}),

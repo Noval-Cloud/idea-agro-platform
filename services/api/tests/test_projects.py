@@ -1,13 +1,14 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from auth_tokens import bearer, make_token
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
-from idea_agro_api.services import Limits, services_for_tests
+from idea_agro_api.services import Limits, Services, services_for_tests
 from idea_agro_api.zones import LocalFiles
 
 ANA = bearer(make_token("ana"))
@@ -144,3 +145,20 @@ def test_limits_are_kept(tmp_path: Path, verifier: OidcVerifier) -> None:
 
 def test_a_name_of_spaces_is_refused(client: TestClient) -> None:
     assert client.post("/v1/projects", json={"name": "   "}, headers=ANA).status_code == 422
+
+
+def test_parcel_zero_is_a_parcel(client: TestClient) -> None:
+    id = project(client)["id"]
+    assert add(client, id, PADRON | {"padron": 0}).status_code == 200
+
+
+def test_an_unreadable_item_does_not_break_the_project(client: TestClient) -> None:
+    id = project(client)["id"]
+    add(client, id, SECCIONAL)
+    services = cast(Services, cast(FastAPI, client.app).state.services)
+    services.projects.update(id, items=("cuencas-9:1", "seccionales:1406"))
+
+    response = client.get(f"/v1/projects/{id}", headers=ANA)
+
+    assert response.status_code == 200
+    assert [i["id"] for i in response.json()["items"]] == ["seccionales:1406"]
