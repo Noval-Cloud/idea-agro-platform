@@ -30,6 +30,10 @@ class Account:
     sessions_valid_after: datetime | None = None
     disabled: bool = False
 
+    @property
+    def display_name(self) -> str:
+        return self.name or self.email or ""
+
     def accepts(self, identity: Identity) -> bool:
         """Whether a token of this account still counts: not disabled, and from a sign-in after the last log-out.
 

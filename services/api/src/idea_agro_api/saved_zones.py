@@ -1,7 +1,7 @@
 """Saved zones: the outlines a person keeps in their library, apart from any project."""
 
 import uuid
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol, cast
@@ -13,6 +13,24 @@ from google.cloud import firestore  # pyright: ignore[reportMissingTypeStubs]
 class Source(StrEnum):
     DRAWN = "drawn"
     UPLOADED = "uploaded"
+
+
+@dataclass(frozen=True)
+class OutlineVersion:
+    """One version of a zone's outline: its file is `zones/<id>/v<version>.geojson`."""
+
+    version: int
+    at: datetime
+    by: str
+    # The author's name at the time.
+    by_name: str
+    area_ha: float
+    # The version this one brought back, when it was a restore.
+    restored_from: int | None = None
+
+
+class OutlineChanged(Exception):
+    """The outline moved to another version while a change was on its way."""
 
 
 @dataclass(frozen=True)
@@ -29,6 +47,8 @@ class SavedZone:
     size: int
     created_at: datetime
     updated_at: datetime
+    # Every version of the outline, oldest first.
+    history: tuple[OutlineVersion, ...] = field(default_factory=tuple[OutlineVersion, ...])
 
 
 @dataclass(frozen=True)
@@ -62,6 +82,10 @@ class SavedZoneStore(Protocol):
         """Changes only the fields given; None when the zone no longer exists."""
         ...
 
+    def replace_outline(self, id: str, current: int, version: OutlineVersion, **fields: Any) -> SavedZone | None:
+        """Moves the zone from version `current` to `version`, or raises OutlineChanged; None without the zone."""
+        ...
+
     def delete(self, id: str) -> None: ...
 
 
@@ -90,6 +114,14 @@ class MemorySavedZones:
             return None
         self._zones[id] = replace(self._zones[id], **fields)
         return self._zones[id]
+
+    def replace_outline(self, id: str, current: int, version: OutlineVersion, **fields: Any) -> SavedZone | None:
+        zone = self._zones.get(id)
+        if zone is None:
+            return None
+        if zone.version != current:
+            raise OutlineChanged
+        return self.update(id, version=version.version, history=(*zone.history, version), **fields)
 
     def delete(self, id: str) -> None:
         self._zones.pop(id, None)
@@ -142,8 +174,36 @@ class FirestoreSavedZones:
             return None
         return self.get(id)
 
+    def replace_outline(self, id: str, current: int, version: OutlineVersion, **fields: Any) -> SavedZone | None:
+        reference: Any = self._zones.document(id)  # pyright: ignore[reportUnknownMemberType]
+
+        @firestore.transactional  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
+        def run(transaction: Any) -> bool:
+            snapshot = reference.get(transaction=transaction)
+            if not snapshot.exists:
+                return False
+            if snapshot.get("version") != current:
+                raise OutlineChanged
+            values = fields | {"version": version.version, "history": firestore.ArrayUnion([_version(version)])}
+            transaction.update(reference, values)
+            return True
+
+        found = run(self._client.transaction())  # pyright: ignore[reportUnknownMemberType]
+        return self.get(id) if found else None
+
     def delete(self, id: str) -> None:
         self._zones.document(id).delete()  # pyright: ignore[reportUnknownMemberType]
+
+
+def _version(version: OutlineVersion) -> dict[str, Any]:
+    return {
+        "version": version.version,
+        "at": version.at,
+        "by": version.by,
+        "by_name": version.by_name,
+        "area_ha": version.area_ha,
+        "restored_from": version.restored_from,
+    }
 
 
 def _to_document(zone: SavedZone) -> dict[str, Any]:
@@ -156,6 +216,7 @@ def _to_document(zone: SavedZone) -> dict[str, Any]:
         "bbox": list(zone.bbox),
         "department": zone.department,
         "size": zone.size,
+        "history": [_version(v) for v in zone.history],
         "created_at": zone.created_at,
         "updated_at": zone.updated_at,
     }
@@ -173,6 +234,17 @@ def _from_document(id: str, data: dict[str, Any]) -> SavedZone:
         bbox=(west, south, east, north),
         department=data.get("department"),
         size=data.get("size", 0),
+        history=tuple(
+            OutlineVersion(
+                version=v["version"],
+                at=v["at"],
+                by=v["by"],
+                by_name=v["by_name"],
+                area_ha=v["area_ha"],
+                restored_from=v.get("restored_from"),
+            )
+            for v in cast(list[dict[str, Any]], data.get("history", []))
+        ),
         created_at=data["created_at"],
         updated_at=data["updated_at"],
     )

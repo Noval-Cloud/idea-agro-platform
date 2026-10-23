@@ -5,6 +5,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
+from idea_agro_api.activity import ActivityStore, MemoryActivity, activity_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
@@ -27,6 +28,7 @@ class Limits:
     import_bytes: int = 5_000_000
     projects_per_account: int = 50
     zones_per_project: int = 500
+    members_per_project: int = 20
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -41,6 +43,7 @@ class Limits:
             import_bytes=int(env.get("IMPORT_MAX_BYTES", "5000000")),
             projects_per_account=int(env.get("PROJECTS_PER_ACCOUNT", "50")),
             zones_per_project=int(env.get("ZONES_PER_PROJECT", "500")),
+            members_per_project=int(env.get("MEMBERS_PER_PROJECT", "20")),
         )
 
     def body_bytes(self, path: str) -> int:
@@ -54,6 +57,7 @@ class Services:
     accounts: AccountStore
     saved_zones: SavedZoneStore
     projects: ProjectStore
+    activity: ActivityStore
     geometries: GeometryStore
     departments: Departments
     # None when sign-in is not configured: private routes then answer 503.
@@ -82,6 +86,7 @@ class Services:
             accounts=accounts_from(records),
             saved_zones=saved_zones_from(records),
             projects=projects_from(records),
+            activity=activity_from(records),
             geometries=geometries_from(outlines),
             departments=Departments(files),
             verifier=verifier,
@@ -104,6 +109,7 @@ def services_for_tests(
         accounts=MemoryAccounts(),
         saved_zones=MemorySavedZones(),
         projects=MemoryProjects(),
+        activity=MemoryActivity(),
         geometries=MemoryGeometries(),
         departments=Departments(found),
         verifier=verifier,

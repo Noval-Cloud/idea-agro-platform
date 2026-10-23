@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.3.0
+ * OpenAPI spec version: 1.4.0
  */
 import * as zod from 'zod';
 
@@ -375,6 +375,107 @@ export const GetSavedZoneGeometryResponse = zod.union([zod.object({
 
 
 /**
+ * Keeps the outline as a new version: every earlier version stays, and can be restored.
+ * @summary Change a saved zone's outline
+ */
+export const ChangeSavedZoneGeometryParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMin = 2;
+export const changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMax = 3;
+
+export const changeSavedZoneGeometryBodyGeometryOneCoordinatesItemMin = 4;
+
+
+export const changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMin = 2;
+export const changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const ChangeSavedZoneGeometryBody = zod.object({
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMin).max(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMin).max(changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+}).describe('A zone\'s new outline.')
+
+export const changeSavedZoneGeometryResponseBboxMin = 4;
+export const changeSavedZoneGeometryResponseBboxMax = 4;
+
+
+
+export const ChangeSavedZoneGeometryResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(changeSavedZoneGeometryResponseBboxMin).max(changeSavedZoneGeometryResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Newest first. Members of its projects may have made them; only you can restore one.
+ * @summary The versions of a saved zone's outline
+ */
+export const ListSavedZoneVersionsParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const ListSavedZoneVersionsResponseItem = zod.object({
+  "version": zod.int(),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "by_name": zod.string().describe('Who made it, by their name at the time.'),
+  "area_ha": zod.number(),
+  "restored_from": zod.union([zod.int(),zod.null()]).describe('The version it brought back, when it was a restore.'),
+  "current": zod.boolean()
+}).describe('One version of a zone\'s outline.')
+export const ListSavedZoneVersionsResponse = zod.array(ListSavedZoneVersionsResponseItem)
+
+
+/**
+ * Brings the version back as a new one, so the history keeps every step.
+ * @summary Restore an earlier outline
+ */
+
+
+
+export const RestoreSavedZoneVersionParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.'),
+  "version": zod.int().min(1).describe('The version to bring back.')
+})
+
+export const restoreSavedZoneVersionResponseBboxMin = 4;
+export const restoreSavedZoneVersionResponseBboxMax = 4;
+
+
+
+export const RestoreSavedZoneVersionResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(restoreSavedZoneVersionResponseBboxMin).max(restoreSavedZoneVersionResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Yours and those shared with you. Opening them accepts the invitations to your verified email.
  * @summary Your projects
  */
 export const ListProjectsResponseItem = zod.object({
@@ -382,9 +483,12 @@ export const ListProjectsResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "zone_count": zod.int().describe('How many zones the project holds.'),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
-}).describe('One of your projects, without its zones.')
+}).describe('One of your projects, or one shared with you, without its zones.')
 export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
 
 
@@ -442,12 +546,22 @@ export const CreateProjectResponse = zod.object({
   "padron": zod.int().min(createProjectResponseItemsItemThreePadronMin).max(createProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A project and its zones, in the order they were added.')
 
 
 /**
+ * Opening a project you were invited to accepts the invitation.
  * @summary One of your projects
  */
 export const GetProjectParams = zod.object({
@@ -493,12 +607,22 @@ export const GetProjectResponse = zod.object({
   "padron": zod.int().min(getProjectResponseItemsItemThreePadronMin).max(getProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A project and its zones, in the order they were added.')
 
 
 /**
+ * For the owner and collaborators.
  * @summary Rename or describe a project
  */
 export const ChangeProjectParams = zod.object({
@@ -555,13 +679,22 @@ export const ChangeProjectResponse = zod.object({
   "padron": zod.int().min(changeProjectResponseItemsItemThreePadronMin).max(changeProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A project and its zones, in the order they were added.')
 
 
 /**
- * Deletes the project only: its zones stay where they are.
+ * For the owner. Deletes the project and its activity only: its zones stay where they are.
  * @summary Delete a project
  */
 export const DeleteProjectParams = zod.object({
@@ -572,7 +705,7 @@ export const DeleteProjectResponse = zod.void()
 
 
 /**
- * Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied.
+ * For the owner and collaborators. Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied; members can read it, and collaborators can change its outline.
  * @summary Add a zone to a project
  */
 export const AddProjectItemParams = zod.object({
@@ -637,13 +770,22 @@ export const AddProjectItemResponse = zod.object({
   "padron": zod.int().min(addProjectItemResponseItemsItemThreePadronMin).max(addProjectItemResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 })])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A project and its zones, in the order they were added.')
 
 
 /**
- * Removes the reference only: the zone itself stays.
+ * For the owner and collaborators. Removes the reference only: the zone itself stays.
  * @summary Remove a zone from a project
  */
 export const removeProjectItemPathItemIdMax = 80;
@@ -656,3 +798,220 @@ export const RemoveProjectItemParams = zod.object({
 })
 
 export const RemoveProjectItemResponse = zod.void()
+
+
+/**
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * @summary Share a project, or change a member's role
+ */
+export const ShareProjectParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const shareProjectBodyEmailMax = 254;
+
+
+export const shareProjectBodyEmailRegExp = new RegExp('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+
+
+export const ShareProjectBody = zod.object({
+  "email": zod.string().max(shareProjectBodyEmailMax).regex(shareProjectBodyEmailRegExp).describe('Their email, as they sign in with it.'),
+  "role": zod.enum(['collaborator', 'viewer']).describe('`collaborator` edits the project\'s zones; `viewer` only reads.')
+}).describe('Someone to share the project with, or a member\'s new role.')
+
+export const shareProjectResponseItemsItemOneZoneOneBboxMin = 4;
+export const shareProjectResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const shareProjectResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const shareProjectResponseItemsItemThreePadronMin = 0;
+export const shareProjectResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const ShareProjectResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(shareProjectResponseItemsItemOneZoneOneBboxMin).max(shareProjectResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(shareProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(shareProjectResponseItemsItemThreePadronMin).max(shareProjectResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * The owner removes anyone; a member removes only themself. The zones of the member's library leave the project with them.
+ * @summary Remove a member, or leave a project
+ */
+export const removeProjectMemberPathEmailMax = 254;
+
+
+
+export const RemoveProjectMemberParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "email": zod.string().max(removeProjectMemberPathEmailMax).describe('The member\'s email.')
+})
+
+export const RemoveProjectMemberResponse = zod.void()
+
+
+/**
+ * The latest changes, newest first.
+ * @summary What happened in a project
+ */
+export const GetProjectActivityParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const GetProjectActivityResponseItem = zod.object({
+  "at": zod.iso.datetime({"offset":true}),
+  "actor_name": zod.string().describe('Who made the change, by their name at the time.'),
+  "action": zod.enum(['created', 'renamed', 'described', 'zone_added', 'zone_removed', 'outline_changed', 'outline_restored', 'member_invited', 'member_joined', 'member_role_changed', 'member_removed', 'member_left']),
+  "subject": zod.string().describe('The item\'s id or the member\'s email the change was about, if any.'),
+  "detail": zod.string().describe('A zone\'s name or a role, when it helps to read the change.')
+}).describe('One change in a project.')
+export const GetProjectActivityResponse = zod.array(GetProjectActivityResponseItem)
+
+
+/**
+ * For every member, whoever's library the zone is in.
+ * @summary A saved zone of a project
+ */
+export const GetProjectZoneParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.')
+})
+
+export const getProjectZoneResponseBboxMin = 4;
+export const getProjectZoneResponseBboxMax = 4;
+
+
+
+export const GetProjectZoneResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(getProjectZoneResponseBboxMin).max(getProjectZoneResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * @summary The outline of a saved zone of a project
+ */
+export const GetProjectZoneGeometryParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.')
+})
+
+export const getProjectZoneGeometryResponseOneCoordinatesItemItemMin = 2;
+export const getProjectZoneGeometryResponseOneCoordinatesItemItemMax = 3;
+
+export const getProjectZoneGeometryResponseOneCoordinatesItemMin = 4;
+
+
+export const getProjectZoneGeometryResponseTwoCoordinatesItemItemItemMin = 2;
+export const getProjectZoneGeometryResponseTwoCoordinatesItemItemItemMax = 3;
+
+export const getProjectZoneGeometryResponseTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const GetProjectZoneGeometryResponse = zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(getProjectZoneGeometryResponseOneCoordinatesItemItemMin).max(getProjectZoneGeometryResponseOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(getProjectZoneGeometryResponseOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(getProjectZoneGeometryResponseTwoCoordinatesItemItemItemMin).max(getProjectZoneGeometryResponseTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(getProjectZoneGeometryResponseTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+
+
+/**
+ * For the owner and collaborators. Keeps the outline as a new version: the zone's owner sees every version and can restore any of them.
+ * @summary Change the outline of a saved zone of a project
+ */
+export const ChangeProjectZoneGeometryParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.')
+})
+
+export const changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMin = 2;
+export const changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMax = 3;
+
+export const changeProjectZoneGeometryBodyGeometryOneCoordinatesItemMin = 4;
+
+
+export const changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMin = 2;
+export const changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const ChangeProjectZoneGeometryBody = zod.object({
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMin).max(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMin).max(changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+}).describe('A zone\'s new outline.')
+
+export const changeProjectZoneGeometryResponseBboxMin = 4;
+export const changeProjectZoneGeometryResponseBboxMax = 4;
+
+
+
+export const ChangeProjectZoneGeometryResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(changeProjectZoneGeometryResponseBboxMin).max(changeProjectZoneGeometryResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')

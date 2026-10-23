@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.3.0
+ * OpenAPI spec version: 1.4.0
  */
 import {
   useMutation,
@@ -61,6 +61,38 @@ export const AccountRole = {
   editor: 'editor',
   admin: 'admin',
 } as const;
+
+export type Action = typeof Action[keyof typeof Action];
+
+
+export const Action = {
+  created: 'created',
+  renamed: 'renamed',
+  described: 'described',
+  zone_added: 'zone_added',
+  zone_removed: 'zone_removed',
+  outline_changed: 'outline_changed',
+  outline_restored: 'outline_restored',
+  member_invited: 'member_invited',
+  member_joined: 'member_joined',
+  member_role_changed: 'member_role_changed',
+  member_removed: 'member_removed',
+  member_left: 'member_left',
+} as const;
+
+/**
+ * One change in a project.
+ */
+export interface ActivityOut {
+  at: string;
+  /** Who made the change, by their name at the time. */
+  actor_name: string;
+  action: Action;
+  /** The item's id or the member's email the change was about, if any. */
+  subject: string;
+  /** A zone's name or a role, when it helps to read the change. */
+  detail: string;
+}
 
 /**
  * A department of Uruguay, as cadastral parcels are filed by.
@@ -153,6 +185,37 @@ export interface Me {
   created_at: string;
 }
 
+export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
+
+
+export const MemberRole = {
+  collaborator: 'collaborator',
+  viewer: 'viewer',
+} as const;
+
+/**
+ * Someone to share the project with, or a member's new role.
+ */
+export interface MemberIn {
+  /**
+     * Their email, as they sign in with it.
+     * @maxLength 254
+     * @pattern ^[^@\s]+@[^@\s]+\.[^@\s]+$
+     */
+  email: string;
+  /** `collaborator` edits the project's zones; `viewer` only reads. */
+  role: MemberRole;
+}
+
+export interface MemberOut {
+  email: string;
+  /** Their name, once they joined. */
+  name: string | null;
+  role: MemberRole;
+  /** Invited, and not yet joined: they join when they open their projects. */
+  pending: boolean;
+}
+
 export interface MultiPolygon {
   type: 'MultiPolygon';
   /**
@@ -163,6 +226,40 @@ export interface MultiPolygon {
      * @items.items.items.maxItems 3
      */
   coordinates: number[][][][];
+}
+
+export interface Polygon {
+  type: 'Polygon';
+  /**
+     * The outer ring, then any holes.
+     * @minItems 1
+     * @items.minItems 4
+     * @items.items.minItems 2
+     * @items.items.maxItems 3
+     */
+  coordinates: number[][][];
+}
+
+/**
+ * A zone's new outline.
+ */
+export interface OutlineChange {
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+}
+
+/**
+ * One version of a zone's outline.
+ */
+export interface OutlineVersionOut {
+  version: number;
+  created_at: string;
+  /** Who made it, by their name at the time. */
+  by_name: string;
+  area_ha: number;
+  /** The version it brought back, when it was a restore. */
+  restored_from: number | null;
+  current: boolean;
 }
 
 export interface PadronItem {
@@ -190,18 +287,6 @@ export interface PadronItemIn {
      * @maximum 99999999
      */
   padron: number;
-}
-
-export interface Polygon {
-  type: 'Polygon';
-  /**
-     * The outer ring, then any holes.
-     * @minItems 1
-     * @items.minItems 4
-     * @items.items.minItems 2
-     * @items.items.maxItems 3
-     */
-  coordinates: number[][][];
 }
 
 /**
@@ -253,6 +338,18 @@ export interface ProjectIn {
      */
   description?: string;
 }
+
+/**
+ * Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).
+ */
+export type ProjectOutRole = typeof ProjectOutRole[keyof typeof ProjectOutRole];
+
+
+export const ProjectOutRole = {
+  owner: 'owner',
+  collaborator: 'collaborator',
+  viewer: 'viewer',
+} as const;
 
 /**
  * Whether it was drawn on the map or uploaded.
@@ -310,12 +407,32 @@ export interface ProjectOut {
   name: string;
   description: string;
   items: (SavedItem | DivisionItem | PadronItem)[];
+  /** Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads). */
+  role: ProjectOutRole;
+  /** The owner's name. */
+  owner_name: string | null;
+  /** Everyone the owner shared the project with. */
+  members: MemberOut[];
+  /** Whether someone else can change the outline of the zones you add: worth a warning. */
+  others_can_edit: boolean;
   created_at: string;
   updated_at: string;
 }
 
 /**
- * One of your projects, without its zones.
+ * Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).
+ */
+export type ProjectSummaryRole = typeof ProjectSummaryRole[keyof typeof ProjectSummaryRole];
+
+
+export const ProjectSummaryRole = {
+  owner: 'owner',
+  collaborator: 'collaborator',
+  viewer: 'viewer',
+} as const;
+
+/**
+ * One of your projects, or one shared with you, without its zones.
  */
 export interface ProjectSummary {
   /** The project's id. */
@@ -324,6 +441,12 @@ export interface ProjectSummary {
   description: string;
   /** How many zones the project holds. */
   zone_count: number;
+  /** Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads). */
+  role: ProjectSummaryRole;
+  /** The owner's name. */
+  owner_name: string | null;
+  /** Whether someone else can change the outline of the zones you add: worth a warning. */
+  others_can_edit: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -1988,6 +2111,407 @@ export function useGetSavedZoneGeometry<TData = Awaited<ReturnType<typeof getSav
 
 
 
+export type changeSavedZoneGeometryResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type changeSavedZoneGeometryResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type changeSavedZoneGeometryResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type changeSavedZoneGeometryResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type changeSavedZoneGeometryResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type changeSavedZoneGeometryResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type changeSavedZoneGeometryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type changeSavedZoneGeometryResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type changeSavedZoneGeometryResponseSuccess = (changeSavedZoneGeometryResponse200) & {
+  headers: Headers;
+};
+export type changeSavedZoneGeometryResponseError = (changeSavedZoneGeometryResponse401 | changeSavedZoneGeometryResponse403 | changeSavedZoneGeometryResponse404 | changeSavedZoneGeometryResponse409 | changeSavedZoneGeometryResponse413 | changeSavedZoneGeometryResponse422 | changeSavedZoneGeometryResponse429) & {
+  headers: Headers;
+};
+
+export type changeSavedZoneGeometryResponse = (changeSavedZoneGeometryResponseSuccess | changeSavedZoneGeometryResponseError)
+
+export const getChangeSavedZoneGeometryUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/geometry`
+}
+
+/**
+ * Keeps the outline as a new version: every earlier version stays, and can be restored.
+ * @summary Change a saved zone's outline
+ */
+export const changeSavedZoneGeometry = async (zoneId: string,
+    outlineChange: OutlineChange, options?: Parameters<typeof apiFetch>[1]): Promise<changeSavedZoneGeometryResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<changeSavedZoneGeometryResponse>(getChangeSavedZoneGeometryUrl(zoneId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(outlineChange)
+  }
+);}
+
+
+
+
+
+export const getChangeSavedZoneGeometryMutationKey = () => ['changeSavedZoneGeometry'] as const;
+
+export const getChangeSavedZoneGeometryMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSavedZoneGeometry>>, TError,ChangeSavedZoneGeometryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSavedZoneGeometry>>, TError,ChangeSavedZoneGeometryMutationVariables, TContext> => {
+
+const mutationKey = getChangeSavedZoneGeometryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSavedZoneGeometry>>, ChangeSavedZoneGeometryMutationVariables> = (props) => {
+          const {zoneId,data} = props ?? {};
+
+          return  changeSavedZoneGeometry(zoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSavedZoneGeometryMutationResult = NonNullable<Awaited<ReturnType<typeof changeSavedZoneGeometry>>>
+    export type ChangeSavedZoneGeometryMutationBody = OutlineChange
+    export type ChangeSavedZoneGeometryMutationError = Problem
+    export type ChangeSavedZoneGeometryMutationVariables = {zoneId: string;data: OutlineChange}
+
+    /**
+ * @summary Change a saved zone's outline
+ */
+export const useChangeSavedZoneGeometry = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSavedZoneGeometry>>, TError,ChangeSavedZoneGeometryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSavedZoneGeometry>>,
+        TError,
+        ChangeSavedZoneGeometryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSavedZoneGeometryMutationOptions(options), queryClient);
+    }
+
+export type listSavedZoneVersionsResponse200 = {
+  data: OutlineVersionOut[]
+  status: 200
+}
+
+export type listSavedZoneVersionsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listSavedZoneVersionsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listSavedZoneVersionsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type listSavedZoneVersionsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type listSavedZoneVersionsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listSavedZoneVersionsResponseSuccess = (listSavedZoneVersionsResponse200) & {
+  headers: Headers;
+};
+export type listSavedZoneVersionsResponseError = (listSavedZoneVersionsResponse401 | listSavedZoneVersionsResponse403 | listSavedZoneVersionsResponse404 | listSavedZoneVersionsResponse422 | listSavedZoneVersionsResponse429) & {
+  headers: Headers;
+};
+
+export type listSavedZoneVersionsResponse = (listSavedZoneVersionsResponseSuccess | listSavedZoneVersionsResponseError)
+
+export const getListSavedZoneVersionsUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/versions`
+}
+
+/**
+ * Newest first. Members of its projects may have made them; only you can restore one.
+ * @summary The versions of a saved zone's outline
+ */
+export const listSavedZoneVersions = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listSavedZoneVersionsResponse> => {
+
+  return apiFetch<listSavedZoneVersionsResponse>(getListSavedZoneVersionsUrl(zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSavedZoneVersionsQueryKey = (zoneId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}/versions`
+    ] as const;
+    }
+
+
+export const getListSavedZoneVersionsQueryOptions = <TData = Awaited<ReturnType<typeof listSavedZoneVersions>>, TError = Problem>(zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSavedZoneVersionsQueryKey(zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSavedZoneVersions>>> = ({ signal }) => listSavedZoneVersions(zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSavedZoneVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedZoneVersions>>>
+export type ListSavedZoneVersionsQueryError = Problem
+
+
+export function useListSavedZoneVersions<TData = Awaited<ReturnType<typeof listSavedZoneVersions>>, TError = Problem>(
+ zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZoneVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZoneVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZoneVersions<TData = Awaited<ReturnType<typeof listSavedZoneVersions>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZoneVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZoneVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZoneVersions<TData = Awaited<ReturnType<typeof listSavedZoneVersions>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The versions of a saved zone's outline
+ */
+
+export function useListSavedZoneVersions<TData = Awaited<ReturnType<typeof listSavedZoneVersions>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSavedZoneVersionsQueryOptions(zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type restoreSavedZoneVersionResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type restoreSavedZoneVersionResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type restoreSavedZoneVersionResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type restoreSavedZoneVersionResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type restoreSavedZoneVersionResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type restoreSavedZoneVersionResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type restoreSavedZoneVersionResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type restoreSavedZoneVersionResponseSuccess = (restoreSavedZoneVersionResponse200) & {
+  headers: Headers;
+};
+export type restoreSavedZoneVersionResponseError = (restoreSavedZoneVersionResponse401 | restoreSavedZoneVersionResponse403 | restoreSavedZoneVersionResponse404 | restoreSavedZoneVersionResponse409 | restoreSavedZoneVersionResponse422 | restoreSavedZoneVersionResponse429) & {
+  headers: Headers;
+};
+
+export type restoreSavedZoneVersionResponse = (restoreSavedZoneVersionResponseSuccess | restoreSavedZoneVersionResponseError)
+
+export const getRestoreSavedZoneVersionUrl = (zoneId: string,
+    version: number,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/versions/${version}/restore`
+}
+
+/**
+ * Brings the version back as a new one, so the history keeps every step.
+ * @summary Restore an earlier outline
+ */
+export const restoreSavedZoneVersion = async (zoneId: string,
+    version: number, options?: Parameters<typeof apiFetch>[1]): Promise<restoreSavedZoneVersionResponse> => {
+
+  return apiFetch<restoreSavedZoneVersionResponse>(getRestoreSavedZoneVersionUrl(zoneId,version),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestoreSavedZoneVersionMutationKey = () => ['restoreSavedZoneVersion'] as const;
+
+export const getRestoreSavedZoneVersionMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreSavedZoneVersion>>, TError,RestoreSavedZoneVersionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreSavedZoneVersion>>, TError,RestoreSavedZoneVersionMutationVariables, TContext> => {
+
+const mutationKey = getRestoreSavedZoneVersionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreSavedZoneVersion>>, RestoreSavedZoneVersionMutationVariables> = (props) => {
+          const {zoneId,version} = props ?? {};
+
+          return  restoreSavedZoneVersion(zoneId,version,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreSavedZoneVersionMutationResult = NonNullable<Awaited<ReturnType<typeof restoreSavedZoneVersion>>>
+
+    export type RestoreSavedZoneVersionMutationError = Problem
+    export type RestoreSavedZoneVersionMutationVariables = {zoneId: string;version: number}
+
+    /**
+ * @summary Restore an earlier outline
+ */
+export const useRestoreSavedZoneVersion = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreSavedZoneVersion>>, TError,RestoreSavedZoneVersionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restoreSavedZoneVersion>>,
+        TError,
+        RestoreSavedZoneVersionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestoreSavedZoneVersionMutationOptions(options), queryClient);
+    }
+
 export type listProjectsResponse200 = {
   data: ProjectSummary[]
   status: 200
@@ -2026,6 +2550,7 @@ export const getListProjectsUrl = () => {
 }
 
 /**
+ * Yours and those shared with you. Opening them accepts the invitations to your verified email.
  * @summary Your projects
  */
 export const listProjects = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listProjectsResponse> => {
@@ -2293,6 +2818,7 @@ export const getGetProjectUrl = (projectId: string,) => {
 }
 
 /**
+ * Opening a project you were invited to accepts the invitation.
  * @summary One of your projects
  */
 export const getProject = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectResponse> => {
@@ -2433,6 +2959,7 @@ export const getChangeProjectUrl = (projectId: string,) => {
 }
 
 /**
+ * For the owner and collaborators.
  * @summary Rename or describe a project
  */
 export const changeProject = async (projectId: string,
@@ -2561,7 +3088,7 @@ export const getDeleteProjectUrl = (projectId: string,) => {
 }
 
 /**
- * Deletes the project only: its zones stay where they are.
+ * For the owner. Deletes the project and its activity only: its zones stay where they are.
  * @summary Delete a project
  */
 export const deleteProject = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteProjectResponse> => {
@@ -2680,7 +3207,7 @@ export const getAddProjectItemUrl = (projectId: string,) => {
 }
 
 /**
- * Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied.
+ * For the owner and collaborators. Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied; members can read it, and collaborators can change its outline.
  * @summary Add a zone to a project
  */
 export const addProjectItem = async (projectId: string,
@@ -2810,7 +3337,7 @@ export const getRemoveProjectItemUrl = (projectId: string,
 }
 
 /**
- * Removes the reference only: the zone itself stays.
+ * For the owner and collaborators. Removes the reference only: the zone itself stays.
  * @summary Remove a zone from a project
  */
 export const removeProjectItem = async (projectId: string,
@@ -2875,4 +3402,833 @@ export const useRemoveProjectItem = <TError = Problem,
         TContext
       > => {
       return useMutation(getRemoveProjectItemMutationOptions(options), queryClient);
+    }
+
+export type shareProjectResponse200 = {
+  data: ProjectOut
+  status: 200
+}
+
+export type shareProjectResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type shareProjectResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type shareProjectResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type shareProjectResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type shareProjectResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type shareProjectResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type shareProjectResponseSuccess = (shareProjectResponse200) & {
+  headers: Headers;
+};
+export type shareProjectResponseError = (shareProjectResponse401 | shareProjectResponse403 | shareProjectResponse404 | shareProjectResponse409 | shareProjectResponse422 | shareProjectResponse429) & {
+  headers: Headers;
+};
+
+export type shareProjectResponse = (shareProjectResponseSuccess | shareProjectResponseError)
+
+export const getShareProjectUrl = (projectId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/members`
+}
+
+/**
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * @summary Share a project, or change a member's role
+ */
+export const shareProject = async (projectId: string,
+    memberIn: MemberIn, options?: Parameters<typeof apiFetch>[1]): Promise<shareProjectResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shareProjectResponse>(getShareProjectUrl(projectId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(memberIn)
+  }
+);}
+
+
+
+
+
+export const getShareProjectMutationKey = () => ['shareProject'] as const;
+
+export const getShareProjectMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareProject>>, TError,ShareProjectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shareProject>>, TError,ShareProjectMutationVariables, TContext> => {
+
+const mutationKey = getShareProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shareProject>>, ShareProjectMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  shareProject(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShareProjectMutationResult = NonNullable<Awaited<ReturnType<typeof shareProject>>>
+    export type ShareProjectMutationBody = MemberIn
+    export type ShareProjectMutationError = Problem
+    export type ShareProjectMutationVariables = {projectId: string;data: MemberIn}
+
+    /**
+ * @summary Share a project, or change a member's role
+ */
+export const useShareProject = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareProject>>, TError,ShareProjectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shareProject>>,
+        TError,
+        ShareProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShareProjectMutationOptions(options), queryClient);
+    }
+
+export type removeProjectMemberResponse204 = {
+  data: void
+  status: 204
+}
+
+export type removeProjectMemberResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type removeProjectMemberResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type removeProjectMemberResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type removeProjectMemberResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type removeProjectMemberResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type removeProjectMemberResponseSuccess = (removeProjectMemberResponse204) & {
+  headers: Headers;
+};
+export type removeProjectMemberResponseError = (removeProjectMemberResponse401 | removeProjectMemberResponse403 | removeProjectMemberResponse404 | removeProjectMemberResponse422 | removeProjectMemberResponse429) & {
+  headers: Headers;
+};
+
+export type removeProjectMemberResponse = (removeProjectMemberResponseSuccess | removeProjectMemberResponseError)
+
+export const getRemoveProjectMemberUrl = (projectId: string,
+    email: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/members/${email}`
+}
+
+/**
+ * The owner removes anyone; a member removes only themself. The zones of the member's library leave the project with them.
+ * @summary Remove a member, or leave a project
+ */
+export const removeProjectMember = async (projectId: string,
+    email: string, options?: Parameters<typeof apiFetch>[1]): Promise<removeProjectMemberResponse> => {
+
+  return apiFetch<removeProjectMemberResponse>(getRemoveProjectMemberUrl(projectId,email),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveProjectMemberMutationKey = () => ['removeProjectMember'] as const;
+
+export const getRemoveProjectMemberMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,RemoveProjectMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,RemoveProjectMemberMutationVariables, TContext> => {
+
+const mutationKey = getRemoveProjectMemberMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeProjectMember>>, RemoveProjectMemberMutationVariables> = (props) => {
+          const {projectId,email} = props ?? {};
+
+          return  removeProjectMember(projectId,email,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveProjectMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeProjectMember>>>
+
+    export type RemoveProjectMemberMutationError = Problem
+    export type RemoveProjectMemberMutationVariables = {projectId: string;email: string}
+
+    /**
+ * @summary Remove a member, or leave a project
+ */
+export const useRemoveProjectMember = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,RemoveProjectMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeProjectMember>>,
+        TError,
+        RemoveProjectMemberMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveProjectMemberMutationOptions(options), queryClient);
+    }
+
+export type getProjectActivityResponse200 = {
+  data: ActivityOut[]
+  status: 200
+}
+
+export type getProjectActivityResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getProjectActivityResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getProjectActivityResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getProjectActivityResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getProjectActivityResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getProjectActivityResponseSuccess = (getProjectActivityResponse200) & {
+  headers: Headers;
+};
+export type getProjectActivityResponseError = (getProjectActivityResponse401 | getProjectActivityResponse403 | getProjectActivityResponse404 | getProjectActivityResponse422 | getProjectActivityResponse429) & {
+  headers: Headers;
+};
+
+export type getProjectActivityResponse = (getProjectActivityResponseSuccess | getProjectActivityResponseError)
+
+export const getGetProjectActivityUrl = (projectId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/activity`
+}
+
+/**
+ * The latest changes, newest first.
+ * @summary What happened in a project
+ */
+export const getProjectActivity = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectActivityResponse> => {
+
+  return apiFetch<getProjectActivityResponse>(getGetProjectActivityUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectActivityQueryKey = (projectId: string,) => {
+    return [
+    `/v1/projects/${projectId}/activity`
+    ] as const;
+    }
+
+
+export const getGetProjectActivityQueryOptions = <TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectActivityQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectActivity>>> = ({ signal }) => getProjectActivity(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProjectActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectActivity>>>
+export type GetProjectActivityQueryError = Problem
+
+
+export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
+ projectId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectActivity>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
+ projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectActivity>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
+ projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What happened in a project
+ */
+
+export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
+ projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProjectActivityQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getProjectZoneResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type getProjectZoneResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getProjectZoneResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getProjectZoneResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getProjectZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getProjectZoneResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getProjectZoneResponseSuccess = (getProjectZoneResponse200) & {
+  headers: Headers;
+};
+export type getProjectZoneResponseError = (getProjectZoneResponse401 | getProjectZoneResponse403 | getProjectZoneResponse404 | getProjectZoneResponse422 | getProjectZoneResponse429) & {
+  headers: Headers;
+};
+
+export type getProjectZoneResponse = (getProjectZoneResponseSuccess | getProjectZoneResponseError)
+
+export const getGetProjectZoneUrl = (projectId: string,
+    zoneId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}`
+}
+
+/**
+ * For every member, whoever's library the zone is in.
+ * @summary A saved zone of a project
+ */
+export const getProjectZone = async (projectId: string,
+    zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectZoneResponse> => {
+
+  return apiFetch<getProjectZoneResponse>(getGetProjectZoneUrl(projectId,zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectZoneQueryKey = (projectId: string,
+    zoneId: string,) => {
+    return [
+    `/v1/projects/${projectId}/zones/${zoneId}`
+    ] as const;
+    }
+
+
+export const getGetProjectZoneQueryOptions = <TData = Awaited<ReturnType<typeof getProjectZone>>, TError = Problem>(projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectZoneQueryKey(projectId,zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectZone>>> = ({ signal }) => getProjectZone(projectId,zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProjectZoneQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectZone>>>
+export type GetProjectZoneQueryError = Problem
+
+
+export function useGetProjectZone<TData = Awaited<ReturnType<typeof getProjectZone>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZone>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZone<TData = Awaited<ReturnType<typeof getProjectZone>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZone>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZone<TData = Awaited<ReturnType<typeof getProjectZone>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A saved zone of a project
+ */
+
+export function useGetProjectZone<TData = Awaited<ReturnType<typeof getProjectZone>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProjectZoneQueryOptions(projectId,zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getProjectZoneGeometryResponse200 = {
+  data: Polygon | MultiPolygon
+  status: 200
+}
+
+export type getProjectZoneGeometryResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getProjectZoneGeometryResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getProjectZoneGeometryResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getProjectZoneGeometryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getProjectZoneGeometryResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getProjectZoneGeometryResponseSuccess = (getProjectZoneGeometryResponse200) & {
+  headers: Headers;
+};
+export type getProjectZoneGeometryResponseError = (getProjectZoneGeometryResponse401 | getProjectZoneGeometryResponse403 | getProjectZoneGeometryResponse404 | getProjectZoneGeometryResponse422 | getProjectZoneGeometryResponse429) & {
+  headers: Headers;
+};
+
+export type getProjectZoneGeometryResponse = (getProjectZoneGeometryResponseSuccess | getProjectZoneGeometryResponseError)
+
+export const getGetProjectZoneGeometryUrl = (projectId: string,
+    zoneId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}/geometry`
+}
+
+/**
+ * @summary The outline of a saved zone of a project
+ */
+export const getProjectZoneGeometry = async (projectId: string,
+    zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectZoneGeometryResponse> => {
+
+  return apiFetch<getProjectZoneGeometryResponse>(getGetProjectZoneGeometryUrl(projectId,zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectZoneGeometryQueryKey = (projectId: string,
+    zoneId: string,) => {
+    return [
+    `/v1/projects/${projectId}/zones/${zoneId}/geometry`
+    ] as const;
+    }
+
+
+export const getGetProjectZoneGeometryQueryOptions = <TData = Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError = Problem>(projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectZoneGeometryQueryKey(projectId,zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectZoneGeometry>>> = ({ signal }) => getProjectZoneGeometry(projectId,zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProjectZoneGeometryQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectZoneGeometry>>>
+export type GetProjectZoneGeometryQueryError = Problem
+
+
+export function useGetProjectZoneGeometry<TData = Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneGeometry>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneGeometry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneGeometry<TData = Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneGeometry>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneGeometry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneGeometry<TData = Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The outline of a saved zone of a project
+ */
+
+export function useGetProjectZoneGeometry<TData = Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProjectZoneGeometryQueryOptions(projectId,zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type changeProjectZoneGeometryResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type changeProjectZoneGeometryResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type changeProjectZoneGeometryResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type changeProjectZoneGeometryResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type changeProjectZoneGeometryResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type changeProjectZoneGeometryResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type changeProjectZoneGeometryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type changeProjectZoneGeometryResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type changeProjectZoneGeometryResponseSuccess = (changeProjectZoneGeometryResponse200) & {
+  headers: Headers;
+};
+export type changeProjectZoneGeometryResponseError = (changeProjectZoneGeometryResponse401 | changeProjectZoneGeometryResponse403 | changeProjectZoneGeometryResponse404 | changeProjectZoneGeometryResponse409 | changeProjectZoneGeometryResponse413 | changeProjectZoneGeometryResponse422 | changeProjectZoneGeometryResponse429) & {
+  headers: Headers;
+};
+
+export type changeProjectZoneGeometryResponse = (changeProjectZoneGeometryResponseSuccess | changeProjectZoneGeometryResponseError)
+
+export const getChangeProjectZoneGeometryUrl = (projectId: string,
+    zoneId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}/geometry`
+}
+
+/**
+ * For the owner and collaborators. Keeps the outline as a new version: the zone's owner sees every version and can restore any of them.
+ * @summary Change the outline of a saved zone of a project
+ */
+export const changeProjectZoneGeometry = async (projectId: string,
+    zoneId: string,
+    outlineChange: OutlineChange, options?: Parameters<typeof apiFetch>[1]): Promise<changeProjectZoneGeometryResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<changeProjectZoneGeometryResponse>(getChangeProjectZoneGeometryUrl(projectId,zoneId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(outlineChange)
+  }
+);}
+
+
+
+
+
+export const getChangeProjectZoneGeometryMutationKey = () => ['changeProjectZoneGeometry'] as const;
+
+export const getChangeProjectZoneGeometryMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeProjectZoneGeometry>>, TError,ChangeProjectZoneGeometryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeProjectZoneGeometry>>, TError,ChangeProjectZoneGeometryMutationVariables, TContext> => {
+
+const mutationKey = getChangeProjectZoneGeometryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeProjectZoneGeometry>>, ChangeProjectZoneGeometryMutationVariables> = (props) => {
+          const {projectId,zoneId,data} = props ?? {};
+
+          return  changeProjectZoneGeometry(projectId,zoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeProjectZoneGeometryMutationResult = NonNullable<Awaited<ReturnType<typeof changeProjectZoneGeometry>>>
+    export type ChangeProjectZoneGeometryMutationBody = OutlineChange
+    export type ChangeProjectZoneGeometryMutationError = Problem
+    export type ChangeProjectZoneGeometryMutationVariables = {projectId: string;zoneId: string;data: OutlineChange}
+
+    /**
+ * @summary Change the outline of a saved zone of a project
+ */
+export const useChangeProjectZoneGeometry = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeProjectZoneGeometry>>, TError,ChangeProjectZoneGeometryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeProjectZoneGeometry>>,
+        TError,
+        ChangeProjectZoneGeometryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeProjectZoneGeometryMutationOptions(options), queryClient);
     }

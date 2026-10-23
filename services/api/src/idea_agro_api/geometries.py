@@ -1,13 +1,22 @@
 """Where saved zones' outlines live: one file per version, never changed once written."""
 
+from contextlib import suppress
 from typing import Protocol
 
-from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import NotFound, PreconditionFailed
 from google.cloud import storage  # pyright: ignore[reportMissingTypeStubs]
 
 
+class VersionTaken(Exception):
+    """That version of the outline exists already: someone else changed it first."""
+
+
 class GeometryStore(Protocol):
-    def put(self, zone: str, version: int, content: bytes) -> None: ...
+    def put(self, zone: str, version: int, content: bytes) -> None:
+        """Writes a new version, or raises VersionTaken."""
+        ...
+
+    def delete(self, zone: str, version: int) -> None: ...
 
     def get(self, zone: str, version: int) -> bytes | None: ...
 
@@ -25,7 +34,12 @@ class MemoryGeometries:
         self._files: dict[str, bytes] = {}
 
     def put(self, zone: str, version: int, content: bytes) -> None:
+        if _name(zone, version) in self._files:
+            raise VersionTaken
         self._files[_name(zone, version)] = content
+
+    def delete(self, zone: str, version: int) -> None:
+        self._files.pop(_name(zone, version), None)
 
     def get(self, zone: str, version: int) -> bytes | None:
         return self._files.get(_name(zone, version))
@@ -43,7 +57,14 @@ class BucketGeometries:
     def put(self, zone: str, version: int, content: bytes) -> None:
         blob = self._bucket.blob(_name(zone, version))  # pyright: ignore[reportUnknownMemberType]
         # Versions are written once: refuse to overwrite one that exists.
-        blob.upload_from_string(content, content_type="application/geo+json", if_generation_match=0)  # pyright: ignore[reportUnknownMemberType]
+        try:
+            blob.upload_from_string(content, content_type="application/geo+json", if_generation_match=0)  # pyright: ignore[reportUnknownMemberType]
+        except PreconditionFailed as error:
+            raise VersionTaken from error
+
+    def delete(self, zone: str, version: int) -> None:
+        with suppress(NotFound):
+            self._bucket.blob(_name(zone, version)).delete()  # pyright: ignore[reportUnknownMemberType]
 
     def get(self, zone: str, version: int) -> bytes | None:
         try:

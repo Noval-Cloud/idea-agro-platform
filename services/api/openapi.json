@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.3.0"
+    "version": "1.4.0"
   },
   "paths": {
     "/health": {
@@ -902,6 +902,333 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "Saved zones"
+        ],
+        "summary": "Change a saved zone's outline",
+        "description": "Keeps the outline as a new version: every earlier version stays, and can be restored.",
+        "operationId": "change_saved_zone_geometry",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The zone's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlineChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "It is larger than allowed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/saved-zones/{zone_id}/versions": {
+      "get": {
+        "tags": [
+          "Saved zones"
+        ],
+        "summary": "The versions of a saved zone's outline",
+        "description": "Newest first. Members of its projects may have made them; only you can restore one.",
+        "operationId": "list_saved_zone_versions",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The zone's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OutlineVersionOut"
+                  },
+                  "title": "Response List Saved Zone Versions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/saved-zones/{zone_id}/versions/{version}/restore": {
+      "post": {
+        "tags": [
+          "Saved zones"
+        ],
+        "summary": "Restore an earlier outline",
+        "description": "Brings the version back as a new one, so the history keeps every step.",
+        "operationId": "restore_saved_zone_version",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The zone's id."
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The version to bring back.",
+              "title": "Version"
+            },
+            "description": "The version to bring back."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/projects": {
@@ -910,6 +1237,7 @@
           "Projects"
         ],
         "summary": "Your projects",
+        "description": "Yours and those shared with you. Opening them accepts the invitations to your verified email.",
         "operationId": "list_projects",
         "responses": {
           "200": {
@@ -1054,6 +1382,7 @@
           "Projects"
         ],
         "summary": "One of your projects",
+        "description": "Opening a project you were invited to accepts the invitation.",
         "operationId": "get_project",
         "security": [
           {
@@ -1142,6 +1471,7 @@
           "Projects"
         ],
         "summary": "Rename or describe a project",
+        "description": "For the owner and collaborators.",
         "operationId": "change_project",
         "security": [
           {
@@ -1240,7 +1570,7 @@
           "Projects"
         ],
         "summary": "Delete a project",
-        "description": "Deletes the project only: its zones stay where they are.",
+        "description": "For the owner. Deletes the project and its activity only: its zones stay where they are.",
         "operationId": "delete_project",
         "security": [
           {
@@ -1324,7 +1654,7 @@
           "Projects"
         ],
         "summary": "Add a zone to a project",
-        "description": "Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied.",
+        "description": "For the owner and collaborators. Adds a reference to a zone of your library, of a predefined division or a cadastral parcel, unless the project holds it already, and answers with the project. The zone itself is not copied; members can read it, and collaborators can change its outline.",
         "operationId": "add_project_item",
         "security": [
           {
@@ -1454,7 +1784,7 @@
           "Projects"
         ],
         "summary": "Remove a zone from a project",
-        "description": "Removes the reference only: the zone itself stays.",
+        "description": "For the owner and collaborators. Removes the reference only: the zone itself stays.",
         "operationId": "remove_project_item",
         "security": [
           {
@@ -1543,6 +1873,660 @@
           }
         }
       }
+    },
+    "/v1/projects/{project_id}/members": {
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Share a project, or change a member's role",
+        "description": "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.",
+        "operationId": "share_project",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/members/{email}": {
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Remove a member, or leave a project",
+        "description": "The owner removes anyone; a member removes only themself. The zones of the member's library leave the project with them.",
+        "operationId": "remove_project_member",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 254,
+              "description": "The member's email.",
+              "title": "Email"
+            },
+            "description": "The member's email."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/activity": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "What happened in a project",
+        "description": "The latest changes, newest first.",
+        "operationId": "get_project_activity",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityOut"
+                  },
+                  "title": "Response Get Project Activity"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/zones/{zone_id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "A saved zone of a project",
+        "description": "For every member, whoever's library the zone is in.",
+        "operationId": "get_project_zone",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The saved zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The saved zone's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/zones/{zone_id}/geometry": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "The outline of a saved zone of a project",
+        "operationId": "get_project_zone_geometry",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The saved zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The saved zone's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Polygon"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MultiPolygon"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "Polygon": "#/components/schemas/Polygon",
+                      "MultiPolygon": "#/components/schemas/MultiPolygon"
+                    }
+                  },
+                  "description": "A GeoJSON geometry, in WGS 84.",
+                  "title": "Response Get Project Zone Geometry"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Change the outline of a saved zone of a project",
+        "description": "For the owner and collaborators. Keeps the outline as a new version: the zone's owner sees every version and can restore any of them.",
+        "operationId": "change_project_zone_geometry",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The saved zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The saved zone's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlineChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "It is larger than allowed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1556,6 +2540,61 @@
         ],
         "title": "AccountRole",
         "description": "`client` is every account; `editor` manages content and `admin` manages accounts. They combine."
+      },
+      "Action": {
+        "type": "string",
+        "enum": [
+          "created",
+          "renamed",
+          "described",
+          "zone_added",
+          "zone_removed",
+          "outline_changed",
+          "outline_restored",
+          "member_invited",
+          "member_joined",
+          "member_role_changed",
+          "member_removed",
+          "member_left"
+        ],
+        "title": "Action"
+      },
+      "ActivityOut": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name",
+            "description": "Who made the change, by their name at the time."
+          },
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The item's id or the member's email the change was about, if any."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "A zone's name or a role, when it helps to read the change."
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "actor_name",
+          "action",
+          "subject",
+          "detail"
+        ],
+        "title": "ActivityOut",
+        "description": "One change in a project."
       },
       "Department": {
         "type": "string",
@@ -1740,6 +2779,72 @@
         "title": "Me",
         "description": "Your account."
       },
+      "MemberIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Email",
+            "description": "Their email, as they sign in with it."
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole",
+            "description": "`collaborator` edits the project's zones; `viewer` only reads."
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "role"
+        ],
+        "title": "MemberIn",
+        "description": "Someone to share the project with, or a member's new role."
+      },
+      "MemberOut": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Their name, once they joined."
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole"
+          },
+          "pending": {
+            "type": "boolean",
+            "title": "Pending",
+            "description": "Invited, and not yet joined: they join when they open their projects."
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "name",
+          "role",
+          "pending"
+        ],
+        "title": "MemberOut"
+      },
+      "MemberRole": {
+        "type": "string",
+        "enum": [
+          "collaborator",
+          "viewer"
+        ],
+        "title": "MemberRole"
+      },
       "MultiPolygon": {
         "properties": {
           "type": {
@@ -1777,6 +2882,84 @@
           "coordinates"
         ],
         "title": "MultiPolygon"
+      },
+      "OutlineChange": {
+        "properties": {
+          "geometry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Polygon"
+              },
+              {
+                "$ref": "#/components/schemas/MultiPolygon"
+              }
+            ],
+            "title": "Geometry",
+            "description": "A GeoJSON geometry, in WGS 84.",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Polygon": "#/components/schemas/Polygon"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "geometry"
+        ],
+        "title": "OutlineChange",
+        "description": "A zone's new outline."
+      },
+      "OutlineVersionOut": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "by_name": {
+            "type": "string",
+            "title": "By Name",
+            "description": "Who made it, by their name at the time."
+          },
+          "area_ha": {
+            "type": "number",
+            "title": "Area Ha"
+          },
+          "restored_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From",
+            "description": "The version it brought back, when it was a restore."
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "created_at",
+          "by_name",
+          "area_ha",
+          "restored_from",
+          "current"
+        ],
+        "title": "OutlineVersionOut",
+        "description": "One version of a zone's outline."
       },
       "PadronItem": {
         "properties": {
@@ -2046,6 +3229,41 @@
             "type": "array",
             "title": "Items"
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "collaborator",
+              "viewer"
+            ],
+            "title": "Role",
+            "description": "Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads)."
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "The owner's name."
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "type": "array",
+            "title": "Members",
+            "description": "Everyone the owner shared the project with."
+          },
+          "others_can_edit": {
+            "type": "boolean",
+            "title": "Others Can Edit",
+            "description": "Whether someone else can change the outline of the zones you add: worth a warning."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2063,6 +3281,10 @@
           "name",
           "description",
           "items",
+          "role",
+          "owner_name",
+          "members",
+          "others_can_edit",
           "created_at",
           "updated_at"
         ],
@@ -2089,6 +3311,33 @@
             "title": "Zone Count",
             "description": "How many zones the project holds."
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "collaborator",
+              "viewer"
+            ],
+            "title": "Role",
+            "description": "Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads)."
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "The owner's name."
+          },
+          "others_can_edit": {
+            "type": "boolean",
+            "title": "Others Can Edit",
+            "description": "Whether someone else can change the outline of the zones you add: worth a warning."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2106,11 +3355,14 @@
           "name",
           "description",
           "zone_count",
+          "role",
+          "owner_name",
+          "others_can_edit",
           "created_at",
           "updated_at"
         ],
         "title": "ProjectSummary",
-        "description": "One of your projects, without its zones."
+        "description": "One of your projects, or one shared with you, without its zones."
       },
       "SavedItem": {
         "properties": {
