@@ -13,6 +13,8 @@ class State(TypedDict):
     apis: list[str]
     accounts: list[str]
     bindings: list[list[str]]
+    # account, role, member: bindings on a service account itself.
+    sa_bindings: list[list[str]]
     buckets: list[str]
     versioned: list[str]
     repositories: list[str]
@@ -79,6 +81,19 @@ def run(state: State, args: list[str]) -> list[str]:
             need_project(state, flags.get("project"))
             need_api(state, "iam.googleapis.com")
             return state["accounts"]
+        case ["iam", "service-accounts", "get-iam-policy", email]:
+            need_project(state, flags.get("project"))
+            need_api(state, "iam.googleapis.com")
+            if email not in state["accounts"]:
+                raise StubError(f"{email} does not exist")
+            return [f"{role}\t{member}" for account, role, member in state["sa_bindings"] if account == email]
+        case ["iam", "service-accounts", "add-iam-policy-binding", email]:
+            need_project(state, flags.get("project"))
+            need_api(state, "iam.googleapis.com")
+            if email not in state["accounts"]:
+                raise StubError(f"{email} does not exist")
+            state["sa_bindings"].append([email, flags["role"], flags["member"]])
+            return []
         case ["iam", "service-accounts", "create", account]:
             project = need_project(state, flags.get("project"))
             need_api(state, "iam.googleapis.com")

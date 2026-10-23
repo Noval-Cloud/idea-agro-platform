@@ -46,3 +46,7 @@ node scripts/prototype-data/extract.mjs <path with @google/earthengine and the s
 node scripts/prototype-data/postprocess.mjs .
 node scripts/prototype-data/zone-meta.mjs .
 ```
+
+## Deploy
+
+`make web-deploy ENV=<env>` at the root builds the site with its public URL, then Cloud Build builds the image (`Dockerfile`, nginx with `deploy/nginx.conf`), pushes it and updates only the image of the environment's `web` service. The upload holds only what the image needs (`.gcloudignore`), prototype data included. The service itself is in Terraform (`infrastructure/terraform/modules/services/web`).

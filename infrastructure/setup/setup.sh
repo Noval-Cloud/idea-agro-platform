@@ -39,7 +39,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 # Only the environment's file decides, never a value left in the shell.
 unset GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET_SUFFIX \
-  GCP_APIS TF_SA_ROLES
+  GCP_APIS TF_SA_ROLES TF_SA_USERS
 # shellcheck source=/dev/null
 . "$ENV_FILE"
 
@@ -126,12 +126,11 @@ $api"
 # A resource behind an API that is still off counts as missing, without asking for it.
 api_on() { has "$ENABLED" "$1"; }
 
-# grant <role>: retries while a new account is not yet visible to IAM.
-grant() {
+# retrying <command...>: retries while a new account is not yet visible to IAM.
+retrying() {
   local attempt error
   for attempt in 1 2 3 4 5 6; do
-    if error="$(gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$OPERATOR_EMAIL" \
-      --role="$1" --condition=None 2>&1 >/dev/null)"; then
+    if error="$("$@" 2>&1 >/dev/null)"; then
       return
     fi
     case "$error" in
@@ -187,8 +186,24 @@ while read -r role; do
   if [ -z "$role" ] || has "$GRANTED" "$role"; then continue; fi
   GRANTED="$GRANTED
 $role"
-  change "grant $role to $OPERATOR_EMAIL" grant "$role"
+  change "grant $role to $OPERATOR_EMAIL" retrying gcloud projects add-iam-policy-binding "$PROJECT" \
+    --member="serviceAccount:$OPERATOR_EMAIL" --role="$role" --condition=None
 done <<<"$(items "${TF_SA_ROLES:-}")"
+
+IMPERSONATORS=""
+if has "$ACCOUNTS" "$OPERATOR_EMAIL"; then
+  IMPERSONATORS="$(gcloud iam service-accounts get-iam-policy "$OPERATOR_EMAIL" --project="$PROJECT" \
+    --flatten='bindings[].members' --format='value(bindings.role,bindings.members)' |
+    awk -F '\t' '$1 == "roles/iam.serviceAccountTokenCreator" { print $2 }')"
+fi
+while read -r member; do
+  if [ -z "$member" ] || has "$IMPERSONATORS" "$member"; then continue; fi
+  IMPERSONATORS="$IMPERSONATORS
+$member"
+  change "let $member impersonate $OPERATOR_EMAIL" retrying gcloud iam service-accounts add-iam-policy-binding \
+    "$OPERATOR_EMAIL" --project="$PROJECT" --member="$member" --role=roles/iam.serviceAccountTokenCreator \
+    --condition=None
+done <<<"$(items "${TF_SA_USERS:-}")"
 
 BUCKETS=""
 if api_on storage.googleapis.com; then

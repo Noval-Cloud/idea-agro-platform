@@ -1,7 +1,10 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format typecheck test build specs check tf-setup
+.PHONY: help setup lint format typecheck test build specs check tf-setup tf-plan tf-apply web-deploy
 
-TERRAFORM_DIR := infrastructure/terraform
+TF := terraform -chdir=infrastructure/terraform
+# Terraform starts from the person's gcloud credentials, then impersonates the operator account.
+TF_AS_PERSON = token=$$(gcloud auth print-access-token) && GOOGLE_OAUTH_ACCESS_TOKEN=$$token $(TF)
+TF_INIT = $(TF_AS_PERSON) init -reconfigure -input=false -backend-config=../environments/$(ENV)/backend.tfvars >/dev/null
 require_env = $(if $(filter dev qa prd,$(ENV)),,$(error ENV must be dev, qa or prd))
 
 help: ## List the available targets
@@ -17,16 +20,14 @@ lint: ## Check formatting and lint rules (read-only)
 	uv run ruff format --check
 	uv run ruff check
 	git ls-files -z '*.sh' | xargs -0 uv run shellcheck
-ifneq ($(wildcard $(TERRAFORM_DIR)),)
-	terraform -chdir=$(TERRAFORM_DIR) fmt -check -recursive
-endif
+	$(TF) fmt -check -recursive
+	TF_DATA_DIR=.terraform/validate $(TF) init -backend=false -input=false >/dev/null
+	TF_DATA_DIR=.terraform/validate $(TF) validate
 
 format: ## Format every file in place
 	pnpm exec vp fmt
 	uv run ruff format
-ifneq ($(wildcard $(TERRAFORM_DIR)),)
-	terraform -chdir=$(TERRAFORM_DIR) fmt -recursive
-endif
+	$(TF) fmt -recursive
 
 typecheck: ## Type-check TypeScript, Astro and Python
 	pnpm exec vp check --no-fmt --no-lint
@@ -49,3 +50,17 @@ check: lint typecheck test build specs ## Run lint, typecheck, test, build and s
 tf-setup: ## Prepare ENV's GCP project for Terraform: a dry run, or APPLY=1 to apply
 	$(require_env)
 	infrastructure/setup/setup.sh --env $(ENV) $(if $(filter 1,$(APPLY)),--apply)
+
+tf-plan: ## Save ENV's Terraform plan, read-only
+	$(require_env)
+	$(TF_INIT)
+	$(TF_AS_PERSON) plan -input=false -var-file=../environments/$(ENV)/terraform.tfvars -out=$(ENV).tfplan
+
+tf-apply: ## Apply the plan tf-plan saved for ENV
+	$(require_env)
+	$(TF_INIT)
+	$(TF_AS_PERSON) apply -input=false $(ENV).tfplan
+
+web-deploy: ## Build the website and deploy its image to ENV's Cloud Run
+	$(require_env)
+	apps/web/deploy.sh $(ENV)

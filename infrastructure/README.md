@@ -9,6 +9,10 @@ infrastructure/
 ├── setup/
 │   ├── setup.sh              prepares a GCP project for Terraform
 │   └── outputs/              the values setup.sh wrote, ignored by git
+├── terraform/                one root for every environment
+│   └── modules/
+│       ├── platform/         what every service shares: the build identity and its sources bucket
+│       └── services/<name>/  one module per service: its identity, its Cloud Run service, its access
 └── environments/
     └── <env>/                dev, qa, prd
         ├── setup.env         what setup.sh puts in place before Terraform
@@ -20,14 +24,13 @@ infrastructure/
 
 - Every environment has the same files, so bringing one up is only filling its values.
 - `environments/` sits outside the Terraform root: an environment carries more than Terraform variables.
-- `terraform.tfvars` and `backend.tfvars` stay empty while there is no Terraform root.
 
 ## Setup
 
 `setup/setup.sh` does only what Terraform cannot do for itself: Terraform cannot create the bucket its own state lives in, and the APIs must be on before its first plan. From the environment's `setup.env`, it puts in place:
 
 - the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage and Artifact Registry), always, and then the ones in `GCP_APIS`;
-- the operator service account and its project roles;
+- the operator service account, its project roles, and who may impersonate it;
 - the Terraform state bucket, versioned, in the region (it turns versioning on in an existing one);
 - the Docker repository in Artifact Registry.
 
@@ -65,21 +68,36 @@ On a refusal or an error, it stops with a non-zero exit status and prints the ca
   gcloud projects remove-iam-policy-binding <project> --member=serviceAccount:<operator email> --role=<role>
   ```
 
+## Terraform
+
+One root for every environment; each environment's state lives in its own bucket, chosen at init from its `backend.tfvars`. Terraform starts from your gcloud credentials and runs as the operator service account, so your account must be in the environment's `TF_SA_USERS`.
+
+```bash
+make tf-plan ENV=dev     # saves the plan to infrastructure/terraform/dev.tfplan; read-only
+make tf-apply ENV=dev    # applies exactly that plan
+```
+
+- Read the plan before applying it. A plan saved before the state changed is refused at apply.
+- Cloud Run services are created with a placeholder image. The image belongs to the deploy (`make web-deploy ENV=dev`), and Terraform never changes it.
+- A module grants itself what it needs from others, in its own `iam.tf`.
+- Every value comes from a variable, with a default wherever one makes sense, so an environment's `terraform.tfvars` holds only what differs.
+
 ## `setup.env`
 
-Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except the two lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` grants nothing.
+Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except the lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` or `TF_SA_USERS` grants nothing.
 
-| Variable                 | What it is                                                                                                  |
-| :----------------------- | :---------------------------------------------------------------------------------------------------------- |
-| `GCP_PROJECT_ID`         | The GCP project id                                                                                          |
-| `GCP_REGION`             | The region of the project's regional resources                                                              |
-| `ARTIFACT_REGISTRY`      | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path       |
-| `TF_SA`                  | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as |
-| `TF_STATE_BUCKET_SUFFIX` | The suffix of the Terraform state bucket, whose name is `<GCP_PROJECT_ID>-<suffix>`                         |
-| `GCP_APIS`               | Only the APIs the project needs, one per line. The setup's own APIs are always enabled and are not listed   |
-| `TF_SA_ROLES`            | The roles granted to the operator service account, one per line                                             |
+| Variable                 | What it is                                                                                                                 |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `GCP_PROJECT_ID`         | The GCP project id                                                                                                         |
+| `GCP_REGION`             | The region of the project's regional resources                                                                             |
+| `ARTIFACT_REGISTRY`      | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path                      |
+| `TF_SA`                  | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as                |
+| `TF_STATE_BUCKET_SUFFIX` | The suffix of the Terraform state bucket, whose name is `<GCP_PROJECT_ID>-<suffix>`                                        |
+| `GCP_APIS`               | Only the APIs the project needs, one per line. The setup's own APIs are always enabled and are not listed                  |
+| `TF_SA_ROLES`            | The roles granted to the operator service account, one per line                                                            |
+| `TF_SA_USERS`            | Who may impersonate the operator service account to run Terraform, one IAM member per line, such as `user:ana@example.org` |
 
-`GCP_APIS` and `TF_SA_ROLES` are quoted strings that span several lines, one item per line. Blank lines are ignored.
+`GCP_APIS`, `TF_SA_ROLES` and `TF_SA_USERS` are quoted strings that span several lines, one item per line. Blank lines are ignored.
 
 ## Secrets
 
