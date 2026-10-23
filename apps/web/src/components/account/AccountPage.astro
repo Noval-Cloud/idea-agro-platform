@@ -24,6 +24,8 @@ const { t } = createTranslator(locale);
         catalog={pickAccountCatalog(catalogs[locale])}
         signInPath={localizePath("/login/", locale)}
         homePath={localizePath("/", locale)}
+        zonePath={localizePath("/zone/", locale)}
+        explorePath={localizePath("/explore/?reg=mine", locale)}
       />
     </div>
   </main>

@@ -41,6 +41,31 @@ import {
 } from "./lib/state";
 import { mapMarks, mapTheme, useTheme } from "./lib/theme";
 import { saveCustomZone } from "./lib/session";
+import { readHint } from "@/lib/account-hint";
+import { signInProviders } from "@/lib/sign-in-providers";
+
+/** The API takes at most this many zones, and this many bytes, in one import. */
+const IMPORT_ZONES = 100;
+const IMPORT_BYTES = 4_500_000;
+
+/** Splits zones into imports the API accepts. */
+function importBatches<Z>(zones: Z[]): Z[][] {
+  const batches: Z[][] = [];
+  let batch: Z[] = [];
+  let bytes = 0;
+  for (const zone of zones) {
+    const size = JSON.stringify(zone).length;
+    if (batch.length && (batch.length === IMPORT_ZONES || bytes + size > IMPORT_BYTES)) {
+      batches.push(batch);
+      batch = [];
+      bytes = 0;
+    }
+    batch.push(zone);
+    bytes += size;
+  }
+  if (batch.length) batches.push(batch);
+  return batches;
+}
 
 interface Props {
   locale: Locale;
@@ -105,6 +130,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const [anchor, setAnchor] = useState<[number, number] | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [custom, setCustom] = useState<CustomLayer[]>([]);
+  const [signedIn, setSignedIn] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+  const preparedSignIn = useRef<(() => Promise<unknown>) | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [zones, setZones] = useState<ZoneCollection | null>(null);
@@ -211,12 +239,110 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     }
   }, [neededDepartments, padrones]);
 
-  // "Mis zonas" shows every file and drawing of the session at once.
-  // The reader's zones reach the zone page through the session (a new tab gets a copy of it).
+  // "Mis zonas" shows every file and drawing of the session at once, and the zones saved to the account.
+  // Unsaved zones reach the zone page through the session (a new tab gets a copy of it).
   useEffect(() => {
     for (const layer of custom)
-      for (const z of layer.zones) saveCustomZone({ key: z.key, name: z.name, geometry: z.geometry });
+      if (layer.source !== "saved")
+        for (const z of layer.zones) saveCustomZone({ key: z.key, name: z.name, geometry: z.geometry });
   }, [custom]);
+
+  useEffect(() => {
+    const update = () => {
+      const now = readHint() !== null;
+      setSignedIn(now);
+      // Another person may use this browser next: their map must not show the previous account's zones.
+      if (!now) setCustom((all) => all.filter((l) => l.source !== "saved"));
+    };
+    update();
+    addEventListener("account-change", update);
+    return () => removeEventListener("account-change", update);
+  }, []);
+
+  const loadSaved = useCallback(async () => {
+    const [{ privately, SignedOut }, { getSavedZoneFeatures }] = await Promise.all([
+      import("@/lib/account"),
+      import("@idea-agro/api-client"),
+    ]);
+    try {
+      const response = await privately((init) => getSavedZoneFeatures(init));
+      if (response.status !== 200) throw new Error(`${response.status}`);
+      const zones = response.data.features.map((f) => ({
+        key: f.id,
+        name: f.properties.name,
+        areaKm2: f.properties.area_ha / 100,
+        geometry: f.geometry as PolygonGeometry,
+      }));
+      const saved: CustomLayer[] = zones.length
+        ? [{ key: "saved", name: t("explorer.regions.saved"), source: "saved", zones }]
+        : [];
+      setCustom((all) => [...saved, ...all.filter((l) => l.source !== "saved")]);
+    } catch (error) {
+      if (!(error instanceof SignedOut)) setNotice(t("explorer.regions.loadSavedFailed"));
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (state.regions === "mine" && signedIn) void loadSaved();
+  }, [state.regions, signedIn, loadSaved]);
+
+  // Signed out with zones to save: the sign-in loads ahead, so the save click can open the provider's window.
+  const unsaved = custom.some((l) => l.source !== "saved");
+  useEffect(() => {
+    if (signedIn || !unsaved || preparedSignIn.current) return;
+    void import("@/lib/account")
+      .then(({ prepareSignIn }) => prepareSignIn(signInProviders[0]))
+      .then((signIn) => (preparedSignIn.current = signIn))
+      // Without it, the save click sends the person to the sign-in page instead.
+      .catch(() => undefined);
+  }, [signedIn, unsaved]);
+
+  const onSave = async (key: string) => {
+    const layer = custom.find((l) => l.key === key);
+    if (!layer || layer.source === "saved") return;
+    setNotice(null);
+    if (!readHint()) {
+      const signIn = preparedSignIn.current;
+      if (!signIn)
+        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
+      try {
+        await signIn();
+      } catch (error) {
+        if (error !== "cancelled") setNotice(t("explorer.regions.signInFailed"));
+        return;
+      }
+    }
+    setSaving(key);
+    try {
+      const [{ privately }, { importSavedZones }] = await Promise.all([
+        import("@/lib/account"),
+        import("@idea-agro/api-client"),
+      ]);
+      const source = layer.source === "drawn" ? ("drawn" as const) : ("uploaded" as const);
+      const zones = layer.zones.map((z) => ({ key: z.key, zone: { name: z.name, source, geometry: z.geometry } }));
+      for (const batch of importBatches(zones)) {
+        const response = await privately((init) => importSavedZones({ zones: batch.map((z) => z.zone) }, init));
+        if (response.status !== 201) {
+          const detail = (response.data as { detail?: string | null }).detail ?? String(response.status);
+          return setNotice(t("explorer.regions.saveFailed", { reason: detail }));
+        }
+        // Saved zones leave the layer one import at a time, so trying again sends only the rest. Zones added
+        // to the layer meanwhile stay.
+        const sent = new Set(batch.map((z) => z.key));
+        setCustom((all) =>
+          all
+            .map((l) => (l.key === key ? { ...l, zones: l.zones.filter((z) => !sent.has(z.key)) } : l))
+            .filter((l) => l.key !== key || l.zones.length > 0),
+        );
+      }
+      setNotice(t("explorer.regions.saveDone", { count: zones.length }));
+      await loadSaved();
+    } catch {
+      setNotice(t("explorer.regions.saveInterrupted"));
+    } finally {
+      setSaving(null);
+    }
+  };
 
   /** Every zone currently on the map, by its feature key. */
   const records = useMemo(() => {
@@ -443,6 +569,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       params.set("d", record.division);
       params.set("id", record.id);
     } else if (record.kind === "padron") params.set("padron", record.id);
+    else if (record.selection.kind === "custom" && record.selection.layer === "saved") params.set("saved", record.id);
     else params.set("custom", record.key);
     if (indicatorId) params.set("ind", indicatorId);
     if (year !== null) params.set("year", String(year));
@@ -459,7 +586,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
               ? t("explorer.zone.kinds.seccionales")
               : selected.kind === "padron"
                 ? t("explorer.zone.kinds.padrones")
-                : t("explorer.zone.kinds.custom"),
+                : selected.selection.kind === "custom" && selected.selection.layer === "saved"
+                  ? t("explorer.zone.kinds.saved")
+                  : t("explorer.zone.kinds.custom"),
         title: selected.title,
         subtitle: selected.subtitle,
         area:
@@ -647,6 +776,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             layers={custom}
             counts={counts}
             signInHref={signInPath}
+            signedIn={signedIn}
+            saving={saving}
+            onSave={(key) => void onSave(key)}
             drawing={drawing}
             onRegions={(regions) => update({ regions, selection: null })}
             onGrade={(grade) => update({ grade, selection: null })}

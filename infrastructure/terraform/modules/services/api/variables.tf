@@ -112,8 +112,8 @@ variable "auth_jwks_url" {
   type        = string
 }
 
-variable "accounts_database" {
-  description = "The Firestore database that holds accounts"
+variable "records_database" {
+  description = "The Firestore database that holds accounts, saved zones and projects"
   type        = string
 }
 
@@ -133,4 +133,16 @@ variable "identity_permissions" {
   description = "The only provider permissions the API needs: reading a person and ending their sessions"
   type        = list(string)
   default     = ["firebaseauth.users.get", "firebaseauth.users.update"]
+}
+
+variable "geometries_bucket_suffix" {
+  description = "Suffix of the bucket of saved zones' outlines, after the project id"
+  type        = string
+  default     = "saved-zones"
+}
+
+variable "geometries_role" {
+  description = "Role that lets the API write, read and delete saved zones' outlines"
+  type        = string
+  default     = "roles/storage.objectUser"
 }

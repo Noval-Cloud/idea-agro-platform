@@ -3,14 +3,22 @@ import type { Me } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/core";
 import { createAccountTranslator, type AccountCatalog } from "./i18n";
+import SavedZones from "./SavedZones";
 
-type Props = { locale: Locale; catalog: AccountCatalog; signInPath: string; homePath: string };
+type Props = {
+  locale: Locale;
+  catalog: AccountCatalog;
+  signInPath: string;
+  homePath: string;
+  zonePath: string;
+  explorePath: string;
+};
 type State = { kind: "loading" } | { kind: "failed" } | { kind: "ready"; me: Me };
 
 const card = "rounded-lg border border-line bg-surface p-6";
 
-export default function AccountApp({ locale, catalog, signInPath, homePath }: Props) {
-  const { t, date } = createAccountTranslator(locale, catalog);
+export default function AccountApp({ locale, catalog, signInPath, homePath, zonePath, explorePath }: Props) {
+  const { t, date, number } = createAccountTranslator(locale, catalog);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [ending, setEnding] = useState<"idle" | "working" | "failed">("idle");
 
@@ -86,6 +94,8 @@ export default function AccountApp({ locale, catalog, signInPath, homePath }: Pr
         </dl>
         <p className="mt-6 text-xs text-ink-subtle">{t("account.profile.since", { date: date(me.created_at) })}</p>
       </section>
+
+      <SavedZones t={t} number={number} zonePath={zonePath} explorePath={explorePath} signInPath={signInPath} />
 
       <section id="sessions" aria-labelledby="sessions-title" className={card}>
         <h2 id="sessions-title" className="text-lg font-medium text-ink">

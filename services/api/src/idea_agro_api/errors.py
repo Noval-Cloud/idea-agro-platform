@@ -1,5 +1,6 @@
 """Every error as Problem Details (RFC 9457)."""
 
+import logging
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
@@ -10,6 +11,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.models import Problem
+
+log = logging.getLogger("idea_agro_api")
 
 TITLES = {
     400: "Bad Request",
@@ -77,6 +80,7 @@ async def server_problems(request: Request, call_next: Callable[[Request], Await
     try:
         return await call_next(request)
     except Exception:
+        log.exception("%s %s failed", request.method, request.url.path)
         return problem_response(500, request, detail="Something failed on our side.")
 
 

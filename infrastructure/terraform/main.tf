@@ -24,11 +24,11 @@ module "identity" {
 module "api" {
   source = "./modules/services/api"
 
-  project           = var.project
-  region            = var.region
-  builder_member    = module.platform.builder_member
-  auth_issuer       = module.identity.issuer
-  auth_audience     = module.identity.audience
-  auth_jwks_url     = module.identity.jwks_url
-  accounts_database = module.platform.firestore_database
+  project          = var.project
+  region           = var.region
+  builder_member   = module.platform.builder_member
+  auth_issuer      = module.identity.issuer
+  auth_audience    = module.identity.audience
+  auth_jwks_url    = module.identity.jwks_url
+  records_database = module.platform.firestore_database
 }

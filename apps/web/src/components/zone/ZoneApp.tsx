@@ -39,12 +39,14 @@ interface Props {
   locale: Locale;
   catalog: AppCatalog;
   explorePath: string;
+  signInPath: string;
 }
 
 type Target =
   | { kind: "division"; division: DivisionId; id: string }
   | { kind: "padron"; department: string; padron: number }
-  | { kind: "custom"; key: string };
+  | { kind: "custom"; key: string }
+  | { kind: "saved"; id: string };
 
 type Zone = {
   target: Target;
@@ -70,6 +72,10 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
     return { target: { kind: "padron", department: padron[0], padron: Number(padron[1]) }, indicator, year };
   const custom = params.get("custom");
   if (custom) return { target: { kind: "custom", key: custom }, indicator, year };
+  const saved = params.get("saved");
+  // Saved zone ids are UUIDs; anything else would end up in an API path.
+  if (saved && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(saved))
+    return { target: { kind: "saved", id: saved }, indicator, year };
   return { target: null, indicator, year };
 }
 
@@ -116,13 +122,14 @@ function downloadCsv(name: string, header: string[], rows: (string | number | nu
   URL.revokeObjectURL(url);
 }
 
-export default function ZoneApp({ locale, catalog, explorePath }: Props) {
+export default function ZoneApp({ locale, catalog, explorePath, signInPath }: Props) {
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
   const [indicator, setIndicator] = useState<IndicatorId>("ppna");
   const [year, setYear] = useState<number | null>(null);
   const [zone, setZone] = useState<Zone | null | undefined>(undefined);
+  const [signedOut, setSignedOut] = useState(false);
   const manifest = useData(() => loadManifest(), []);
 
   useEffect(() => {
@@ -173,6 +180,30 @@ export default function ZoneApp({ locale, catalog, explorePath }: Props) {
             areaKm2: f.properties.areaHa / 100,
             geometry: f.geometry,
           });
+        },
+        () => done(null),
+      );
+    } else if (target.kind === "saved") {
+      void Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]).then(
+        async ([{ privately, SignedOut }, api]) => {
+          try {
+            const [meta, outline] = await Promise.all([
+              privately((init) => api.getSavedZone(target.id, init)),
+              privately((init) => api.getSavedZoneGeometry(target.id, init)),
+            ]);
+            if (meta.status !== 200 || outline.status !== 200) return done(null);
+            done({
+              target,
+              kind: t("explorer.zone.kinds.saved"),
+              title: meta.data.name,
+              department: meta.data.department ?? undefined,
+              areaKm2: meta.data.area_ha / 100,
+              geometry: outline.data as PolygonGeometry,
+            });
+          } catch (error) {
+            if (error instanceof SignedOut) setSignedOut(true);
+            done(null);
+          }
         },
         () => done(null),
       );
@@ -253,8 +284,16 @@ export default function ZoneApp({ locale, catalog, explorePath }: Props) {
           <>
             {back}
             <p role="status" className="mt-10 max-w-prose text-base text-ink">
-              {t("zone.notFound")}
+              {signedOut ? t("zone.signInToSee") : t("zone.notFound")}
             </p>
+            {signedOut && (
+              <a
+                href={`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`}
+                className="mt-4 inline-block text-link underline underline-offset-(--ia-link-underline-offset)"
+              >
+                {t("zone.signIn")}
+              </a>
+            )}
           </>
         ) : (
           // The indicator list stays put on the left (as on the map); the zone and its charts on the right.

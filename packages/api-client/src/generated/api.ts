@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.1.0
+ * OpenAPI spec version: 1.2.0
  */
 import {
   useMutation,
@@ -100,6 +100,30 @@ export interface Me {
   created_at: string;
 }
 
+export interface MultiPolygon {
+  type: 'MultiPolygon';
+  /**
+     * @minItems 1
+     * @items.minItems 1
+     * @items.items.minItems 4
+     * @items.items.items.minItems 2
+     * @items.items.items.maxItems 3
+     */
+  coordinates: number[][][][];
+}
+
+export interface Polygon {
+  type: 'Polygon';
+  /**
+     * The outer ring, then any holes.
+     * @minItems 1
+     * @items.minItems 4
+     * @items.items.minItems 2
+     * @items.items.maxItems 3
+     */
+  coordinates: number[][][];
+}
+
 /**
  * For invalid requests, each parameter that failed validation and why.
  */
@@ -121,6 +145,106 @@ export interface Problem {
   instance?: string | null;
   /** For invalid requests, each parameter that failed validation and why. */
   errors?: ProblemErrors;
+}
+
+/**
+ * Whether it was drawn on the map or uploaded.
+ */
+export type SavedZoneOutSource = typeof SavedZoneOutSource[keyof typeof SavedZoneOutSource];
+
+
+export const SavedZoneOutSource = {
+  drawn: 'drawn',
+  uploaded: 'uploaded',
+} as const;
+
+/**
+ * A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.
+ */
+export interface SavedZoneOut {
+  /** The zone's id. */
+  id: string;
+  /** The zone's name. */
+  name: string;
+  /** Whether it was drawn on the map or uploaded. */
+  source: SavedZoneOutSource;
+  /** The version of its outline: it grows each time the outline changes. */
+  version: number;
+  /** Its area, in hectares, measured on the WGS 84 ellipsoid. */
+  area_ha: number;
+  /**
+     * West, south, east and north, in degrees.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: number[];
+  /** The department its interior falls in, or null outside every one. */
+  department: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavedZoneFeature {
+  type?: 'Feature';
+  id: string;
+  properties: SavedZoneOut;
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+}
+
+/**
+ * Your whole library as GeoJSON, to draw it on a map.
+ */
+export interface SavedZoneFeatures {
+  type?: 'FeatureCollection';
+  features: SavedZoneFeature[];
+}
+
+/**
+ * Whether it was drawn on the map or uploaded in a file.
+ */
+export type SavedZoneInSource = typeof SavedZoneInSource[keyof typeof SavedZoneInSource];
+
+
+export const SavedZoneInSource = {
+  drawn: 'drawn',
+  uploaded: 'uploaded',
+} as const;
+
+/**
+ * A zone to save to your library.
+ */
+export interface SavedZoneIn {
+  /**
+     * A name for the zone.
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** Whether it was drawn on the map or uploaded in a file. */
+  source: SavedZoneInSource;
+  /** A GeoJSON geometry, in WGS 84. */
+  geometry: Polygon | MultiPolygon;
+}
+
+export interface SavedZoneRename {
+  /**
+     * The zone's new name.
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+}
+
+/**
+ * Several zones to save at once, such as the polygons of an uploaded file.
+ */
+export interface SavedZonesImport {
+  /**
+     * The zones, at most as many as the import limit.
+     * @minItems 1
+     */
+  zones: SavedZoneIn[];
 }
 
 /**
@@ -662,3 +786,1045 @@ export const useRevokeMySessions = <TError = Problem,
       > => {
       return useMutation(getRevokeMySessionsMutationOptions(options), queryClient);
     }
+
+export type listSavedZonesResponse200 = {
+  data: SavedZoneOut[]
+  status: 200
+}
+
+export type listSavedZonesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listSavedZonesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listSavedZonesResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listSavedZonesResponseSuccess = (listSavedZonesResponse200) & {
+  headers: Headers;
+};
+export type listSavedZonesResponseError = (listSavedZonesResponse401 | listSavedZonesResponse403 | listSavedZonesResponse429) & {
+  headers: Headers;
+};
+
+export type listSavedZonesResponse = (listSavedZonesResponseSuccess | listSavedZonesResponseError)
+
+export const getListSavedZonesUrl = () => {
+
+
+
+
+  return `/v1/saved-zones`
+}
+
+/**
+ * @summary Your saved zones
+ */
+export const listSavedZones = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listSavedZonesResponse> => {
+
+  return apiFetch<listSavedZonesResponse>(getListSavedZonesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSavedZonesQueryKey = () => {
+    return [
+    `/v1/saved-zones`
+    ] as const;
+    }
+
+
+export const getListSavedZonesQueryOptions = <TData = Awaited<ReturnType<typeof listSavedZones>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSavedZonesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSavedZones>>> = ({ signal }) => listSavedZones({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSavedZonesQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedZones>>>
+export type ListSavedZonesQueryError = Problem
+
+
+export function useListSavedZones<TData = Awaited<ReturnType<typeof listSavedZones>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZones>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZones<TData = Awaited<ReturnType<typeof listSavedZones>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZones>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZones>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZones<TData = Awaited<ReturnType<typeof listSavedZones>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Your saved zones
+ */
+
+export function useListSavedZones<TData = Awaited<ReturnType<typeof listSavedZones>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZones>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSavedZonesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createSavedZoneResponse201 = {
+  data: SavedZoneOut
+  status: 201
+}
+
+export type createSavedZoneResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type createSavedZoneResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type createSavedZoneResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type createSavedZoneResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type createSavedZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type createSavedZoneResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type createSavedZoneResponseSuccess = (createSavedZoneResponse201) & {
+  headers: Headers;
+};
+export type createSavedZoneResponseError = (createSavedZoneResponse401 | createSavedZoneResponse403 | createSavedZoneResponse409 | createSavedZoneResponse413 | createSavedZoneResponse422 | createSavedZoneResponse429) & {
+  headers: Headers;
+};
+
+export type createSavedZoneResponse = (createSavedZoneResponseSuccess | createSavedZoneResponseError)
+
+export const getCreateSavedZoneUrl = () => {
+
+
+
+
+  return `/v1/saved-zones`
+}
+
+/**
+ * Checks the outline, measures its area and finds its department, then keeps it in your library.
+ * @summary Save a zone
+ */
+export const createSavedZone = async (savedZoneIn: SavedZoneIn, options?: Parameters<typeof apiFetch>[1]): Promise<createSavedZoneResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<createSavedZoneResponse>(getCreateSavedZoneUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(savedZoneIn)
+  }
+);}
+
+
+
+
+
+export const getCreateSavedZoneMutationKey = () => ['createSavedZone'] as const;
+
+export const getCreateSavedZoneMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSavedZone>>, TError,CreateSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSavedZone>>, TError,CreateSavedZoneMutationVariables, TContext> => {
+
+const mutationKey = getCreateSavedZoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSavedZone>>, CreateSavedZoneMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSavedZone(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSavedZoneMutationResult = NonNullable<Awaited<ReturnType<typeof createSavedZone>>>
+    export type CreateSavedZoneMutationBody = SavedZoneIn
+    export type CreateSavedZoneMutationError = Problem
+    export type CreateSavedZoneMutationVariables = {data: SavedZoneIn}
+
+    /**
+ * @summary Save a zone
+ */
+export const useCreateSavedZone = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSavedZone>>, TError,CreateSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createSavedZone>>,
+        TError,
+        CreateSavedZoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSavedZoneMutationOptions(options), queryClient);
+    }
+
+export type importSavedZonesResponse201 = {
+  data: SavedZoneOut[]
+  status: 201
+}
+
+export type importSavedZonesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type importSavedZonesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type importSavedZonesResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type importSavedZonesResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type importSavedZonesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type importSavedZonesResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type importSavedZonesResponseSuccess = (importSavedZonesResponse201) & {
+  headers: Headers;
+};
+export type importSavedZonesResponseError = (importSavedZonesResponse401 | importSavedZonesResponse403 | importSavedZonesResponse409 | importSavedZonesResponse413 | importSavedZonesResponse422 | importSavedZonesResponse429) & {
+  headers: Headers;
+};
+
+export type importSavedZonesResponse = (importSavedZonesResponseSuccess | importSavedZonesResponseError)
+
+export const getImportSavedZonesUrl = () => {
+
+
+
+
+  return `/v1/saved-zones/import`
+}
+
+/**
+ * Saves every zone, or none when one of them is not valid.
+ * @summary Save several zones
+ */
+export const importSavedZones = async (savedZonesImport: SavedZonesImport, options?: Parameters<typeof apiFetch>[1]): Promise<importSavedZonesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<importSavedZonesResponse>(getImportSavedZonesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(savedZonesImport)
+  }
+);}
+
+
+
+
+
+export const getImportSavedZonesMutationKey = () => ['importSavedZones'] as const;
+
+export const getImportSavedZonesMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSavedZones>>, TError,ImportSavedZonesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importSavedZones>>, TError,ImportSavedZonesMutationVariables, TContext> => {
+
+const mutationKey = getImportSavedZonesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importSavedZones>>, ImportSavedZonesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  importSavedZones(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportSavedZonesMutationResult = NonNullable<Awaited<ReturnType<typeof importSavedZones>>>
+    export type ImportSavedZonesMutationBody = SavedZonesImport
+    export type ImportSavedZonesMutationError = Problem
+    export type ImportSavedZonesMutationVariables = {data: SavedZonesImport}
+
+    /**
+ * @summary Save several zones
+ */
+export const useImportSavedZones = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSavedZones>>, TError,ImportSavedZonesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof importSavedZones>>,
+        TError,
+        ImportSavedZonesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getImportSavedZonesMutationOptions(options), queryClient);
+    }
+
+export type getSavedZoneFeaturesResponse200 = {
+  data: SavedZoneFeatures
+  status: 200
+}
+
+export type getSavedZoneFeaturesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getSavedZoneFeaturesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getSavedZoneFeaturesResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getSavedZoneFeaturesResponseSuccess = (getSavedZoneFeaturesResponse200) & {
+  headers: Headers;
+};
+export type getSavedZoneFeaturesResponseError = (getSavedZoneFeaturesResponse401 | getSavedZoneFeaturesResponse403 | getSavedZoneFeaturesResponse429) & {
+  headers: Headers;
+};
+
+export type getSavedZoneFeaturesResponse = (getSavedZoneFeaturesResponseSuccess | getSavedZoneFeaturesResponseError)
+
+export const getGetSavedZoneFeaturesUrl = () => {
+
+
+
+
+  return `/v1/saved-zones/features`
+}
+
+/**
+ * @summary Your saved zones as GeoJSON
+ */
+export const getSavedZoneFeatures = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneFeaturesResponse> => {
+
+  return apiFetch<getSavedZoneFeaturesResponse>(getGetSavedZoneFeaturesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedZoneFeaturesQueryKey = () => {
+    return [
+    `/v1/saved-zones/features`
+    ] as const;
+    }
+
+
+export const getGetSavedZoneFeaturesQueryOptions = <TData = Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedZoneFeaturesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedZoneFeatures>>> = ({ signal }) => getSavedZoneFeatures({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavedZoneFeaturesQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedZoneFeatures>>>
+export type GetSavedZoneFeaturesQueryError = Problem
+
+
+export function useGetSavedZoneFeatures<TData = Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneFeatures>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneFeatures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneFeatures<TData = Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneFeatures>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneFeatures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneFeatures<TData = Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Your saved zones as GeoJSON
+ */
+
+export function useGetSavedZoneFeatures<TData = Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneFeatures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavedZoneFeaturesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getSavedZoneResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type getSavedZoneResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getSavedZoneResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getSavedZoneResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getSavedZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getSavedZoneResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getSavedZoneResponseSuccess = (getSavedZoneResponse200) & {
+  headers: Headers;
+};
+export type getSavedZoneResponseError = (getSavedZoneResponse401 | getSavedZoneResponse403 | getSavedZoneResponse404 | getSavedZoneResponse422 | getSavedZoneResponse429) & {
+  headers: Headers;
+};
+
+export type getSavedZoneResponse = (getSavedZoneResponseSuccess | getSavedZoneResponseError)
+
+export const getGetSavedZoneUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}`
+}
+
+/**
+ * @summary One of your saved zones
+ */
+export const getSavedZone = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneResponse> => {
+
+  return apiFetch<getSavedZoneResponse>(getGetSavedZoneUrl(zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedZoneQueryKey = (zoneId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}`
+    ] as const;
+    }
+
+
+export const getGetSavedZoneQueryOptions = <TData = Awaited<ReturnType<typeof getSavedZone>>, TError = Problem>(zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedZoneQueryKey(zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedZone>>> = ({ signal }) => getSavedZone(zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavedZoneQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedZone>>>
+export type GetSavedZoneQueryError = Problem
+
+
+export function useGetSavedZone<TData = Awaited<ReturnType<typeof getSavedZone>>, TError = Problem>(
+ zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZone>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZone<TData = Awaited<ReturnType<typeof getSavedZone>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZone>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZone>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZone<TData = Awaited<ReturnType<typeof getSavedZone>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One of your saved zones
+ */
+
+export function useGetSavedZone<TData = Awaited<ReturnType<typeof getSavedZone>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZone>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavedZoneQueryOptions(zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type renameSavedZoneResponse200 = {
+  data: SavedZoneOut
+  status: 200
+}
+
+export type renameSavedZoneResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type renameSavedZoneResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type renameSavedZoneResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type renameSavedZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type renameSavedZoneResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type renameSavedZoneResponseSuccess = (renameSavedZoneResponse200) & {
+  headers: Headers;
+};
+export type renameSavedZoneResponseError = (renameSavedZoneResponse401 | renameSavedZoneResponse403 | renameSavedZoneResponse404 | renameSavedZoneResponse422 | renameSavedZoneResponse429) & {
+  headers: Headers;
+};
+
+export type renameSavedZoneResponse = (renameSavedZoneResponseSuccess | renameSavedZoneResponseError)
+
+export const getRenameSavedZoneUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}`
+}
+
+/**
+ * @summary Rename a saved zone
+ */
+export const renameSavedZone = async (zoneId: string,
+    savedZoneRename: SavedZoneRename, options?: Parameters<typeof apiFetch>[1]): Promise<renameSavedZoneResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<renameSavedZoneResponse>(getRenameSavedZoneUrl(zoneId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(savedZoneRename)
+  }
+);}
+
+
+
+
+
+export const getRenameSavedZoneMutationKey = () => ['renameSavedZone'] as const;
+
+export const getRenameSavedZoneMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSavedZone>>, TError,RenameSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameSavedZone>>, TError,RenameSavedZoneMutationVariables, TContext> => {
+
+const mutationKey = getRenameSavedZoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameSavedZone>>, RenameSavedZoneMutationVariables> = (props) => {
+          const {zoneId,data} = props ?? {};
+
+          return  renameSavedZone(zoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameSavedZoneMutationResult = NonNullable<Awaited<ReturnType<typeof renameSavedZone>>>
+    export type RenameSavedZoneMutationBody = SavedZoneRename
+    export type RenameSavedZoneMutationError = Problem
+    export type RenameSavedZoneMutationVariables = {zoneId: string;data: SavedZoneRename}
+
+    /**
+ * @summary Rename a saved zone
+ */
+export const useRenameSavedZone = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSavedZone>>, TError,RenameSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renameSavedZone>>,
+        TError,
+        RenameSavedZoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameSavedZoneMutationOptions(options), queryClient);
+    }
+
+export type deleteSavedZoneResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteSavedZoneResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type deleteSavedZoneResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type deleteSavedZoneResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deleteSavedZoneResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type deleteSavedZoneResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type deleteSavedZoneResponseSuccess = (deleteSavedZoneResponse204) & {
+  headers: Headers;
+};
+export type deleteSavedZoneResponseError = (deleteSavedZoneResponse401 | deleteSavedZoneResponse403 | deleteSavedZoneResponse404 | deleteSavedZoneResponse422 | deleteSavedZoneResponse429) & {
+  headers: Headers;
+};
+
+export type deleteSavedZoneResponse = (deleteSavedZoneResponseSuccess | deleteSavedZoneResponseError)
+
+export const getDeleteSavedZoneUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}`
+}
+
+/**
+ * Deletes the zone and every version of its outline.
+ * @summary Delete a saved zone
+ */
+export const deleteSavedZone = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteSavedZoneResponse> => {
+
+  return apiFetch<deleteSavedZoneResponse>(getDeleteSavedZoneUrl(zoneId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSavedZoneMutationKey = () => ['deleteSavedZone'] as const;
+
+export const getDeleteSavedZoneMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZone>>, TError,DeleteSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZone>>, TError,DeleteSavedZoneMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSavedZoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSavedZone>>, DeleteSavedZoneMutationVariables> = (props) => {
+          const {zoneId} = props ?? {};
+
+          return  deleteSavedZone(zoneId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSavedZoneMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSavedZone>>>
+
+    export type DeleteSavedZoneMutationError = Problem
+    export type DeleteSavedZoneMutationVariables = {zoneId: string}
+
+    /**
+ * @summary Delete a saved zone
+ */
+export const useDeleteSavedZone = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZone>>, TError,DeleteSavedZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSavedZone>>,
+        TError,
+        DeleteSavedZoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSavedZoneMutationOptions(options), queryClient);
+    }
+
+export type getSavedZoneGeometryResponse200 = {
+  data: Polygon | MultiPolygon
+  status: 200
+}
+
+export type getSavedZoneGeometryResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getSavedZoneGeometryResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getSavedZoneGeometryResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getSavedZoneGeometryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getSavedZoneGeometryResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getSavedZoneGeometryResponseSuccess = (getSavedZoneGeometryResponse200) & {
+  headers: Headers;
+};
+export type getSavedZoneGeometryResponseError = (getSavedZoneGeometryResponse401 | getSavedZoneGeometryResponse403 | getSavedZoneGeometryResponse404 | getSavedZoneGeometryResponse422 | getSavedZoneGeometryResponse429) & {
+  headers: Headers;
+};
+
+export type getSavedZoneGeometryResponse = (getSavedZoneGeometryResponseSuccess | getSavedZoneGeometryResponseError)
+
+export const getGetSavedZoneGeometryUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/geometry`
+}
+
+/**
+ * @summary The outline of a saved zone
+ */
+export const getSavedZoneGeometry = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneGeometryResponse> => {
+
+  return apiFetch<getSavedZoneGeometryResponse>(getGetSavedZoneGeometryUrl(zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedZoneGeometryQueryKey = (zoneId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}/geometry`
+    ] as const;
+    }
+
+
+export const getGetSavedZoneGeometryQueryOptions = <TData = Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError = Problem>(zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedZoneGeometryQueryKey(zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedZoneGeometry>>> = ({ signal }) => getSavedZoneGeometry(zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavedZoneGeometryQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedZoneGeometry>>>
+export type GetSavedZoneGeometryQueryError = Problem
+
+
+export function useGetSavedZoneGeometry<TData = Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError = Problem>(
+ zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneGeometry>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneGeometry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneGeometry<TData = Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneGeometry>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneGeometry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneGeometry<TData = Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The outline of a saved zone
+ */
+
+export function useGetSavedZoneGeometry<TData = Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavedZoneGeometryQueryOptions(zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

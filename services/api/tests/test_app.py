@@ -77,6 +77,6 @@ def test_the_document_publishes_problems_and_the_version() -> None:
 
     published = json.loads(document())
     responses = published["paths"]["/v1/zones/{division}/{zone}/seasonal"]["get"]["responses"]
-    assert published["info"]["version"] == "1.1.0"
+    assert published["info"]["version"] == "1.2.0"
     assert list(responses["404"]["content"]) == ["application/problem+json"]
     assert list(responses["422"]["content"]) == ["application/problem+json"]

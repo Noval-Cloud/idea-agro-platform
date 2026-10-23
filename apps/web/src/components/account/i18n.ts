@@ -10,5 +10,9 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
   const translator = createCatalogTranslator(locale, catalog);
   const date = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "long" }).format(new Date(value));
-  return { ...translator, date };
+  const number = (value: number) =>
+    new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
+  return { ...translator, date, number };
 }
+
+export type AccountTranslator = ReturnType<typeof createAccountTranslator>;

@@ -9,12 +9,12 @@ from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
-from idea_agro_api.routes import me, service, zones
-from idea_agro_api.security import security_headers
+from idea_agro_api.routes import me, saved_zones, service, zones
+from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.1.0"
+API_VERSION = "1.2.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -46,6 +46,7 @@ Every error is a Problem Details object (RFC 9457), served as `application/probl
 TAGS = [
     {"name": "Zones", "description": "Indicator values of the predefined zones of each division."},
     {"name": "Account", "description": "Your own account. Requires signing in."},
+    {"name": "Saved zones", "description": "The zones you keep in your library. Requires signing in."},
     {"name": "Service", "description": "The state of the service itself."},
 ]
 
@@ -61,7 +62,9 @@ def create_app(services: Services) -> FastAPI:
         generate_unique_id_function=lambda route: route.name,
     )
     app.state.services = services
-    # Innermost, so the problem response still gets CORS and security headers.
+    # Innermost of all: the route reads the body straight from it, so its 413 is not wrapped by other layers.
+    app.add_middleware(BodyLimit, limit_for=services.limits.body_bytes)
+    # Next, so the problem response still gets CORS and security headers.
     app.middleware("http")(server_problems)
     # Public: any site or app may call it. Tokens travel in a header, never in cookies.
     app.add_middleware(
@@ -70,7 +73,7 @@ def create_app(services: Services) -> FastAPI:
     app.middleware("http")(security_headers)
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    for module in (service, zones, me):
+    for module in (service, zones, me, saved_zones):
         app.include_router(module.router)
 
     def openapi() -> dict[str, Any]:

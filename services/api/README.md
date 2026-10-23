@@ -34,6 +34,18 @@ Only the routes about the caller's own account, zones and projects are private. 
   - a disabled account is refused.
 - **Limits and headers:** private routes are limited to `PRIVATE_REQUESTS_PER_MINUTE` per client and instance (60 by default). Every response carries security headers.
 
+## Saved zones
+
+A person's library of zones, apart from any project, under `/v1/saved-zones` (private).
+
+- **Checks on save:** the outline must be a valid Polygon or MultiPolygon that touches Uruguay. Its geodesic area, bounding box and department (from the police districts in `zones/seccionales.json` of `ZONES_SOURCE`) are computed on save.
+- **Storage:**
+  - each version of an outline is an immutable GeoJSON file, behind a `GeometryStore`: `GEOMETRIES_SOURCE` is `gs://<bucket>` (private, reachable only by the API) or `memory://`;
+  - the metadata lives in the records store (`RECORDS_SOURCE`).
+- **Import:** `POST /v1/saved-zones/import` saves up to `ZONES_PER_IMPORT` zones (100) at once, all or none.
+- **Limits:** `SAVED_ZONES_PER_ACCOUNT` (500), `GEOMETRY_MAX_BYTES` (1 MB) and `IMPORT_MAX_BYTES` (5 MB).
+- **Privacy:** another person's zone answers 404, as if it did not exist.
+
 ## Errors
 
 Every error is a Problem Details object (RFC 9457) served as `application/problem+json`: `type`, `title`, `status`, `detail`, `instance`, and `errors` for invalid parameters.

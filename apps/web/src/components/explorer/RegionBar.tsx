@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Popover, Select } from "radix-ui";
-import { Check, ChevronDown, Info, PenLine, Trash2, Upload } from "lucide-react";
+import { Check, ChevronDown, CloudUpload, Info, PenLine, Trash2, Upload } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import { basinGrades, type BasinGrade, type Manifest } from "./lib/data";
@@ -17,6 +17,10 @@ interface Props {
   layers: CustomLayer[];
   counts: Partial<Record<string, number>>;
   signInHref: string;
+  signedIn: boolean;
+  /** The layer being saved to the account, if any. */
+  saving: string | null;
+  onSave: (layer: string) => void;
   drawing: boolean;
   onRegions: (regions: RegionKind) => void;
   onGrade: (grade: BasinGrade) => void;
@@ -198,19 +202,37 @@ export default function RegionBar(props: Props) {
                   className="inline-flex h-9 max-w-64 shrink-0 items-center gap-2 rounded-pill border border-line pr-1 pl-3 text-xs"
                 >
                   <span className="min-w-0 truncate text-ink">
-                    {layer.source === "drawn"
-                      ? t("explorer.regions.drawn")
-                      : t("explorer.regions.file", { name: layer.name })}
+                    {layer.source === "saved"
+                      ? t("explorer.regions.saved")
+                      : layer.source === "drawn"
+                        ? t("explorer.regions.drawn")
+                        : t("explorer.regions.file", { name: layer.name })}
                   </span>
                   <span className="text-2xs text-ink-subtle">{i18n.number(layer.zones.length)}</span>
-                  <button
-                    type="button"
-                    onClick={() => props.onRemove(layer.key)}
-                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-pill text-ink-muted hover:bg-action-soft hover:text-ink"
-                    aria-label={t("explorer.regions.remove", { name: layer.name })}
-                  >
-                    <Trash2 size={iconSize.sm} aria-hidden="true" />
-                  </button>
+                  {layer.source !== "saved" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => props.onSave(layer.key)}
+                        disabled={props.saving !== null}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-pill text-ink-muted hover:bg-action-soft hover:text-ink disabled:opacity-50"
+                        aria-label={
+                          props.saving === layer.key ? t("explorer.regions.saving") : t("explorer.regions.save")
+                        }
+                        title={props.saving === layer.key ? t("explorer.regions.saving") : t("explorer.regions.save")}
+                      >
+                        <CloudUpload size={iconSize.sm} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => props.onRemove(layer.key)}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-pill text-ink-muted hover:bg-action-soft hover:text-ink"
+                        aria-label={t("explorer.regions.remove", { name: layer.name })}
+                      >
+                        <Trash2 size={iconSize.sm} aria-hidden="true" />
+                      </button>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -232,12 +254,14 @@ export default function RegionBar(props: Props) {
                   <p>{t("explorer.regions.uploadHint")}</p>
                   <p>
                     {t("explorer.regions.sessionNote")}{" "}
-                    <a
-                      href={props.signInHref}
-                      className="text-link underline underline-offset-(--ia-link-underline-offset)"
-                    >
-                      {t("explorer.regions.mineSignInLink")}
-                    </a>
+                    {!props.signedIn && (
+                      <a
+                        href={props.signInHref}
+                        className="text-link underline underline-offset-(--ia-link-underline-offset)"
+                      >
+                        {t("explorer.regions.mineSignInLink")}
+                      </a>
+                    )}
                   </p>
                 </Popover.Content>
               </Popover.Portal>

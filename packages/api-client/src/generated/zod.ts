@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.1.0
+ * OpenAPI spec version: 1.2.0
  */
 import * as zod from 'zod';
 
@@ -94,3 +94,281 @@ export const GetMeResponse = zod.object({
  * @summary Log out everywhere
  */
 export const RevokeMySessionsResponse = zod.void()
+
+
+/**
+ * @summary Your saved zones
+ */
+export const listSavedZonesResponseBboxMin = 4;
+export const listSavedZonesResponseBboxMax = 4;
+
+
+
+export const ListSavedZonesResponseItem = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(listSavedZonesResponseBboxMin).max(listSavedZonesResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+export const ListSavedZonesResponse = zod.array(ListSavedZonesResponseItem)
+
+
+/**
+ * Checks the outline, measures its area and finds its department, then keeps it in your library.
+ * @summary Save a zone
+ */
+export const createSavedZoneBodyNameMax = 120;
+
+export const createSavedZoneBodyGeometryOneCoordinatesItemItemMin = 2;
+export const createSavedZoneBodyGeometryOneCoordinatesItemItemMax = 3;
+
+export const createSavedZoneBodyGeometryOneCoordinatesItemMin = 4;
+
+
+export const createSavedZoneBodyGeometryTwoCoordinatesItemItemItemMin = 2;
+export const createSavedZoneBodyGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const createSavedZoneBodyGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const CreateSavedZoneBody = zod.object({
+  "name": zod.string().min(1).max(createSavedZoneBodyNameMax).describe('A name for the zone.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded in a file.'),
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(createSavedZoneBodyGeometryOneCoordinatesItemItemMin).max(createSavedZoneBodyGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(createSavedZoneBodyGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(createSavedZoneBodyGeometryTwoCoordinatesItemItemItemMin).max(createSavedZoneBodyGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(createSavedZoneBodyGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+}).describe('A zone to save to your library.')
+
+export const createSavedZoneResponseBboxMin = 4;
+export const createSavedZoneResponseBboxMax = 4;
+
+
+
+export const CreateSavedZoneResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(createSavedZoneResponseBboxMin).max(createSavedZoneResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Saves every zone, or none when one of them is not valid.
+ * @summary Save several zones
+ */
+export const importSavedZonesBodyZonesItemNameMax = 120;
+
+export const importSavedZonesBodyZonesItemGeometryOneCoordinatesItemItemMin = 2;
+export const importSavedZonesBodyZonesItemGeometryOneCoordinatesItemItemMax = 3;
+
+export const importSavedZonesBodyZonesItemGeometryOneCoordinatesItemMin = 4;
+
+
+export const importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemItemMin = 2;
+export const importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+
+export const ImportSavedZonesBody = zod.object({
+  "zones": zod.array(zod.object({
+  "name": zod.string().min(1).max(importSavedZonesBodyZonesItemNameMax).describe('A name for the zone.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded in a file.'),
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(importSavedZonesBodyZonesItemGeometryOneCoordinatesItemItemMin).max(importSavedZonesBodyZonesItemGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(importSavedZonesBodyZonesItemGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemItemMin).max(importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(importSavedZonesBodyZonesItemGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+}).describe('A zone to save to your library.')).min(1).describe('The zones, at most as many as the import limit.')
+}).describe('Several zones to save at once, such as the polygons of an uploaded file.')
+
+export const importSavedZonesResponseBboxMin = 4;
+export const importSavedZonesResponseBboxMax = 4;
+
+
+
+export const ImportSavedZonesResponseItem = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(importSavedZonesResponseBboxMin).max(importSavedZonesResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+export const ImportSavedZonesResponse = zod.array(ImportSavedZonesResponseItem)
+
+
+/**
+ * @summary Your saved zones as GeoJSON
+ */
+export const getSavedZoneFeaturesResponseTypeDefault = `FeatureCollection`;
+export const getSavedZoneFeaturesResponseFeaturesItemTypeDefault = `Feature`;
+export const getSavedZoneFeaturesResponseFeaturesItemPropertiesBboxMin = 4;
+export const getSavedZoneFeaturesResponseFeaturesItemPropertiesBboxMax = 4;
+
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemItemMin = 2;
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemItemMax = 3;
+
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemMin = 4;
+
+
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemItemMin = 2;
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemItemMax = 3;
+
+export const getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const GetSavedZoneFeaturesResponse = zod.object({
+  "type": zod.literal("FeatureCollection").default(getSavedZoneFeaturesResponseTypeDefault).meta({ title: 'Type' }),
+  "features": zod.array(zod.object({
+  "type": zod.literal("Feature").default(getSavedZoneFeaturesResponseFeaturesItemTypeDefault).meta({ title: 'Type' }),
+  "id": zod.string(),
+  "properties": zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(getSavedZoneFeaturesResponseFeaturesItemPropertiesBboxMin).max(getSavedZoneFeaturesResponseFeaturesItemPropertiesBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),
+  "geometry": zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemItemMin).max(getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(getSavedZoneFeaturesResponseFeaturesItemGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemItemMin).max(getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(getSavedZoneFeaturesResponseFeaturesItemGeometryTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
+}))
+}).describe('Your whole library as GeoJSON, to draw it on a map.')
+
+
+/**
+ * @summary One of your saved zones
+ */
+export const GetSavedZoneParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const getSavedZoneResponseBboxMin = 4;
+export const getSavedZoneResponseBboxMax = 4;
+
+
+
+export const GetSavedZoneResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(getSavedZoneResponseBboxMin).max(getSavedZoneResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * @summary Rename a saved zone
+ */
+export const RenameSavedZoneParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const renameSavedZoneBodyNameMax = 120;
+
+
+
+export const RenameSavedZoneBody = zod.object({
+  "name": zod.string().min(1).max(renameSavedZoneBodyNameMax).describe('The zone\'s new name.')
+})
+
+export const renameSavedZoneResponseBboxMin = 4;
+export const renameSavedZoneResponseBboxMax = 4;
+
+
+
+export const RenameSavedZoneResponse = zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid.'),
+  "bbox": zod.array(zod.number()).min(renameSavedZoneResponseBboxMin).max(renameSavedZoneResponseBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Deletes the zone and every version of its outline.
+ * @summary Delete a saved zone
+ */
+export const DeleteSavedZoneParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const DeleteSavedZoneResponse = zod.void()
+
+
+/**
+ * @summary The outline of a saved zone
+ */
+export const GetSavedZoneGeometryParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const getSavedZoneGeometryResponseOneCoordinatesItemItemMin = 2;
+export const getSavedZoneGeometryResponseOneCoordinatesItemItemMax = 3;
+
+export const getSavedZoneGeometryResponseOneCoordinatesItemMin = 4;
+
+
+export const getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMin = 2;
+export const getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMax = 3;
+
+export const getSavedZoneGeometryResponseTwoCoordinatesItemItemMin = 4;
+
+
+
+
+
+export const GetSavedZoneGeometryResponse = zod.union([zod.object({
+  "type": zod.literal("Polygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.number()).min(getSavedZoneGeometryResponseOneCoordinatesItemItemMin).max(getSavedZoneGeometryResponseOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(getSavedZoneGeometryResponseOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
+}),zod.object({
+  "type": zod.literal("MultiPolygon").meta({ title: 'Type' }),
+  "coordinates": zod.array(zod.array(zod.array(zod.array(zod.number()).min(getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMin).max(getSavedZoneGeometryResponseTwoCoordinatesItemItemItemMax).describe('Longitude and latitude, in degrees.')).min(getSavedZoneGeometryResponseTwoCoordinatesItemItemMin).describe('A closed ring: its first and last positions match.')).min(1)).min(1)
+})]).describe('A GeoJSON geometry, in WGS 84.')
