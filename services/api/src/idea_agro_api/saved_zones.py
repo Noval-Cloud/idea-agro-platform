@@ -1,7 +1,7 @@
 """Saved zones: the outlines a person keeps in their library, apart from any project."""
 
 import uuid
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol, cast
@@ -16,6 +16,25 @@ class Source(StrEnum):
 
 
 @dataclass(frozen=True)
+class OutlineVersion:
+    """One version of a zone's outline, and the file that holds it."""
+
+    version: int
+    file: str
+    at: datetime
+    by: str
+    # The author's name at the time.
+    by_name: str
+    area_ha: float
+    # The version this one brought back, when it was a restore.
+    restored_from: int | None = None
+
+
+class OutlineChanged(Exception):
+    """The outline moved to another version while a change was on its way."""
+
+
+@dataclass(frozen=True)
 class SavedZone:
     id: str
     owner: str
@@ -25,10 +44,13 @@ class SavedZone:
     area_ha: float
     bbox: tuple[float, float, float, float]
     department: str | None
-    # Bytes of the stored outline, so a library's total size is known without reading it.
+    # The current outline's file, and its bytes, so a library's total size is known without reading it.
+    file: str
     size: int
     created_at: datetime
     updated_at: datetime
+    # The kept versions of the outline, oldest first.
+    history: tuple[OutlineVersion, ...] = field(default_factory=tuple[OutlineVersion, ...])
 
 
 @dataclass(frozen=True)
@@ -62,6 +84,16 @@ class SavedZoneStore(Protocol):
         """Changes only the fields given; None when the zone no longer exists."""
         ...
 
+    def replace_outline(
+        self, id: str, current: int, version: OutlineVersion, keep: int, **fields: Any
+    ) -> tuple[SavedZone, list[str]] | None:
+        """Moves the zone from version `current` to `version`, keeping the latest `keep` versions.
+
+        Answers the zone and the files of the versions it no longer keeps; raises OutlineChanged when the zone is
+        at another version, and answers None without the zone.
+        """
+        ...
+
     def delete(self, id: str) -> None: ...
 
 
@@ -90,6 +122,20 @@ class MemorySavedZones:
             return None
         self._zones[id] = replace(self._zones[id], **fields)
         return self._zones[id]
+
+    def replace_outline(
+        self, id: str, current: int, version: OutlineVersion, keep: int, **fields: Any
+    ) -> tuple[SavedZone, list[str]] | None:
+        zone = self._zones.get(id)
+        if zone is None:
+            return None
+        if zone.version != current:
+            raise OutlineChanged
+        history = (*zone.history, version)
+        dropped = [v.file for v in history[:-keep]]
+        changed = replace(zone, version=version.version, file=version.file, history=history[-keep:], **fields)
+        self._zones[id] = changed
+        return changed, dropped
 
     def delete(self, id: str) -> None:
         self._zones.pop(id, None)
@@ -142,8 +188,46 @@ class FirestoreSavedZones:
             return None
         return self.get(id)
 
+    def replace_outline(
+        self, id: str, current: int, version: OutlineVersion, keep: int, **fields: Any
+    ) -> tuple[SavedZone, list[str]] | None:
+        reference: Any = self._zones.document(id)  # pyright: ignore[reportUnknownMemberType]
+
+        @firestore.transactional  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
+        def run(transaction: Any) -> list[str] | None:
+            snapshot = reference.get(transaction=transaction)
+            if not snapshot.exists:
+                return None
+            zone = _from_document(id, cast(dict[str, Any], snapshot.to_dict()))
+            if zone.version != current:
+                raise OutlineChanged
+            history = (*zone.history, version)
+            values = fields | {
+                "version": version.version,
+                "file": version.file,
+                "history": [_version(v) for v in history[-keep:]],
+            }
+            transaction.update(reference, values)
+            return [v.file for v in history[:-keep]]
+
+        dropped = cast(list[str] | None, run(self._client.transaction()))  # pyright: ignore[reportUnknownMemberType]
+        changed = self.get(id) if dropped is not None else None
+        return (changed, dropped) if changed and dropped is not None else None
+
     def delete(self, id: str) -> None:
         self._zones.document(id).delete()  # pyright: ignore[reportUnknownMemberType]
+
+
+def _version(version: OutlineVersion) -> dict[str, Any]:
+    return {
+        "version": version.version,
+        "file": version.file,
+        "at": version.at,
+        "by": version.by,
+        "by_name": version.by_name,
+        "area_ha": version.area_ha,
+        "restored_from": version.restored_from,
+    }
 
 
 def _to_document(zone: SavedZone) -> dict[str, Any]:
@@ -155,7 +239,9 @@ def _to_document(zone: SavedZone) -> dict[str, Any]:
         "area_ha": zone.area_ha,
         "bbox": list(zone.bbox),
         "department": zone.department,
+        "file": zone.file,
         "size": zone.size,
+        "history": [_version(v) for v in zone.history],
         "created_at": zone.created_at,
         "updated_at": zone.updated_at,
     }
@@ -172,7 +258,20 @@ def _from_document(id: str, data: dict[str, Any]) -> SavedZone:
         area_ha=data["area_ha"],
         bbox=(west, south, east, north),
         department=data.get("department"),
+        file=data["file"],
         size=data.get("size", 0),
+        history=tuple(
+            OutlineVersion(
+                version=v["version"],
+                file=v["file"],
+                at=v["at"],
+                by=v["by"],
+                by_name=v["by_name"],
+                area_ha=v["area_ha"],
+                restored_from=v.get("restored_from"),
+            )
+            for v in cast(list[dict[str, Any]], data.get("history", []))
+        ),
         created_at=data["created_at"],
         updated_at=data["updated_at"],
     )

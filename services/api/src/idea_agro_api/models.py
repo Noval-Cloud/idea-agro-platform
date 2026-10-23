@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, StringConstraints
 
+from idea_agro_api.activity import Action
+from idea_agro_api.projects import MemberRole
 from idea_agro_api.zones import Department, Division
 
 
@@ -200,15 +202,43 @@ class PadronItem(PadronItemIn):
 ProjectItem = Annotated[SavedItem | DivisionItem | PadronItem, Field(discriminator="kind")]
 
 
+ProjectRole = Literal["owner", "collaborator", "viewer"]
+ROLE = "Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads)."
+OTHERS_CAN_EDIT = "Whether someone else can change the outline of the zones you add: worth a warning."
+
+
 class ProjectSummary(BaseModel):
-    """One of your projects, without its zones."""
+    """One of your projects, or one shared with you, without its zones."""
 
     id: str = Field(description="The project's id.")
     name: str
     description: str
     zone_count: int = Field(description="How many zones the project holds.")
+    role: ProjectRole = Field(description=ROLE)
+    owner_name: str | None = Field(description="The owner's name.")
+    others_can_edit: bool = Field(description=OTHERS_CAN_EDIT)
     created_at: datetime
     updated_at: datetime
+
+
+class MemberIn(BaseModel):
+    """Someone to share the project with, or a member's new role."""
+
+    email: str = Field(
+        max_length=254,
+        # No characters that would change the meaning of a path, where emails go to remove a member.
+        pattern=r"^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$",
+        description="Their email, as they sign in with it.",
+    )
+    role: MemberRole = Field(description="`collaborator` edits the project's zones; `viewer` only reads.")
+
+
+class MemberOut(BaseModel):
+    email: str
+    name: str | None = Field(description="Their name, once they joined.")
+    role: MemberRole
+    pending: bool = Field(description="Invited, and not yet joined: they join when they open their projects.")
+    you: bool = Field(description="Whether this member is you.")
 
 
 class ProjectOut(BaseModel):
@@ -218,5 +248,37 @@ class ProjectOut(BaseModel):
     name: str
     description: str
     items: list[ProjectItem]
+    role: ProjectRole = Field(description=ROLE)
+    owner_name: str | None = Field(description="The owner's name.")
+    members: list[MemberOut] = Field(description="Everyone the owner shared the project with.")
+    others_can_edit: bool = Field(description=OTHERS_CAN_EDIT)
     created_at: datetime
     updated_at: datetime
+
+
+class ActivityOut(BaseModel):
+    """One change in a project."""
+
+    at: datetime
+    actor_name: str = Field(description="Who made the change, by their name at the time.")
+    action: Action
+    subject: str = Field(description="The item's id or the member's email the change was about, if any.")
+    detail: str = Field(description="A zone's name or a role, when it helps to read the change.")
+
+
+class OutlineChange(BaseModel):
+    """A zone's new outline."""
+
+    version: int = Field(ge=1, description="The version the change was made on: a newer one refuses it, with 409.")
+    geometry: Geometry
+
+
+class OutlineVersionOut(BaseModel):
+    """One version of a zone's outline."""
+
+    version: int
+    created_at: datetime
+    by_name: str = Field(description="Who made it, by their name at the time.")
+    area_ha: float
+    restored_from: int | None = Field(description="The version it brought back, when it was a restore.")
+    current: bool

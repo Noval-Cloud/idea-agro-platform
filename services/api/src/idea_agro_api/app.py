@@ -14,7 +14,7 @@ from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.3.0"
+API_VERSION = "1.4.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -69,7 +69,10 @@ def create_app(services: Services) -> FastAPI:
     app.middleware("http")(server_problems)
     # Public: any site or app may call it. Tokens travel in a header, never in cookies.
     app.add_middleware(
-        CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"]
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["*"],
     )
     app.middleware("http")(security_headers)
     app.add_exception_handler(HTTPException, http_problem)
