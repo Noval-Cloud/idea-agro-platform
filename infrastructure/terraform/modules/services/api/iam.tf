@@ -11,3 +11,11 @@ resource "google_service_account_iam_member" "builder_acts_as_api" {
   role               = var.act_as_role
   member             = var.builder_member
 }
+
+resource "google_project_iam_member" "api" {
+  for_each = toset(var.project_roles)
+
+  project = var.project
+  role    = each.value
+  member  = google_service_account.api.member
+}

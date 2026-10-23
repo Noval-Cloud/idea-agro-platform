@@ -96,3 +96,29 @@ variable "labels" {
   type        = map(string)
   default     = { owner = "api" }
 }
+
+variable "auth_issuer" {
+  description = "Issuer of the tokens the API accepts"
+  type        = string
+}
+
+variable "auth_audience" {
+  description = "Audience of the tokens the API accepts"
+  type        = string
+}
+
+variable "auth_jwks_url" {
+  description = "Where the keys that sign those tokens are published"
+  type        = string
+}
+
+variable "accounts_database" {
+  description = "The Firestore database that holds accounts"
+  type        = string
+}
+
+variable "project_roles" {
+  description = "Roles of the API on the project: reading and writing accounts, and managing their sessions"
+  type        = list(string)
+  default     = ["roles/datastore.user", "roles/firebaseauth.admin"]
+}

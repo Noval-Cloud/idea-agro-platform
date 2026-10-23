@@ -13,10 +13,21 @@ module "web" {
   builder_member = module.platform.builder_member
 }
 
+module "identity" {
+  source = "./modules/identity"
+
+  project     = var.project
+  app_origins = concat([module.web.url], var.auth_local_origins)
+}
+
 module "api" {
   source = "./modules/services/api"
 
-  project        = var.project
-  region         = var.region
-  builder_member = module.platform.builder_member
+  project           = var.project
+  region            = var.region
+  builder_member    = module.platform.builder_member
+  auth_issuer       = module.identity.issuer
+  auth_audience     = module.identity.audience
+  auth_jwks_url     = module.identity.jwks_url
+  accounts_database = module.platform.firestore_database
 }
