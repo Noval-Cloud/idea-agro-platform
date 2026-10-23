@@ -1,10 +1,11 @@
 import json
-from dataclasses import replace
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Response
 from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
@@ -26,17 +27,6 @@ from idea_agro_api.shapes import InvalidShape, outline_from
 router = APIRouter(tags=["Saved zones"])
 
 ZoneId = Annotated[UUID, PathParam(description="The zone's id.")]
-
-
-def body_within(limit: str):
-    """Refuses a body larger than the limit named, before reading it."""
-
-    def check(request: Request, services: ServicesDep) -> None:
-        size = int(request.headers.get("content-length") or 0)
-        if size > getattr(services.limits, limit):
-            raise HTTPException(413, f"The request is larger than {getattr(services.limits, limit)} bytes.")
-
-    return Depends(check)
 
 
 def out(zone: SavedZone) -> SavedZoneOut:
@@ -61,36 +51,52 @@ def owned(services: Services, owner: str, id: UUID) -> SavedZone:
     return zone
 
 
-def store(services: Services, owner: str, zone_in: SavedZoneIn) -> SavedZone:
+def prepare(services: Services, owner: str, zone_in: SavedZoneIn, label: str = "") -> tuple[SavedZone, bytes]:
+    """Checks and measures a zone without writing anything."""
     try:
         outline = outline_from(zone_in.geometry.model_dump(), services.limits.coverage)
     except InvalidShape as error:
-        raise HTTPException(422, str(error)) from error
+        raise HTTPException(422, f"{label}{error}") from error
     content = json.dumps(outline.geometry, separators=(",", ":")).encode()
     if len(content) > services.limits.geometry_bytes:
-        raise HTTPException(413, f"The outline is larger than {services.limits.geometry_bytes} bytes.")
+        raise HTTPException(413, f"{label}The outline is larger than {services.limits.geometry_bytes} bytes.")
     now = datetime.now(UTC)
     zone = SavedZone(
         id=new_zone_id(),
         owner=owner,
-        name=zone_in.name.strip(),
+        name=zone_in.name,
         source=Source(zone_in.source),
         version=1,
         area_ha=outline.area_ha,
         bbox=outline.bbox,
         department=services.departments.of(outline.point),
+        size=len(content),
         created_at=now,
         updated_at=now,
     )
-    services.geometries.put(zone.id, zone.version, content)
-    services.saved_zones.save(zone)
-    return zone
+    return zone, content
 
 
-def room_for(services: Services, owner: str, adding: int) -> None:
-    limit = services.limits.saved_zones_per_account
-    if len(services.saved_zones.owned_by(owner)) + adding > limit:
-        raise HTTPException(409, f"A library holds at most {limit} zones.")
+def keep(services: Services, owner: str, prepared: list[tuple[SavedZone, bytes]]) -> list[SavedZone]:
+    """Writes every zone or none: the outlines first, then every record in one write."""
+    limits = services.limits
+    usage = services.saved_zones.usage(owner)
+    if usage.zones + len(prepared) > limits.saved_zones_per_account:
+        raise HTTPException(409, f"A library holds at most {limits.saved_zones_per_account} zones.")
+    if usage.bytes + sum(len(content) for _, content in prepared) > limits.library_bytes:
+        raise HTTPException(409, f"A library's outlines take at most {limits.library_bytes} bytes in all.")
+    written: list[str] = []
+    try:
+        for zone, content in prepared:
+            services.geometries.put(zone.id, zone.version, content)
+            written.append(zone.id)
+        services.saved_zones.add([zone for zone, _ in prepared])
+    except Exception:
+        for id in written:
+            with suppress(Exception):
+                services.geometries.delete_all(id)
+        raise
+    return [zone for zone, _ in prepared]
 
 
 @router.get("/v1/saved-zones", summary="Your saved zones", responses=problems(401, 403, 429))
@@ -105,11 +111,10 @@ def list_saved_zones(caller: CallerDep, services: ServicesDep) -> list[SavedZone
     summary="Save a zone",
     description="Checks the outline, measures its area and finds its department, then keeps it in your library.",
     responses=problems(401, 403, 409, 413, 422, 429),
-    dependencies=[body_within("geometry_bytes")],
 )
 def create_saved_zone(zone: SavedZoneIn, caller: CallerDep, services: ServicesDep) -> SavedZoneOut:
-    room_for(services, caller.account.id, 1)
-    return out(store(services, caller.account.id, zone))
+    owner = caller.account.id
+    return out(keep(services, owner, [prepare(services, owner, zone)])[0])
 
 
 @router.post(
@@ -118,19 +123,14 @@ def create_saved_zone(zone: SavedZoneIn, caller: CallerDep, services: ServicesDe
     summary="Save several zones",
     description="Saves every zone, or none when one of them is not valid.",
     responses=problems(401, 403, 409, 413, 422, 429),
-    dependencies=[body_within("import_bytes")],
 )
 def import_saved_zones(batch: SavedZonesImport, caller: CallerDep, services: ServicesDep) -> list[SavedZoneOut]:
     limit = services.limits.zones_per_import
     if len(batch.zones) > limit:
         raise HTTPException(413, f"An import holds at most {limit} zones.")
-    room_for(services, caller.account.id, len(batch.zones))
-    for index, zone in enumerate(batch.zones):
-        try:
-            outline_from(zone.geometry.model_dump(), services.limits.coverage)
-        except InvalidShape as error:
-            raise HTTPException(422, f"Zone {index + 1} ({zone.name}): {error}") from error
-    return [out(store(services, caller.account.id, z)) for z in batch.zones]
+    owner = caller.account.id
+    prepared = [prepare(services, owner, z, f"Zone {i + 1} ({z.name}): ") for i, z in enumerate(batch.zones)]
+    return [out(zone) for zone in keep(services, owner, prepared)]
 
 
 @router.get(
@@ -140,9 +140,16 @@ def import_saved_zones(batch: SavedZonesImport, caller: CallerDep, services: Ser
     responses=problems(401, 403, 429),
 )
 def get_saved_zone_features(caller: CallerDep, services: ServicesDep) -> SavedZoneFeatures:
+    zones = services.saved_zones.owned_by(caller.account.id)
+
+    def outline(zone: SavedZone) -> bytes | None:
+        return services.geometries.get(zone.id, zone.version)
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        contents = list(pool.map(outline, zones))
     features: list[SavedZoneFeature] = []
-    for zone in services.saved_zones.owned_by(caller.account.id):
-        content = services.geometries.get(zone.id, zone.version)
+    for zone, content in zip(zones, contents, strict=True):
+        # A zone deleted meanwhile has no outline left: it is skipped.
         if content is not None:
             geometry: dict[str, Any] = json.loads(content)
             features.append(
@@ -173,8 +180,10 @@ def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: Servic
 def rename_saved_zone(
     zone_id: ZoneId, rename: SavedZoneRename, caller: CallerDep, services: ServicesDep
 ) -> SavedZoneOut:
-    zone = replace(owned(services, caller.account.id, zone_id), name=rename.name.strip(), updated_at=datetime.now(UTC))
-    services.saved_zones.save(zone)
+    owned(services, caller.account.id, zone_id)
+    zone = services.saved_zones.update(str(zone_id), name=rename.name, updated_at=datetime.now(UTC))
+    if zone is None:
+        raise HTTPException(404, "There is no such zone in your library.")
     return out(zone)
 
 
@@ -187,6 +196,7 @@ def rename_saved_zone(
 )
 def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Response:
     zone = owned(services, caller.account.id, zone_id)
-    services.geometries.delete_all(zone.id)
+    # The record goes first: an outline left behind by a failure is unreachable, a record without one is not.
     services.saved_zones.delete(zone.id)
+    services.geometries.delete_all(zone.id)
     return Response(status_code=204)

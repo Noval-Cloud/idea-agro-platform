@@ -20,6 +20,8 @@ class Limits:
 
     saved_zones_per_account: int = 500
     geometry_bytes: int = 1_000_000
+    # The whole library is drawn at once on the map, so its outlines are capped together too.
+    library_bytes: int = 20_000_000
     zones_per_import: int = 100
     import_bytes: int = 5_000_000
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
@@ -31,9 +33,14 @@ class Limits:
         return Limits(
             saved_zones_per_account=int(env.get("SAVED_ZONES_PER_ACCOUNT", "500")),
             geometry_bytes=int(env.get("GEOMETRY_MAX_BYTES", "1000000")),
+            library_bytes=int(env.get("LIBRARY_MAX_BYTES", "20000000")),
             zones_per_import=int(env.get("ZONES_PER_IMPORT", "100")),
             import_bytes=int(env.get("IMPORT_MAX_BYTES", "5000000")),
         )
+
+    def body_bytes(self, path: str) -> int:
+        """The largest request body a route takes: an import, or else one outline."""
+        return self.import_bytes if path == "/v1/saved-zones/import" else self.geometry_bytes
 
 
 @dataclass(frozen=True)
@@ -58,14 +65,17 @@ class Services:
             verifier = OidcVerifier(issuer, env["AUTH_AUDIENCE"], PublishedKeys(env["AUTH_JWKS_URL"]))
         files = files_from(env["ZONES_SOURCE"])
         records = env.get("RECORDS_SOURCE", "memory://")
-        if verifier and records == "memory://" and env.get("ALLOW_MEMORY_RECORDS") != "1":
-            # Accounts in memory forget a log-out on every other instance: refuse to run that way.
-            raise RuntimeError("Sign-in needs RECORDS_SOURCE, unless ALLOW_MEMORY_RECORDS=1 for a local run.")
+        outlines = env.get("GEOMETRIES_SOURCE", "memory://")
+        if verifier and "memory://" in (records, outlines) and env.get("ALLOW_MEMORY_RECORDS") != "1":
+            # Records in memory differ on every instance and vanish on restart: refuse to run that way.
+            raise RuntimeError(
+                "Sign-in needs RECORDS_SOURCE and GEOMETRIES_SOURCE, unless ALLOW_MEMORY_RECORDS=1 for a local run."
+            )
         return Services(
             zones=ZoneStore(files),
             accounts=accounts_from(records),
             saved_zones=saved_zones_from(records),
-            geometries=geometries_from(env.get("GEOMETRIES_SOURCE", "memory://")),
+            geometries=geometries_from(outlines),
             departments=Departments(files),
             verifier=verifier,
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),

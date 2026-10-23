@@ -5,6 +5,8 @@ from collections.abc import Awaitable, Callable
 from threading import Lock
 
 from fastapi import Request, Response
+from starlette.exceptions import HTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # The interactive documentation loads its own scripts and styles.
 DOCS_PATHS = ("/docs", "/redoc")
@@ -54,3 +56,35 @@ class RateLimit:
 
     def seconds_to_reset(self) -> int:
         return 60 - int(time.time() % 60)
+
+
+class BodyLimit:
+    """Refuses a request body past its route's limit while it arrives, before anything parses it.
+
+    Bytes are counted as they come, so a body without Content-Length, sent in chunks, is held to it too.
+    """
+
+    def __init__(self, app: ASGIApp, limit_for: Callable[[str], int]) -> None:
+        self._app = app
+        self._limit_for = limit_for
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            return await self._app(scope, receive, send)
+        limit = self._limit_for(scope["path"])
+        length: bytes = dict(scope["headers"]).get(b"content-length", b"")
+        declared = int(length) if length.isdigit() else 0
+        too_large = HTTPException(413, f"The request is larger than {limit} bytes.")
+        received = 0
+
+        async def counted() -> Message:
+            nonlocal received
+            if declared > limit:
+                raise too_large
+            message = await receive()
+            received += len(message.get("body", b""))
+            if received > limit:
+                raise too_large
+            return message
+
+        await self._app(scope, counted, send)

@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from idea_agro_api.zones import Division
 
@@ -87,10 +87,14 @@ class MultiPolygon(BaseModel):
 Geometry = Annotated[Polygon | MultiPolygon, Field(discriminator="type", description="A GeoJSON geometry, in WGS 84.")]
 
 
+# Spaces around a name are dropped before its length is checked.
+ZoneName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+
+
 class SavedZoneIn(BaseModel):
     """A zone to save to your library."""
 
-    name: str = Field(min_length=1, max_length=120, description="A name for the zone.", examples=["Potrero 3"])
+    name: ZoneName = Field(description="A name for the zone.", examples=["Potrero 3"])
     source: Literal["drawn", "uploaded"] = Field(description="Whether it was drawn on the map or uploaded in a file.")
     geometry: Geometry
 
@@ -102,7 +106,7 @@ class SavedZonesImport(BaseModel):
 
 
 class SavedZoneRename(BaseModel):
-    name: str = Field(min_length=1, max_length=120, description="The zone's new name.")
+    name: ZoneName = Field(description="The zone's new name.")
 
 
 class SavedZoneOut(BaseModel):

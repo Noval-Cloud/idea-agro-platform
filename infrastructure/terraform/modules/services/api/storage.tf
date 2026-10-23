@@ -20,6 +20,11 @@ resource "google_storage_bucket" "geometries" {
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
   labels                      = var.labels
+
+  # A deleted zone's outline is gone at once, not kept for days.
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
 }
 
 resource "google_storage_bucket_iam_member" "api_keeps_geometries" {

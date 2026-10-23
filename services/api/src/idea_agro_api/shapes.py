@@ -17,6 +17,8 @@ from idea_agro_api.zones import Files
 GEOD = Geod(ellps="WGS84")
 # About 10 cm: enough for a paddock, and it keeps stored files small.
 DECIMALS = 6
+# Areas are shown in hectares with two decimals: anything smaller would read as zero.
+MIN_AREA_M2 = 100
 
 
 class InvalidShape(ValueError):
@@ -41,19 +43,22 @@ def outline_from(geojson: dict[str, Any], within: tuple[float, float, float, flo
         raise InvalidShape("The geometry is not a valid GeoJSON polygon.") from error
     if geometry.geom_type not in ("Polygon", "MultiPolygon") or geometry.is_empty:
         raise InvalidShape("The geometry must be a Polygon or a MultiPolygon.")
+    west, south, east, north = geometry.bounds
+    if not (-180 <= west <= east <= 180 and -90 <= south <= north <= 90):
+        raise InvalidShape("The coordinates must be longitude and latitude in degrees.")
     if not geometry.is_valid:
         raise InvalidShape(f"The outline is not valid: {shapely.validation.explain_validity(geometry)}.")
-    west, south, east, north = geometry.bounds
-    if not (within[0] <= east and west <= within[2] and within[1] <= north and south <= within[3]):
+    if not geometry.intersects(shapely.box(*within)):
         raise InvalidShape("The zone is outside the area the platform covers.")
-    area, _ = GEOD.geometry_area_perimeter(geometry)  # pyright: ignore[reportUnknownMemberType]
-    if abs(area) == 0:
-        raise InvalidShape("The zone has no area.")
-    rounded = shapely.set_precision(geometry, 10**-DECIMALS)  # pyright: ignore[reportUnknownMemberType]
+    # Outer rings counterclockwise and holes clockwise, as the area below needs; files often mix them.
+    rounded = shapely.orient_polygons(shapely.set_precision(geometry, 10**-DECIMALS))  # pyright: ignore[reportUnknownMemberType]
+    area, _ = GEOD.geometry_area_perimeter(rounded)  # pyright: ignore[reportUnknownMemberType]
+    if rounded.is_empty or not rounded.is_valid or area < MIN_AREA_M2:
+        raise InvalidShape(f"The zone is smaller than {MIN_AREA_M2} m².")
     point = geometry.representative_point()
     return Outline(
         geometry=mapping(rounded),
-        area_ha=round(abs(area) / 10_000, 2),
+        area_ha=round(area / 10_000, 2),
         bbox=(round(west, DECIMALS), round(south, DECIMALS), round(east, DECIMALS), round(north, DECIMALS)),
         point=(point.x, point.y),
     )
