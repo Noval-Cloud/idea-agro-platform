@@ -12,7 +12,9 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "long" }).format(new Date(value));
   const number = (value: number) =>
     new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
-  return { ...translator, date, number };
+  const moment = (value: string) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return { ...translator, date, moment, number };
 }
 
 export type AccountTranslator = ReturnType<typeof createAccountTranslator>;

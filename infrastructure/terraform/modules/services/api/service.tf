@@ -49,6 +49,10 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "IDENTITY_ADMIN"
         value = "identity-platform://${var.project}"
       }
+      env {
+        name  = "ADMIN_EMAILS"
+        value = join(",", var.admin_emails)
+      }
 
       resources {
         cpu_idle = var.cpu_idle

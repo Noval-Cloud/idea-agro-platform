@@ -33,3 +33,9 @@ variable "auth_local_origins" {
   type        = list(string)
   default     = []
 }
+
+variable "admin_emails" {
+  description = "Emails made admins when they sign in with them verified: the first admins, who name the rest"
+  type        = list(string)
+  default     = []
+}

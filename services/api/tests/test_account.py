@@ -24,12 +24,20 @@ token = make_token
 class Recorder:
     def __init__(self, fails: bool = False) -> None:
         self.revoked: list[str] = []
+        self.disabled: dict[str, bool] = {}
+        self.recovered: list[str] = []
         self.fails = fails
 
-    def revoke_sessions(self, identity: Any) -> None:
+    def revoke_sessions(self, subject: str) -> None:
         if self.fails:
             raise ConnectionError("provider down")
-        self.revoked.append(identity.subject)
+        self.revoked.append(subject)
+
+    def set_disabled(self, subject: str, disabled: bool) -> None:
+        self.disabled[subject] = disabled
+
+    def send_recovery(self, email: str) -> None:
+        self.recovered.append(email)
 
 
 @pytest.fixture

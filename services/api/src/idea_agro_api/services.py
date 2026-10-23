@@ -6,6 +6,7 @@ from pathlib import Path
 
 from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.activity import ActivityStore, MemoryActivity, activity_from
+from idea_agro_api.audit import AuditStore, MemoryAudit, audit_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
@@ -31,6 +32,8 @@ class Limits:
     members_per_project: int = 20
     # The oldest versions of an outline beyond this many are dropped.
     outline_versions: int = 50
+    # How recent a sign-in sensitive admin actions need.
+    recent_sign_in_seconds: int = 300
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -47,6 +50,7 @@ class Limits:
             zones_per_project=int(env.get("ZONES_PER_PROJECT", "500")),
             members_per_project=int(env.get("MEMBERS_PER_PROJECT", "20")),
             outline_versions=int(env.get("OUTLINE_VERSIONS", "50")),
+            recent_sign_in_seconds=int(env.get("RECENT_SIGN_IN_SECONDS", "300")),
         )
 
     def body_bytes(self, path: str) -> int:
@@ -61,6 +65,7 @@ class Services:
     saved_zones: SavedZoneStore
     projects: ProjectStore
     activity: ActivityStore
+    audit: AuditStore
     geometries: GeometryStore
     departments: Departments
     # None when sign-in is not configured: private routes then answer 503.
@@ -68,6 +73,10 @@ class Services:
     identity_admin: IdentityAdmin = field(default_factory=NoIdentityAdmin)
     rate_limit: RateLimit = field(default_factory=lambda: RateLimit(per_minute=60))
     limits: Limits = field(default_factory=Limits)
+    # Verified emails made admins when they sign in: the first admins, who name the rest.
+    admin_emails: frozenset[str] = frozenset()
+    # Whether people can sign in with a password, which is what a recovery link recovers.
+    password_sign_in: bool = False
 
     @staticmethod
     def from_env() -> Services:
@@ -90,12 +99,15 @@ class Services:
             saved_zones=saved_zones_from(records),
             projects=projects_from(records),
             activity=activity_from(records),
+            audit=audit_from(records),
             geometries=geometries_from(outlines),
             departments=Departments(files),
             verifier=verifier,
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),
             rate_limit=RateLimit(per_minute=int(env.get("PRIVATE_REQUESTS_PER_MINUTE", "60"))),
             limits=Limits.from_env(),
+            admin_emails=frozenset(e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()),
+            password_sign_in=env.get("PASSWORD_SIGN_IN") == "1",
         )
 
 
@@ -113,6 +125,7 @@ def services_for_tests(
         saved_zones=MemorySavedZones(),
         projects=MemoryProjects(),
         activity=MemoryActivity(),
+        audit=MemoryAudit(),
         geometries=MemoryGeometries(),
         departments=Departments(found),
         verifier=verifier,

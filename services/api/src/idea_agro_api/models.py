@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, StringConstraints
 
 from idea_agro_api.activity import Action
+from idea_agro_api.audit import AuditAction
 from idea_agro_api.projects import MemberRole
 from idea_agro_api.zones import Department, Division
 
@@ -282,3 +283,38 @@ class OutlineVersionOut(BaseModel):
     area_ha: float
     restored_from: int | None = Field(description="The version it brought back, when it was a restore.")
     current: bool
+
+
+class AdminAccount(BaseModel):
+    """An account, as admins see it."""
+
+    id: str
+    email: str | None
+    name: str | None
+    picture: str | None
+    roles: list[AccountRole] = Field(description="Always `client`, plus `editor` or `admin` if given.")
+    disabled: bool = Field(description="A disabled account cannot use any private route.")
+    created_at: datetime
+
+
+class RolesChange(BaseModel):
+    """The roles an account has beyond `client`."""
+
+    roles: list[Literal["editor", "admin"]] = Field(max_length=2, description="`editor`, `admin`, both or none.")
+
+
+class AccessChange(BaseModel):
+    disabled: bool = Field(description="True disables the account and ends its sessions; false enables it again.")
+
+
+class AuditOut(BaseModel):
+    """One admin action."""
+
+    at: datetime
+    actor_name: str = Field(description="The admin who acted, by their name at the time.")
+    action: AuditAction
+    target: str = Field(description="The account acted on.")
+    target_email: str = Field(description="Its email at the time.")
+    detail: str = Field(
+        description="The roles given, for a role change; `provider_failed` when the sign-in provider did not take it."
+    )

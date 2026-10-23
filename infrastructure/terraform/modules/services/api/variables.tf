@@ -146,3 +146,9 @@ variable "geometries_role" {
   type        = string
   default     = "roles/storage.objectUser"
 }
+
+variable "admin_emails" {
+  description = "Emails made admins when they sign in with them verified"
+  type        = list(string)
+  default     = []
+}
