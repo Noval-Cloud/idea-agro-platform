@@ -782,7 +782,7 @@ export const es = {
     title: "Tu cuenta",
     loading: "Cargando tu cuenta…",
     failed: "No pudimos cargar tu cuenta. Intentá de nuevo en un momento.",
-    profile: { title: "Perfil", email: "Correo", roles: "Roles", since: "Cuenta creada el {date}" },
+    profile: { title: "Perfil", roles: "Roles", since: "Cuenta creada el {date}" },
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     sessions: {
       title: "Sesiones",
