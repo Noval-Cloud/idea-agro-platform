@@ -496,6 +496,8 @@ export const es = {
       saveDone: { one: "Guardamos {count} zona en tu cuenta.", other: "Guardamos {count} zonas en tu cuenta." },
       saveFailed: "No pudimos guardar las zonas: {reason}",
       loadSavedFailed: "No pudimos cargar tus zonas guardadas.",
+      saveInterrupted: "No pudimos guardar todas las zonas. Las que faltan siguen en esta capa: intentá de nuevo.",
+      signInFailed: "No pudimos abrir el ingreso. Intentá de nuevo.",
     },
     time: {
       label: "Año",

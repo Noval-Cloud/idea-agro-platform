@@ -504,6 +504,8 @@ export const en = {
       saveDone: { one: "We saved {count} area to your account.", other: "We saved {count} areas to your account." },
       saveFailed: "We could not save the areas: {reason}",
       loadSavedFailed: "We could not load your saved areas.",
+      saveInterrupted: "We could not save every area. The rest are still in this layer: try again.",
+      signInFailed: "We could not open the sign-in. Try again.",
     },
     time: {
       label: "Year",

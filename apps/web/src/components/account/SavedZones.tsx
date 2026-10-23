@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountTranslator } from "./i18n";
 
-type Props = { t: AccountTranslator["t"]; number: AccountTranslator["number"]; zonePath: string; explorePath: string };
+type Props = {
+  t: AccountTranslator["t"];
+  number: AccountTranslator["number"];
+  zonePath: string;
+  explorePath: string;
+  signInPath: string;
+};
 
 const card = "rounded-lg border border-line bg-surface p-6";
 
 /** The zones saved to the account: open, rename, delete. */
-export default function SavedZones({ t, number, zonePath, explorePath }: Props) {
+export default function SavedZones({ t, number, zonePath, explorePath, signInPath }: Props) {
   const [zones, setZones] = useState<SavedZoneOut[] | null | undefined>(undefined);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -23,20 +29,37 @@ export default function SavedZones({ t, number, zonePath, explorePath }: Props) 
       .catch(() => setZones(null));
   }, []);
 
-  const rename = async (id: string, name: string) => {
-    const [{ privately }, client] = await api();
-    const response = await privately((init) => client.renameSavedZone(id, { name }, init));
-    if (response.status !== 200) return setFailed(true);
-    setZones((all) => all?.map((z) => (z.id === id ? response.data : z)));
-    setEditing(null);
+  /** Runs a change; a refusal or a network failure shows the error, an ended session leads to sign-in. */
+  const change = async (run: (modules: Awaited<ReturnType<typeof api>>) => Promise<boolean>) => {
+    setFailed(false);
+    const modules = await api();
+    try {
+      setFailed(!(await run(modules)));
+    } catch (error) {
+      if (error instanceof modules[0].SignedOut)
+        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + "#zones")}`);
+      setFailed(true);
+    }
   };
 
-  const remove = async (zone: SavedZoneOut) => {
+  const rename = (id: string, name: string) =>
+    change(async ([{ privately }, client]) => {
+      const response = await privately((init) => client.renameSavedZone(id, { name }, init));
+      if (response.status !== 200) return false;
+      setZones((all) => all?.map((z) => (z.id === id ? response.data : z)));
+      setEditing(null);
+      return true;
+    });
+
+  const remove = (zone: SavedZoneOut) => {
     if (!window.confirm(t("account.zones.confirmDelete", { name: zone.name }))) return;
-    const [{ privately }, client] = await api();
-    const response = await privately((init) => client.deleteSavedZone(zone.id, init));
-    if (response.status !== 204) return setFailed(true);
-    setZones((all) => all?.filter((z) => z.id !== zone.id));
+    void change(async ([{ privately }, client]) => {
+      const response = await privately((init) => client.deleteSavedZone(zone.id, init));
+      // Already gone, as after a delete from another tab: the list just catches up.
+      if (response.status !== 204 && response.status !== 404) return false;
+      setZones((all) => all?.filter((z) => z.id !== zone.id));
+      return true;
+    });
   };
 
   return (
@@ -103,7 +126,7 @@ export default function SavedZones({ t, number, zonePath, explorePath }: Props) 
                   <Button size="sm" variant="ghost" onClick={() => setEditing({ id: zone.id, name: zone.name })}>
                     {t("account.zones.rename")}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => void remove(zone)}>
+                  <Button size="sm" variant="ghost" onClick={() => remove(zone)}>
                     {t("account.zones.delete")}
                   </Button>
                 </>

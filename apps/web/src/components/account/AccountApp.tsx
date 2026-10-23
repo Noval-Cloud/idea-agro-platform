@@ -95,7 +95,7 @@ export default function AccountApp({ locale, catalog, signInPath, homePath, zone
         <p className="mt-6 text-xs text-ink-subtle">{t("account.profile.since", { date: date(me.created_at) })}</p>
       </section>
 
-      <SavedZones t={t} number={number} zonePath={zonePath} explorePath={explorePath} />
+      <SavedZones t={t} number={number} zonePath={zonePath} explorePath={explorePath} signInPath={signInPath} />
 
       <section id="sessions" aria-labelledby="sessions-title" className={card}>
         <h2 id="sessions-title" className="text-lg font-medium text-ink">

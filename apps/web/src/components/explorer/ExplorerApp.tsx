@@ -44,8 +44,28 @@ import { saveCustomZone } from "./lib/session";
 import { readHint } from "@/lib/account-hint";
 import { signInProviders } from "@/lib/sign-in-providers";
 
-/** The API takes at most this many zones in one import. */
-const IMPORT_BATCH = 100;
+/** The API takes at most this many zones, and this many bytes, in one import. */
+const IMPORT_ZONES = 100;
+const IMPORT_BYTES = 4_500_000;
+
+/** Splits zones into imports the API accepts. */
+function importBatches<Z>(zones: Z[]): Z[][] {
+  const batches: Z[][] = [];
+  let batch: Z[] = [];
+  let bytes = 0;
+  for (const zone of zones) {
+    const size = JSON.stringify(zone).length;
+    if (batch.length && (batch.length === IMPORT_ZONES || bytes + size > IMPORT_BYTES)) {
+      batches.push(batch);
+      batch = [];
+      bytes = 0;
+    }
+    batch.push(zone);
+    bytes += size;
+  }
+  if (batch.length) batches.push(batch);
+  return batches;
+}
 
 interface Props {
   locale: Locale;
@@ -228,7 +248,12 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   }, [custom]);
 
   useEffect(() => {
-    const update = () => setSignedIn(readHint() !== null);
+    const update = () => {
+      const now = readHint() !== null;
+      setSignedIn(now);
+      // Another person may use this browser next: their map must not show the previous account's zones.
+      if (!now) setCustom((all) => all.filter((l) => l.source !== "saved"));
+    };
     update();
     addEventListener("account-change", update);
     return () => removeEventListener("account-change", update);
@@ -267,7 +292,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     if (signedIn || !unsaved || preparedSignIn.current) return;
     void import("@/lib/account")
       .then(({ prepareSignIn }) => prepareSignIn(signInProviders[0]))
-      .then((signIn) => (preparedSignIn.current = signIn));
+      .then((signIn) => (preparedSignIn.current = signIn))
+      // Without it, the save click sends the person to the sign-in page instead.
+      .catch(() => undefined);
   }, [signedIn, unsaved]);
 
   const onSave = async (key: string) => {
@@ -280,7 +307,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
       try {
         await signIn();
-      } catch {
+      } catch (error) {
+        if (error !== "cancelled") setNotice(t("explorer.regions.signInFailed"));
         return;
       }
     }
@@ -290,24 +318,27 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         import("@/lib/account"),
         import("@idea-agro/api-client"),
       ]);
-      const zones = layer.zones.map((z) => ({
-        name: z.name,
-        source: layer.source === "drawn" ? ("drawn" as const) : ("uploaded" as const),
-        geometry: z.geometry,
-      }));
-      for (let start = 0; start < zones.length; start += IMPORT_BATCH) {
-        const batch = zones.slice(start, start + IMPORT_BATCH);
-        const response = await privately((init) => importSavedZones({ zones: batch }, init));
+      const source = layer.source === "drawn" ? ("drawn" as const) : ("uploaded" as const);
+      const zones = layer.zones.map((z) => ({ key: z.key, zone: { name: z.name, source, geometry: z.geometry } }));
+      for (const batch of importBatches(zones)) {
+        const response = await privately((init) => importSavedZones({ zones: batch.map((z) => z.zone) }, init));
         if (response.status !== 201) {
           const detail = (response.data as { detail?: string | null }).detail ?? String(response.status);
           return setNotice(t("explorer.regions.saveFailed", { reason: detail }));
         }
+        // Saved zones leave the layer one import at a time, so trying again sends only the rest. Zones added
+        // to the layer meanwhile stay.
+        const sent = new Set(batch.map((z) => z.key));
+        setCustom((all) =>
+          all
+            .map((l) => (l.key === key ? { ...l, zones: l.zones.filter((z) => !sent.has(z.key)) } : l))
+            .filter((l) => l.key !== key || l.zones.length > 0),
+        );
       }
-      setCustom((all) => all.filter((l) => l.key !== key));
       setNotice(t("explorer.regions.saveDone", { count: zones.length }));
       await loadSaved();
     } catch {
-      setNotice(t("explorer.regions.saveFailed", { reason: "" }));
+      setNotice(t("explorer.regions.saveInterrupted"));
     } finally {
       setSaving(null);
     }

@@ -73,7 +73,9 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
   const custom = params.get("custom");
   if (custom) return { target: { kind: "custom", key: custom }, indicator, year };
   const saved = params.get("saved");
-  if (saved) return { target: { kind: "saved", id: saved }, indicator, year };
+  // Saved zone ids are UUIDs; anything else would end up in an API path.
+  if (saved && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(saved))
+    return { target: { kind: "saved", id: saved }, indicator, year };
   return { target: null, indicator, year };
 }
 

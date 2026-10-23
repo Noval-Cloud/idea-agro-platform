@@ -502,6 +502,8 @@ export const pt = {
       saveDone: { one: "Salvamos {count} zona na sua conta.", other: "Salvamos {count} zonas na sua conta." },
       saveFailed: "Não conseguimos salvar as zonas: {reason}",
       loadSavedFailed: "Não conseguimos carregar suas zonas salvas.",
+      saveInterrupted: "Não conseguimos salvar todas as zonas. As que faltam continuam nesta camada: tente de novo.",
+      signInFailed: "Não conseguimos abrir o login. Tente de novo.",
     },
     time: {
       label: "Ano",
