@@ -225,10 +225,10 @@ def test_a_library_has_a_total_size(tmp_path: Path, verifier: OidcVerifier) -> N
 class FailingGeometries(MemoryGeometries):
     """Fails on the second outline written."""
 
-    def put(self, zone: str, version: int, content: bytes) -> None:
+    def put(self, name: str, content: bytes) -> None:
         if self._files:
             raise ConnectionError("storage down")
-        super().put(zone, version, content)
+        super().put(name, content)
 
 
 def test_a_failed_import_leaves_nothing_behind(tmp_path: Path, verifier: OidcVerifier) -> None:

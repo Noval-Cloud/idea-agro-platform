@@ -200,7 +200,7 @@ export interface MemberIn {
   /**
      * Their email, as they sign in with it.
      * @maxLength 254
-     * @pattern ^[^@\s]+@[^@\s]+\.[^@\s]+$
+     * @pattern ^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$
      */
   email: string;
   /** `collaborator` edits the project's zones; `viewer` only reads. */
@@ -246,6 +246,11 @@ export interface Polygon {
  * A zone's new outline.
  */
 export interface OutlineChange {
+  /**
+     * The version the change was made on: a newer one refuses it, with 409.
+     * @minimum 1
+     */
+  version: number;
   /** A GeoJSON geometry, in WGS 84. */
   geometry: Polygon | MultiPolygon;
 }

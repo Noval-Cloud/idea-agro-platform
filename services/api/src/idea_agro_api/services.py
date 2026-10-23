@@ -29,6 +29,8 @@ class Limits:
     projects_per_account: int = 50
     zones_per_project: int = 500
     members_per_project: int = 20
+    # The oldest versions of an outline beyond this many are dropped.
+    outline_versions: int = 50
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -44,6 +46,7 @@ class Limits:
             projects_per_account=int(env.get("PROJECTS_PER_ACCOUNT", "50")),
             zones_per_project=int(env.get("ZONES_PER_PROJECT", "500")),
             members_per_project=int(env.get("MEMBERS_PER_PROJECT", "20")),
+            outline_versions=int(env.get("OUTLINE_VERSIONS", "50")),
         )
 
     def body_bytes(self, path: str) -> int:

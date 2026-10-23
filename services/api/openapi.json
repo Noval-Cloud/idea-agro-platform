@@ -2784,7 +2784,7 @@
           "email": {
             "type": "string",
             "maxLength": 254,
-            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "pattern": "^[^@\\s/?#%]+@[^@\\s/?#%]+\\.[^@\\s/?#%]+$",
             "title": "Email",
             "description": "Their email, as they sign in with it."
           },
@@ -2891,6 +2891,12 @@
       },
       "OutlineChange": {
         "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version",
+            "description": "The version the change was made on: a newer one refuses it, with 409."
+          },
           "geometry": {
             "oneOf": [
               {
@@ -2913,6 +2919,7 @@
         },
         "type": "object",
         "required": [
+          "version",
           "geometry"
         ],
         "title": "OutlineChange",

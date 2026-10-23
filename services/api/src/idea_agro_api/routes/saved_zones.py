@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException
 from idea_agro_api.activity import Action
 from idea_agro_api.deps import Caller, CallerDep, ServicesDep
 from idea_agro_api.errors import problems
-from idea_agro_api.geometries import VersionTaken
+from idea_agro_api.geometries import new_file
 from idea_agro_api.models import (
     Geometry,
     OutlineChange,
@@ -74,8 +74,10 @@ def prepare(services: Services, caller: Caller, zone_in: SavedZoneIn, label: str
     outline, content = measure(services, zone_in.geometry.model_dump(), label)
     now = datetime.now(UTC)
     account = caller.account
+    id = new_zone_id()
+    file = new_file(id, 1)
     zone = SavedZone(
-        id=new_zone_id(),
+        id=id,
         owner=account.id,
         name=zone_in.name,
         source=Source(zone_in.source),
@@ -83,36 +85,46 @@ def prepare(services: Services, caller: Caller, zone_in: SavedZoneIn, label: str
         area_ha=outline.area_ha,
         bbox=outline.bbox,
         department=services.departments.of(outline.point),
+        file=file,
         size=len(content),
         created_at=now,
         updated_at=now,
-        history=(OutlineVersion(1, now, account.id, account.display_name, outline.area_ha),),
+        history=(OutlineVersion(1, file, now, account.id, account.display_name, outline.area_ha),),
     )
     return zone, content
 
 
 def change_outline(
-    services: Services, zone: SavedZone, geojson: dict[str, Any], caller: Caller, restored_from: int | None = None
+    services: Services,
+    zone: SavedZone,
+    base: int,
+    geojson: dict[str, Any],
+    caller: Caller,
+    restored_from: int | None = None,
 ) -> SavedZone:
-    """Writes the outline as a new version, keeping every earlier one, and notes it in the zone's projects."""
+    """Writes the outline as a new version on top of `base`, and notes it in the zone's projects.
+
+    The latest versions are kept, and any of them can be restored.
+    """
+    changed_meanwhile = HTTPException(409, "The outline changed meanwhile: load it again and retry.")
+    if base != zone.version:
+        raise changed_meanwhile
     outline, content = measure(services, geojson)
     limit = services.limits.library_bytes
     if services.saved_zones.usage(zone.owner).bytes - zone.size + len(content) > limit:
         raise HTTPException(409, f"A library's outlines take at most {limit} bytes in all.")
-    changed_meanwhile = HTTPException(409, "The outline changed meanwhile: load it again and retry.")
-    version = zone.version + 1
-    try:
-        services.geometries.put(zone.id, version, content)
-    except VersionTaken as error:
-        raise changed_meanwhile from error
     now = datetime.now(UTC)
     account = caller.account
-    entry = OutlineVersion(version, now, account.id, account.display_name, outline.area_ha, restored_from)
+    version = zone.version + 1
+    file = new_file(zone.id, version)
+    entry = OutlineVersion(version, file, now, account.id, account.display_name, outline.area_ha, restored_from)
+    services.geometries.put(file, content)
     try:
-        changed = services.saved_zones.replace_outline(
+        replaced = services.saved_zones.replace_outline(
             zone.id,
-            zone.version,
+            base,
             entry,
+            services.limits.outline_versions,
             area_ha=outline.area_ha,
             bbox=list(outline.bbox),
             department=services.departments.of(outline.point),
@@ -120,11 +132,19 @@ def change_outline(
             updated_at=now,
         )
     except OutlineChanged as error:
-        services.geometries.delete(zone.id, version)
+        services.geometries.delete(file)
         raise changed_meanwhile from error
-    if changed is None:
-        services.geometries.delete(zone.id, version)
+    except Exception:
+        # The file belongs to no version: it goes, and the next change can still be made.
+        services.geometries.delete(file)
+        raise
+    if replaced is None:
+        services.geometries.delete(file)
         raise HTTPException(404, "The zone was deleted meanwhile.")
+    changed, dropped = replaced
+    for old in dropped:
+        with suppress(Exception):
+            services.geometries.delete(old)
     action = Action.OUTLINE_RESTORED if restored_from else Action.OUTLINE_CHANGED
     projects = [p.id for p in services.projects.containing(saved_item(zone.id))]
     note(services, projects, caller, action, saved_item(zone.id), zone.name)
@@ -142,13 +162,13 @@ def keep(services: Services, owner: str, prepared: list[tuple[SavedZone, bytes]]
     written: list[str] = []
     try:
         for zone, content in prepared:
-            services.geometries.put(zone.id, zone.version, content)
-            written.append(zone.id)
+            services.geometries.put(zone.file, content)
+            written.append(zone.file)
         services.saved_zones.add([zone for zone, _ in prepared])
     except Exception:
-        for id in written:
+        for file in written:
             with suppress(Exception):
-                services.geometries.delete_all(id)
+                services.geometries.delete(file)
         raise
     return [zone for zone, _ in prepared]
 
@@ -195,7 +215,7 @@ def get_saved_zone_features(caller: CallerDep, services: ServicesDep) -> SavedZo
     zones = services.saved_zones.owned_by(caller.account.id)
 
     def outline(zone: SavedZone) -> bytes | None:
-        return services.geometries.get(zone.id, zone.version)
+        return services.geometries.get(zone.file)
 
     with ThreadPoolExecutor(max_workers=16) as pool:
         contents = list(pool.map(outline, zones))
@@ -222,7 +242,7 @@ def get_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) ->
 )
 def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Geometry:
     zone = owned(services, caller.account.id, zone_id)
-    content = services.geometries.get(zone.id, zone.version)
+    content = services.geometries.get(zone.file)
     if content is None:
         raise HTTPException(404, "The zone's outline is missing.")
     return json.loads(content)
@@ -267,12 +287,7 @@ def change_saved_zone_geometry(
     zone_id: ZoneId, change: OutlineChange, caller: CallerDep, services: ServicesDep
 ) -> SavedZoneOut:
     zone = owned(services, caller.account.id, zone_id)
-    return out(change_outline(services, zone, change.geometry.model_dump(), caller))
-
-
-def versions_of(zone: SavedZone) -> list[OutlineVersion]:
-    # Zones saved before versions were recorded have only their first one.
-    return list(zone.history) or [OutlineVersion(1, zone.created_at, zone.owner, "", zone.area_ha)]
+    return out(change_outline(services, zone, change.version, change.geometry.model_dump(), caller))
 
 
 @router.get(
@@ -292,7 +307,7 @@ def list_saved_zone_versions(zone_id: ZoneId, caller: CallerDep, services: Servi
             restored_from=v.restored_from,
             current=v.version == zone.version,
         )
-        for v in reversed(versions_of(zone))
+        for v in reversed(zone.history)
     ]
 
 
@@ -311,7 +326,8 @@ def restore_saved_zone_version(
     zone = owned(services, caller.account.id, zone_id)
     if version == zone.version:
         raise HTTPException(409, "That version is the current one.")
-    content = services.geometries.get(zone.id, version) if version < zone.version else None
+    kept = next((v for v in zone.history if v.version == version), None)
+    content = services.geometries.get(kept.file) if kept else None
     if content is None:
-        raise HTTPException(404, "The zone has no such version.")
-    return out(change_outline(services, zone, json.loads(content), caller, restored_from=version))
+        raise HTTPException(404, "The zone keeps no such version.")
+    return out(change_outline(services, zone, zone.version, json.loads(content), caller, restored_from=version))

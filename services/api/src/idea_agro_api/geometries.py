@@ -1,48 +1,42 @@
-"""Where saved zones' outlines live: one file per version, never changed once written."""
+"""Where saved zones' outlines live: one file per version, under a name of its own, never changed once written."""
 
+import uuid
 from contextlib import suppress
 from typing import Protocol
 
-from google.api_core.exceptions import NotFound, PreconditionFailed
+from google.api_core.exceptions import NotFound
 from google.cloud import storage  # pyright: ignore[reportMissingTypeStubs]
 
 
-class VersionTaken(Exception):
-    """That version of the outline exists already: someone else changed it first."""
+def new_file(zone: str, version: int) -> str:
+    """A name no other write uses, so concurrent or failed writes never block each other."""
+    return f"zones/{zone}/v{version}-{uuid.uuid4().hex[:12]}.geojson"
 
 
 class GeometryStore(Protocol):
-    def put(self, zone: str, version: int, content: bytes) -> None:
-        """Writes a new version, or raises VersionTaken."""
-        ...
+    def put(self, name: str, content: bytes) -> None: ...
 
-    def delete(self, zone: str, version: int) -> None: ...
+    def get(self, name: str) -> bytes | None: ...
 
-    def get(self, zone: str, version: int) -> bytes | None: ...
+    def delete(self, name: str) -> None: ...
 
     def delete_all(self, zone: str) -> None:
-        """Every version of the zone."""
+        """Every file of the zone."""
         ...
-
-
-def _name(zone: str, version: int) -> str:
-    return f"zones/{zone}/v{version}.geojson"
 
 
 class MemoryGeometries:
     def __init__(self) -> None:
         self._files: dict[str, bytes] = {}
 
-    def put(self, zone: str, version: int, content: bytes) -> None:
-        if _name(zone, version) in self._files:
-            raise VersionTaken
-        self._files[_name(zone, version)] = content
+    def put(self, name: str, content: bytes) -> None:
+        self._files[name] = content
 
-    def delete(self, zone: str, version: int) -> None:
-        self._files.pop(_name(zone, version), None)
+    def get(self, name: str) -> bytes | None:
+        return self._files.get(name)
 
-    def get(self, zone: str, version: int) -> bytes | None:
-        return self._files.get(_name(zone, version))
+    def delete(self, name: str) -> None:
+        self._files.pop(name, None)
 
     def delete_all(self, zone: str) -> None:
         for name in [n for n in self._files if n.startswith(f"zones/{zone}/")]:
@@ -54,23 +48,20 @@ class BucketGeometries:
     def __init__(self, bucket: str) -> None:
         self._bucket = storage.Client().bucket(bucket)  # pyright: ignore[reportUnknownMemberType]
 
-    def put(self, zone: str, version: int, content: bytes) -> None:
-        blob = self._bucket.blob(_name(zone, version))  # pyright: ignore[reportUnknownMemberType]
-        # Versions are written once: refuse to overwrite one that exists.
-        try:
-            blob.upload_from_string(content, content_type="application/geo+json", if_generation_match=0)  # pyright: ignore[reportUnknownMemberType]
-        except PreconditionFailed as error:
-            raise VersionTaken from error
+    def put(self, name: str, content: bytes) -> None:
+        blob = self._bucket.blob(name)  # pyright: ignore[reportUnknownMemberType]
+        # Written once: the name is new, and nothing may replace it.
+        blob.upload_from_string(content, content_type="application/geo+json", if_generation_match=0)  # pyright: ignore[reportUnknownMemberType]
 
-    def delete(self, zone: str, version: int) -> None:
-        with suppress(NotFound):
-            self._bucket.blob(_name(zone, version)).delete()  # pyright: ignore[reportUnknownMemberType]
-
-    def get(self, zone: str, version: int) -> bytes | None:
+    def get(self, name: str) -> bytes | None:
         try:
-            return self._bucket.blob(_name(zone, version)).download_as_bytes()  # pyright: ignore[reportUnknownMemberType]
+            return self._bucket.blob(name).download_as_bytes()  # pyright: ignore[reportUnknownMemberType]
         except NotFound:
             return None
+
+    def delete(self, name: str) -> None:
+        with suppress(NotFound):
+            self._bucket.blob(name).delete()  # pyright: ignore[reportUnknownMemberType]
 
     def delete_all(self, zone: str) -> None:
         for blob in self._bucket.list_blobs(prefix=f"zones/{zone}/"):  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]

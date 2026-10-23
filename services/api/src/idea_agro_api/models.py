@@ -225,7 +225,10 @@ class MemberIn(BaseModel):
     """Someone to share the project with, or a member's new role."""
 
     email: str = Field(
-        max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", description="Their email, as they sign in with it."
+        max_length=254,
+        # No characters that would change the meaning of a path, where emails go to remove a member.
+        pattern=r"^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$",
+        description="Their email, as they sign in with it.",
     )
     role: MemberRole = Field(description="`collaborator` edits the project's zones; `viewer` only reads.")
 
@@ -266,6 +269,7 @@ class ActivityOut(BaseModel):
 class OutlineChange(BaseModel):
     """A zone's new outline."""
 
+    version: int = Field(ge=1, description="The version the change was made on: a newer one refuses it, with 409.")
     geometry: Geometry
 
 

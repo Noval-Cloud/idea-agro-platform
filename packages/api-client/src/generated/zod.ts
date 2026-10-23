@@ -382,6 +382,7 @@ export const ChangeSavedZoneGeometryParams = zod.object({
   "zone_id": zod.uuid().describe('The zone\'s id.')
 })
 
+
 export const changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMin = 2;
 export const changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMax = 3;
 
@@ -398,6 +399,7 @@ export const changeSavedZoneGeometryBodyGeometryTwoCoordinatesItemItemMin = 4;
 
 
 export const ChangeSavedZoneGeometryBody = zod.object({
+  "version": zod.int().min(1).describe('The version the change was made on: a newer one refuses it, with 409.'),
   "geometry": zod.union([zod.object({
   "type": zod.literal("Polygon").meta({ title: 'Type' }),
   "coordinates": zod.array(zod.array(zod.array(zod.number()).min(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMin).max(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeSavedZoneGeometryBodyGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')
@@ -815,7 +817,7 @@ export const ShareProjectParams = zod.object({
 export const shareProjectBodyEmailMax = 254;
 
 
-export const shareProjectBodyEmailRegExp = new RegExp('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+export const shareProjectBodyEmailRegExp = new RegExp('^[^@\\s/?#%]+@[^@\\s/?#%]+\\.[^@\\s/?#%]+$');
 
 
 export const ShareProjectBody = zod.object({
@@ -979,6 +981,7 @@ export const ChangeProjectZoneGeometryParams = zod.object({
   "zone_id": zod.uuid().describe('The saved zone\'s id.')
 })
 
+
 export const changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMin = 2;
 export const changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMax = 3;
 
@@ -995,6 +998,7 @@ export const changeProjectZoneGeometryBodyGeometryTwoCoordinatesItemItemMin = 4;
 
 
 export const ChangeProjectZoneGeometryBody = zod.object({
+  "version": zod.int().min(1).describe('The version the change was made on: a newer one refuses it, with 409.'),
   "geometry": zod.union([zod.object({
   "type": zod.literal("Polygon").meta({ title: 'Type' }),
   "coordinates": zod.array(zod.array(zod.array(zod.number()).min(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMin).max(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemItemMax).describe('Longitude and latitude, in degrees.')).min(changeProjectZoneGeometryBodyGeometryOneCoordinatesItemMin).describe('A closed ring: its first and last positions match.')).min(1).describe('The outer ring, then any holes.')

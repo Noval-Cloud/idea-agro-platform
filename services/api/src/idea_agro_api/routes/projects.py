@@ -89,18 +89,28 @@ def join(services: Services, caller: Caller, projects: list[Project]) -> list[Pr
     email = verified_email(caller)
     if email is None:
         return projects
-    joined: list[Project] = []
+    me = caller.account.id
+    found: list[Project] = []
     for project in projects:
         if any(m.email == email and m.account is None for m in project.members):
-            outside = project.role_of(caller.account.id) is None
-            changed = services.projects.change(project.id, lambda p: accepted(p, caller.account.id, email))
+            joined = False
+
+            def accepting(current: Project) -> Project:
+                nonlocal joined
+                # Set on every attempt: a transaction may run more than once.
+                joined = current.role_of(me) is None and any(
+                    m.email == email and m.account is None for m in current.members
+                )
+                return accepted(current, me, email)
+
+            changed = services.projects.change(project.id, accepting)
             if changed is None:
                 continue
-            if outside:
+            if joined:
                 note(services, [project.id], caller, Action.MEMBER_JOINED, email)
             project = changed
-        joined.append(project)
-    return joined
+        found.append(project)
+    return found
 
 
 def item_key(item: SavedItemIn | DivisionItemIn | PadronItemIn) -> str:
@@ -129,10 +139,15 @@ def item_out(key: str, zones: dict[str, SavedZone]) -> ProjectItem | None:
         return None
 
 
+def holds(project: Project, zone: SavedZone) -> bool:
+    """Whether the zone's owner is still in the project: zones of people who left are not shared any more."""
+    return zone.owner == project.owner or any(m.account == zone.owner for m in project.members)
+
+
 def saved_zones_of(services: Services, project: Project) -> dict[str, SavedZone]:
-    return services.saved_zones.get_many(
-        [key.removeprefix("saved:") for key in project.items if key.startswith("saved:")]
-    )
+    """The project's saved zones whose owners are still in it, by id."""
+    ids = [key.removeprefix("saved:") for key in project.items if key.startswith("saved:")]
+    return {id: zone for id, zone in services.saved_zones.get_many(ids).items() if holds(project, zone)}
 
 
 class Names:
@@ -312,6 +327,7 @@ def add_project_item(
 
     def adding(project: Project) -> Project:
         nonlocal added
+        added = False
         # Checked again here: the caller's role may have changed meanwhile.
         if not project.can_edit(me):
             raise NotAllowed
@@ -346,7 +362,8 @@ def remove_project_item(project_id: ProjectId, item_id: ItemId, caller: CallerDe
     project = reachable(services, caller, project_id, "edit")
     if item_id not in project.items:
         raise HTTPException(404, NO_ZONE)
-    services.projects.remove_item(str(project_id), item_id, datetime.now(UTC))
+    if services.projects.remove_item(str(project_id), item_id, datetime.now(UTC)) is None:
+        raise HTTPException(404, NO_PROJECT)
     zone = services.saved_zones.get(item_id.removeprefix("saved:")) if item_id.startswith("saved:") else None
     note(services, [project.id], caller, Action.ZONE_REMOVED, item_id, zone.name if zone else "")
     return Response(status_code=204)
@@ -373,6 +390,7 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
 
     def sharing(project: Project) -> Project:
         nonlocal invited
+        invited = False
         if project.owner != me:
             raise NotAllowed
         if any(m.email == email for m in project.members):
@@ -453,7 +471,7 @@ def project_zone(
     """A saved zone reached through a project that holds it, whoever's library it is in."""
     project = reachable(services, caller, project_id, need)
     zone = services.saved_zones.get(str(zone_id))
-    if saved_item(str(zone_id)) not in project.items or zone is None:
+    if saved_item(str(zone_id)) not in project.items or zone is None or not holds(project, zone):
         raise HTTPException(404, NO_ZONE)
     return zone
 
@@ -477,7 +495,7 @@ def get_project_zone_geometry(
     project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, services: ServicesDep
 ) -> Geometry:
     zone = project_zone(services, caller, project_id, zone_id)
-    content = services.geometries.get(zone.id, zone.version)
+    content = services.geometries.get(zone.file)
     if content is None:
         raise HTTPException(404, "The zone's outline is missing.")
     return json.loads(content)
@@ -496,4 +514,4 @@ def change_project_zone_geometry(
     project_id: ProjectId, zone_id: ZoneId, change: OutlineChange, caller: CallerDep, services: ServicesDep
 ) -> SavedZoneOut:
     zone = project_zone(services, caller, project_id, zone_id, "edit")
-    return saved_zone_out(change_outline(services, zone, change.geometry.model_dump(), caller))
+    return saved_zone_out(change_outline(services, zone, change.version, change.geometry.model_dump(), caller))

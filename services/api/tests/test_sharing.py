@@ -1,13 +1,16 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from auth_tokens import bearer, make_token
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
-from idea_agro_api.services import Limits, services_for_tests
+from idea_agro_api.geometries import MemoryGeometries
+from idea_agro_api.saved_zones import MemorySavedZones
+from idea_agro_api.services import Limits, Services, services_for_tests
 from idea_agro_api.zones import LocalFiles
 
 ANA = bearer(make_token("ana"))
@@ -113,8 +116,12 @@ def test_members_read_and_collaborators_reshape_zones_of_other_libraries(client:
     add(client, id, {"kind": "saved", "zone_id": zone}, ANA)
 
     read = client.get(f"/v1/projects/{id}/zones/{zone}/geometry", headers=CY)
-    viewer = client.put(f"/v1/projects/{id}/zones/{zone}/geometry", json={"geometry": square(0.02)}, headers=CY)
-    changed = client.put(f"/v1/projects/{id}/zones/{zone}/geometry", json={"geometry": square(0.02)}, headers=BO)
+    viewer = client.put(
+        f"/v1/projects/{id}/zones/{zone}/geometry", json={"version": 1, "geometry": square(0.02)}, headers=CY
+    )
+    changed = client.put(
+        f"/v1/projects/{id}/zones/{zone}/geometry", json={"version": 1, "geometry": square(0.02)}, headers=BO
+    )
 
     assert read.status_code == 200
     assert viewer.status_code == 403
@@ -129,7 +136,7 @@ def test_the_zones_owner_restores_any_version(client: TestClient) -> None:
     joined(client, id, "bo@example.org", "collaborator", BO)
     zone = saved_zone(client, ANA)
     add(client, id, {"kind": "saved", "zone_id": zone}, ANA)
-    client.put(f"/v1/projects/{id}/zones/{zone}/geometry", json={"geometry": square(0.02)}, headers=BO)
+    client.put(f"/v1/projects/{id}/zones/{zone}/geometry", json={"version": 1, "geometry": square(0.02)}, headers=BO)
 
     versions = client.get(f"/v1/saved-zones/{zone}/versions", headers=ANA).json()
     restored = client.post(f"/v1/saved-zones/{zone}/versions/1/restore", headers=ANA)
@@ -206,3 +213,72 @@ def test_deleting_a_project_forgets_its_activity(client: TestClient) -> None:
     id = project(client)
     client.delete(f"/v1/projects/{id}", headers=ANA)
     assert client.get(f"/v1/projects/{id}/activity", headers=ANA).status_code == 404
+
+
+def test_a_change_made_on_an_older_version_is_refused(client: TestClient) -> None:
+    zone = saved_zone(client, ANA)
+    first = client.put(f"/v1/saved-zones/{zone}/geometry", json={"version": 1, "geometry": square(0.02)}, headers=ANA)
+    stale = client.put(f"/v1/saved-zones/{zone}/geometry", json={"version": 1, "geometry": square(0.03)}, headers=ANA)
+
+    assert first.json()["version"] == 2
+    assert stale.status_code == 409
+    assert client.get(f"/v1/saved-zones/{zone}", headers=ANA).json()["version"] == 2
+
+
+def test_only_the_latest_versions_are_kept(tmp_path: Path, verifier: OidcVerifier) -> None:
+    services = services_for_tests(verifier=verifier, limits=Limits(outline_versions=3))
+    client = TestClient(create_app(services))
+    zone = saved_zone(client, ANA)
+    for version in range(1, 5):
+        body = {"version": version, "geometry": square(0.01 + version / 1000)}
+        client.put(f"/v1/saved-zones/{zone}/geometry", json=body, headers=ANA)
+
+    versions = client.get(f"/v1/saved-zones/{zone}/versions", headers=ANA).json()
+
+    assert [v["version"] for v in versions] == [5, 4, 3]
+    assert client.post(f"/v1/saved-zones/{zone}/versions/1/restore", headers=ANA).status_code == 404
+    assert len(cast(MemoryGeometries, services.geometries)._files) == 3  # pyright: ignore[reportPrivateUsage]
+
+
+class FailingRecords(MemorySavedZones):
+    """Fails the first outline change, as a database outage would."""
+
+    failed = False
+
+    def replace_outline(self, *args: Any, **kwargs: Any) -> Any:
+        if not self.failed:
+            self.failed = True
+            raise ConnectionError("database down")
+        return super().replace_outline(*args, **kwargs)
+
+
+def test_a_failed_change_leaves_the_outline_free(verifier: OidcVerifier) -> None:
+    services = services_for_tests(verifier=verifier, saved_zones=FailingRecords())
+    client = TestClient(create_app(services), raise_server_exceptions=False)
+    zone = saved_zone(client, ANA)
+    body = {"version": 1, "geometry": square(0.02)}
+
+    failed = client.put(f"/v1/saved-zones/{zone}/geometry", json=body, headers=ANA)
+    retried = client.put(f"/v1/saved-zones/{zone}/geometry", json=body, headers=ANA)
+
+    assert failed.status_code == 500
+    assert retried.status_code == 200
+    assert len(cast(MemoryGeometries, services.geometries)._files) == 2  # pyright: ignore[reportPrivateUsage]
+
+
+def test_the_zones_of_someone_who_left_are_not_shared(client: TestClient) -> None:
+    id = project(client)
+    joined(client, id, "bo@example.org", "collaborator", BO)
+    theirs = saved_zone(client, BO)
+    add(client, id, {"kind": "saved", "zone_id": theirs}, BO)
+    services = cast(Services, cast(FastAPI, client.app).state.services)
+    # As if Bo left while the zone was being added: the project still names it.
+    services.projects.update(id, members=())
+
+    assert client.get(f"/v1/projects/{id}/zones/{theirs}", headers=ANA).status_code == 404
+    assert client.get(f"/v1/projects/{id}", headers=ANA).json()["items"][0]["zone"] is None
+
+
+def test_an_email_that_would_change_a_path_is_refused(client: TestClient) -> None:
+    id = project(client)
+    assert share(client, id, "a/b@example.org", "viewer").status_code == 422
