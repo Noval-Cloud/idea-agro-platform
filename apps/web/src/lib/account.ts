@@ -132,6 +132,30 @@ export async function prepareSignIn(way: SignInProvider): Promise<() => Promise<
   };
 }
 
+/**
+ * Loads the provider ahead of the click, and answers with a fresh sign-in of the same person, which sensitive
+ * actions ask for. Like sign-in, it opens the provider's window, so it must run right inside a click.
+ */
+export async function prepareConfirmation(way: SignInProvider): Promise<() => Promise<void>> {
+  if (!configured()) return () => Promise.reject("notConfigured" satisfies SignInError);
+  const auth = await provider();
+  const { GoogleAuthProvider, reauthenticateWithPopup } = await import("firebase/auth");
+  const providers = { google: () => new GoogleAuthProvider() } satisfies Record<SignInProvider, unknown>;
+  const chosen = providers[way]();
+  return async () => {
+    if (!auth.currentUser) throw "unknown" satisfies SignInError;
+    try {
+      await reauthenticateWithPopup(auth.currentUser, chosen);
+      await auth.currentUser.getIdToken(true);
+    } catch (error) {
+      throw errorOf((error as { code?: string }).code ?? "");
+    }
+  };
+}
+
+/** The problem type of an API answer that asks for a fresh sign-in. */
+export const RECENT_SIGN_IN = "urn:idea-agro:problem:recent-sign-in-required";
+
 export async function signOut(): Promise<void> {
   writeHint(null);
   confirmedAt(0);

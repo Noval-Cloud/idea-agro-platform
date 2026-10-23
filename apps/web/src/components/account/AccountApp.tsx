@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/core";
 import { createAccountTranslator, type AccountCatalog } from "./i18n";
 import SavedZones from "./SavedZones";
 import Projects from "./Projects";
+import Users from "./Users";
 
 type Props = {
   locale: Locale;
@@ -113,6 +114,17 @@ export default function AccountApp({
       <SavedZones t={t} number={number} zonePath={zonePath} explorePath={explorePath} signInPath={signInPath} />
 
       <Projects t={t} projectPath={projectPath} signInPath={signInPath} />
+
+      {me.roles.includes("editor") && (
+        <section id="content" aria-labelledby="content-title" className={card}>
+          <h2 id="content-title" className="text-lg font-medium text-ink">
+            {t("account.content.title")}
+          </h2>
+          <p className="mt-2 max-w-prose text-sm text-ink-muted">{t("account.content.body")}</p>
+        </section>
+      )}
+
+      {me.roles.includes("admin") && <Users t={t} date={date} signInPath={signInPath} me={me.id} />}
 
       <section id="sessions" aria-labelledby="sessions-title" className={card}>
         <h2 id="sessions-title" className="text-lg font-medium text-ink">
