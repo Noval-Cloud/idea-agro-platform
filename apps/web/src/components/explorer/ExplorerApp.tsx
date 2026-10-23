@@ -41,31 +41,9 @@ import {
 } from "./lib/state";
 import { mapMarks, mapTheme, useTheme } from "./lib/theme";
 import { saveCustomZone } from "./lib/session";
+import { importBatches } from "./lib/files";
 import { readHint } from "@/lib/account-hint";
 import { signInProviders } from "@/lib/sign-in-providers";
-
-/** The API takes at most this many zones, and this many bytes, in one import. */
-const IMPORT_ZONES = 100;
-const IMPORT_BYTES = 4_500_000;
-
-/** Splits zones into imports the API accepts. */
-function importBatches<Z>(zones: Z[]): Z[][] {
-  const batches: Z[][] = [];
-  let batch: Z[] = [];
-  let bytes = 0;
-  for (const zone of zones) {
-    const size = JSON.stringify(zone).length;
-    if (batch.length && (batch.length === IMPORT_ZONES || bytes + size > IMPORT_BYTES)) {
-      batches.push(batch);
-      batch = [];
-      bytes = 0;
-    }
-    batch.push(zone);
-    bytes += size;
-  }
-  if (batch.length) batches.push(batch);
-  return batches;
-}
 
 interface Props {
   locale: Locale;
