@@ -33,6 +33,11 @@ const textarea =
 
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
+/** Moves focus once React has drawn the change, as when the focused row goes away. */
+const focusSoon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
+
 /** A key matching the API's item ids, to tell which zones the project already holds. */
 const keyOf = (item: ItemIn) =>
   item.kind === "saved"
@@ -51,40 +56,50 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
   const [signIn, setSignIn] = useState(signInPath);
 
   useEffect(() => {
-    setId(new URLSearchParams(location.search).get("id") ?? "");
+    const found = new URLSearchParams(location.search).get("id") ?? "";
+    // Project ids are UUIDs; anything else would end up in an API path.
+    setId(UUID.test(found) ? found : "");
     setSignIn(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
   }, [signInPath]);
 
   useEffect(() => {
     if (id === null) return;
-    void api().then(async ([{ privately, SignedOut }, client]) => {
+    if (!id) return setState({ kind: "notFound" });
+    void (async () => {
       try {
+        const [{ privately }, client] = await api();
         const response = await privately((init) => client.getProject(id, init));
         if (response.status === 200) setState({ kind: "ready", project: response.data });
-        else setState({ kind: response.status === 404 || response.status === 422 ? "notFound" : "failed" });
+        else setState({ kind: response.status === 404 ? "notFound" : "failed" });
       } catch (error) {
+        const { SignedOut } = await import("@/lib/account");
         setState({ kind: error instanceof SignedOut ? "signedOut" : "failed" });
       }
-    });
+    })();
   }, [id]);
 
   useEffect(() => {
     if (state.kind === "ready") document.title = `${state.project.name} · IDEA-Agro`;
   }, [state]);
 
-  /** Runs a change and keeps the project it answers with; an ended session leads to sign-in. */
+  /**
+   * Runs a change and applies its result to the latest project, so changes in flight do not undo each other.
+   * An ended session leads to sign-in.
+   */
   const change = async (
-    run: (modules: Awaited<ReturnType<typeof api>>) => Promise<{ status: number; project?: ProjectOut }>,
+    run: (
+      modules: Awaited<ReturnType<typeof api>>,
+    ) => Promise<{ status: number; apply?: (project: ProjectOut) => ProjectOut }>,
   ) => {
     setProblem(null);
-    const modules = await api();
     try {
-      const { status, project } = await run(modules);
-      if (project) setState({ kind: "ready", project });
+      const { status, apply } = await run(await api());
+      if (apply) setState((now) => (now.kind === "ready" ? { kind: "ready", project: apply(now.project) } : now));
       else if (status >= 400) setProblem(status === 409 ? "full" : "changeFailed");
       return status;
     } catch (error) {
-      if (error instanceof modules[0].SignedOut) location.assign(signIn);
+      const { SignedOut } = await import("@/lib/account");
+      if (error instanceof SignedOut) location.assign(signIn);
       else setProblem("changeFailed");
       return 0;
     }
@@ -93,21 +108,25 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
   const add = (item: ItemIn) =>
     change(async ([{ privately }, client]) => {
       const response = await privately((init) => client.addProjectItem(id ?? "", item, init));
-      return response.status === 200 ? { status: 200, project: response.data } : { status: response.status };
+      return response.status === 200 ? { status: 200, apply: () => response.data } : { status: response.status };
     });
 
   const remove = (item: Item) =>
     change(async ([{ privately }, client]) => {
       const response = await privately((init) => client.removeProjectItem(id ?? "", item.id, init));
-      if (response.status !== 204 || state.kind !== "ready") return { status: response.status };
-      const items = state.project.items.filter((i) => i.id !== item.id);
-      return { status: 204, project: { ...state.project, items } };
+      // Gone already, as after a removal in another tab: the list just catches up.
+      if (response.status !== 204 && response.status !== 404) return { status: response.status };
+      focusSoon("zones-title");
+      return {
+        status: 204,
+        apply: (project: ProjectOut) => ({ ...project, items: project.items.filter((i) => i.id !== item.id) }),
+      };
     });
 
   const edit = (name: string, description: string) =>
     change(async ([{ privately }, client]) => {
       const response = await privately((init) => client.changeProject(id ?? "", { name, description }, init));
-      return response.status === 200 ? { status: 200, project: response.data } : { status: response.status };
+      return response.status === 200 ? { status: 200, apply: () => response.data } : { status: response.status };
     });
 
   const destroy = async (project: ProjectOut) => {
@@ -151,7 +170,7 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
         </p>
       )}
       <Zones t={t} number={number} project={project} zonePath={zonePath} onRemove={(item) => void remove(item)} />
-      <AddZones t={t} number={number} held={held} onAdd={(item) => void add(item)} />
+      <AddZones t={t} number={number} held={held} onAdd={add} />
     </div>
   );
 }
@@ -291,7 +310,7 @@ function Zones({
 
   return (
     <section aria-labelledby="zones-title" className={card}>
-      <h2 id="zones-title" className="text-lg font-medium text-ink">
+      <h2 id="zones-title" tabIndex={-1} className="text-lg font-medium text-ink">
         {t("project.zones.title")}{" "}
         <span className="text-sm font-normal text-ink-subtle">
           {t("project.zones.count", { count: project.items.length })}
@@ -350,7 +369,7 @@ function AddZones({
   t: ProjectTranslator["t"];
   number: ProjectTranslator["number"];
   held: Set<string>;
-  onAdd: (item: ItemIn) => void;
+  onAdd: (item: ItemIn) => Promise<number>;
 }) {
   const [library, setLibrary] = useState<SavedZoneOut[] | null>(null);
   const [query, setQuery] = useState("");
@@ -390,7 +409,9 @@ function AddZones({
       </h2>
 
       <div>
-        <h3 className="text-sm font-medium text-ink">{t("project.add.library")}</h3>
+        <h3 id="library-title" tabIndex={-1} className="text-sm font-medium text-ink">
+          {t("project.add.library")}
+        </h3>
         {library !== null && available.length === 0 ? (
           <p className="mt-2 text-sm text-ink-muted">{t("project.add.libraryEmpty")}</p>
         ) : (
@@ -403,7 +424,8 @@ function AddZones({
                   .filter(Boolean)
                   .join(" · ")}
                 action={t("project.add.action")}
-                onAdd={() => onAdd({ kind: "saved", zone_id: zone.id })}
+                label={t("project.add.actionLabel", { name: zone.name })}
+                onAdd={() => void onAdd({ kind: "saved", zone_id: zone.id }).then(() => focusSoon("library-title"))}
               />
             ))}
           </ul>
@@ -413,6 +435,7 @@ function AddZones({
       <div>
         <h3 className="text-sm font-medium text-ink">{t("project.add.predefined")}</h3>
         <Input
+          id="zone-search"
           type="search"
           className="mt-2"
           value={query}
@@ -427,10 +450,12 @@ function AddZones({
             {results.map((result) => {
               const item = toItem(result);
               const inProject = held.has(keyOf(item));
+              const title =
+                result.type === "padron" ? t("project.padron", { number: result.padron }) : result.entry.label;
               return (
                 <Candidate
                   key={keyOf(item)}
-                  title={result.type === "padron" ? t("project.padron", { number: result.padron }) : result.entry.label}
+                  title={title}
                   detail={
                     result.type === "padron"
                       ? `${t("project.kinds.padrones")} · ${result.departmentName}`
@@ -439,8 +464,9 @@ function AddZones({
                           .join(" · ")
                   }
                   action={inProject ? t("project.add.added") : t("project.add.action")}
+                  label={inProject ? undefined : t("project.add.actionLabel", { name: title })}
                   disabled={inProject}
-                  onAdd={() => onAdd(item)}
+                  onAdd={() => void onAdd(item).then(() => focusSoon("zone-search"))}
                 />
               );
             })}
@@ -455,12 +481,14 @@ function Candidate({
   title,
   detail,
   action,
+  label,
   disabled,
   onAdd,
 }: {
   title: string;
   detail?: string;
   action: string;
+  label?: string;
   disabled?: boolean;
   onAdd: () => void;
 }) {
@@ -470,7 +498,7 @@ function Candidate({
         <p className="truncate text-sm text-ink">{title}</p>
         {detail && <p className="truncate text-xs text-ink-subtle">{detail}</p>}
       </div>
-      <Button size="sm" variant="outline" disabled={disabled} onClick={onAdd}>
+      <Button size="sm" variant="outline" disabled={disabled} aria-label={label} onClick={onAdd}>
         {action}
       </Button>
     </li>

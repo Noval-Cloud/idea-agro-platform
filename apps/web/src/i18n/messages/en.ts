@@ -600,6 +600,7 @@ export const en = {
     signIn: "Sign in",
     projects: {
       label: "Add to a project",
+      loading: "Loading your projects…",
       choose: "Choose a project",
       add: "Add",
       added: "It is in {name}.",
@@ -731,6 +732,7 @@ export const en = {
     add: {
       title: "Add areas",
       action: "Add",
+      actionLabel: "Add {name} to the project",
       added: "In the project",
       full: "The project already holds the most areas it can.",
       library: "From your library",

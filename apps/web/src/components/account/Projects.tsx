@@ -27,13 +27,13 @@ export default function Projects({ t, projectPath, signInPath }: Props) {
   const create = async () => {
     setProblem(null);
     setCreating(true);
-    const [{ privately, SignedOut }, client] = await api();
     try {
+      const [{ privately }, client] = await api();
       const response = await privately((init) => client.createProject({ name: name.trim() }, init));
       if (response.status === 201) return location.assign(`${projectPath}?id=${response.data.id}`);
       setProblem(response.status === 409 ? "full" : "failed");
     } catch (error) {
-      if (error instanceof SignedOut)
+      if (error instanceof (await import("@/lib/account")).SignedOut)
         return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + "#projects")}`);
       setProblem("failed");
     }

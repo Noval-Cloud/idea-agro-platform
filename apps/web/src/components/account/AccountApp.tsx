@@ -42,6 +42,11 @@ export default function AccountApp({
       .catch(() => setState({ kind: "failed" }));
   }, [signInPath]);
 
+  // The sections appear after the account loads, too late for the browser to reach the address's anchor.
+  useEffect(() => {
+    if (state.kind === "ready" && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, [state.kind]);
+
   const endSessions = async () => {
     if (!window.confirm(t("account.sessions.confirm"))) return;
     setEnding("working");

@@ -598,6 +598,7 @@ export const pt = {
     signIn: "Entrar",
     projects: {
       label: "Adicionar a um projeto",
+      loading: "Carregando seus projetos…",
       choose: "Escolha um projeto",
       add: "Adicionar",
       added: "Está em {name}.",
@@ -729,6 +730,7 @@ export const pt = {
     add: {
       title: "Adicionar zonas",
       action: "Adicionar",
+      actionLabel: "Adicionar {name} ao projeto",
       added: "No projeto",
       full: "O projeto já tem o máximo de zonas.",
       library: "Da sua biblioteca",

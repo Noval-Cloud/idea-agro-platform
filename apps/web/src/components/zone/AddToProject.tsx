@@ -28,18 +28,24 @@ export default function AddToProject({ t, item, projectsPath, signInPath }: Prop
 
   const signIn = () => location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
 
+  const failed = () => setMessage({ text: t("zone.projects.failed"), ok: false });
+
   const open = async () => {
+    setMessage(null);
     setProjects(null);
-    const [{ privately, SignedOut }, client] = await api();
     try {
+      const [{ privately }, client] = await api();
       const response = await privately((init) => client.listProjects(init));
-      const found = response.status === 200 ? response.data : [];
-      setProjects(found);
-      setChosen(found[0]?.id ?? "");
+      if (response.status !== 200) {
+        setProjects(undefined);
+        return failed();
+      }
+      setProjects(response.data);
+      setChosen(response.data[0]?.id ?? "");
     } catch (error) {
-      if (error instanceof SignedOut) return signIn();
+      if (error instanceof (await import("@/lib/account")).SignedOut) return signIn();
       setProjects(undefined);
-      setMessage({ text: t("zone.projects.failed"), ok: false });
+      failed();
     }
   };
 
@@ -47,14 +53,14 @@ export default function AddToProject({ t, item, projectsPath, signInPath }: Prop
     const project = projects?.find((p) => p.id === chosen);
     if (!project) return;
     setMessage(null);
-    const [{ privately, SignedOut }, client] = await api();
     try {
+      const [{ privately }, client] = await api();
       const response = await privately((init) => client.addProjectItem(project.id, item, init));
       if (response.status === 200) setMessage({ text: t("zone.projects.added", { name: project.name }), ok: true });
       else setMessage({ text: t(response.status === 409 ? "zone.projects.full" : "zone.projects.failed"), ok: false });
     } catch (error) {
-      if (error instanceof SignedOut) return signIn();
-      setMessage({ text: t("zone.projects.failed"), ok: false });
+      if (error instanceof (await import("@/lib/account")).SignedOut) return signIn();
+      failed();
     }
   };
 
@@ -66,7 +72,11 @@ export default function AddToProject({ t, item, projectsPath, signInPath }: Prop
             {t("zone.projects.label")}
           </Button>
         </div>
-      ) : projects === null ? null : projects.length === 0 ? (
+      ) : projects === null ? (
+        <p role="status" className="text-ink-muted">
+          {t("zone.projects.loading")}
+        </p>
+      ) : projects.length === 0 ? (
         <p className="text-ink-muted">
           {t("zone.projects.none")}{" "}
           <a href={projectsPath} className="text-link underline underline-offset-(--ia-link-underline-offset)">
