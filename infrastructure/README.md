@@ -31,10 +31,10 @@ infrastructure/
 
 `setup/setup.sh` does only what Terraform cannot do for itself: Terraform cannot create the bucket its own state lives in, and the APIs must be on before its first plan. From the environment's `setup.env`, it puts in place:
 
-- the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage and Artifact Registry), always, and then the ones in `GCP_APIS`;
+- the APIs it works through (IAM, Cloud Resource Manager, Cloud Storage, and Artifact Registry when there is a registry), always, and then the ones in `GCP_APIS`;
 - the operator service account, its project roles, and who may impersonate it;
 - the Terraform state bucket, versioned, in the region (it turns versioning on in an existing one);
-- the Docker repository in Artifact Registry.
+- the Docker repository in Artifact Registry, only if `ARTIFACT_REGISTRY` names one: this product's images live in the organization's CI/CD project.
 
 It only adds: it never disables an API or revokes a role. It runs `gcloud` with your active configuration, or the one in `CLOUDSDK_ACTIVE_CONFIG_NAME`, and never changes it.
 
@@ -92,29 +92,29 @@ Google as a provider is the one step done by hand, once per environment, because
 
 ## CI/CD
 
-Cloud Build runs the checks and the deploys. The `ci` module declares the triggers, which run as the build identity.
+Builds run in the organization's CI/CD project, `novalcloud-setup`, which [Noval-Cloud/org-setup](https://github.com/Noval-Cloud/org-setup) manages. It holds the connection to GitHub, the link to this repository, the shared Docker repository and this product's build identity, `idea-agro-build`. The environment's `ci` variable takes those from org-setup's outputs.
 
-- **Checks:** every pull request into `main` runs `make setup` and `make check` in the CI image (`ci/checks.cloudbuild.yaml`), and reports the result on the pull request. Pull requests from outside the team run only after a collaborator comments `/gcbrun`.
-- **CI image:** built from `ci/` with the tool versions read from where the repository pins them (`.node-version`, `package.json`, `pyproject.toml`, `.python-version`, `terraform/providers.tf`), and rebuilt when any of them changes.
-- **Deploys:** a push to `main` that changes the API rebuilds its image and updates only the image of its service.
-- **The GitHub connection** is made once by hand, because it installs the Cloud Build app on the organization:
-  1. In the Cloud Build console, open Repositories (2nd gen) → Create host connection → GitHub, in the environment's region, named `github`.
-  2. Set `github_connection = "projects/<project>/locations/<region>/connections/github"` in the environment's `terraform.tfvars`.
-  3. Apply.
+The `ci` module declares this product's triggers there, all running as `idea-agro-build`:
 
-  Without the connection, Terraform creates no triggers.
+- **Checks:** `idea-agro-checks` runs `make setup` and `make check` in the CI image (`ci/checks.cloudbuild.yaml`) on every pull request into `main`, and reports the result on it. Pull requests from outside the team run only after a collaborator comments `/gcbrun`.
+- **CI image:** `idea-agro-ci-image` rebuilds it from `ci/` when a pinned tool version changes (`.node-version`, `package.json`, `pyproject.toml`, `.python-version`, `terraform/providers.tf`).
+- **Deploys:** on a push to `main`, `idea-agro-<env>-api`, `-web` and `-jobs` rebuild what changed and update only the image of its service or job in the environment's project.
 
-- **By hand:** `make ci-image ENV=dev` and `make ci-checks ENV=dev` run the same pipelines on the environment's Cloud Build. They upload the repository as git sees it (`.ci.gcloudignore`).
+Checks and the CI image belong to no environment: only the one with `ci.shared = true` declares them.
+
+Images go to `<region>-docker.pkg.dev/novalcloud-setup/containers/idea-agro/`. Each environment's Cloud Run pulls them from there, and `idea-agro-build` may update only that environment's services and job; org-setup grants the first, each module's `iam.tf` the second.
+
+By hand, `make api-deploy`, `web-deploy`, `jobs-deploy`, `ci-image` and `ci-checks` run the same pipelines in the same project, uploading the repository as git sees it (`.ci.gcloudignore`).
 
 ## `setup.env`
 
-Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except the lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` or `TF_SA_USERS` grants nothing.
+Shell `KEY=value` lines that `setup/setup.sh` sources. Every variable is required, except `ARTIFACT_REGISTRY` and the lists: an empty `GCP_APIS` enables no extra API, and an empty `TF_SA_ROLES` or `TF_SA_USERS` grants nothing.
 
 | Variable                 | What it is                                                                                                                 |
 | :----------------------- | :------------------------------------------------------------------------------------------------------------------------- |
 | `GCP_PROJECT_ID`         | The GCP project id                                                                                                         |
 | `GCP_REGION`             | The region of the project's regional resources                                                                             |
-| `ARTIFACT_REGISTRY`      | The id of the Docker repository in Artifact Registry, not its full `<region>-docker.pkg.dev/...` path                      |
+| `ARTIFACT_REGISTRY`      | Optional: the id of a Docker repository in the project, not its full path. This product's environments have none           |
 | `TF_SA`                  | The id, inside the project, of the operator service account, which Terraform applies with and CI/CD runs as                |
 | `TF_STATE_BUCKET_SUFFIX` | The suffix of the Terraform state bucket, whose name is `<GCP_PROJECT_ID>-<suffix>`                                        |
 | `GCP_APIS`               | Only the APIs the project needs, one per line. The setup's own APIs are always enabled and are not listed                  |

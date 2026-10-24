@@ -44,7 +44,7 @@ unset GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET_SUFFIX \
 . "$ENV_FILE"
 
 missing=""
-for name in GCP_PROJECT_ID GCP_REGION ARTIFACT_REGISTRY TF_SA TF_STATE_BUCKET_SUFFIX; do
+for name in GCP_PROJECT_ID GCP_REGION TF_SA TF_STATE_BUCKET_SUFFIX; do
   [ -n "${!name:-}" ] || missing="$missing $name"
 done
 if [ -n "$missing" ]; then
@@ -54,7 +54,8 @@ fi
 
 PROJECT="$GCP_PROJECT_ID"
 REGION="$GCP_REGION"
-REGISTRY="$ARTIFACT_REGISTRY"
+# Optional: an environment whose images live in another project has no registry of its own.
+REGISTRY="${ARTIFACT_REGISTRY:-}"
 OPERATOR="$TF_SA"
 OPERATOR_EMAIL="$OPERATOR@$PROJECT.iam.gserviceaccount.com"
 STATE_BUCKET="$PROJECT-$TF_STATE_BUCKET_SUFFIX"
@@ -63,7 +64,7 @@ OWN_APIS="
 iam.googleapis.com
 cloudresourcemanager.googleapis.com
 storage.googleapis.com
-artifactregistry.googleapis.com
+${REGISTRY:+artifactregistry.googleapis.com}
 "
 
 command -v gcloud >/dev/null || {
@@ -224,11 +225,11 @@ else
 fi
 
 REPOSITORIES=""
-if api_on artifactregistry.googleapis.com; then
+if [ -n "$REGISTRY" ] && api_on artifactregistry.googleapis.com; then
   REPOSITORIES="$(gcloud artifacts repositories list --project="$PROJECT" --location="$REGION" \
     --format='value(name)' | awk -F / '{ print $NF }')"
 fi
-if ! has "$REPOSITORIES" "$REGISTRY"; then
+if [ -n "$REGISTRY" ] && ! has "$REPOSITORIES" "$REGISTRY"; then
   change "create Docker repository $REGISTRY in $REGION" \
     gcloud artifacts repositories create "$REGISTRY" --project="$PROJECT" --location="$REGION" \
     --repository-format=docker

@@ -15,7 +15,7 @@ export GOOGLE_OAUTH_ACCESS_TOKEN
 tf() { terraform -chdir=infrastructure/terraform "$@"; }
 tf init -reconfigure -input=false -backend-config="../environments/$ENV/backend.tfvars" >/dev/null
 
-PROJECT="$(tf output -raw project)"
+PROJECT="$(tf output -raw ci_project)"
 gcloud builds submit . --project="$PROJECT" --region="$(tf output -raw region)" \
   --config="infrastructure/ci/$PIPELINE.cloudbuild.yaml" --ignore-file=.ci.gcloudignore \
   --service-account="projects/$PROJECT/serviceAccounts/$(tf output -raw builder_email)" \

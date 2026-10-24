@@ -116,9 +116,7 @@ def test_refuses_an_unknown_environment(repo: Repo, args: list[str]) -> None:
     assert repo.calls() == []
 
 
-@pytest.mark.parametrize(
-    "name", ["GCP_PROJECT_ID", "GCP_REGION", "ARTIFACT_REGISTRY", "TF_SA", "TF_STATE_BUCKET_SUFFIX"]
-)
+@pytest.mark.parametrize("name", ["GCP_PROJECT_ID", "GCP_REGION", "TF_SA", "TF_STATE_BUCKET_SUFFIX"])
 def test_refuses_a_missing_required_value(repo: Repo, name: str) -> None:
     repo.write_env(setup_env().replace(f"{name}=", f"{name}=\n#"))
     result = repo.run("--env", "dev")
@@ -175,6 +173,16 @@ def test_dry_run_lists_what_is_missing_and_changes_nothing(repo: Repo) -> None:
     assert {**repo.state(), "calls": [], "configs": []} == before
     assert repo.changing_calls() == []
     assert not repo.outputs.exists()
+
+
+def test_an_environment_without_a_registry_gets_none(repo: Repo) -> None:
+    repo.write_env(setup_env(registry=""))
+
+    result = repo.run("--env", "dev")
+
+    assert result.returncode == 0, result.stderr
+    assert "would enable artifactregistry.googleapis.com" not in changes(result)
+    assert not [line for line in changes(result) if "Docker repository" in line]
 
 
 def test_counts_only_what_is_missing(repo: Repo) -> None:

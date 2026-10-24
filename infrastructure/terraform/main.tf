@@ -1,16 +1,15 @@
 module "platform" {
   source = "./modules/platform"
 
-  project           = var.project
-  region            = var.region
-  artifact_registry = var.artifact_registry
+  project = var.project
+  region  = var.region
 }
 
 module "web" {
   source = "./modules/services/web"
 
   region         = var.region
-  builder_member = module.platform.builder_member
+  builder_member = local.builder_member
 }
 
 module "identity" {
@@ -26,7 +25,7 @@ module "api" {
 
   project          = var.project
   region           = var.region
-  builder_member   = module.platform.builder_member
+  builder_member   = local.builder_member
   auth_issuer      = module.identity.issuer
   auth_audience    = module.identity.audience
   auth_jwks_url    = module.identity.jwks_url
@@ -40,7 +39,7 @@ module "jobs" {
 
   project        = var.project
   region         = var.region
-  builder_member = module.platform.builder_member
+  builder_member = local.builder_member
   values_dataset = module.platform.values_dataset
   zones_bucket   = module.api.zones_bucket
 }
@@ -48,14 +47,17 @@ module "jobs" {
 module "ci" {
   source = "./modules/ci"
 
-  project           = var.project
-  region            = var.region
-  github_connection = var.github_connection
-  builder_email     = module.platform.builder_email
-  image_repository  = module.platform.image_repository
-  api_service       = module.api.service
-  jobs_job          = module.jobs.job
-  web_service       = module.web.service
+  project          = var.ci.project
+  region           = var.region
+  repository       = var.ci.repository
+  builder_email    = var.ci.builder_email
+  image_repository = var.ci.image_repository
+  environment      = var.environment
+  deploy_project   = var.project
+  shared           = var.ci.shared
+  api_service      = module.api.service
+  jobs_job         = module.jobs.job
+  web_service      = module.web.service
   web_settings = {
     site_url    = module.web.url
     api_url     = module.api.url

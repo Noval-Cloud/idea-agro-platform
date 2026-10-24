@@ -18,11 +18,12 @@ tf() { terraform -chdir=infrastructure/terraform "$@"; }
 tf init -reconfigure -input=false -backend-config="../environments/$ENV/backend.tfvars" >/dev/null
 
 PROJECT="$(tf output -raw project)"
+CI_PROJECT="$(tf output -raw ci_project)"
 REGION="$(tf output -raw region)"
 JOB="$(tf output -raw jobs_job)"
-gcloud builds submit . --project="$PROJECT" --region="$REGION" --config=services/jobs/cloudbuild.yaml \
+gcloud builds submit . --project="$CI_PROJECT" --region="$REGION" --config=services/jobs/cloudbuild.yaml \
   --ignore-file=.ci.gcloudignore \
-  --service-account="projects/$PROJECT/serviceAccounts/$(tf output -raw builder_email)" \
+  --service-account="projects/$CI_PROJECT/serviceAccounts/$(tf output -raw builder_email)" \
   --gcs-source-staging-dir="gs://$(tf output -raw build_sources_bucket)/source" \
-  --substitutions="_IMAGE_REPOSITORY=$(tf output -raw image_repository),_JOB=$JOB,_REGION=$REGION"
+  --substitutions="_IMAGE_REPOSITORY=$(tf output -raw image_repository),_PROJECT=$PROJECT,_JOB=$JOB,_REGION=$REGION"
 echo "Deployed the job $JOB"

@@ -28,6 +28,7 @@ steps:
       - services
       - update
       - ${_SERVICE}
+      - --project=${_PROJECT}
       - --region=${_REGION}
       - --image=${_IMAGE_REPOSITORY}/${_SERVICE}:${BUILD_ID}
 timeout: 1800s

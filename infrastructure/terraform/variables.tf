@@ -23,11 +23,6 @@ variable "operator_sa" {
   type        = string
 }
 
-variable "artifact_registry" {
-  description = "Id of the Docker repository in Artifact Registry, created by the setup"
-  type        = string
-}
-
 variable "auth_local_origins" {
   description = "Origins besides the website's that may sign in, such as a local dev server"
   type        = list(string)
@@ -40,8 +35,19 @@ variable "admin_emails" {
   default     = []
 }
 
-variable "github_connection" {
-  description = "Full name of the Cloud Build connection to GitHub, once made in the console; empty creates no triggers"
-  type        = string
-  default     = ""
+variable "ci" {
+  description = "The organization's CI/CD project, from org-setup's outputs: where this product builds and keeps its images"
+  type = object({
+    project = string
+    # The link to this repository, under the project's connection to GitHub.
+    repository = string
+    # The product's build identity, which the triggers and the deploys run as.
+    builder_email = string
+    # Where the product's images go, under the shared Docker repository.
+    image_repository = string
+    # Where builds submitted by hand upload their sources.
+    sources_bucket = string
+    # Whether this environment declares the triggers no environment owns: checks and the CI image.
+    shared = bool
+  })
 }
