@@ -11,6 +11,7 @@ steps:
       - jobs
       - update
       - ${_JOB}
+      - --project=${_PROJECT}
       - --region=${_REGION}
       - --image=${_IMAGE_REPOSITORY}/${_JOB}:${BUILD_ID}
 options:

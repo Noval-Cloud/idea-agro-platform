@@ -1,45 +1,54 @@
 variable "project" {
-  description = "GCP project id"
+  description = "The organization's CI/CD project, where the triggers live"
   type        = string
 }
 
 variable "region" {
-  description = "Region of the Cloud Build triggers and the repository link"
+  description = "Region of the triggers"
   type        = string
 }
 
-variable "github_connection" {
-  description = "Full name of the Cloud Build connection to GitHub, made once in the console; empty creates no triggers"
+variable "repository" {
+  description = "Id of this repository's link in the CI/CD project"
   type        = string
-  default     = ""
 }
 
-variable "repository_name" {
-  description = "Name of the repository link under the connection"
+variable "builder_email" {
+  description = "Service account the triggers run as: the product's build identity"
   type        = string
-  default     = "idea-agro-platform"
 }
 
-variable "repository_uri" {
-  description = "Clone URL of the repository"
+variable "image_repository" {
+  description = "Artifact Registry path the product's images are pushed to"
   type        = string
-  default     = "https://github.com/Noval-Cloud/idea-agro-platform.git"
+}
+
+variable "product" {
+  description = "The product's name, which the triggers' names start with"
+  type        = string
+  default     = "idea-agro"
+}
+
+variable "environment" {
+  description = "The environment the deploy triggers deploy to"
+  type        = string
+}
+
+variable "deploy_project" {
+  description = "The environment's project, where the deploys update the services"
+  type        = string
+}
+
+variable "shared" {
+  description = "Whether this environment declares the product's triggers that no environment owns: checks and the CI image"
+  type        = bool
+  default     = false
 }
 
 variable "main_branch" {
   description = "Branch pattern that pull requests target and that deploys"
   type        = string
   default     = "^main$"
-}
-
-variable "builder_email" {
-  description = "Service account the triggers run as"
-  type        = string
-}
-
-variable "image_repository" {
-  description = "Artifact Registry path images are pushed to"
-  type        = string
 }
 
 variable "ci_image_name" {
@@ -83,12 +92,6 @@ variable "jobs_files" {
   default     = ["services/jobs/**", "apps/web/src/design/generated/map-theme.json", "pyproject.toml", "uv.lock", ".python-version"]
 }
 
-variable "external_pull_requests" {
-  description = "When pull requests from outside the team run the checks: only after a collaborator comments /gcbrun"
-  type        = string
-  default     = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
-}
-
 variable "web_service" {
   description = "Cloud Run service of the website"
   type        = string
@@ -110,4 +113,10 @@ variable "web_settings" {
     csp         = map(list(string))
   })
   sensitive = true
+}
+
+variable "external_pull_requests" {
+  description = "Who may run the checks on a pull request: collaborators, or anyone after a collaborator comments /gcbrun"
+  type        = string
+  default     = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
 }

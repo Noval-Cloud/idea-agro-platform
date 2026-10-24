@@ -18,6 +18,7 @@ tf() { terraform -chdir=infrastructure/terraform "$@"; }
 tf init -reconfigure -input=false -backend-config="../environments/$ENV/backend.tfvars" >/dev/null
 
 PROJECT="$(tf output -raw project)"
+CI_PROJECT="$(tf output -raw ci_project)"
 REGION="$(tf output -raw region)"
 SERVICE="$(tf output -raw api_service)"
 URL="$(tf output -raw api_url)"
@@ -25,8 +26,8 @@ BUILDER="$(tf output -raw builder_email)"
 SOURCES="$(tf output -raw build_sources_bucket)"
 IMAGES="$(tf output -raw image_repository)"
 
-gcloud builds submit . --project="$PROJECT" --region="$REGION" --config=services/api/cloudbuild.yaml \
-  --service-account="projects/$PROJECT/serviceAccounts/$BUILDER" \
+gcloud builds submit . --project="$CI_PROJECT" --region="$REGION" --config=services/api/cloudbuild.yaml \
+  --service-account="projects/$CI_PROJECT/serviceAccounts/$BUILDER" \
   --gcs-source-staging-dir="gs://$SOURCES/source" \
-  --substitutions="_IMAGE_REPOSITORY=$IMAGES,_SERVICE=$SERVICE,_REGION=$REGION"
+  --substitutions="_IMAGE_REPOSITORY=$IMAGES,_PROJECT=$PROJECT,_SERVICE=$SERVICE,_REGION=$REGION"
 echo "Deployed to $URL"

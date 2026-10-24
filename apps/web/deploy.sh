@@ -18,6 +18,7 @@ tf() { terraform -chdir=infrastructure/terraform "$@"; }
 tf init -reconfigure -input=false -backend-config="../environments/$ENV/backend.tfvars" >/dev/null
 
 PROJECT="$(tf output -raw project)"
+CI_PROJECT="$(tf output -raw ci_project)"
 REGION="$(tf output -raw region)"
 SERVICE="$(tf output -raw web_service)"
 URL="$(tf output -raw web_url)"
@@ -35,9 +36,9 @@ SOURCES="$(tf output -raw build_sources_bucket)"
 IMAGES="$(tf output -raw image_repository)"
 
 # The same pipeline as the trigger: the site is built on Cloud Build, from the repository as git sees it.
-gcloud builds submit . --project="$PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
+gcloud builds submit . --project="$CI_PROJECT" --region="$REGION" --config=apps/web/cloudbuild.yaml \
   --ignore-file=.ci.gcloudignore \
-  --service-account="projects/$PROJECT/serviceAccounts/$BUILDER" \
+  --service-account="projects/$CI_PROJECT/serviceAccounts/$BUILDER" \
   --gcs-source-staging-dir="gs://$SOURCES/source" \
-  --substitutions="^@^_CI_IMAGE=$(tf output -raw ci_image)@_IMAGE_REPOSITORY=$IMAGES@_SERVICE=$SERVICE@_REGION=$REGION@_SITE_URL=$URL@_API_URL=$API_URL@_AUTH_DOMAIN=$AUTH_DOMAIN@_AUTH_KEY=$AUTH_KEY@_CSP_CONNECT=$CSP_CONNECT@_CSP_FRAME=$CSP_FRAME@_CSP_SCRIPT=$CSP_SCRIPT@_CSP_IMAGES=$CSP_IMAGES"
+  --substitutions="^@^_CI_IMAGE=$(tf output -raw ci_image)@_IMAGE_REPOSITORY=$IMAGES@_PROJECT=$PROJECT@_SERVICE=$SERVICE@_REGION=$REGION@_SITE_URL=$URL@_API_URL=$API_URL@_AUTH_DOMAIN=$AUTH_DOMAIN@_AUTH_KEY=$AUTH_KEY@_CSP_CONNECT=$CSP_CONNECT@_CSP_FRAME=$CSP_FRAME@_CSP_SCRIPT=$CSP_SCRIPT@_CSP_IMAGES=$CSP_IMAGES"
 echo "Deployed to $URL"
