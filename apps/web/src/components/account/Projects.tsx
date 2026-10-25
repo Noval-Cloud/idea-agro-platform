@@ -8,12 +8,13 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/compone
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/lists/EmptyState";
-import { ListCount, ListToolbar } from "@/components/lists/ListToolbar";
+import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import { SortHeader, SortMenu, sortRows, type Sort } from "@/components/lists/Sorting";
+import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { matches } from "@/components/lists/filter";
+import { useQueryState } from "@/components/lists/state";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import type { AccountTranslator } from "./i18n";
@@ -21,7 +22,8 @@ import type { AccountTranslator } from "./i18n";
 type Props = { translator: AccountTranslator; projectPath: string; mapPath: string; signInPath: string };
 
 type Show = "all" | "mine" | "shared";
-type Key = "changed" | "name" | "zones";
+const keys = ["changed", "name", "zones"] as const;
+type Key = (typeof keys)[number];
 
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 
@@ -34,9 +36,12 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
   const [projects, setProjects] = useState<ProjectSummary[] | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<ProjectSummary | null>(null);
   const [failed, setFailed] = useState(false);
-  const [query, setQuery] = useState("");
-  const [show, setShow] = useState<Show>("all");
-  const [sort, setSort] = useState<Sort<Key>>({ key: "changed", descending: true });
+  const [query, setQuery] = useQueryState("q", "");
+  const [showValue, setShow] = useQueryState("show", "all");
+  const show: Show = showValue === "mine" || showValue === "shared" ? showValue : "all";
+  const [sortValue, setSortValue] = useQueryState("sort", "-changed");
+  const sort = decodeSort<Key>(sortValue, keys, { key: "changed", descending: true });
+  const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
   const [view, setView] = useListView("projects");
 
   useEffect(() => {
@@ -52,9 +57,10 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
       const [{ privately }, client] = await api();
       const response = await privately((init) => client.deleteProject(project.id, init));
       // Already gone, as after a delete from another tab: the list just catches up.
-      if (response.status === 204 || response.status === 404)
+      if (response.status === 204 || response.status === 404) {
         setProjects((all) => all?.filter((p) => p.id !== project.id));
-      else setFailed(true);
+        requestAnimationFrame(() => document.getElementById("list-search")?.focus());
+      } else setFailed(true);
     } catch (error) {
       if (error instanceof (await import("@/lib/account")).SignedOut)
         return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname)}`);
@@ -130,7 +136,7 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
         )}
       </ListToolbar>
 
-      <div className="grid max-w-(--ia-layout-page) gap-6 pt-6">
+      <div className={cn("grid max-w-(--ia-layout-page) gap-6 pt-6", underToolbar)}>
         {failed && (
           <p role="alert" className="text-sm text-danger">
             {t("account.projects.changeFailed")}
@@ -239,7 +245,11 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
                       </time>
                     </td>
                     <td className="pr-2 text-right">
-                      <RowMenu label={t("lists.more", { name: project.name })} actions={actions(project)} />
+                      <RowMenu
+                        id={`menu-${project.id}`}
+                        label={t("lists.more", { name: project.name })}
+                        actions={actions(project)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -266,7 +276,11 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
                       </h3>
                     </div>
                     <div className="relative -mt-1 -mr-2">
-                      <RowMenu label={t("lists.more", { name: project.name })} actions={actions(project)} />
+                      <RowMenu
+                        id={`menu-${project.id}`}
+                        label={t("lists.more", { name: project.name })}
+                        actions={actions(project)}
+                      />
                     </div>
                   </div>
                   <p className="line-clamp-2 min-h-10 px-4 pt-1 text-sm text-ink-muted">
@@ -274,11 +288,11 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
                   </p>
                   <div className="mt-4 flex items-center gap-4 border-t border-line px-4 py-2.5 text-xs text-ink-subtle">
                     <span className="inline-flex items-center gap-1.5">
-                      <MapPin size={iconSize.sm - 2} aria-hidden="true" />
+                      <MapPin size={iconSize.xs} aria-hidden="true" />
                       {t("account.projects.zoneCount", { count: project.zone_count })}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
-                      <Users size={iconSize.sm - 2} aria-hidden="true" />
+                      <Users size={iconSize.xs} aria-hidden="true" />
                       {project.member_count
                         ? t("account.projects.memberCount", { count: project.member_count + 1 })
                         : t("account.projects.onlyYou")}
@@ -309,6 +323,7 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
           setDeleting(null);
         }}
         onCancel={() => setDeleting(null)}
+        returnFocus={() => (deleting ? document.getElementById(`menu-${deleting.id}`) : null)}
       />
     </TooltipProvider>
   );

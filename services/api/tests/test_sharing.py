@@ -67,6 +67,7 @@ def test_an_invitation_is_accepted_when_the_invitee_opens_their_projects(client:
     id = project(client)
 
     shared = share(client, id, "Bo@Example.org", "viewer").json()
+    pending = client.get("/v1/projects", headers=ANA).json()
     before = client.get(f"/v1/projects/{id}", headers=BO)
     listed = client.get("/v1/projects", headers=BO).json()
     after = client.get(f"/v1/projects/{id}", headers=ANA).json()
@@ -74,6 +75,8 @@ def test_an_invitation_is_accepted_when_the_invitee_opens_their_projects(client:
     assert shared["members"] == [
         {"email": "bo@example.org", "name": None, "role": "viewer", "pending": True, "you": False}
     ]
+    # An invitation counts before it is accepted.
+    assert [p["member_count"] for p in pending] == [1]
     # Opening it directly accepts it too.
     assert before.status_code == 200
     assert [(p["id"], p["role"], p["owner_name"], p["member_count"]) for p in listed] == [(id, "viewer", "Ana", 1)]

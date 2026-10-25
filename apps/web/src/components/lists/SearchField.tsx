@@ -4,12 +4,14 @@ import type { ListsT } from "./i18n";
 
 /** Narrows a list as one types; Escape or the cross clears it. */
 export function SearchField({
+  id = "list-search",
   t,
   value,
   label,
   placeholder,
   onChange,
 }: {
+  id?: string;
   t: ListsT;
   value: string;
   label: string;
@@ -24,6 +26,7 @@ export function SearchField({
         className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-subtle"
       />
       <input
+        id={id}
         type="search"
         value={value}
         aria-label={label}

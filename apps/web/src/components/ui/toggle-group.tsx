@@ -34,7 +34,7 @@ export function SegmentedItem({ className, ...props }: React.ComponentProps<type
   return (
     <Group.Item
       className={cn(
-        "inline-flex h-full items-center justify-center gap-1.5 rounded-xs px-3 text-sm whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:text-ink data-[state=on]:bg-surface data-[state=on]:text-ink data-[state=on]:shadow-raised [&_svg]:size-4",
+        "inline-flex h-full items-center justify-center gap-1.5 rounded-xs px-3 text-sm whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:text-ink aria-checked:bg-surface aria-checked:text-ink aria-checked:shadow-raised [&_svg]:size-4",
         className,
       )}
       {...props}

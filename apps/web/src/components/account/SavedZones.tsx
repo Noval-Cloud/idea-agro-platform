@@ -25,13 +25,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { loadManifest, type Manifest } from "@/components/explorer/lib/data";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
-import { ListCount, ListToolbar } from "@/components/lists/ListToolbar";
+import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import { SortHeader, SortMenu, sortRows, type Sort } from "@/components/lists/Sorting";
+import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { ZoneShape, ZoneThumbnail, useSavedZoneOutline } from "@/components/lists/ZoneShape";
 import { matches } from "@/components/lists/filter";
+import { useQueryState } from "@/components/lists/state";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import type { AccountTranslator } from "./i18n";
@@ -46,7 +47,12 @@ type Props = {
 };
 
 type Kind = "all" | "areas" | "points";
-type Key = "changed" | "name" | "size";
+const keys = ["changed", "name", "size"] as const;
+type Key = (typeof keys)[number];
+
+/** Focus after a change that took the focused control away: the zone's name, or the search when it is gone. */
+const focusSoon = (id: string) =>
+  requestAnimationFrame(() => (document.getElementById(id) ?? document.getElementById("list-search"))?.focus());
 
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 
@@ -58,10 +64,13 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
   const [editing, setEditing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<SavedZoneOut | null>(null);
   const [failed, setFailed] = useState(false);
-  const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<Kind>("all");
-  const [department, setDepartment] = useState("all");
-  const [sort, setSort] = useState<Sort<Key>>({ key: "changed", descending: true });
+  const [query, setQuery] = useQueryState("q", "");
+  const [kindValue, setKind] = useQueryState("kind", "all");
+  const kind: Kind = kindValue === "areas" || kindValue === "points" ? kindValue : "all";
+  const [department, setDepartment] = useQueryState("dept", "all");
+  const [sortValue, setSortValue] = useQueryState("sort", "-changed");
+  const sort = decodeSort<Key>(sortValue, keys, { key: "changed", descending: true });
+  const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
   const [view, setView] = useListView("saved-zones");
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -95,6 +104,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       if (response.status !== 200) return false;
       setZones((all) => all?.map((z) => (z.id === id ? response.data : z)));
       setEditing(null);
+      focusSoon(`zone-${id}`);
       return true;
     });
 
@@ -104,6 +114,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       // Already gone, as after a delete from another tab: the list just catches up.
       if (response.status !== 204 && response.status !== 404) return false;
       setZones((all) => all?.filter((z) => z.id !== zone.id));
+      focusSoon("list-search");
       return true;
     });
 
@@ -137,7 +148,12 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
     ...(zone.area_ha > 0
       ? [{ label: t("account.zones.editOutline"), icon: <Spline />, href: `${outlinePath}?saved=${zone.id}` }]
       : []),
-    { label: t("account.zones.rename"), icon: <TextCursorInput />, onSelect: () => setEditing(zone.id) },
+    {
+      label: t("account.zones.rename"),
+      icon: <TextCursorInput />,
+      onSelect: () => setEditing(zone.id),
+      movesFocus: true,
+    },
     { label: t("account.zones.delete"), icon: <Trash2 />, onSelect: () => setDeleting(zone), danger: true },
   ];
 
@@ -216,7 +232,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
         )}
       </ListToolbar>
 
-      <div className="grid max-w-(--ia-layout-page) gap-6 pt-6">
+      <div className={cn("grid max-w-(--ia-layout-page) gap-6 pt-6", underToolbar)}>
         <ImportZones
           t={t}
           number={translator.number}
@@ -261,7 +277,10 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
             zonePath={zonePath}
             editing={editing}
             onRename={rename}
-            onStopEditing={() => setEditing(null)}
+            onStopEditing={(id) => {
+              setEditing(null);
+              focusSoon(`zone-${id}`);
+            }}
             actions={actions}
           />
         ) : (
@@ -275,10 +294,24 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
                   href={`${zonePath}?saved=${zone.id}`}
                   title={
                     editing === zone.id ? (
-                      <RenameForm t={t} zone={zone} onRename={rename} onCancel={() => setEditing(null)} />
+                      <RenameForm
+                        t={t}
+                        zone={zone}
+                        onRename={rename}
+                        onCancel={() => {
+                          setEditing(null);
+                          focusSoon(`zone-${zone.id}`);
+                        }}
+                      />
                     ) : null
                   }
-                  menu={<RowMenu label={t("lists.more", { name: zone.name })} actions={actions(zone)} />}
+                  menu={
+                    <RowMenu
+                      id={`menu-${zone.id}`}
+                      label={t("lists.more", { name: zone.name })}
+                      actions={actions(zone)}
+                    />
+                  }
                 />
               </li>
             ))}
@@ -297,6 +330,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
           setDeleting(null);
         }}
         onCancel={() => setDeleting(null)}
+        returnFocus={() => (deleting ? document.getElementById(`menu-${deleting.id}`) : null)}
       />
     </TooltipProvider>
   );
@@ -306,7 +340,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
 function sizeOf({ t, number, degrees }: AccountTranslator, zone: SavedZoneOut) {
   return zone.area_ha
     ? t("account.zones.area", { value: number(zone.area_ha) })
-    : `${degrees(zone.bbox[1])}, ${degrees(zone.bbox[0])}`;
+    : t("account.zones.coordinates", { latitude: degrees(zone.bbox[1]), longitude: degrees(zone.bbox[0]) });
 }
 
 function ZonesTable({
@@ -327,7 +361,7 @@ function ZonesTable({
   zonePath: string;
   editing: string | null;
   onRename: (id: string, name: string) => Promise<void>;
-  onStopEditing: () => void;
+  onStopEditing: (id: string) => void;
   actions: (zone: SavedZoneOut) => RowAction[];
 }) {
   const { t, ago, moment } = translator;
@@ -374,14 +408,15 @@ function ZonesTable({
         <tbody className="divide-y divide-line">
           {zones.map((zone) => (
             <tr key={zone.id} className="transition-colors duration-(--ia-motion-fast) hover:bg-surface-sunken">
-              <td className="py-2 pr-3 pl-4">
+              <td className="max-w-0 py-2 pr-3 pl-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <ZoneGlyph zone={zone} />
                   {editing === zone.id ? (
-                    <RenameForm t={t} zone={zone} onRename={onRename} onCancel={onStopEditing} />
+                    <RenameForm t={t} zone={zone} onRename={onRename} onCancel={() => onStopEditing(zone.id)} />
                   ) : (
                     <div className="min-w-0">
                       <a
+                        id={`zone-${zone.id}`}
                         href={`${zonePath}?saved=${zone.id}`}
                         className="block truncate font-medium text-ink underline-offset-(--ia-link-underline-offset) hover:underline"
                       >
@@ -405,7 +440,7 @@ function ZonesTable({
                 </time>
               </td>
               <td className="pr-2 text-right">
-                <RowMenu label={t("lists.more", { name: zone.name })} actions={actions(zone)} />
+                <RowMenu id={`menu-${zone.id}`} label={t("lists.more", { name: zone.name })} actions={actions(zone)} />
               </td>
             </tr>
           ))}
@@ -424,7 +459,11 @@ function ZoneGlyph({ zone }: { zone: SavedZoneOut }) {
       ref={box}
       className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-line bg-surface-sunken p-1 text-action"
     >
-      {point ? <MapPin size={iconSize.sm} aria-hidden="true" /> : geometry && <ZoneShape geometry={geometry} />}
+      {point ? (
+        <MapPin size={iconSize.sm} aria-hidden="true" />
+      ) : (
+        geometry && geometry !== "failed" && <ZoneShape geometry={geometry} />
+      )}
     </div>
   );
 }
@@ -458,7 +497,12 @@ function ZoneCard({
         <div className="min-w-0 grow">
           {title ?? (
             <h3 className="truncate font-medium text-ink">
-              <a href={href} data-card-link className="outline-none after:absolute after:inset-0">
+              <a
+                id={`zone-${zone.id}`}
+                href={href}
+                data-card-link
+                className="outline-none after:absolute after:inset-0"
+              >
                 {zone.name}
               </a>
             </h3>

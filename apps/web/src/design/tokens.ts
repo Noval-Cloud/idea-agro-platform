@@ -266,7 +266,7 @@ export const layout = {
 } as const;
 
 /** Icon sizes in pixels (Lucide `size`). */
-export const iconSize = { sm: 16, md: 18, lg: 20 } as const;
+export const iconSize = { xs: 14, sm: 16, md: 18, lg: 20 } as const;
 
 /** Keyboard focus ring. */
 export const focusRing = { width: "2px", offset: "2px" } as const;

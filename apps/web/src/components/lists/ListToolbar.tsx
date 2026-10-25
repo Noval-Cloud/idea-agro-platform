@@ -23,3 +23,6 @@ export function ListCount({ children }: { children: ReactNode }) {
     </p>
   );
 }
+
+/** For a list under the toolbar: whatever gets focus scrolls clear of the header and the toolbar. */
+export const underToolbar = "[&_:is(a,button,input)]:scroll-mt-56";

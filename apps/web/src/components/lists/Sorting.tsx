@@ -1,12 +1,17 @@
-import { Select } from "radix-ui";
 import { ArrowDown, ArrowUp, ArrowUpDown, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import type { ListsT } from "./i18n";
 
 export type Sort<K extends string> = { key: K; descending: boolean };
 
-/** Sorts rows by a key; `natural` says which keys read first-to-last as descending (newest, largest). */
+/** Rows in the sort's order: text by the locale's collation, numbers and times by value. */
 export function sortRows<T, K extends string>(
   rows: T[],
   sort: Sort<K>,
@@ -33,48 +38,42 @@ export function SortMenu<K extends string>({
   options: { key: K; label: string; descending: boolean }[];
   onSort: (sort: Sort<K>) => void;
 }) {
+  const current = options.find((o) => o.key === sort.key);
+  // The arrow says the direction, which a table header may have turned around.
+  const Arrow = sort.descending ? ArrowDown : ArrowUp;
   return (
-    <Select.Root
-      value={sort.key}
-      onValueChange={(key) => {
-        const option = options.find((o) => o.key === key);
-        if (option) onSort({ key: option.key, descending: option.descending });
-      }}
-    >
-      <Select.Trigger
-        aria-label={t("lists.sort")}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={`${t("lists.sort")}: ${current?.label ?? ""}`}
         className="inline-flex h-9 items-center gap-2 rounded-sm px-2.5 text-sm text-ink-muted hover:bg-action-soft hover:text-ink data-[state=open]:bg-action-soft"
       >
         <ArrowUpDown size={iconSize.sm} aria-hidden="true" />
-        <span className="hidden sm:inline">
-          <Select.Value />
+        <span className="hidden items-center gap-1 sm:inline-flex">
+          {current?.label}
+          {current && current.descending !== sort.descending && <Arrow size={iconSize.xs} aria-hidden="true" />}
         </span>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Content
-          position="popper"
-          align="end"
-          sideOffset={4}
-          className="ia-pop z-(--ia-layer-popover) min-w-48 rounded-md border border-line bg-surface p-1 text-ink shadow-overlay"
-        >
-          <Select.Viewport>
-            {options.map((option) => (
-              <Select.Item
-                key={option.key}
-                value={option.key}
-                className="relative flex h-9 cursor-pointer items-center rounded-sm pr-3 pl-8 text-sm outline-none select-none data-highlighted:bg-action-soft"
-              >
-                <Select.ItemIndicator className="absolute left-2 inline-flex">
-                  <Check size={iconSize.sm} aria-hidden="true" />
-                </Select.ItemIndicator>
-                <Select.ItemText>{option.label}</Select.ItemText>
-              </Select.Item>
-            ))}
-          </Select.Viewport>
-        </Select.Content>
-      </Select.Portal>
-    </Select.Root>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-48">
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.key}
+            onSelect={() => onSort({ key: option.key, descending: option.descending })}
+          >
+            <Check aria-hidden="true" className={option.key === sort.key ? "opacity-100" : "opacity-0"} />
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
+}
+
+/** A sort as it goes in the address: the key, after a minus when descending. */
+export const encodeSort = <K extends string>(sort: Sort<K>) => `${sort.descending ? "-" : ""}${sort.key}`;
+
+export function decodeSort<K extends string>(value: string, keys: readonly K[], fallback: Sort<K>): Sort<K> {
+  const key = value.replace(/^-/, "") as K;
+  return keys.includes(key) ? { key, descending: value.startsWith("-") } : fallback;
 }
 
 /** A table header that sorts by its column: once by the column's natural order, again to reverse it. */
@@ -110,7 +109,7 @@ export function SortHeader<K extends string>({
         )}
       >
         {label}
-        <Arrow size={iconSize.sm - 2} aria-hidden="true" className={active ? "opacity-100" : "opacity-0"} />
+        <Arrow size={iconSize.xs} aria-hidden="true" className={active ? "opacity-100" : "opacity-0"} />
       </button>
     </th>
   );

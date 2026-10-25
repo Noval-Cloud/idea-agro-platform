@@ -48,15 +48,18 @@ export function useSeen(ref: RefObject<Element | null>): boolean {
 
 const outlines = new Map<string, Promise<ZoneGeometry | null>>();
 
-/** A saved zone's outline, fetched once it is seen; a new version fetches again. No id, nothing to fetch. */
+/**
+ * A saved zone's outline, fetched once it is seen; a new version fetches again. No id, nothing to fetch.
+ * `"failed"` when it could not be fetched: the next time the zone shows, it tries again.
+ */
 export function useSavedZoneOutline(
   id: string | null,
   version: number,
   project?: string,
-): [RefObject<HTMLDivElement | null>, ZoneGeometry | null] {
+): [RefObject<HTMLDivElement | null>, ZoneGeometry | "failed" | null] {
   const box = useRef<HTMLDivElement>(null);
   const seen = useSeen(box);
-  const [geometry, setGeometry] = useState<ZoneGeometry | null>(null);
+  const [geometry, setGeometry] = useState<ZoneGeometry | "failed" | null>(null);
   useEffect(() => {
     if (!seen || !id) return;
     const key = `${id}:${version}`;
@@ -75,7 +78,7 @@ export function useSavedZoneOutline(
           .then((found) => (found ? found : (outlines.delete(key), null))),
       );
     let live = true;
-    void outlines.get(key)?.then((found) => live && setGeometry(found));
+    void outlines.get(key)?.then((found) => live && setGeometry(found ?? "failed"));
     return () => {
       live = false;
     };
@@ -102,21 +105,22 @@ export function ZoneThumbnail({
   const [box, geometry] = useSavedZoneOutline(point ? null : zone.id, zone.version, project);
   const [west, south, east, north] = zone.bbox;
   const center: ZoneGeometry = { type: "Point", coordinates: [(west + east) / 2, (south + north) / 2] };
+  const outline = geometry === "failed" ? null : geometry;
   const locator = (className: string) =>
     manifest && (
       <div className={className} style={{ aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` }}>
-        <Locator manifest={manifest} geometry={geometry ?? center} />
+        <Locator manifest={manifest} geometry={outline ?? center} />
       </div>
     );
   return (
     <div ref={box} className="relative aspect-[16/10] overflow-hidden bg-surface-sunken">
-      {point ? (
+      {point || geometry === "failed" ? (
         <div className="absolute inset-0 flex justify-center p-3">{locator("h-full")}</div>
       ) : (
         <>
           <div className="absolute inset-0 p-5 pr-14">
-            {geometry ? (
-              <ZoneShape geometry={geometry} />
+            {outline ? (
+              <ZoneShape geometry={outline} />
             ) : (
               <div className="size-full animate-pulse rounded-md bg-surface-muted" />
             )}

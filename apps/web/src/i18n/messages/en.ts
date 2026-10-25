@@ -991,7 +991,6 @@ export const en = {
     loading: "Loading your account…",
     failed: "We could not load your account. Try again in a moment.",
     profile: {
-      identity: "Identity",
       identityBody: "Your name, email and picture come from your Google account.",
       roles: "Roles",
       rolesBody: "What you can do on the platform besides exploring.",

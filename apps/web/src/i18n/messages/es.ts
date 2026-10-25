@@ -984,7 +984,6 @@ export const es = {
     loading: "Cargando tu cuenta…",
     failed: "No pudimos cargar tu cuenta. Intentá de nuevo en un momento.",
     profile: {
-      identity: "Identidad",
       identityBody: "Tu nombre, tu correo y tu foto vienen de tu cuenta de Google.",
       roles: "Roles",
       rolesBody: "Lo que podés hacer en la plataforma además de explorar.",
