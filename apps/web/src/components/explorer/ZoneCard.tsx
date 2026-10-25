@@ -1,4 +1,4 @@
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, Trash2, X } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { useI18n } from "./lib/i18n";
 
@@ -14,8 +14,8 @@ export type ZoneSummary = {
     | { state: "loading"; label: string }
     | null;
   href: string;
-  /** Runs when the reader follows the link (a drawn zone is handed to the zone page then). */
-  onOpen?: () => void;
+  /** For the reader's own zones: asks to delete it. */
+  onDelete?: () => void;
 };
 
 interface Props {
@@ -79,15 +79,26 @@ export default function ZoneCard({ zone, onClose, variant }: Props) {
         )}
       </dl>
 
-      <a
-        href={zone.href}
-        onClick={zone.onOpen}
-        onAuxClick={zone.onOpen}
-        className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-sm bg-action px-4 text-sm font-medium text-action-ink transition-colors duration-(--ia-motion-fast) hover:bg-action-hover"
-      >
-        {t("explorer.zone.open")}
-        <ArrowRight size={iconSize.sm} aria-hidden="true" />
-      </a>
+      <div className="mt-4 flex gap-2">
+        <a
+          href={zone.href}
+          className="inline-flex h-10 grow items-center justify-center gap-2 rounded-sm bg-action px-4 text-sm font-medium text-action-ink transition-colors duration-(--ia-motion-fast) hover:bg-action-hover"
+        >
+          {t("explorer.zone.open")}
+          <ArrowRight size={iconSize.sm} aria-hidden="true" />
+        </a>
+        {zone.onDelete && (
+          <button
+            type="button"
+            onClick={zone.onDelete}
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-sm border border-ink-subtle text-ink-muted hover:bg-action-soft hover:text-ink"
+            aria-label={t("explorer.mine.delete")}
+            title={t("explorer.mine.delete")}
+          >
+            <Trash2 size={iconSize.sm} aria-hidden="true" />
+          </button>
+        )}
+      </div>
     </article>
   );
 }

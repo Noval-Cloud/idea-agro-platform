@@ -43,7 +43,7 @@ import {
   type AppKey,
 } from "@/components/explorer/lib/i18n";
 import { decodeGray, zonalCounts, zonalMean } from "@/components/explorer/lib/raster";
-import { readCustomZone } from "@/components/explorer/lib/session";
+import { findMyZone } from "@/components/explorer/lib/my-zones";
 import AddToProject from "./AddToProject";
 import OutlineVersions from "./OutlineVersions";
 
@@ -254,12 +254,13 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
         () => done(null),
       );
     } else {
-      const stored = readCustomZone(target.key);
+      // A zone kept in this browser: the explorer keeps it where every tab of the site can read it.
+      const stored = findMyZone(target.key);
       done(
         stored
           ? {
               target,
-              kind: t("explorer.zone.kinds.custom"),
+              kind: t("explorer.mine.inBrowser"),
               title: stored.name,
               areaKm2: areaKm2(stored.geometry),
               geometry: stored.geometry,

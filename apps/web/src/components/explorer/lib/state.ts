@@ -8,7 +8,8 @@ export const regionKinds: RegionKind[] = ["none", "seccionales", "cuencas", "pad
 export type Selection =
   | { kind: "division"; division: DivisionId; id: string }
   | { kind: "padron"; department: string; padron: number }
-  | { kind: "custom"; layer: string; key: string };
+  /** A zone of the reader's own: in this browser or in their account. */
+  | { kind: "custom"; key: string };
 
 export type ExplorerState = {
   indicator: IndicatorId | "none";

@@ -1,10 +1,9 @@
-import { useRef } from "react";
-import { Popover, Select } from "radix-ui";
-import { Check, ChevronDown, CloudUpload, Info, PenLine, Trash2, Upload } from "lucide-react";
+import type { ReactNode } from "react";
+import { Select } from "radix-ui";
+import { Check, ChevronDown } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import { basinGrades, type BasinGrade, type Manifest } from "./lib/data";
-import { zoneFileTypes, type CustomLayer } from "./lib/files";
 import { useI18n } from "./lib/i18n";
 import type { SearchResult } from "./lib/search";
 import { regionKinds, type RegionKind } from "./lib/state";
@@ -14,25 +13,16 @@ interface Props {
   manifest: Manifest | null;
   regions: RegionKind;
   grade: BasinGrade;
-  layers: CustomLayer[];
   counts: Partial<Record<string, number>>;
-  signInHref: string;
-  signedIn: boolean;
-  /** The layer being saved to the account, if any. */
-  saving: string | null;
-  onSave: (layer: string) => void;
-  drawing: boolean;
+  /** How many zones of the reader's own there are. */
+  mineCount: number;
   onRegions: (regions: RegionKind) => void;
   onGrade: (grade: BasinGrade) => void;
   onSearch: (result: SearchResult) => void;
-  onUpload: (file: File) => void;
-  onDraw: (drawing: boolean) => void;
-  onRemove: (layer: string) => void;
+  /** The tools for the reader's own zones, shown when they are the regions on the map. */
+  mine: ReactNode;
 }
 
-const control =
-  "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-sm border text-xs font-medium whitespace-nowrap";
-const quiet = "border-ink-subtle bg-surface text-ink hover:bg-action-soft";
 const pressed = "border-action bg-action text-action-ink";
 
 /**
@@ -45,17 +35,13 @@ const pressed = "border-action bg-action text-action-ink";
 export default function RegionBar(props: Props) {
   const i18n = useI18n();
   const { t } = i18n;
-  const file = useRef<HTMLInputElement>(null);
   const countKey = (kind: RegionKind) =>
     kind === "cuencas" ? `cuencas-${props.grade}` : kind === "mine" ? null : kind;
   const count = (kind: RegionKind) => {
     const key = countKey(kind);
-    const n =
-      kind === "mine" ? props.layers.reduce((a, l) => a + l.zones.length, 0) : key ? props.counts[key] : undefined;
+    const n = kind === "mine" ? props.mineCount : key ? props.counts[key] : undefined;
     return n === undefined || kind === "none" ? null : t("explorer.regions.count", { count: n, value: i18n.number(n) });
   };
-  const uploadLabel = t("explorer.regions.upload");
-  const drawLabel = props.drawing ? t("explorer.regions.drawCancel") : t("explorer.regions.draw");
 
   return (
     <section
@@ -155,118 +141,7 @@ export default function RegionBar(props: Props) {
             <SearchBox manifest={props.manifest} scope={props.regions} onPick={props.onSearch} />
           </div>
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => file.current?.click()}
-              className={cn(control, quiet, "w-10 xl:w-auto xl:px-3")}
-              aria-label={uploadLabel}
-              title={uploadLabel}
-              aria-describedby="upload-hint"
-            >
-              <Upload size={iconSize.sm} aria-hidden="true" />
-              <span className="hidden xl:inline">{uploadLabel}</span>
-            </button>
-            <span id="upload-hint" className="sr-only">
-              {t("explorer.regions.uploadHint")}
-            </span>
-            <button
-              type="button"
-              onClick={() => props.onDraw(!props.drawing)}
-              aria-pressed={props.drawing}
-              className={cn(control, props.drawing ? pressed : quiet, "w-10 xl:w-auto xl:px-3")}
-              aria-label={drawLabel}
-              title={drawLabel}
-            >
-              <PenLine size={iconSize.sm} aria-hidden="true" />
-              <span className="hidden xl:inline">{drawLabel}</span>
-            </button>
-            <input
-              ref={file}
-              type="file"
-              accept={zoneFileTypes}
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(e) => {
-                const chosen = e.currentTarget.files?.[0];
-                if (chosen) props.onUpload(chosen);
-                e.currentTarget.value = "";
-              }}
-            />
-            {/* The loaded files scroll sideways rather than growing the bar. */}
-            <ul className="flex min-w-0 grow gap-2 overflow-x-auto">
-              {props.layers.map((layer) => (
-                <li
-                  key={layer.key}
-                  className="inline-flex h-9 max-w-64 shrink-0 items-center gap-2 rounded-pill border border-line pr-1 pl-3 text-xs"
-                >
-                  <span className="min-w-0 truncate text-ink">
-                    {layer.source === "saved"
-                      ? t("explorer.regions.saved")
-                      : layer.source === "drawn"
-                        ? t("explorer.regions.drawn")
-                        : t("explorer.regions.file", { name: layer.name })}
-                  </span>
-                  <span className="text-2xs text-ink-subtle">{i18n.number(layer.zones.length)}</span>
-                  {layer.source !== "saved" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => props.onSave(layer.key)}
-                        disabled={props.saving !== null}
-                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-pill text-ink-muted hover:bg-action-soft hover:text-ink disabled:opacity-50"
-                        aria-label={
-                          props.saving === layer.key ? t("explorer.regions.saving") : t("explorer.regions.save")
-                        }
-                        title={props.saving === layer.key ? t("explorer.regions.saving") : t("explorer.regions.save")}
-                      >
-                        <CloudUpload size={iconSize.sm} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => props.onRemove(layer.key)}
-                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-pill text-ink-muted hover:bg-action-soft hover:text-ink"
-                        aria-label={t("explorer.regions.remove", { name: layer.name })}
-                      >
-                        <Trash2 size={iconSize.sm} aria-hidden="true" />
-                      </button>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <Popover.Root>
-              <Popover.Trigger
-                className={cn(control, "w-10 border-transparent text-ink-muted hover:bg-action-soft hover:text-ink")}
-                aria-label={t("explorer.regions.aboutMine")}
-                title={t("explorer.regions.aboutMine")}
-              >
-                <Info size={iconSize.sm} aria-hidden="true" />
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  align="end"
-                  sideOffset={6}
-                  collisionPadding={12}
-                  className="z-(--ia-layer-popover) grid w-(--ia-layout-panel) gap-2 rounded-md border border-line bg-surface p-4 text-sm text-ink-muted shadow-overlay"
-                >
-                  <p>{t("explorer.regions.uploadHint")}</p>
-                  <p>
-                    {t("explorer.regions.sessionNote")}{" "}
-                    {!props.signedIn && (
-                      <a
-                        href={props.signInHref}
-                        className="text-link underline underline-offset-(--ia-link-underline-offset)"
-                      >
-                        {t("explorer.regions.mineSignInLink")}
-                      </a>
-                    )}
-                  </p>
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          </>
+          props.mine
         )}
       </div>
     </section>

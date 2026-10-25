@@ -35,7 +35,8 @@
     "tailwind-merge": "catalog:",
     "tailwindcss": "catalog:",
     "terra-draw": "catalog:",
-    "terra-draw-maplibre-gl-adapter": "catalog:"
+    "terra-draw-maplibre-gl-adapter": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",

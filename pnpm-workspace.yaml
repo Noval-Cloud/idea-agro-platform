@@ -32,6 +32,7 @@ catalog:
   "@tanstack/react-query": 5.104.5
   terra-draw-maplibre-gl-adapter: 1.4.1
   terra-draw: 1.36.0
+  zustand: 5.0.16
   "@tmcw/togeojson": 7.1.2
   "@types/culori": 4.0.1
   "@types/d3-geo": 3.1.1
