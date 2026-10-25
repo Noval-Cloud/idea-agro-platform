@@ -24,12 +24,22 @@ export const baseTiles: Record<Exclude<Base, "map">, string> = {
 };
 const BASE = "base";
 
+/** Credit as the Licencia de Datos Abiertos – Uruguay asks: the provider, the dataset and the licence. */
+const IDE = '<a href="https://www.gub.uy/infraestructura-datos-espaciales">IDE Uruguay</a>';
+const LICENCE =
+  '<a href="https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/sites/agencia-gobierno-electronico-sociedad-informacion-conocimiento/files/documentos/publicaciones/licencia_de_datos_abiertos_0.pdf">Licencia de Datos Abiertos – Uruguay</a>';
+const baseCredits: Record<Exclude<Base, "map">, string> = {
+  satellite: `${IDE} — Ortoimagen nacional · ${LICENCE}`,
+  streets: `${IDE} — Capa base IDE · ${LICENCE}`,
+};
+
 /**
- * The quiet map's lines and names that IDE's street map already draws: hidden while it shows, so none is doubled,
- * and back over an indicator, which covers the street map's own.
+ * IDE's street map draws its own names and lines, there and across the borders, so the quiet map's step aside
+ * while it shows. Under an indicator it gives way to the quiet map altogether, as the indicator covers it only in
+ * part. Rivers are not listed: they lie under any base.
  */
-const drawnByStreets = ["waterway", "roads", "boundary-departments", "place-country", "place-town", "place-city"];
-const hidden = (base: Base, overData: boolean) => (base === "streets" && !overData ? drawnByStreets : []);
+const drawnByStreets = ["roads", "boundary-departments", "place-country", "place-town", "place-city"];
+const streetsShown = (base: Base, overData: boolean) => base === "streets" && !overData;
 
 const basePaint = (base: Base, theme: MapThemeName) => ({
   "raster-brightness-max": base === "streets" && theme === "dark" ? mapMarks["streets-brightness-dark"] : 1,
@@ -40,7 +50,7 @@ const baseSource = (base: Exclude<Base, "map">) => ({
   tiles: [baseTiles[base]],
   tileSize: 256,
   maxzoom: 19,
-  attribution: '<a href="https://www.gub.uy/infraestructura-datos-espaciales">IDE Uruguay</a>',
+  attribution: baseCredits[base],
 });
 
 /** Layer ids the explorer inserts its own layers before. */
@@ -144,7 +154,8 @@ export function basemapStyle(theme: MapThemeName, base: Base = "map"): StyleSpec
     },
   ];
   for (const layer of layers)
-    if (hidden(base, false).includes(layer.id)) layer.layout = { ...layer.layout, visibility: "none" };
+    if (streetsShown(base, false) && drawnByStreets.includes(layer.id))
+      layer.layout = { ...layer.layout, visibility: "none" };
   return {
     version: 8,
     glyphs: GLYPHS,
@@ -162,11 +173,13 @@ export function applyBase(map: MapLibreMap, base: Base, theme: MapThemeName, bel
   map.addLayer({ id: BASE, type: "raster", source: BASE, paint: basePaint(base, theme) }, below);
 }
 
-/** Shows the quiet map's lines and names, or hides those the base draws; `overData`: an indicator covers the base. */
+/** Shows IDE's street map or the quiet map's lines and names, never both; `overData`: an indicator is drawn. */
 export function showBasemapLayers(map: MapLibreMap, base: Base, overData: boolean) {
-  const off = hidden(base, overData);
+  const streets = streetsShown(base, overData);
+  if (map.getLayer(BASE))
+    map.setLayoutProperty(BASE, "visibility", base === "streets" && !streets ? "none" : "visible");
   for (const layer of drawnByStreets)
-    if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", off.includes(layer) ? "none" : "visible");
+    if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", streets ? "none" : "visible");
 }
 
 /** Recolors the basemap in place (keeps the explorer's own sources and layers). */

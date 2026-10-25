@@ -68,8 +68,6 @@ export function MapButtons({ full, canLocate, onZoom, onLocate, onFull }: Button
 interface LayersProps {
   /** The trigger's picture: the current indicator, or the current base when the menu only holds bases. */
   thumbnail: ReactNode;
-  /** The menu's name; the button itself always reads "Layers", which fits its width. */
-  label: string;
   open: boolean;
   onOpen: (open: boolean) => void;
   children: ReactNode;
@@ -80,15 +78,15 @@ export function IndicatorThumbnail({ indicator, theme }: { indicator: IndicatorI
   return <img src={thumbnailUrl(indicator, theme)} alt="" className="absolute inset-0 size-full object-cover" />;
 }
 
-/** The layers button over the map's corner: Google Maps style, with the current layer's thumbnail. */
-export function LayersMenu({ thumbnail, label, open, onOpen, children }: LayersProps) {
+/**
+ * The layers button over the map's corner: Google Maps style, with the current layer's thumbnail. Its name is the
+ * word it shows, so it is the same whether the menu holds the bases alone or the indicators too.
+ */
+export function LayersMenu({ thumbnail, open, onOpen, children }: LayersProps) {
   const { t } = useI18n();
   return (
     <Popover.Root open={open} onOpenChange={onOpen}>
-      <Popover.Trigger
-        className="pointer-events-auto group relative inline-flex size-16 shrink-0 flex-col items-center justify-end overflow-hidden rounded-md border-2 border-surface bg-surface-muted shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        aria-label={label}
-      >
+      <Popover.Trigger className="pointer-events-auto group relative inline-flex size-16 shrink-0 flex-col items-center justify-end overflow-hidden rounded-md border-2 border-surface bg-surface-muted shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         {thumbnail}
         <span className="relative flex w-full items-center justify-center gap-1 bg-surface py-0.5 text-2xs font-medium text-ink">
           <Layers size={iconSize.sm} aria-hidden="true" />
@@ -104,7 +102,7 @@ export function LayersMenu({ thumbnail, label, open, onOpen, children }: LayersP
           className="z-(--ia-layer-popover) max-h-(--radix-popover-content-available-height) w-(--ia-layout-panel) overflow-y-auto rounded-md border border-line bg-surface p-4 text-ink shadow-overlay"
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold">{label}</p>
+            <p className="text-sm font-semibold">{t("explorer.controls.layers")}</p>
             <Popover.Close
               className="inline-flex size-8 items-center justify-center rounded-sm text-ink-muted hover:bg-action-soft"
               aria-label={t("explorer.controls.closeLayers")}

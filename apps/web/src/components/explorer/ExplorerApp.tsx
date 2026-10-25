@@ -841,17 +841,14 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const baseThumbnail = (
     <BaseThumbnail base={state.base} outline={manifest?.outline ?? null} className="absolute inset-0 size-full" />
   );
-  /** `alone`: the menu holds only the bases, so it already names them and closes on a pick. */
+  /** `alone`: the menu holds only the bases, so a pick closes it. */
   const basePicker = (prefix: string, alone = false) => (
     <BasePicker
       value={state.base}
-      onChange={(base) => {
-        update({ base });
-        if (alone) setLayersOpen(false);
-      }}
+      onChange={(base) => update({ base })}
+      onPick={alone ? () => setLayersOpen(false) : undefined}
       outline={manifest?.outline ?? null}
       name={`${prefix}-base`}
-      quietLegend={alone}
     />
   );
 
@@ -1015,17 +1012,11 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                 <div className="flex items-end gap-3">
                   {/* Beside the side panel the menu holds only the bases; alone on the map, the indicators too. */}
                   {wide && !full ? (
-                    <LayersMenu
-                      label={t("explorer.base.label")}
-                      thumbnail={baseThumbnail}
-                      open={layersOpen}
-                      onOpen={setLayersOpen}
-                    >
+                    <LayersMenu thumbnail={baseThumbnail} open={layersOpen} onOpen={setLayersOpen}>
                       {basePicker("bases", true)}
                     </LayersMenu>
                   ) : (
                     <LayersMenu
-                      label={t("explorer.controls.layers")}
                       thumbnail={
                         state.indicator === "none" ? (
                           baseThumbnail
