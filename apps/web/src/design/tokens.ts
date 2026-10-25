@@ -179,6 +179,8 @@ export const mapMarks = {
   "boundary-width": 1,
   "road-width": 0.6,
   "raster-opacity": 0.92,
+  /** IDE's street map is drawn for light pages: dimmed on dark ones so it does not glare. */
+  "streets-brightness-dark": 0.8,
   "label-halo-width": 1.5,
   "label-size": 12,
   "label-size-major": 13,

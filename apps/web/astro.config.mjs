@@ -22,7 +22,7 @@ export default defineConfig({
       directives: [
         "default-src 'self'",
         `connect-src 'self' blob: ${apiOrigin} ${authConnect} https://tiles.openfreemap.org https://mapas.ide.uy`,
-        `img-src 'self' data: blob: ${apiOrigin} ${process.env.AUTH_CSP_IMAGES ?? ""}`,
+        `img-src 'self' data: blob: ${apiOrigin} https://mapas.ide.uy ${process.env.AUTH_CSP_IMAGES ?? ""}`,
         "worker-src 'self' blob:",
         "font-src 'self'",
         `frame-src ${authFrame}`,

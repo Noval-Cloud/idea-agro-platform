@@ -125,7 +125,7 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
         try {
           map = new Map({
             container: container.current,
-            style: basemapStyle(theme, { imagery: true }),
+            style: basemapStyle(theme, "satellite"),
             bounds: [west, south, east, north],
             fitBoundsOptions: { padding: 48 },
             maxZoom: 18,

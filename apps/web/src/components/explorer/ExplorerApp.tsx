@@ -8,9 +8,10 @@ import type { Locale } from "@/i18n/core";
 import MapView, { type MapPointer, type RegionFeature } from "./MapView";
 import TimeBar from "./TimeBar";
 import IndicatorPicker from "./IndicatorPicker";
+import BasePicker, { BaseThumbnail } from "./BasePicker";
 import RegionBar from "./RegionBar";
 import ZoneCard, { type ZoneSummary } from "./ZoneCard";
-import { LayersMenu, MapButtons } from "./MapControls";
+import { IndicatorThumbnail, LayersMenu, MapButtons } from "./MapControls";
 import {
   loadManifest,
   loadPadrones,
@@ -837,6 +838,19 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       />
     </>
   );
+  const baseThumbnail = (
+    <BaseThumbnail base={state.base} outline={manifest?.outline ?? null} className="absolute inset-0 size-full" />
+  );
+  /** `alone`: the menu holds only the bases, so a pick closes it. */
+  const basePicker = (prefix: string, alone = false) => (
+    <BasePicker
+      value={state.base}
+      onChange={(base) => update({ base })}
+      onPick={alone ? () => setLayersOpen(false) : undefined}
+      outline={manifest?.outline ?? null}
+      name={`${prefix}-base`}
+    />
+  );
 
   // What is still on its way, after the map itself: the zones in view, then the indicator's image.
   const loadingText = !manifest
@@ -996,11 +1010,27 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                 </div>
               ) : (
                 <div className="flex items-end gap-3">
-                  <div className={cn(full ? "block" : "lg:hidden")}>
-                    <LayersMenu indicator={state.indicator} theme={theme} open={layersOpen} onOpen={setLayersOpen}>
+                  {/* Beside the side panel the menu holds only the bases; alone on the map, the indicators too. */}
+                  {wide && !full ? (
+                    <LayersMenu thumbnail={baseThumbnail} open={layersOpen} onOpen={setLayersOpen}>
+                      {basePicker("bases", true)}
+                    </LayersMenu>
+                  ) : (
+                    <LayersMenu
+                      thumbnail={
+                        state.indicator === "none" ? (
+                          baseThumbnail
+                        ) : (
+                          <IndicatorThumbnail indicator={state.indicator} theme={theme} />
+                        )
+                      }
+                      open={layersOpen}
+                      onOpen={setLayersOpen}
+                    >
+                      {basePicker("menu")}
                       {pickers("tiles", "menu")}
                     </LayersMenu>
-                  </div>
+                  )}
                   {indicatorId && indicatorManifest && (
                     <div className="min-w-0 grow lg:mx-auto lg:max-w-2xl">
                       <TimeBar
@@ -1027,11 +1057,12 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             <MapView
               bounds={manifest?.bounds ?? [-58.46, -34.99, -53.16, -30.07]}
               theme={theme}
+              base={state.base}
               frame={indicatorId ? frame : null}
               opacity={mapMarks["raster-opacity"]}
               regions={regionFeatures}
               regionsMinZoom={state.regions === "padrones" ? PADRON_ZOOM : 0}
-              overRaster={Boolean(indicatorId && frame)}
+              overRaster={Boolean(indicatorId && frame) || state.base !== "map"}
               selectedKey={selectedKey}
               focus={focus}
               label={t("explorer.controls.map")}

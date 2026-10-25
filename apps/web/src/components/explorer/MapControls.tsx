@@ -66,25 +66,28 @@ export function MapButtons({ full, canLocate, onZoom, onLocate, onFull }: Button
 }
 
 interface LayersProps {
-  indicator: IndicatorId | "none";
-  theme: MapThemeName;
+  /** The trigger's picture: the current indicator, or the current base when the menu only holds bases. */
+  thumbnail: ReactNode;
   open: boolean;
   onOpen: (open: boolean) => void;
   children: ReactNode;
 }
 
-/** The layers button of the full view (and of small screens): Google Maps style, with the current layer's thumbnail. */
-export function LayersMenu({ indicator, theme, open, onOpen, children }: LayersProps) {
+/** The current indicator's thumbnail, for the layers button. */
+export function IndicatorThumbnail({ indicator, theme }: { indicator: IndicatorId; theme: MapThemeName }) {
+  return <img src={thumbnailUrl(indicator, theme)} alt="" className="absolute inset-0 size-full object-cover" />;
+}
+
+/**
+ * The layers button over the map's corner: Google Maps style, with the current layer's thumbnail. Its name is the
+ * word it shows, so it is the same whether the menu holds the bases alone or the indicators too.
+ */
+export function LayersMenu({ thumbnail, open, onOpen, children }: LayersProps) {
   const { t } = useI18n();
   return (
     <Popover.Root open={open} onOpenChange={onOpen}>
-      <Popover.Trigger
-        className="pointer-events-auto group relative inline-flex size-16 shrink-0 flex-col items-center justify-end overflow-hidden rounded-md border-2 border-surface bg-surface-muted shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        aria-label={t("explorer.controls.layers")}
-      >
-        {indicator !== "none" && (
-          <img src={thumbnailUrl(indicator, theme)} alt="" className="absolute inset-0 size-full object-cover" />
-        )}
+      <Popover.Trigger className="pointer-events-auto group relative inline-flex size-16 shrink-0 flex-col items-center justify-end overflow-hidden rounded-md border-2 border-surface bg-surface-muted shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+        {thumbnail}
         <span className="relative flex w-full items-center justify-center gap-1 bg-surface py-0.5 text-2xs font-medium text-ink">
           <Layers size={iconSize.sm} aria-hidden="true" />
           {t("explorer.controls.layers")}

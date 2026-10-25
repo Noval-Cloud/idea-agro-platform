@@ -461,6 +461,12 @@ export const en = {
       noneDetail: "Only the basemap and the regions",
       about: "How it is computed: {name}",
     },
+    base: {
+      label: "Base map",
+      map: "Map",
+      satellite: "Satellite",
+      streets: "Streets and rivers",
+    },
     mapShows: {
       ppna: "Total of the productive year {year}",
       apar: "Total of the productive year {year}",

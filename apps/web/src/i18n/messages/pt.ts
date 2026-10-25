@@ -459,6 +459,12 @@ export const pt = {
       noneDetail: "Só o mapa base e as regiões",
       about: "Como é calculado: ficha de {name}",
     },
+    base: {
+      label: "Mapa base",
+      map: "Mapa",
+      satellite: "Satélite",
+      streets: "Ruas e rios",
+    },
     mapShows: {
       ppna: "Total do ano produtivo {year}",
       apar: "Total do ano produtivo {year}",

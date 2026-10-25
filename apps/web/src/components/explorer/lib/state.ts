@@ -1,5 +1,6 @@
 import { indicatorIds, type IndicatorId } from "@/data/indicators";
 import { basinGrades, isDivision, type BasinGrade, type DivisionId } from "./data";
+import { bases, type Base } from "./map-style";
 
 /**
  * The kinds of region drawn over the map; only one at a time ("mine": the reader's files and drawings, "projects":
@@ -17,6 +18,7 @@ export type Selection =
   | { kind: "item"; key: string };
 
 export type ExplorerState = {
+  base: Base;
   indicator: IndicatorId | "none";
   /** null: the indicator's latest year. */
   year: number | null;
@@ -31,6 +33,7 @@ export type ExplorerState = {
 };
 
 export const defaultState: ExplorerState = {
+  base: "map",
   indicator: "ppna",
   year: null,
   // Six basins: the lightest division, so the map shows zones at once while the others load.
@@ -67,7 +70,9 @@ export function readState(search: string): ExplorerState {
   const regions = params.get("reg") as RegionKind | null;
   const grade = Number(params.get("grade")) as BasinGrade;
   const community = Number(params.get("com"));
+  const base = params.get("base") as Base | null;
   return {
+    base: base && bases.includes(base) ? base : defaultState.base,
     indicator: indicator === "none" ? "none" : isIndicator(indicator) ? indicator : defaultState.indicator,
     year: Number.isInteger(year) && year > 1900 ? year : null,
     regions: regions && regionKinds.includes(regions) ? regions : defaultState.regions,
@@ -84,6 +89,7 @@ export function writeState(state: ExplorerState): string {
   const put = (key: string, value: string | number | null, fallback?: string | number | null) => {
     if (value !== null && value !== fallback) params.set(key, String(value));
   };
+  put("base", state.base, defaultState.base);
   put("ind", state.indicator, defaultState.indicator);
   put("year", state.year);
   put("reg", state.regions, defaultState.regions);
