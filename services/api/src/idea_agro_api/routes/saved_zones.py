@@ -14,7 +14,7 @@ from idea_agro_api.deps import Caller, CallerDep, ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.geometries import new_file
 from idea_agro_api.models import (
-    Geometry,
+    ZoneGeometry,
     OutlineChange,
     OutlineVersionOut,
     SavedZoneFeature,
@@ -240,7 +240,7 @@ def get_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) ->
     summary="The outline of a saved zone",
     responses=problems(401, 403, 404, 422, 429),
 )
-def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Geometry:
+def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> ZoneGeometry:
     zone = owned(services, caller.account.id, zone_id)
     content = services.geometries.get(zone.file)
     if content is None:

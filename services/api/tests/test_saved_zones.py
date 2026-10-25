@@ -96,9 +96,31 @@ def test_an_outline_that_is_not_valid_is_refused(client: TestClient, geometry: d
     assert client.get("/v1/saved-zones", headers=ANA).json() == []
 
 
-def test_only_polygons_are_accepted(client: TestClient) -> None:
-    point = {"type": "Point", "coordinates": [-56, -32]}
-    assert client.post("/v1/saved-zones", json=zone(geometry=point), headers=ANA).status_code == 422
+def test_a_point_is_a_zone_without_area(client: TestClient) -> None:
+    point = {"type": "Point", "coordinates": [-56.01234567, -32.0]}
+
+    response = client.post("/v1/saved-zones", json=zone(geometry=point), headers=ANA)
+
+    assert response.status_code == 201
+    saved = response.json()
+    assert (saved["area_ha"], saved["bbox"], saved["department"]) == (
+        0,
+        [-56.012346, -32.0, -56.012346, -32.0],
+        "Tacuarembó",
+    )
+    outline = client.get(f"/v1/saved-zones/{saved['id']}/geometry", headers=ANA).json()
+    assert outline == {"type": "Point", "coordinates": [-56.012346, -32.0]}
+
+
+@pytest.mark.parametrize(
+    "geometry",
+    [
+        {"type": "Point", "coordinates": [-70, -32]},
+        {"type": "LineString", "coordinates": [[-56, -32], [-55.99, -32]]},
+    ],
+)
+def test_lines_and_points_outside_uruguay_are_refused(client: TestClient, geometry: dict[str, Any]) -> None:
+    assert client.post("/v1/saved-zones", json=zone(geometry=geometry), headers=ANA).status_code == 422
 
 
 def test_limits_are_kept(tmp_path: Path, verifier: OidcVerifier) -> None:

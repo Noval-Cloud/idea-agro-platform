@@ -36,16 +36,18 @@ class Outline:
 
 
 def outline_from(geojson: dict[str, Any], within: tuple[float, float, float, float]) -> Outline:
-    """Checks a GeoJSON Polygon or MultiPolygon in longitude and latitude, and measures it."""
+    """Checks a GeoJSON Polygon, MultiPolygon or Point in longitude and latitude, and measures it."""
     try:
         geometry = shape(geojson)
     except (ValueError, TypeError, KeyError, AttributeError) as error:
-        raise InvalidShape("The geometry is not a valid GeoJSON polygon.") from error
-    if geometry.geom_type not in ("Polygon", "MultiPolygon") or geometry.is_empty:
-        raise InvalidShape("The geometry must be a Polygon or a MultiPolygon.")
+        raise InvalidShape("The geometry is not a valid GeoJSON polygon or point.") from error
+    if geometry.geom_type not in ("Polygon", "MultiPolygon", "Point") or geometry.is_empty:
+        raise InvalidShape("The geometry must be a Polygon, a MultiPolygon or a Point.")
     west, south, east, north = geometry.bounds
     if not (-180 <= west <= east <= 180 and -90 <= south <= north <= 90):
         raise InvalidShape("The coordinates must be longitude and latitude in degrees.")
+    if geometry.geom_type == "Point":
+        return point_outline(west, south, within)
     if not geometry.is_valid:
         raise InvalidShape(f"The outline is not valid: {shapely.validation.explain_validity(geometry)}.")
     if not geometry.intersects(shapely.box(*within)):
@@ -62,6 +64,15 @@ def outline_from(geojson: dict[str, Any], within: tuple[float, float, float, flo
         bbox=(round(west, DECIMALS), round(south, DECIMALS), round(east, DECIMALS), round(north, DECIMALS)),
         point=(point.x, point.y),
     )
+
+
+def point_outline(longitude: float, latitude: float, within: tuple[float, float, float, float]) -> Outline:
+    """A site: it has no area, and it must fall where the platform covers."""
+    x, y = round(longitude, DECIMALS), round(latitude, DECIMALS)
+    west, south, east, north = within
+    if not (west <= x <= east and south <= y <= north):
+        raise InvalidShape("The point is outside the area the platform covers.")
+    return Outline(geometry={"type": "Point", "coordinates": [x, y]}, area_ha=0, bbox=(x, y, x, y), point=(x, y))
 
 
 class Departments:

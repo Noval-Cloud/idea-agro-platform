@@ -12,10 +12,10 @@ The public, read-only API of IDEA-Agro: FastAPI on Cloud Run. Any site or app ma
 ## Versions
 
 - The major version is part of the path: `/v1/...`.
-- Within a major version every change is backward compatible: new endpoints, new optional fields, new values in a response. Clients ignore the fields they do not know.
+- Within a major version every change is backward compatible: new endpoints, new optional fields, new values in a response, including a new kind in a `oneOf` (such as a point among a zone's outlines). Clients ignore the fields and kinds they do not know.
 - Breaking changes ship as a new major version, such as `/v2/...`. Breaking means removing or renaming an endpoint, a field or an enum value; making an optional field required; changing a type or a unit. The previous version keeps answering through a deprecation period, announced in the `Deprecation` and `Sunset` response headers.
 - `API_VERSION` in `app.py` is the document's `info.version`, in semantic versioning: patch for documentation, minor for backward-compatible additions, major only together with a new path prefix.
-- `make contract` compares `openapi.json` with `main`'s using oasdiff (`scripts/check-breaking.sh`): it prints the changelog and fails on any change that breaks existing clients, such as a removed path or a new required field. Removing something takes a deprecation first, or a new major version.
+- `make contract` compares `openapi.json` with `main`'s using oasdiff (`scripts/check-breaking.sh`): it prints the changelog and fails on any change that breaks existing clients, such as a removed path or a new required field. Removing something takes a deprecation first, or a new major version. A new kind in a response's `oneOf` is only a warning there (`scripts/oasdiff-levels.txt`), by the rule above.
 - A change to `openapi.json` shows up in the pull request; reviewing it against these rules is part of the review.
 
 ## Signing in

@@ -12,5 +12,7 @@ trap 'rm -f "$main"' EXIT
 if ! git show "origin/main:$document" >"$main" 2>/dev/null; then
   curl -fsSL "$published" >"$main"
 fi
-scripts/oasdiff.sh changelog "$main" "$document"
-scripts/oasdiff.sh breaking "$main" "$document" --fail-on ERR
+# A new kind of value in a response is compatible here (services/api/README.md, "Versions"): a warning, not an error.
+levels=scripts/oasdiff-levels.txt
+scripts/oasdiff.sh changelog "$main" "$document" --severity-levels "$levels"
+scripts/oasdiff.sh breaking "$main" "$document" --severity-levels "$levels" --fail-on ERR

@@ -16,7 +16,7 @@ from idea_agro_api.models import (
     ActivityOut,
     DivisionItem,
     DivisionItemIn,
-    Geometry,
+    ZoneGeometry,
     MemberIn,
     MemberOut,
     OutlineChange,
@@ -493,7 +493,7 @@ def get_project_zone(project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, 
 )
 def get_project_zone_geometry(
     project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, services: ServicesDep
-) -> Geometry:
+) -> ZoneGeometry:
     zone = project_zone(services, caller, project_id, zone_id)
     content = services.geometries.get(zone.file)
     if content is None:
