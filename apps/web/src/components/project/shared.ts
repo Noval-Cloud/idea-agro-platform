@@ -9,7 +9,6 @@ export type ItemIn =
   | { kind: "division"; division: Division; zone_id: string }
   | { kind: "padron"; department: Department; padron: number };
 
-export const card = "rounded-lg border border-line bg-surface p-6";
 export const field =
   "h-9 min-w-0 rounded-sm border border-input bg-surface px-2 text-sm text-ink hover:border-ink-subtle focus-visible:border-focus";
 
@@ -23,9 +22,6 @@ export type Change = (
   run: (modules: Modules) => Promise<Outcome>,
   messages?: Partial<Record<number, ProjectKey>>,
 ) => Promise<number>;
-
-/** Moves focus once React has drawn the change, as when the focused row goes away. */
-export const focusSoon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
 
 /** A key matching the API's item ids, to tell which zones the project already holds. */
 export const keyOf = (item: ItemIn) =>

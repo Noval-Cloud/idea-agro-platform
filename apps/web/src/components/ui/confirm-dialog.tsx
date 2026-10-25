@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { AlertDialog } from "radix-ui";
 import { buttonVariants } from "./button";
 
@@ -12,11 +12,14 @@ export function ConfirmDialog({
   body,
   confirm,
   cancel,
+  tone = "danger",
   onConfirm,
   onCancel,
   returnFocus,
 }: {
   open: boolean;
+  /** `danger` for what destroys; `primary` for a warning before a change that can be undone. */
+  tone?: "danger" | "primary";
   title: string;
   body: string;
   confirm: string;
@@ -28,8 +31,9 @@ export function ConfirmDialog({
   // There is no trigger to return to: the dialog opens from code.
   const opener = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
-    if (open && document.activeElement instanceof HTMLElement && document.activeElement !== document.body)
-      opener.current = document.activeElement;
+    if (!open) return;
+    const active = document.activeElement;
+    opener.current = active instanceof HTMLElement && active !== document.body ? active : null;
   }, [open]);
   return (
     <AlertDialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
@@ -56,7 +60,7 @@ export function ConfirmDialog({
                 event.preventDefault();
                 onConfirm();
               }}
-              className={buttonVariants({ variant: "danger", size: "sm" })}
+              className={buttonVariants({ variant: tone, size: "sm" })}
             >
               {confirm}
             </AlertDialog.Action>
@@ -65,4 +69,36 @@ export function ConfirmDialog({
       </AlertDialog.Portal>
     </AlertDialog.Root>
   );
+}
+
+export type Question = {
+  title: string;
+  body: string;
+  confirm: string;
+  tone?: "danger" | "primary";
+  returnFocus?: () => HTMLElement | null;
+};
+
+/** A confirmation to await, like `window.confirm` but in the page's own dialog. Render `dialog` once. */
+export function useConfirm(cancel: string) {
+  const [asked, setAsked] = useState<(Question & { answer: (yes: boolean) => void }) | null>(null);
+  const ask = (question: Question) => new Promise<boolean>((answer) => setAsked({ ...question, answer }));
+  const close = (yes: boolean) => {
+    asked?.answer(yes);
+    setAsked(null);
+  };
+  const dialog = (
+    <ConfirmDialog
+      open={asked !== null}
+      title={asked?.title ?? ""}
+      body={asked?.body ?? ""}
+      confirm={asked?.confirm ?? ""}
+      cancel={cancel}
+      tone={asked?.tone}
+      returnFocus={asked?.returnFocus}
+      onConfirm={() => close(true)}
+      onCancel={() => close(false)}
+    />
+  );
+  return { ask, dialog };
 }

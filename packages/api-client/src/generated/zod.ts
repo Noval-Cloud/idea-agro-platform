@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.8.0
+ * OpenAPI spec version: 1.9.0
  */
 import * as zod from 'zod';
 
@@ -1119,11 +1119,22 @@ export const RemoveProjectMemberResponse = zod.void()
 
 
 /**
- * The latest changes, newest first.
+ * The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on. Both moments carry their offset.
  * @summary What happened in a project
  */
 export const GetProjectActivityParams = zod.object({
   "project_id": zod.uuid().describe('The project\'s id.')
+})
+
+export const getProjectActivityQueryLimitDefault = 100;
+export const getProjectActivityQueryLimitMax = 100;
+
+
+
+export const GetProjectActivityQueryParams = zod.object({
+  "before": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Only changes before this moment.'),
+  "since": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Only changes from this moment on.'),
+  "limit": zod.int().min(1).max(getProjectActivityQueryLimitMax).default(getProjectActivityQueryLimitDefault).describe('How many changes at most.')
 })
 
 export const GetProjectActivityResponseItem = zod.object({

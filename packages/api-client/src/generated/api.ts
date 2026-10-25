@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.8.0
+ * OpenAPI spec version: 1.9.0
  */
 import {
   useMutation,
@@ -902,6 +902,23 @@ export type GetMapParams = {
  * Full or light.
  */
 size?: MapSize;
+};
+
+export type GetProjectActivityParams = {
+/**
+ * Only changes before this moment.
+ */
+before?: string | null;
+/**
+ * Only changes from this moment on.
+ */
+since?: string | null;
+/**
+ * How many changes at most.
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
 };
 
 export type ListAccountsParams = {
@@ -5222,21 +5239,30 @@ export type getProjectActivityResponseError = (getProjectActivityResponse401 | g
 
 export type getProjectActivityResponse = (getProjectActivityResponseSuccess | getProjectActivityResponseError)
 
-export const getGetProjectActivityUrl = (projectId: string,) => {
+export const getGetProjectActivityUrl = (projectId: string,
+    params?: GetProjectActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/projects/${projectId}/activity`
+  return stringifiedParams.length > 0 ? `/v1/projects/${projectId}/activity?${stringifiedParams}` : `/v1/projects/${projectId}/activity`
 }
 
 /**
- * The latest changes, newest first.
+ * The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on. Both moments carry their offset.
  * @summary What happened in a project
  */
-export const getProjectActivity = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectActivityResponse> => {
+export const getProjectActivity = async (projectId: string,
+    params?: GetProjectActivityParams, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectActivityResponse> => {
 
-  return apiFetch<getProjectActivityResponse>(getGetProjectActivityUrl(projectId),
+  return apiFetch<getProjectActivityResponse>(getGetProjectActivityUrl(projectId,params),
   {
     ...options,
     method: 'GET'
@@ -5249,23 +5275,25 @@ export const getProjectActivity = async (projectId: string, options?: Parameters
 
 
 
-export const getGetProjectActivityQueryKey = (projectId: string,) => {
+export const getGetProjectActivityQueryKey = (projectId: string,
+    params?: GetProjectActivityParams,) => {
     return [
-    `/v1/projects/${projectId}/activity`
+    `/v1/projects/${projectId}/activity`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetProjectActivityQueryOptions = <TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getGetProjectActivityQueryOptions = <TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(projectId: string,
+    params?: GetProjectActivityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetProjectActivityQueryKey(projectId);
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectActivityQueryKey(projectId,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectActivity>>> = ({ signal }) => getProjectActivity(projectId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectActivity>>> = ({ signal }) => getProjectActivity(projectId,params, { signal, ...requestOptions });
 
 
 
@@ -5279,7 +5307,8 @@ export type GetProjectActivityQueryError = Problem
 
 
 export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
- projectId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
+ projectId: string,
+    params: undefined |  GetProjectActivityParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getProjectActivity>>,
           TError,
@@ -5289,7 +5318,8 @@ export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProje
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
- projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
+ projectId: string,
+    params?: GetProjectActivityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getProjectActivity>>,
           TError,
@@ -5299,7 +5329,8 @@ export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProje
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
- projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ projectId: string,
+    params?: GetProjectActivityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -5307,11 +5338,12 @@ export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProje
  */
 
 export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = Problem>(
- projectId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ projectId: string,
+    params?: GetProjectActivityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetProjectActivityQueryOptions(projectId,options)
+  const queryOptions = getGetProjectActivityQueryOptions(projectId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
