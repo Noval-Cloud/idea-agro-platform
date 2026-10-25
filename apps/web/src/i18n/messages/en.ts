@@ -447,6 +447,8 @@ export const en = {
       "Any indicator on the map of Uruguay, year by year. Pick a police district, a basin, a rural parcel or your own area and open its indicators.",
     title: "Explore the map",
     loading: "Loading the map…",
+    loadingZones: "Loading the zones…",
+    loadingIndicator: "Loading the map of {name}…",
     noWebgl: "Your browser cannot show the interactive map: it needs WebGL 2.",
     loadError: "We could not load this data. Please try again in a few minutes.",
     groups: {

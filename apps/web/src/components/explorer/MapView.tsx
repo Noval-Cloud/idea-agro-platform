@@ -24,6 +24,8 @@ interface Props {
   opacity: number;
   regions: RegionFeature[];
   regionsMinZoom: number;
+  /** Whether an indicator is drawn under the regions, which then need light lines to stay visible. */
+  overRaster: boolean;
   selectedKey: string | null;
   /** A fly-to request; the id changes for every request. */
   focus: { bbox: Bounds; id: number; maxZoom?: number } | null;
@@ -53,12 +55,24 @@ const REGION_SOURCE = "regions";
 const INDICATOR_SOURCE = "indicator";
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Line colors of the region layers for a theme. */
-function regionPaint(theme: MapThemeName) {
+const casingOpacity = (overRaster: boolean) =>
+  overRaster
+    ? byZoom(
+        mapMarks["zone-casing-raster-opacity-low"],
+        mapMarks["zone-casing-raster-opacity"],
+        mapMarks["zone-casing-raster-opacity"],
+      )
+    : byZoom(mapMarks["zone-casing-opacity-low"], mapMarks["zone-casing-opacity"], mapMarks["zone-casing-opacity"]);
+
+/** Line colors of the region layers for a theme, over the bare land or over an indicator. */
+function regionPaint(theme: MapThemeName, overRaster: boolean) {
   const c = mapTheme[theme].chrome;
   return {
-    "regions-casing": { "line-color": c["zone-casing"] },
-    "regions-line": { "line-color": c["zone-line"] },
+    "regions-casing": {
+      "line-color": overRaster ? c["zone-casing-raster"] : c["zone-casing"],
+      "line-opacity": casingOpacity(overRaster),
+    },
+    "regions-line": { "line-color": overRaster ? c["zone-line-raster"] : c["zone-line"] },
     "regions-hover-casing": { "line-color": c["zone-hover-casing"] },
     "regions-hover": { "line-color": c["zone-hover"] },
     "regions-own-line": { "line-color": c["zone-own"] },
@@ -142,7 +156,7 @@ export default function MapView(props: Props) {
             data: { type: "FeatureCollection", features: [] },
             promoteId: "key",
           });
-          const paint = regionPaint(callbacks.current.theme);
+          const paint = regionPaint(callbacks.current.theme, callbacks.current.overRaster);
           const before = beforeZones;
           m.addLayer({ id: "regions-fill", type: "fill", source: REGION_SOURCE, paint: { "fill-opacity": 0 } }, before);
           m.addLayer(
@@ -170,15 +184,7 @@ export default function MapView(props: Props) {
               id: "regions-casing",
               type: "line",
               source: REGION_SOURCE,
-              paint: {
-                ...paint["regions-casing"],
-                "line-width": mapMarks["zone-casing-width"],
-                "line-opacity": byZoom(
-                  mapMarks["zone-casing-opacity-low"],
-                  mapMarks["zone-casing-opacity"],
-                  mapMarks["zone-casing-opacity"],
-                ),
-              },
+              paint: { ...paint["regions-casing"], "line-width": mapMarks["zone-casing-width"] },
             },
             before,
           );
@@ -309,15 +315,15 @@ export default function MapView(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Theme: recolor the basemap and the region lines.
+  // Theme and background: recolor the basemap and the region lines.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     applyBasemapTheme(map, props.theme);
-    for (const [layer, paint] of Object.entries(regionPaint(props.theme)))
+    for (const [layer, paint] of Object.entries(regionPaint(props.theme, props.overRaster)))
       for (const [property, value] of Object.entries(paint))
         map.setPaintProperty(layer, property as never, value as never);
-  }, [ready, props.theme]);
+  }, [ready, props.theme, props.overRaster]);
 
   // Indicator raster: one image source over the country, swapped frame by frame.
   useEffect(() => {

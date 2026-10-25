@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { minWidth, motion } from "@/design/tokens";
+import { LoaderCircle } from "lucide-react";
+import { iconSize, minWidth, motion } from "@/design/tokens";
 import { cssTime } from "@/lib/css-time";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/core";
@@ -113,7 +114,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const preparedSignIn = useRef<(() => Promise<unknown>) | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [zones, setZones] = useState<ZoneCollection | null>(null);
+  // Tagged with their division, so the map knows when the one in view has not arrived yet.
+  const [zones, setZones] = useState<{ division: DivisionId; collection: ZoneCollection } | null>(null);
   const [padrones, setPadrones] = useState<Record<string, PadronCollection>>({});
   const mapRef = useRef<MapLibreMap | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -172,15 +174,31 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   // Regions: the division outlines, the parcels in view, or the reader's own layer.
   const division = activeDivision(state);
   useEffect(() => {
-    if (!division) return setZones(null);
+    if (!division) return;
     let live = true;
     loadZones(division)
-      .then((z) => live && setZones(z))
+      .then((collection) => live && setZones({ division, collection }))
       .catch(() => live && setError("load"));
     return () => {
       live = false;
     };
   }, [division]);
+  const divisionZones = division && zones?.division === division ? zones.collection : null;
+
+  // Once the first view is drawn, the other divisions load in the background, so switching to them is immediate.
+  const prefetched = useRef(false);
+  useEffect(() => {
+    if (!manifest || !divisionZones || prefetched.current) return;
+    prefetched.current = true;
+    if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+    const others = (Object.keys(manifest.divisions) as DivisionId[]).filter((d) => d !== division);
+    const next = () => {
+      const other = others.shift();
+      if (other) void loadZones(other).then(later, later);
+    };
+    const later = () => ("requestIdleCallback" in window ? requestIdleCallback(next) : setTimeout(next, 500));
+    later();
+  }, [manifest, divisionZones, division]);
 
   // Joined into a string so that panning without crossing a department keeps the same list (and
   // the map's region data untouched).
@@ -325,9 +343,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   /** Every zone currently on the map, by its feature key. */
   const records = useMemo(() => {
     const out = new Map<string, ZoneRecord>();
-    if (division && zones) {
+    if (division && divisionZones) {
       const grade = division.startsWith("cuencas-") ? Number(division.slice(-1)) : null;
-      for (const f of zones.features) {
+      for (const f of divisionZones.features) {
         const p = f.properties as typeof f.properties & { parent?: string };
         const seccional = division === "seccionales";
         out.set(p.id, {
@@ -380,7 +398,17 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         }
     }
     return out;
-  }, [division, zones, padrones, padronDepartments, pendingSelectionDepartment, state.regions, custom, manifest, t]);
+  }, [
+    division,
+    divisionZones,
+    padrones,
+    padronDepartments,
+    pendingSelectionDepartment,
+    state.regions,
+    custom,
+    manifest,
+    t,
+  ]);
 
   const regionFeatures = useMemo<RegionFeature[]>(() => {
     const visible = [...records.values()].filter(
@@ -711,6 +739,15 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     </>
   );
 
+  // What is still on its way, after the map itself: the zones in view, then the indicator's image.
+  const loadingText = !manifest
+    ? null
+    : division && !divisionZones
+      ? t("explorer.loadingZones")
+      : indicatorId && !frame
+        ? t("explorer.loadingIndicator", { name: t(`indicators.items.${indicatorId}.name` as AppKey) })
+        : null;
+
   const statusMessage =
     error === "webgl"
       ? t("explorer.noWebgl")
@@ -790,20 +827,26 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
 
               {(drawing ||
                 notice ||
+                loadingText ||
                 (state.regions === "padrones" && (!mapView || mapView.zoom < PADRON_ZOOM || loadingDepartment))) && (
                 <p
                   role="status"
-                  className="pointer-events-auto mx-auto rounded-pill border border-line bg-surface px-4 py-2 text-xs text-ink shadow-raised"
+                  className="pointer-events-auto mx-auto flex items-center gap-2 rounded-pill border border-line bg-surface px-4 py-2 text-xs text-ink shadow-raised"
                 >
+                  {!drawing && !notice && (loadingText || loadingDepartment) && (
+                    <LoaderCircle size={iconSize.sm} className="animate-spin text-ink-muted" aria-hidden="true" />
+                  )}
                   {drawing
                     ? t("explorer.regions.drawHint")
                     : notice
                       ? notice
-                      : loadingDepartment && manifest
-                        ? t("explorer.regions.padronesLoading", {
-                            department: manifest.padrones[loadingDepartment]?.name ?? "",
-                          })
-                        : t("explorer.regions.padronesZoom")}
+                      : loadingText
+                        ? loadingText
+                        : loadingDepartment && manifest
+                          ? t("explorer.regions.padronesLoading", {
+                              department: manifest.padrones[loadingDepartment]?.name ?? "",
+                            })
+                          : t("explorer.regions.padronesZoom")}
                 </p>
               )}
 
@@ -850,6 +893,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
               opacity={mapMarks["raster-opacity"]}
               regions={regionFeatures}
               regionsMinZoom={state.regions === "padrones" ? PADRON_ZOOM : 0}
+              overRaster={Boolean(indicatorId && frame)}
               selectedKey={selectedKey}
               focus={focus}
               label={t("explorer.controls.map")}

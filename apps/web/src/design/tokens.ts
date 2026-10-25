@@ -137,6 +137,9 @@ export const mapChrome = {
   "label-halo": { light: "slate.25", dark: "slate.925" },
   "zone-line": { light: "indigo.950", dark: "slate.100" },
   "zone-casing": { light: "slate.0", dark: "slate.950" },
+  /** Over an indicator the ramps are dark and saturated: a light line on a dark casing reads over all of them. */
+  "zone-line-raster": { light: "slate.0", dark: "slate.0" },
+  "zone-casing-raster": { light: "slate.950", dark: "slate.950" },
   /** The region under the pointer: a white line on a dark halo, readable over the ramps and the bare land. */
   "zone-hover": { light: "slate.0", dark: "slate.0" },
   "zone-hover-casing": { light: "slate.950", dark: "slate.950" },
@@ -154,6 +157,8 @@ export const mapMarks = {
   "zone-width-high": 1.4,
   "zone-casing-opacity": 0.55,
   "zone-casing-opacity-low": 0.25,
+  "zone-casing-raster-opacity": 0.7,
+  "zone-casing-raster-opacity-low": 0.5,
   "zone-own-fill-opacity": 0.12,
   "zone-own-width": 1.5,
   "zone-casing-width": 2.25,
