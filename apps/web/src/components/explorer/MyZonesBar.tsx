@@ -33,7 +33,10 @@ export default function MyZonesBar(props: Props) {
   const detail = (zone: MyZone) =>
     [
       zone.geometry.type === "Point"
-        ? t("explorer.zone.point")
+        ? t("explorer.zone.coordinates", {
+            latitude: i18n.degrees(zone.geometry.coordinates[1]),
+            longitude: i18n.degrees(zone.geometry.coordinates[0]),
+          })
         : zone.areaKm2 < 10
           ? t("explorer.zone.areaHa", { value: i18n.number(zone.areaKm2 * 100) })
           : t("explorer.zone.areaKm2", { value: i18n.number(zone.areaKm2) }),

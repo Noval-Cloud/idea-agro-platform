@@ -8,6 +8,8 @@ export type ZoneSummary = {
   title: string;
   subtitle?: string;
   area: string;
+  /** A point's place, shown instead of its area. */
+  coordinates?: { latitude: string; longitude: string };
   value:
     | { state: "value"; label: string; text: string; delta?: string; approximate: boolean }
     | { state: "none"; label: string }
@@ -53,10 +55,23 @@ export default function ZoneCard({ zone, onClose, variant }: Props) {
       </header>
 
       <dl className="mt-4 grid gap-3 border-t border-line pt-3 text-sm">
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-ink-muted">{t("explorer.zone.area")}</dt>
-          <dd className="font-medium text-ink">{zone.area}</dd>
-        </div>
+        {zone.coordinates ? (
+          <>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-ink-muted">{t("explorer.zone.latitude")}</dt>
+              <dd className="font-medium text-ink tabular-nums">{zone.coordinates.latitude}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-ink-muted">{t("explorer.zone.longitude")}</dt>
+              <dd className="font-medium text-ink tabular-nums">{zone.coordinates.longitude}</dd>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-ink-muted">{t("explorer.zone.area")}</dt>
+            <dd className="font-medium text-ink">{zone.area}</dd>
+          </div>
+        )}
         {zone.value && (
           <div>
             <dt className="text-ink-muted">{zone.value.label}</dt>

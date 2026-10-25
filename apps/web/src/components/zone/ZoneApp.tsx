@@ -353,10 +353,14 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                   <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
                   {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
                   <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-                    <Fact
-                      label={t("zone.facts.area")}
-                      value={zone.geometry.type === "Point" ? t("explorer.zone.point") : area(zone.areaKm2)}
-                    />
+                    {zone.geometry.type === "Point" ? (
+                      <>
+                        <Fact label={t("explorer.zone.latitude")} value={i18n.degrees(zone.geometry.coordinates[1])} />
+                        <Fact label={t("explorer.zone.longitude")} value={i18n.degrees(zone.geometry.coordinates[0])} />
+                      </>
+                    ) : (
+                      <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
+                    )}
                     {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
                     {zone.target.kind === "division" && (
                       <GrasslandFact

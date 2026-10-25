@@ -3,6 +3,7 @@ import type { Catalog } from "@/i18n";
 import { createCatalogTranslator, intlLocale, type Leaves, type Locale } from "@/i18n/core";
 import { indicators, type IndicatorId } from "@/data/indicators";
 import type { IndicatorManifest } from "./data";
+import { degreesFormat } from "@/lib/degrees";
 
 /** The slice of the catalog the explorer and zone islands ship to the browser. */
 export type AppCatalog = Pick<Catalog, "explorer" | "zone" | "indicators" | "communities" | "science">;
@@ -42,7 +43,7 @@ export function createAppTranslator(locale: Locale, catalog: AppCatalog) {
 
   const value = (indicator: IndicatorId, v: number) => number(v, indicators[indicator].digits);
 
-  return { ...translator, number, percent, signedPercent, yearLabel, fromGray, value };
+  return { ...translator, number, percent, signedPercent, yearLabel, fromGray, value, degrees: degreesFormat(locale) };
 }
 
 export type AppTranslator = ReturnType<typeof createAppTranslator>;

@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Bounds, ZoneGeometry } from "./lib/data";
 import { applyBasemapTheme, basemapStyle, beforeIndicator, beforeZones } from "./lib/map-style";
 import { mapMarks, mapTheme, type MapThemeName } from "./lib/theme";
+import { pinImage } from "./lib/pin";
 import type { Frame } from "./lib/frames";
 
 export type RegionFeature = {
@@ -29,7 +30,8 @@ interface Props {
   selectedKey: string | null;
   /** A fly-to request; the id changes for every request. */
   focus: { bbox: Bounds; id: number; maxZoom?: number } | null;
-  popup: { lng: number; lat: number; content: ReactNode } | null;
+  /** `pin`: the card rides above a point's pin instead of on the point. */
+  popup: { lng: number; lat: number; content: ReactNode; pin?: boolean } | null;
   label: string;
   /** MapLibre's own control labels, in the page's language. */
   attributionLabel: string;
@@ -82,10 +84,32 @@ function regionPaint(theme: MapThemeName, overRaster: boolean) {
     "regions-selected-fill": { "fill-color": c["zone-selected"] },
     "regions-selected-casing": { "line-color": c["zone-casing"] },
     "regions-selected": { "line-color": c["zone-selected"] },
-    "regions-points": { "circle-color": c["zone-own"], "circle-stroke-color": c["zone-casing"] },
-    "regions-points-selected": { "circle-color": c["zone-selected"], "circle-stroke-color": c["zone-casing"] },
   } as const;
 }
+
+/** Where a card rides around a selected pin, by the side MapLibre puts it on: clear of the pin's head. */
+const PIN_HEIGHT = mapMarks["pin-height"] * mapMarks["pin-selected-scale"];
+const PIN_SIDE = (mapMarks["pin-width"] * mapMarks["pin-selected-scale"]) / 2 + mapMarks["popup-offset"];
+const PIN_OFFSET = {
+  center: [0, -PIN_HEIGHT / 2],
+  top: [0, mapMarks["popup-offset"]],
+  "top-left": [0, mapMarks["popup-offset"]],
+  "top-right": [0, mapMarks["popup-offset"]],
+  bottom: [0, -PIN_HEIGHT - mapMarks["popup-offset"]],
+  "bottom-left": [0, -PIN_HEIGHT - mapMarks["popup-offset"]],
+  "bottom-right": [0, -PIN_HEIGHT - mapMarks["popup-offset"]],
+  left: [PIN_SIDE, -PIN_HEIGHT / 2],
+  right: [-PIN_SIDE, -PIN_HEIGHT / 2],
+} satisfies Record<string, [number, number]>;
+
+/** The pins of the reader's points: their own color, and the selection's. */
+const pins = (theme: MapThemeName) => {
+  const c = mapTheme[theme].chrome;
+  return {
+    "pin-own": pinImage(c["zone-own"], c["zone-casing"]),
+    "pin-selected": pinImage(c["zone-selected"], c["zone-casing"]),
+  };
+};
 
 export default function MapView(props: Props) {
   const container = useRef<HTMLDivElement>(null);
@@ -267,37 +291,27 @@ export default function MapView(props: Props) {
             },
             before,
           );
-          // Sites, the reader's points: markers above the outlines, the selected one larger.
+          // Sites, the reader's points: pins above the outlines, the selected one larger.
+          for (const [name, image] of Object.entries(pins(callbacks.current.theme)))
+            m.addImage(name, image, { pixelRatio: 2 });
+          const pin = (image: string, size: number) => ({
+            "icon-image": image,
+            "icon-size": size,
+            "icon-anchor": "bottom" as const,
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+          });
           m.addLayer(
-            {
-              id: "regions-points",
-              type: "circle",
-              source: REGION_SOURCE,
-              filter: isPoint,
-              paint: {
-                ...paint["regions-points"],
-                "circle-radius": mapMarks["point-radius"],
-                "circle-stroke-width": [
-                  "case",
-                  ["boolean", ["feature-state", "hover"], false],
-                  mapMarks["point-hover-stroke-width"],
-                  mapMarks["point-stroke-width"],
-                ] as never,
-              },
-            },
+            { id: "regions-points", type: "symbol", source: REGION_SOURCE, filter: isPoint, layout: pin("pin-own", 1) },
             before,
           );
           m.addLayer(
             {
               id: "regions-points-selected",
-              type: "circle",
+              type: "symbol",
               source: REGION_SOURCE,
               filter: selectedPoint(""),
-              paint: {
-                ...paint["regions-points-selected"],
-                "circle-radius": mapMarks["point-selected-radius"],
-                "circle-stroke-width": mapMarks["point-stroke-width"],
-              },
+              layout: pin("pin-selected", mapMarks["pin-selected-scale"]),
             },
             before,
           );
@@ -359,6 +373,7 @@ export default function MapView(props: Props) {
     const map = mapRef.current;
     if (!map || !ready) return;
     applyBasemapTheme(map, props.theme);
+    for (const [name, image] of Object.entries(pins(props.theme))) map.updateImage(name, image);
     for (const [layer, paint] of Object.entries(regionPaint(props.theme, props.overRaster)))
       for (const [property, value] of Object.entries(paint))
         map.setPaintProperty(layer, property as never, value as never);
@@ -458,9 +473,11 @@ export default function MapView(props: Props) {
     const map = mapRef.current;
     const popup = popupRef.current;
     if (!map || !popup) return;
-    if (props.popup) popup.setLngLat([props.popup.lng, props.popup.lat]).addTo(map);
-    else popup.remove();
-  }, [ready, props.popup?.lng, props.popup?.lat, props.popup === null]);
+    if (props.popup) {
+      popup.setOffset(props.popup.pin ? PIN_OFFSET : mapMarks["popup-offset"]);
+      popup.setLngLat([props.popup.lng, props.popup.lat]).addTo(map);
+    } else popup.remove();
+  }, [ready, props.popup?.lng, props.popup?.lat, props.popup?.pin, props.popup === null]);
 
   return (
     <>

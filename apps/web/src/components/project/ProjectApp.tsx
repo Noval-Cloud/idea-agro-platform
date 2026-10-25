@@ -31,7 +31,7 @@ const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 /** A project: its zones with links to their pages, the people it is shared with, and what they changed. */
 export default function ProjectApp({ locale, catalog, signInPath, projectsPath, zonePath }: Props) {
-  const { t, number, moment } = createProjectTranslator(locale, catalog);
+  const { t, number, moment, degrees } = createProjectTranslator(locale, catalog);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [problem, setProblem] = useState<ProjectKey | null>(null);
   // Read in the browser only: the page is also rendered ahead, where there is no address.
@@ -160,6 +160,7 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
       <Zones
         t={t}
         number={number}
+        degrees={degrees}
         project={project}
         names={names}
         zonePath={zonePath}
@@ -169,6 +170,7 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
         <AddZones
           t={t}
           number={number}
+          degrees={degrees}
           held={new Set(project.items.map((i) => i.id))}
           othersCanEdit={project.others_can_edit}
           onAdd={add}

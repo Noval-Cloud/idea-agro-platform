@@ -1,5 +1,6 @@
 import type { Catalog } from "@/i18n";
 import { createCatalogTranslator, intlLocale, type Leaves, type Locale } from "@/i18n/core";
+import { degreesFormat } from "@/lib/degrees";
 
 /** The slice of the catalog the account island ships to the browser. */
 export type AccountCatalog = Pick<Catalog, "account">;
@@ -18,7 +19,7 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
   const moment = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-  return { ...translator, date, moment, number };
+  return { ...translator, date, moment, number, degrees: degreesFormat(locale) };
 }
 
 export type AccountTranslator = ReturnType<typeof createAccountTranslator>;
