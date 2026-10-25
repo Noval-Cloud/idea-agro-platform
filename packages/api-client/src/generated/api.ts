@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.7.0
+ * OpenAPI spec version: 1.8.0
  */
 import {
   useMutation,
@@ -687,6 +687,8 @@ export interface ProjectSummary {
   description: string;
   /** How many zones the project holds. */
   zone_count: number;
+  /** How many people it is shared with, invitations included. */
+  member_count: number;
   /** Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads). */
   role: ProjectSummaryRole;
   /** The owner's name. */

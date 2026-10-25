@@ -229,6 +229,7 @@ class ProjectSummary(BaseModel):
     name: str
     description: str
     zone_count: int = Field(description="How many zones the project holds.")
+    member_count: int = Field(description="How many people it is shared with, invitations included.")
     role: ProjectRole = Field(description=ROLE)
     owner_name: str | None = Field(description="The owner's name.")
     others_can_edit: bool = Field(description=OTHERS_CAN_EDIT)

@@ -173,6 +173,7 @@ def summary(project: Project, caller: Caller, names: Names) -> ProjectSummary:
         name=project.name,
         description=project.description,
         zone_count=len(project.items),
+        member_count=len(project.members),
         role=project.role_of(me) or "viewer",
         owner_name=names.of(project.owner),
         others_can_edit=project.others_can_edit(me),

@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { useState, type RefObject } from "react";
+import { FileUp } from "lucide-react";
 import type { SavedZoneOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { iconSize } from "@/design/tokens";
@@ -10,12 +10,13 @@ type Props = {
   t: AccountTranslator["t"];
   number: AccountTranslator["number"];
   signInPath: string;
+  /** The file input, opened from the list's header. */
+  input: RefObject<HTMLInputElement | null>;
   onSaved: (zones: SavedZoneOut[]) => void;
 };
 
 /** Reads a file's polygons, shows them, and saves them to the library. Drawing stays on the map. */
-export default function ImportZones({ t, number, signInPath, onSaved }: Props) {
-  const input = useRef<HTMLInputElement>(null);
+export default function ImportZones({ t, number, signInPath, input, onSaved }: Props) {
   const [found, setFound] = useState<{ file: string; zones: FileZone[] } | null>(null);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +67,7 @@ export default function ImportZones({ t, number, signInPath, onSaved }: Props) {
   };
 
   return (
-    <div className="mt-4 grid gap-3">
+    <>
       <input
         ref={input}
         type="file"
@@ -81,49 +82,51 @@ export default function ImportZones({ t, number, signInPath, onSaved }: Props) {
           if (file) void pick(file);
         }}
       />
-      {found ? (
-        <div className="grid gap-3 rounded-sm border border-line p-4">
-          <p className="text-sm font-medium text-ink">
-            {t("account.zones.import.found", { count: found.zones.length, name: found.file })}
-          </p>
-          <ul className="grid max-h-64 grid-cols-[minmax(0,1fr)] divide-y divide-line overflow-y-auto text-sm">
-            {found.zones.map((zone) => (
-              <li key={zone.key} className="flex items-center gap-4 py-2">
-                <span className="min-w-0 grow truncate text-ink">{zone.name}</span>
-                <span className="shrink-0 text-ink-subtle">
-                  {t("account.zones.area", { value: number(zone.areaKm2 * 100) })}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" disabled={saving} onClick={() => void save()}>
-              {saving
-                ? t("account.zones.import.saving")
-                : t("account.zones.import.save", { count: found.zones.length })}
-            </Button>
-            <Button size="sm" variant="ghost" disabled={saving} onClick={() => setFound(null)}>
-              {t("account.zones.import.cancel")}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Button size="sm" variant="outline" onClick={() => input.current?.click()}>
-            <Upload size={iconSize.sm} aria-hidden="true" />
-            {t("account.zones.import.action")}
-          </Button>
-          <p className="text-xs text-ink-subtle">{t("account.zones.import.hint")}</p>
+      {(found || notice) && (
+        <div className="grid gap-3">
+          {found && (
+            <div className="grid gap-3 rounded-lg border border-line bg-surface p-4">
+              <div className="flex items-start gap-3">
+                <FileUp size={iconSize.md} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-subtle" />
+                <div className="grid gap-0.5">
+                  <p className="text-sm font-medium text-ink">
+                    {t("account.zones.import.found", { count: found.zones.length, name: found.file })}
+                  </p>
+                  <p className="text-xs text-ink-subtle">{t("account.zones.import.hint")}</p>
+                </div>
+              </div>
+              <ul className="grid max-h-64 grid-cols-[minmax(0,1fr)] divide-y divide-line overflow-y-auto text-sm">
+                {found.zones.map((zone) => (
+                  <li key={zone.key} className="flex items-center gap-4 py-2">
+                    <span className="min-w-0 grow truncate text-ink">{zone.name}</span>
+                    <span className="shrink-0 text-ink-subtle">
+                      {t("account.zones.area", { value: number(zone.areaKm2 * 100) })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" disabled={saving} onClick={() => void save()}>
+                  {saving
+                    ? t("account.zones.import.saving")
+                    : t("account.zones.import.save", { count: found.zones.length })}
+                </Button>
+                <Button size="sm" variant="ghost" disabled={saving} onClick={() => setFound(null)}>
+                  {t("account.zones.import.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
+          {notice && (
+            <p
+              role={notice.ok ? "status" : "alert"}
+              className={notice.ok ? "text-sm text-ink-muted" : "text-sm text-danger"}
+            >
+              {notice.text}
+            </p>
+          )}
         </div>
       )}
-      {notice && (
-        <p
-          role={notice.ok ? "status" : "alert"}
-          className={notice.ok ? "text-sm text-ink-muted" : "text-sm text-danger"}
-        >
-          {notice.text}
-        </p>
-      )}
-    </div>
+    </>
   );
 }

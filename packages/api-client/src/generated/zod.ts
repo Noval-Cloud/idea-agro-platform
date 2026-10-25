@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.7.0
+ * OpenAPI spec version: 1.8.0
  */
 import * as zod from 'zod';
 
@@ -707,6 +707,7 @@ export const ListProjectsResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "zone_count": zod.int().describe('How many zones the project holds.'),
+  "member_count": zod.int().describe('How many people it is shared with, invitations included.'),
   "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
   "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),

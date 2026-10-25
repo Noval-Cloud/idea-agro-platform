@@ -75,6 +75,7 @@
   --ia-motion-stagger: 160ms;
   --ia-layer-map-overlay: 10;
   --ia-layer-map-bar: 20;
+  --ia-layer-sticky: 30;
   --ia-layer-header: 40;
   --ia-layer-popover: 50;
   --ia-layer-modal: 55;
@@ -109,6 +110,7 @@
   --ia-link: oklch(0.46 0.14 264);
   --ia-focus: oklch(0.6 0.16 150);
   --ia-danger: oklch(0.55 0.19 27);
+  --ia-danger-ink: oklch(1 0 0);
   --ia-viz-grid: oklch(0.915 0.01 262);
   --ia-viz-axis: oklch(0.84 0.014 262);
   --ia-viz-series-reference: oklch(0.52 0.02 262);
@@ -200,6 +202,7 @@
     --ia-link: oklch(0.82 0.05 264);
     --ia-focus: oklch(0.76 0.16 150);
     --ia-danger: oklch(0.7 0.17 27);
+    --ia-danger-ink: oklch(0.145 0.022 264);
     --ia-viz-grid: oklch(0.29 0.03 264);
     --ia-viz-axis: oklch(0.38 0.035 264);
     --ia-viz-series-reference: oklch(0.7 0.02 262);
@@ -291,6 +294,7 @@
   --ia-link: oklch(0.82 0.05 264);
   --ia-focus: oklch(0.76 0.16 150);
   --ia-danger: oklch(0.7 0.17 27);
+  --ia-danger-ink: oklch(0.145 0.022 264);
   --ia-viz-grid: oklch(0.29 0.03 264);
   --ia-viz-axis: oklch(0.38 0.035 264);
   --ia-viz-series-reference: oklch(0.7 0.02 262);
@@ -382,6 +386,7 @@
   --ia-link: oklch(0.82 0.05 264);
   --ia-focus: oklch(0.76 0.16 150);
   --ia-danger: oklch(0.7 0.17 27);
+  --ia-danger-ink: oklch(0.145 0.022 264);
   --ia-viz-grid: oklch(0.29 0.03 264);
   --ia-viz-axis: oklch(0.38 0.035 264);
   --ia-viz-series-reference: oklch(0.7 0.02 262);

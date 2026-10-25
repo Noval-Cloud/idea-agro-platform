@@ -76,7 +76,7 @@ def test_an_invitation_is_accepted_when_the_invitee_opens_their_projects(client:
     ]
     # Opening it directly accepts it too.
     assert before.status_code == 200
-    assert [(p["id"], p["role"], p["owner_name"]) for p in listed] == [(id, "viewer", "Ana")]
+    assert [(p["id"], p["role"], p["owner_name"], p["member_count"]) for p in listed] == [(id, "viewer", "Ana", 1)]
     assert after["members"] == [
         {"email": "bo@example.org", "name": "Bo", "role": "viewer", "pending": False, "you": False}
     ]

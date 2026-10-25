@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.7.0"
+    "version": "1.8.0"
   },
   "paths": {
     "/health": {
@@ -4973,6 +4973,11 @@
             "title": "Zone Count",
             "description": "How many zones the project holds."
           },
+          "member_count": {
+            "type": "integer",
+            "title": "Member Count",
+            "description": "How many people it is shared with, invitations included."
+          },
           "role": {
             "type": "string",
             "enum": [
@@ -5017,6 +5022,7 @@
           "name",
           "description",
           "zone_count",
+          "member_count",
           "role",
           "owner_name",
           "others_can_edit",
