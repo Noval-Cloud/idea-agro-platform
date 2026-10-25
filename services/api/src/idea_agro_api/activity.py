@@ -40,8 +40,10 @@ class Activity:
 class ActivityStore(Protocol):
     def record(self, entries: list[Activity]) -> None: ...
 
-    def of_project(self, project: str, limit: int) -> list[Activity]:
-        """The latest entries, newest first."""
+    def of_project(
+        self, project: str, limit: int, before: datetime | None = None, since: datetime | None = None
+    ) -> list[Activity]:
+        """The latest entries before `before` and from `since` on, newest first."""
         ...
 
     def forget_project(self, project: str) -> None: ...
@@ -54,8 +56,14 @@ class MemoryActivity:
     def record(self, entries: list[Activity]) -> None:
         self._entries.extend(entries)
 
-    def of_project(self, project: str, limit: int) -> list[Activity]:
-        found = [e for e in self._entries if e.project == project]
+    def of_project(
+        self, project: str, limit: int, before: datetime | None = None, since: datetime | None = None
+    ) -> list[Activity]:
+        found = [
+            e
+            for e in self._entries
+            if e.project == project and (before is None or e.at < before) and (since is None or e.at >= since)
+        ]
         return sorted(found, key=lambda e: e.at, reverse=True)[:limit]
 
     def forget_project(self, project: str) -> None:
@@ -77,8 +85,15 @@ class FirestoreActivity:
             batch.create(self._entries.document(), _to_document(entry))  # pyright: ignore[reportUnknownMemberType]
         batch.commit()  # pyright: ignore[reportUnknownMemberType]
 
-    def of_project(self, project: str, limit: int) -> list[Activity]:
-        query = self._of(project).order_by("at", direction=firestore.Query.DESCENDING).limit(limit)  # pyright: ignore[reportUnknownMemberType]
+    def of_project(
+        self, project: str, limit: int, before: datetime | None = None, since: datetime | None = None
+    ) -> list[Activity]:
+        query = self._of(project)
+        if before is not None:
+            query = query.where(filter=firestore.FieldFilter("at", "<", before))  # pyright: ignore[reportUnknownMemberType]
+        if since is not None:
+            query = query.where(filter=firestore.FieldFilter("at", ">=", since))  # pyright: ignore[reportUnknownMemberType]
+        query = query.order_by("at", direction=firestore.Query.DESCENDING).limit(limit)  # pyright: ignore[reportUnknownMemberType]
         return [_from_document(cast(dict[str, Any], d.to_dict())) for d in query.stream()]
 
     def forget_project(self, project: str) -> None:

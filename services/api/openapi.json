@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.8.0"
+    "version": "1.9.0"
   },
   "paths": {
     "/health": {
@@ -2568,7 +2568,7 @@
           "Projects"
         ],
         "summary": "What happened in a project",
-        "description": "The latest changes, newest first.",
+        "description": "The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on.",
         "operationId": "get_project_activity",
         "security": [
           {
@@ -2587,6 +2587,58 @@
               "title": "Project Id"
             },
             "description": "The project's id."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only changes before this moment.",
+              "title": "Before"
+            },
+            "description": "Only changes before this moment."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only changes from this moment on.",
+              "title": "Since"
+            },
+            "description": "Only changes from this moment on."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "How many changes at most.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "How many changes at most."
           }
         ],
         "responses": {

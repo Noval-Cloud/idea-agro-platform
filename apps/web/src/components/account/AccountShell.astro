@@ -14,8 +14,10 @@ interface Props {
   locale: Locale;
   section: AccountSection;
   title: string;
+  /** False when the page names itself, as a project's page does with the project's name. */
+  heading?: boolean;
 }
-const { locale, section, title } = Astro.props;
+const { locale, section, title, heading = true } = Astro.props;
 const { t } = createTranslator(locale);
 const account = localizePath("/account/", locale);
 const sectionPaths = Object.fromEntries(
@@ -38,7 +40,7 @@ const sectionPaths = Object.fromEntries(
       />
     </aside>
     <main id="main" class="min-w-0 grow px-gutter pb-16 lg:px-10">
-      <h1 class="sr-only">{t(`account.sections.${section}`)}</h1>
+      {heading && <h1 class="sr-only">{t(`account.sections.${section}`)}</h1>}
       <slot />
     </main>
   </div>

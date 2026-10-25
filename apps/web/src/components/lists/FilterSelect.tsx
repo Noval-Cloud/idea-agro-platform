@@ -9,12 +9,15 @@ export function FilterSelect({
   value,
   all,
   options,
+  labelOf = (option) => option,
   onChange,
 }: {
   label: string;
   value: string;
   all: string;
   options: string[];
+  /** The words for an option, when its value is a code. */
+  labelOf?: (option: string) => string;
   onChange: (value: string) => void;
 }) {
   return (
@@ -38,7 +41,7 @@ export function FilterSelect({
           className="ia-pop z-(--ia-layer-popover) max-h-80 min-w-(--radix-select-trigger-width) overflow-y-auto rounded-md border border-line bg-surface p-1 text-ink shadow-overlay"
         >
           <Select.Viewport>
-            {[{ value: "all", label: all }, ...options.map((o) => ({ value: o, label: o }))].map((option) => (
+            {[{ value: "all", label: all }, ...options.map((o) => ({ value: o, label: labelOf(o) }))].map((option) => (
               <Select.Item
                 key={option.value}
                 value={option.value}

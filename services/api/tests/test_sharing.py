@@ -212,6 +212,22 @@ def test_the_activity_tells_who_changed_what(client: TestClient) -> None:
     ]
 
 
+def test_the_activity_loads_in_pages_and_from_a_moment_on(client: TestClient) -> None:
+    id = project(client)
+    for name in ("Uno", "Dos", "Tres"):
+        client.patch(f"/v1/projects/{id}", json={"name": name}, headers=ANA)
+    everything = client.get(f"/v1/projects/{id}/activity", headers=ANA).json()
+
+    first = client.get(f"/v1/projects/{id}/activity", params={"limit": 2}, headers=ANA).json()
+    rest = client.get(f"/v1/projects/{id}/activity", params={"before": first[-1]["at"]}, headers=ANA).json()
+    recent = client.get(f"/v1/projects/{id}/activity", params={"since": everything[1]["at"]}, headers=ANA).json()
+
+    assert [a["detail"] for a in everything] == ["Tres", "Dos", "Uno", "Campo"]
+    assert first + rest == everything
+    assert recent == everything[:2]
+    assert client.get(f"/v1/projects/{id}/activity", params={"limit": 0}, headers=ANA).status_code == 422
+
+
 def test_deleting_a_project_forgets_its_activity(client: TestClient) -> None:
     id = project(client)
     client.delete(f"/v1/projects/{id}", headers=ANA)

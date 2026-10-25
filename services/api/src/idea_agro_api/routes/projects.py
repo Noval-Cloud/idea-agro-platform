@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
@@ -455,14 +455,24 @@ def remove_project_member(project_id: ProjectId, email: Email, caller: CallerDep
 @router.get(
     "/v1/projects/{project_id}/activity",
     summary="What happened in a project",
-    description="The latest changes, newest first.",
+    description=(
+        "The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last"
+        " change received; `since` keeps only the changes from a moment on."
+    ),
     responses=problems(401, 403, 404, 422, 429),
 )
-def get_project_activity(project_id: ProjectId, caller: CallerDep, services: ServicesDep) -> list[ActivityOut]:
+def get_project_activity(
+    project_id: ProjectId,
+    caller: CallerDep,
+    services: ServicesDep,
+    before: Annotated[datetime | None, Query(description="Only changes before this moment.")] = None,
+    since: Annotated[datetime | None, Query(description="Only changes from this moment on.")] = None,
+    limit: Annotated[int, Query(ge=1, le=100, description="How many changes at most.")] = 100,
+) -> list[ActivityOut]:
     project = reachable(services, caller, project_id)
     return [
         ActivityOut(at=e.at, actor_name=e.actor_name, action=e.action, subject=e.subject, detail=e.detail)
-        for e in services.activity.of_project(project.id, 100)
+        for e in services.activity.of_project(project.id, limit, before=before, since=since)
     ]
 
 

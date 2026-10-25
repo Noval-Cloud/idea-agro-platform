@@ -11,8 +11,8 @@ const { locale } = Astro.props;
 const { t } = createTranslator(locale);
 ---
 
-<AccountShell locale={locale} section="projects" title={t("project.metaTitle")}>
-  <div class="max-w-4xl pt-8">
+<AccountShell locale={locale} section="projects" title={t("project.metaTitle")} heading={false}>
+  <div class="max-w-(--ia-layout-page)">
     <ProjectApp
       client:load
       locale={locale}
@@ -20,6 +20,8 @@ const { t } = createTranslator(locale);
       signInPath={localizePath("/login/", locale)}
       projectsPath={localizePath("/account/projects/", locale)}
       zonePath={localizePath("/zone/", locale)}
+      outlinePath={localizePath("/outline/", locale)}
+      mapPath={localizePath("/explore/", locale)}
     />
   </div>
 </AccountShell>
