@@ -3,7 +3,15 @@ import { createPortal } from "react-dom";
 import type { GeoJSONSource, ImageSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Bounds, ZoneGeometry } from "./lib/data";
-import { applyBasemapTheme, basemapStyle, beforeIndicator, beforeZones } from "./lib/map-style";
+import {
+  applyBase,
+  applyBasemapTheme,
+  basemapStyle,
+  beforeIndicator,
+  beforeZones,
+  showBasemapLayers,
+  type Base,
+} from "./lib/map-style";
 import { mapMarks, mapTheme, type MapThemeName } from "./lib/theme";
 import { pinImage } from "./lib/pin";
 import type { Frame } from "./lib/frames";
@@ -20,12 +28,13 @@ export type MapPointer = { key: string | null; x: number; y: number; lng: number
 interface Props {
   bounds: Bounds;
   theme: MapThemeName;
+  base: Base;
   frame: Frame | null;
   /** Indicator opacity, 0–1 (the token's raster opacity at most). */
   opacity: number;
   regions: RegionFeature[];
   regionsMinZoom: number;
-  /** Whether an indicator is drawn under the regions, which then need light lines to stay visible. */
+  /** Whether an indicator or an IDE base is drawn under the regions, which then need light lines to stay visible. */
   overRaster: boolean;
   selectedKey: string | null;
   /** A fly-to request; the id changes for every request. */
@@ -118,6 +127,8 @@ export default function MapView(props: Props) {
   const [ready, setReady] = useState(false);
   const [popupNode] = useState(() => (typeof document === "undefined" ? null : document.createElement("div")));
   const hovered = useRef<string | null>(null);
+  // The base the map was built with, then the one last applied.
+  const drawnBase = useRef<Base>("map");
   const callbacks = useRef(props);
   callbacks.current = props;
 
@@ -130,10 +141,11 @@ export default function MapView(props: Props) {
     void (import(/* @vite-ignore */ maplibreUrl) as Promise<typeof import("maplibre-gl")>)
       .then(({ Map, Popup: PopupClass, AttributionControl }) => {
         if (cancelled || !container.current) return;
+        drawnBase.current = callbacks.current.base;
         try {
           map = new Map({
             container: container.current,
-            style: basemapStyle(callbacks.current.theme),
+            style: basemapStyle(callbacks.current.theme, drawnBase.current),
             bounds: callbacks.current.bounds,
             fitBoundsOptions: { padding: FIT_PADDING },
             minZoom: 4.5,
@@ -372,12 +384,27 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    applyBasemapTheme(map, props.theme);
+    applyBasemapTheme(map, props.theme, drawnBase.current);
     for (const [name, image] of Object.entries(pins(props.theme))) map.updateImage(name, image);
     for (const [layer, paint] of Object.entries(regionPaint(props.theme, props.overRaster)))
       for (const [property, value] of Object.entries(paint))
         map.setPaintProperty(layer, property as never, value as never);
   }, [ready, props.theme, props.overRaster]);
+
+  // Base: swapped under the indicator, so the data, the regions and the camera stay as they are.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || drawnBase.current === props.base) return;
+    applyBase(map, props.base, props.theme, map.getLayer(INDICATOR_SOURCE) ? INDICATOR_SOURCE : beforeIndicator);
+    drawnBase.current = props.base;
+  }, [ready, props.base]);
+
+  const overData = Boolean(props.frame);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    showBasemapLayers(map, props.base, overData);
+  }, [ready, props.base, overData]);
 
   // Indicator raster: one image source over the country, swapped frame by frame.
   useEffect(() => {

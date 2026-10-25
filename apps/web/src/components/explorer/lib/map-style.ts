@@ -2,17 +2,46 @@ import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap, S
 import { mapMarks, mapTheme, type MapThemeName } from "./theme";
 
 /*
- * A quiet basemap from OpenFreeMap's OpenStreetMap tiles, colored by the design tokens.
- * Draw order: land and water, then the indicator raster or the orthophoto, then boundaries, roads, the regions
+ * A quiet basemap from OpenFreeMap's OpenStreetMap tiles, colored by the design tokens, under one of three bases.
+ * Draw order: land and water, then the base's own tiles, the indicator raster, boundaries, roads, the regions
  * and finally the place names, so the data sits under the context that helps read it.
  */
 
 const TILES = "https://tiles.openfreemap.org/planet";
 const GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 const FONT = ["Noto Sans Regular"];
-/** IDE Uruguay's national orthophoto (32 cm), for maps where the land itself is the reference. */
-const IMAGERY =
-  "https://mapas.ide.uy/geoserver-raster/gwc/service/wmts/rest/ortofotos:ortofoto_nacional/raster/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/jpeg";
+
+/** What lies under the data: the quiet map, the land from above, or the streets and rivers. */
+export type Base = "map" | "satellite" | "streets";
+export const bases: Base[] = ["map", "satellite", "streets"];
+
+/** IDE Uruguay's tiles: the national orthophoto (32 cm) and its base map of streets, rivers and relief. */
+export const baseTiles: Record<Exclude<Base, "map">, string> = {
+  satellite:
+    "https://mapas.ide.uy/geoserver-raster/gwc/service/wmts/rest/ortofotos:ortofoto_nacional/raster/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/jpeg",
+  streets:
+    "https://mapas.ide.uy/geoserver-vectorial/gwc/service/wmts/rest/capa_base_ideuy_ideuy/raster/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png",
+};
+const BASE = "base";
+
+/**
+ * The quiet map's lines and names that IDE's street map already draws: hidden while it shows, so none is doubled,
+ * and back over an indicator, which covers the street map's own.
+ */
+const drawnByStreets = ["waterway", "roads", "boundary-departments", "place-country", "place-town", "place-city"];
+const hidden = (base: Base, overData: boolean) => (base === "streets" && !overData ? drawnByStreets : []);
+
+const basePaint = (base: Base, theme: MapThemeName) => ({
+  "raster-brightness-max": base === "streets" && theme === "dark" ? mapMarks["streets-brightness-dark"] : 1,
+});
+
+const baseSource = (base: Exclude<Base, "map">) => ({
+  type: "raster" as const,
+  tiles: [baseTiles[base]],
+  tileSize: 256,
+  maxzoom: 19,
+  attribution: '<a href="https://www.gub.uy/infraestructura-datos-espaciales">IDE Uruguay</a>',
+});
 
 /** Layer ids the explorer inserts its own layers before. */
 export const beforeIndicator = "boundary-departments";
@@ -35,7 +64,7 @@ function paints(theme: MapThemeName): Record<string, Paint> {
   };
 }
 
-export function basemapStyle(theme: MapThemeName, { imagery = false } = {}): StyleSpecification {
+export function basemapStyle(theme: MapThemeName, base: Base = "map"): StyleSpecification {
   const p = paints(theme);
   const halo = { "text-halo-width": mapMarks["label-halo-width"] };
   const label = (size: number) => ({
@@ -56,7 +85,7 @@ export function basemapStyle(theme: MapThemeName, { imagery = false } = {}): Sty
       filter: ["in", ["get", "class"], ["literal", ["river", "canal"]]],
       paint: { ...p.waterway, "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.4, 12, 1.4] },
     },
-    ...(imagery ? [{ id: "imagery", type: "raster", source: "imagery" } as const] : []),
+    ...(base === "map" ? [] : [{ id: BASE, type: "raster", source: BASE, paint: basePaint(base, theme) } as const]),
     {
       id: "boundary-departments",
       type: "line",
@@ -114,28 +143,36 @@ export function basemapStyle(theme: MapThemeName, { imagery = false } = {}): Sty
       paint: { ...p["place-city"], ...halo },
     },
   ];
+  for (const layer of layers)
+    if (hidden(base, false).includes(layer.id)) layer.layout = { ...layer.layout, visibility: "none" };
   return {
     version: 8,
     glyphs: GLYPHS,
-    sources: {
-      omt: { type: "vector", url: TILES },
-      ...(imagery && {
-        imagery: {
-          type: "raster",
-          tiles: [IMAGERY],
-          tileSize: 256,
-          maxzoom: 19,
-          attribution: '<a href="https://www.gub.uy/infraestructura-datos-espaciales">IDE Uruguay</a>',
-        },
-      }),
-    },
+    sources: { omt: { type: "vector", url: TILES }, ...(base !== "map" && { [BASE]: baseSource(base) }) },
     layers,
   };
 }
 
+/** Swaps the base in place, under `below` (the lowest of the explorer's own layers), keeping everything else. */
+export function applyBase(map: MapLibreMap, base: Base, theme: MapThemeName, below: string) {
+  if (map.getLayer(BASE)) map.removeLayer(BASE);
+  if (map.getSource(BASE)) map.removeSource(BASE);
+  if (base === "map") return;
+  map.addSource(BASE, baseSource(base));
+  map.addLayer({ id: BASE, type: "raster", source: BASE, paint: basePaint(base, theme) }, below);
+}
+
+/** Shows the quiet map's lines and names, or hides those the base draws; `overData`: an indicator covers the base. */
+export function showBasemapLayers(map: MapLibreMap, base: Base, overData: boolean) {
+  const off = hidden(base, overData);
+  for (const layer of drawnByStreets)
+    if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", off.includes(layer) ? "none" : "visible");
+}
+
 /** Recolors the basemap in place (keeps the explorer's own sources and layers). */
-export function applyBasemapTheme(map: MapLibreMap, theme: MapThemeName) {
-  for (const [layer, paint] of Object.entries(paints(theme))) {
+export function applyBasemapTheme(map: MapLibreMap, theme: MapThemeName, base: Base) {
+  const all = { ...paints(theme), [BASE]: basePaint(base, theme) };
+  for (const [layer, paint] of Object.entries(all)) {
     if (!map.getLayer(layer)) continue;
     for (const [property, value] of Object.entries(paint))
       map.setPaintProperty(layer, property as never, value as never);
