@@ -3,13 +3,16 @@ import { mapMarks, mapTheme, type MapThemeName } from "./theme";
 
 /*
  * A quiet basemap from OpenFreeMap's OpenStreetMap tiles, colored by the design tokens.
- * Draw order: land and water, then the indicator raster, then boundaries, roads, the regions
+ * Draw order: land and water, then the indicator raster or the orthophoto, then boundaries, roads, the regions
  * and finally the place names, so the data sits under the context that helps read it.
  */
 
 const TILES = "https://tiles.openfreemap.org/planet";
 const GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 const FONT = ["Noto Sans Regular"];
+/** IDE Uruguay's national orthophoto (32 cm), for maps where the land itself is the reference. */
+const IMAGERY =
+  "https://mapas.ide.uy/geoserver-raster/gwc/service/wmts/rest/ortofotos:ortofoto_nacional/raster/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/jpeg";
 
 /** Layer ids the explorer inserts its own layers before. */
 export const beforeIndicator = "boundary-departments";
@@ -32,7 +35,7 @@ function paints(theme: MapThemeName): Record<string, Paint> {
   };
 }
 
-export function basemapStyle(theme: MapThemeName): StyleSpecification {
+export function basemapStyle(theme: MapThemeName, { imagery = false } = {}): StyleSpecification {
   const p = paints(theme);
   const halo = { "text-halo-width": mapMarks["label-halo-width"] };
   const label = (size: number) => ({
@@ -53,6 +56,7 @@ export function basemapStyle(theme: MapThemeName): StyleSpecification {
       filter: ["in", ["get", "class"], ["literal", ["river", "canal"]]],
       paint: { ...p.waterway, "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.4, 12, 1.4] },
     },
+    ...(imagery ? [{ id: "imagery", type: "raster", source: "imagery" } as const] : []),
     {
       id: "boundary-departments",
       type: "line",
@@ -113,7 +117,18 @@ export function basemapStyle(theme: MapThemeName): StyleSpecification {
   return {
     version: 8,
     glyphs: GLYPHS,
-    sources: { omt: { type: "vector", url: TILES } },
+    sources: {
+      omt: { type: "vector", url: TILES },
+      ...(imagery && {
+        imagery: {
+          type: "raster",
+          tiles: [IMAGERY],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: '<a href="https://www.gub.uy/infraestructura-datos-espaciales">IDE Uruguay</a>',
+        },
+      }),
+    },
     layers,
   };
 }
