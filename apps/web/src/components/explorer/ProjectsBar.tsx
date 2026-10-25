@@ -2,7 +2,7 @@ import type { ProjectSummary } from "@idea-agro/api-client";
 import { Select } from "radix-ui";
 import { Check, ChevronDown, FolderPlus } from "lucide-react";
 import { iconSize } from "@/design/tokens";
-import AddZone from "./AddZone";
+import AddZone, { type DrawMode } from "./AddZone";
 import { useI18n } from "./lib/i18n";
 
 interface Props {
@@ -11,10 +11,10 @@ interface Props {
   project: string | null;
   signedIn: boolean;
   signInHref: string;
-  drawing: boolean;
+  drawing: DrawMode | null;
   onProject: (id: string) => void;
   onUpload: (file: File) => void;
-  onDraw: (drawing: boolean) => void;
+  onDraw: (mode: DrawMode | null) => void;
   onCreate: () => void;
 }
 

@@ -31,7 +31,7 @@ import {
   rasterUrl,
   type DivisionId,
   type Manifest,
-  type PolygonGeometry,
+  type ZoneGeometry,
   type SeasonalId,
 } from "@/components/explorer/lib/data";
 import { areaKm2, ringsOf } from "@/components/explorer/lib/geo";
@@ -69,7 +69,7 @@ type Zone = {
   subtitle?: string;
   department?: string;
   areaKm2: number;
-  geometry: PolygonGeometry;
+  geometry: ZoneGeometry;
   /** For saved zones: whether it is the reader's own, and whether they may change its outline. */
   access?: { own: boolean; editable: boolean };
 };
@@ -243,7 +243,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
               title: meta.data.name,
               department: meta.data.department ?? undefined,
               areaKm2: meta.data.area_ha / 100,
-              geometry: outline.data as PolygonGeometry,
+              geometry: outline.data as ZoneGeometry,
               access: { own: own.status === 200, editable: own.status === 200 || (role !== null && role !== "viewer") },
             });
           } catch (error) {
@@ -353,7 +353,10 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                   <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
                   {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
                   <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-                    <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
+                    <Fact
+                      label={t("zone.facts.area")}
+                      value={zone.geometry.type === "Point" ? t("explorer.zone.point") : area(zone.areaKm2)}
+                    />
                     {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
                     {zone.target.kind === "division" && (
                       <GrasslandFact
@@ -363,7 +366,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                       />
                     )}
                   </dl>
-                  {zone.target.kind === "saved" && zone.access?.editable && (
+                  {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
                     <a
                       href={`${outlinePath}?${new URLSearchParams({
                         saved: zone.target.id,
@@ -396,7 +399,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                   {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
                 </a>
               </header>
-              {zone.target.kind === "saved" && zone.access?.own && (
+              {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
                 <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
               )}
             </div>
@@ -444,7 +447,7 @@ function GrasslandFact({ division, id, year }: { division: DivisionId; id: strin
 const stroke = (mark: string) => ({ strokeWidth: `calc(var(--ia-viz-mark-${mark}) * 1px)` });
 
 /** The country with the zone on it, in the rasters' Web Mercator frame. */
-function Locator({ manifest, geometry }: { manifest: Manifest; geometry: PolygonGeometry }) {
+function Locator({ manifest, geometry }: { manifest: Manifest; geometry: ZoneGeometry }) {
   const { width, height, d } = manifest.outline;
   const [W, S, E, N] = manifest.bounds;
   const merc = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
@@ -465,7 +468,8 @@ function Locator({ manifest, geometry }: { manifest: Manifest; geometry: Polygon
           .join("L")}Z`,
     )
     .join("");
-  const points = rings.flat().map(px);
+  // A point is its own center; an area's is the mean of its corners.
+  const points = geometry.type === "Point" ? [px(geometry.coordinates)] : rings.flat().map(px);
   const cx = points.reduce((a, p) => a + p[0], 0) / points.length;
   const cy = points.reduce((a, p) => a + p[1], 0) / points.length;
   return (
@@ -1201,7 +1205,6 @@ function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone
   const [done, setDone] = useState(0);
   const [values, setValues] = useState<(number | null)[] | null>(null);
   const [shares, setShares] = useState<Map<number, number> | null>(null);
-  const rings = useMemo(() => ringsOf(zone.geometry) as [number, number][][], [zone.geometry]);
 
   useEffect(() => {
     let live = true;
@@ -1209,7 +1212,7 @@ function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone
       info.kind === "binary" ? (g >= 128 ? 100 : 0) : (info.min ?? 0) + (g / 255) * ((info.max ?? 1) - (info.min ?? 0));
     const run = async () => {
       if (info.kind === "categorical") {
-        const counts = zonalCounts(await decodeGray(rasterUrl(indicator, null)), manifest.bounds, rings);
+        const counts = zonalCounts(await decodeGray(rasterUrl(indicator, null)), manifest.bounds, zone.geometry);
         const byClass = new Map<number, number>();
         for (const [gray, n] of counts) {
           const cls = Math.round(gray / 51);
@@ -1224,7 +1227,7 @@ function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone
       // One year at a time: each full raster is decoded, measured and dropped.
       for (const y of list) {
         const raster = await decodeGray(rasterUrl(indicator, y));
-        out.push(zonalMean(raster, manifest.bounds, rings, scale));
+        out.push(zonalMean(raster, manifest.bounds, zone.geometry, scale));
         if (!live) return;
         setDone(out.length);
         setValues([...out]);
@@ -1234,7 +1237,7 @@ function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone
     return () => {
       live = false;
     };
-  }, [indicator, info, years, manifest.bounds, rings]);
+  }, [indicator, info, years, manifest.bounds, zone.geometry]);
 
   const name = t(`indicators.items.${indicator}.name` as AppKey);
   const unit = info.kind === "binary" ? t("zone.cob.unit") : t(`indicators.items.${indicator}.unit` as AppKey);

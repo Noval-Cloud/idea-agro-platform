@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.6.0"
+    "version": "1.7.0"
   },
   "paths": {
     "/health": {
@@ -1313,16 +1313,20 @@
                     },
                     {
                       "$ref": "#/components/schemas/MultiPolygon"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Point"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "type",
                     "mapping": {
                       "Polygon": "#/components/schemas/Polygon",
-                      "MultiPolygon": "#/components/schemas/MultiPolygon"
+                      "MultiPolygon": "#/components/schemas/MultiPolygon",
+                      "Point": "#/components/schemas/Point"
                     }
                   },
-                  "description": "A GeoJSON geometry, in WGS 84.",
+                  "description": "A zone's outline in WGS 84: a polygon, or a point for a site.",
                   "title": "Response Get Saved Zone Geometry"
                 }
               }
@@ -2806,16 +2810,20 @@
                     },
                     {
                       "$ref": "#/components/schemas/MultiPolygon"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Point"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "type",
                     "mapping": {
                       "Polygon": "#/components/schemas/Polygon",
-                      "MultiPolygon": "#/components/schemas/MultiPolygon"
+                      "MultiPolygon": "#/components/schemas/MultiPolygon",
+                      "Point": "#/components/schemas/Point"
                     }
                   },
-                  "description": "A GeoJSON geometry, in WGS 84.",
+                  "description": "A zone's outline in WGS 84: a polygon, or a point for a site.",
                   "title": "Response Get Project Zone Geometry"
                 }
               }
@@ -4380,14 +4388,18 @@
               },
               {
                 "$ref": "#/components/schemas/MultiPolygon"
+              },
+              {
+                "$ref": "#/components/schemas/Point"
               }
             ],
             "title": "Geometry",
-            "description": "A GeoJSON geometry, in WGS 84.",
+            "description": "A zone's outline in WGS 84: a polygon, or a point for a site.",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
                 "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Point": "#/components/schemas/Point",
                 "Polygon": "#/components/schemas/Polygon"
               }
             }
@@ -4644,6 +4656,31 @@
           "area_ha"
         ],
         "title": "PadronProperties"
+      },
+      "Point": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "Point",
+            "title": "Type"
+          },
+          "coordinates": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 2,
+            "title": "Coordinates",
+            "description": "Longitude and latitude, in degrees."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "coordinates"
+        ],
+        "title": "Point"
       },
       "Polygon": {
         "properties": {
@@ -5095,14 +5132,18 @@
               },
               {
                 "$ref": "#/components/schemas/MultiPolygon"
+              },
+              {
+                "$ref": "#/components/schemas/Point"
               }
             ],
             "title": "Geometry",
-            "description": "A GeoJSON geometry, in WGS 84.",
+            "description": "A zone's outline in WGS 84: a polygon, or a point for a site.",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
                 "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Point": "#/components/schemas/Point",
                 "Polygon": "#/components/schemas/Polygon"
               }
             }
@@ -5167,14 +5208,18 @@
               },
               {
                 "$ref": "#/components/schemas/MultiPolygon"
+              },
+              {
+                "$ref": "#/components/schemas/Point"
               }
             ],
             "title": "Geometry",
-            "description": "A GeoJSON geometry, in WGS 84.",
+            "description": "A zone's outline in WGS 84: a polygon, or a point for a site.",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
                 "MultiPolygon": "#/components/schemas/MultiPolygon",
+                "Point": "#/components/schemas/Point",
                 "Polygon": "#/components/schemas/Polygon"
               }
             }
@@ -5218,7 +5263,7 @@
           "area_ha": {
             "type": "number",
             "title": "Area Ha",
-            "description": "Its area, in hectares, measured on the WGS 84 ellipsoid."
+            "description": "Its area, in hectares, measured on the WGS 84 ellipsoid; 0 for a point."
           },
           "bbox": {
             "items": {
@@ -5240,7 +5285,7 @@
               }
             ],
             "title": "Department",
-            "description": "The department its interior falls in, or null outside every one."
+            "description": "The department its interior (or the point) falls in, or null outside every one."
           },
           "created_at": {
             "type": "string",

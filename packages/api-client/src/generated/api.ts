@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.6.0
+ * OpenAPI spec version: 1.7.0
  */
 import {
   useMutation,
@@ -444,6 +444,16 @@ export interface Polygon {
   coordinates: number[][][];
 }
 
+export interface Point {
+  type: 'Point';
+  /**
+     * Longitude and latitude, in degrees.
+     * @minItems 2
+     * @maxItems 3
+     */
+  coordinates: number[];
+}
+
 /**
  * A zone's new outline.
  */
@@ -453,8 +463,8 @@ export interface OutlineChange {
      * @minimum 1
      */
   version: number;
-  /** A GeoJSON geometry, in WGS 84. */
-  geometry: Polygon | MultiPolygon;
+  /** A zone's outline in WGS 84: a polygon, or a point for a site. */
+  geometry: Polygon | MultiPolygon | Point;
 }
 
 /**
@@ -610,7 +620,7 @@ export interface SavedZoneOut {
   source: SavedZoneOutSource;
   /** The version of its outline: it grows each time the outline changes. */
   version: number;
-  /** Its area, in hectares, measured on the WGS 84 ellipsoid. */
+  /** Its area, in hectares, measured on the WGS 84 ellipsoid; 0 for a point. */
   area_ha: number;
   /**
      * West, south, east and north, in degrees.
@@ -618,7 +628,7 @@ export interface SavedZoneOut {
      * @maxItems 4
      */
   bbox: number[];
-  /** The department its interior falls in, or null outside every one. */
+  /** The department its interior (or the point) falls in, or null outside every one. */
   department: string | null;
   created_at: string;
   updated_at: string;
@@ -719,8 +729,8 @@ export interface SavedZoneFeature {
   type?: 'Feature';
   id: string;
   properties: SavedZoneOut;
-  /** A GeoJSON geometry, in WGS 84. */
-  geometry: Polygon | MultiPolygon;
+  /** A zone's outline in WGS 84: a polygon, or a point for a site. */
+  geometry: Polygon | MultiPolygon | Point;
 }
 
 /**
@@ -754,8 +764,8 @@ export interface SavedZoneIn {
   name: string;
   /** Whether it was drawn on the map or uploaded in a file. */
   source: SavedZoneInSource;
-  /** A GeoJSON geometry, in WGS 84. */
-  geometry: Polygon | MultiPolygon;
+  /** A zone's outline in WGS 84: a polygon, or a point for a site. */
+  geometry: Polygon | MultiPolygon | Point;
 }
 
 export interface SavedZoneRename {
@@ -3489,7 +3499,7 @@ export const useDeleteSavedZone = <TError = Problem,
     }
 
 export type getSavedZoneGeometryResponse200 = {
-  data: Polygon | MultiPolygon
+  data: Polygon | MultiPolygon | Point
   status: 200
 }
 
@@ -5462,7 +5472,7 @@ export function useGetProjectZone<TData = Awaited<ReturnType<typeof getProjectZo
 
 
 export type getProjectZoneGeometryResponse200 = {
-  data: Polygon | MultiPolygon
+  data: Polygon | MultiPolygon | Point
   status: 200
 }
 

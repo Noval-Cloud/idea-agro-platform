@@ -16,7 +16,6 @@ from idea_agro_api.models import (
     ActivityOut,
     DivisionItem,
     DivisionItemIn,
-    Geometry,
     MemberIn,
     MemberOut,
     OutlineChange,
@@ -31,6 +30,7 @@ from idea_agro_api.models import (
     SavedItem,
     SavedItemIn,
     SavedZoneOut,
+    ZoneGeometry,
 )
 from idea_agro_api.projects import Member, NotAllowed, Project, TooManyItems, new_project_id, saved_item
 from idea_agro_api.routes.activity_log import note
@@ -493,7 +493,7 @@ def get_project_zone(project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, 
 )
 def get_project_zone_geometry(
     project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, services: ServicesDep
-) -> Geometry:
+) -> ZoneGeometry:
     zone = project_zone(services, caller, project_id, zone_id)
     content = services.geometries.get(zone.file)
     if content is None:

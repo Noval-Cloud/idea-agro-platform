@@ -31,7 +31,11 @@ export function Zones({
         ? {
             kind: t("project.kinds.saved"),
             title: item.zone.name,
-            detail: [t("project.area", { value: number(item.zone.area_ha) }), item.zone.department]
+            // A site has no area.
+            detail: [
+              item.zone.area_ha ? t("project.area", { value: number(item.zone.area_ha) }) : t("project.point"),
+              item.zone.department,
+            ]
               .filter(Boolean)
               .join(" · "),
             // Through the project, so members reach zones of other people's libraries.
@@ -171,7 +175,10 @@ export function AddZones({
               <Candidate
                 key={zone.id}
                 title={zone.name}
-                detail={[t("project.area", { value: number(zone.area_ha) }), zone.department]
+                detail={[
+                  zone.area_ha ? t("project.area", { value: number(zone.area_ha) }) : t("project.point"),
+                  zone.department,
+                ]
                   .filter(Boolean)
                   .join(" · ")}
                 action={t("project.add.action")}

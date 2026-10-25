@@ -1,10 +1,14 @@
-import type { Bounds, PolygonGeometry, Position } from "./data";
+import type { Bounds, Position, ZoneGeometry } from "./data";
 
-/** Outer and inner rings of a (multi)polygon, flattened. */
-export const ringsOf = (geometry: PolygonGeometry): Position[][] =>
-  geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+/** Outer and inner rings of a (multi)polygon, flattened; a point has none. */
+export const ringsOf = (geometry: ZoneGeometry): Position[][] =>
+  geometry.type === "Point" ? [] : geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
 
-export function bboxOf(geometry: PolygonGeometry): Bounds {
+export function bboxOf(geometry: ZoneGeometry): Bounds {
+  if (geometry.type === "Point") {
+    const [lng, lat] = geometry.coordinates;
+    return [lng, lat, lng, lat];
+  }
   let [west, south, east, north] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const ring of ringsOf(geometry)) {
     for (const [lng, lat] of ring) {
@@ -38,8 +42,9 @@ function ringArea(ring: Position[]): number {
   return (total * EARTH_RADIUS * EARTH_RADIUS) / 2;
 }
 
-/** Area in km²: outer rings minus holes. */
-export function areaKm2(geometry: PolygonGeometry): number {
+/** Area in km²: outer rings minus holes; none for a point. */
+export function areaKm2(geometry: ZoneGeometry): number {
+  if (geometry.type === "Point") return 0;
   const polygons = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
   let total = 0;
   for (const [outer, ...holes] of polygons) {
@@ -50,7 +55,8 @@ export function areaKm2(geometry: PolygonGeometry): number {
 }
 
 /** A point inside the polygon to anchor its card: the middle of the widest horizontal chord near its center. */
-export function anchorOf(geometry: PolygonGeometry): Position {
+export function anchorOf(geometry: ZoneGeometry): Position {
+  if (geometry.type === "Point") return geometry.coordinates;
   const [west, south, east, north] = bboxOf(geometry);
   const lat = (south + north) / 2;
   const crossings: number[] = [];

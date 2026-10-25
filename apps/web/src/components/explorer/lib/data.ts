@@ -11,6 +11,10 @@ export type Position = [number, number];
 export type PolygonGeometry =
   | { type: "Polygon"; coordinates: Position[][] }
   | { type: "MultiPolygon"; coordinates: Position[][][] };
+/** A site: a zone of the reader's that is a point, not an area. */
+export type PointGeometry = { type: "Point"; coordinates: Position };
+/** A zone's outline: an area, or a point for a site. */
+export type ZoneGeometry = PolygonGeometry | PointGeometry;
 
 export type IndicatorManifest = {
   kind: "continuous" | "binary" | "categorical";

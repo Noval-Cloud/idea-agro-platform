@@ -92,6 +92,17 @@ class MultiPolygon(BaseModel):
 Geometry = Annotated[Polygon | MultiPolygon, Field(discriminator="type", description="A GeoJSON geometry, in WGS 84.")]
 
 
+class Point(BaseModel):
+    type: Literal["Point"]
+    coordinates: Position
+
+
+ZoneGeometry = Annotated[
+    Polygon | MultiPolygon | Point,
+    Field(discriminator="type", description="A zone's outline in WGS 84: a polygon, or a point for a site."),
+]
+
+
 # Spaces around a name are dropped before its length is checked.
 ZoneName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 
@@ -101,7 +112,7 @@ class SavedZoneIn(BaseModel):
 
     name: ZoneName = Field(description="A name for the zone.", examples=["Potrero 3"])
     source: Literal["drawn", "uploaded"] = Field(description="Whether it was drawn on the map or uploaded in a file.")
-    geometry: Geometry
+    geometry: ZoneGeometry
 
 
 class SavedZonesImport(BaseModel):
@@ -121,9 +132,11 @@ class SavedZoneOut(BaseModel):
     name: str = Field(description="The zone's name.")
     source: Literal["drawn", "uploaded"] = Field(description="Whether it was drawn on the map or uploaded.")
     version: int = Field(description="The version of its outline: it grows each time the outline changes.")
-    area_ha: float = Field(description="Its area, in hectares, measured on the WGS 84 ellipsoid.")
+    area_ha: float = Field(description="Its area, in hectares, measured on the WGS 84 ellipsoid; 0 for a point.")
     bbox: list[float] = Field(min_length=4, max_length=4, description="West, south, east and north, in degrees.")
-    department: str | None = Field(description="The department its interior falls in, or null outside every one.")
+    department: str | None = Field(
+        description="The department its interior (or the point) falls in, or null outside every one."
+    )
     created_at: datetime
     updated_at: datetime
 
@@ -132,7 +145,7 @@ class SavedZoneFeature(BaseModel):
     type: Literal["Feature"] = "Feature"
     id: str
     properties: SavedZoneOut
-    geometry: Geometry
+    geometry: ZoneGeometry
 
 
 class SavedZoneFeatures(BaseModel):
@@ -272,7 +285,7 @@ class OutlineChange(BaseModel):
     """A zone's new outline."""
 
     version: int = Field(ge=1, description="The version the change was made on: a newer one refuses it, with 409.")
-    geometry: Geometry
+    geometry: ZoneGeometry
 
 
 class OutlineVersionOut(BaseModel):
