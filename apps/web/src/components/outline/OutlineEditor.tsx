@@ -48,7 +48,7 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
   const { t } = useMemo(() => createCatalogTranslator(locale, catalog), [locale, catalog]);
   const theme = useTheme();
   const [target, setTarget] = useState<Target | null>(null);
-  const [state, setState] = useState<"loading" | "signedOut" | "failed" | "ready">("loading");
+  const [state, setState] = useState<"loading" | "signedOut" | "failed" | "point" | "ready">("loading");
   const [zone, setZone] = useState<Loaded | null>(null);
   const [problem, setProblem] = useState<OutlineKey | null>(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +80,8 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
               privately((init) => client.getSavedZoneGeometry(id, init)),
             ]);
         if (meta.status !== 200 || outline.status !== 200) return setState("failed");
+        // A site has no outline to edit.
+        if (outline.data.type === "Point") return setState("point");
         setZone({ name: meta.data.name, version: meta.data.version, geometry: outline.data as PolygonGeometry });
         setState("ready");
       } catch (error) {
@@ -238,7 +240,13 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
       <div className="grid gap-4">
         <p role={state === "loading" ? "status" : "alert"} className="text-ink-muted">
           {t(
-            state === "signedOut" ? "outline.signInToSee" : state === "loading" ? "outline.loading" : "outline.failed",
+            state === "signedOut"
+              ? "outline.signInToSee"
+              : state === "loading"
+                ? "outline.loading"
+                : state === "point"
+                  ? "outline.point"
+                  : "outline.failed",
           )}
         </p>
         {state === "signedOut" && (

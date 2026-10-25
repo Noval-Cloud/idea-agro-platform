@@ -1,5 +1,6 @@
 import type { DataFamily } from "@/design/tokens";
-import type { IndicatorManifest } from "./data";
+import type { IndicatorManifest, ZoneGeometry } from "./data";
+import { ringsOf } from "./geo";
 import { mapTheme, type MapThemeName } from "./theme";
 
 /*
@@ -158,29 +159,38 @@ function eachPixelIn(
   }
 }
 
-/** Mean value of the raster inside a polygon, for zones without precomputed stats. */
+/** Mean value of the raster in a zone without precomputed stats: inside its polygon, or at its point's pixel. */
 export function zonalMean(
   raster: GrayRaster,
   bounds: [number, number, number, number],
-  rings: [number, number][][],
+  geometry: ZoneGeometry,
   scale: (gray: number) => number,
 ): number | null {
+  if (geometry.type === "Point") {
+    const gray = sampleGray(raster, bounds, ...geometry.coordinates);
+    return gray === null ? null : scale(gray);
+  }
   let sum = 0;
   let count = 0;
-  eachPixelIn(raster, bounds, rings, (gray) => {
+  eachPixelIn(raster, bounds, ringsOf(geometry), (gray) => {
     sum += scale(gray);
     count++;
   });
   return count ? sum / count : null;
 }
 
-/** How many pixels of each gray level fall inside a polygon (classes of a categorical raster). */
+/** How many pixels of each gray level fall in a zone (classes of a categorical raster); a point has one. */
 export function zonalCounts(
   raster: GrayRaster,
   bounds: [number, number, number, number],
-  rings: [number, number][][],
+  geometry: ZoneGeometry,
 ): Map<number, number> {
   const counts = new Map<number, number>();
-  eachPixelIn(raster, bounds, rings, (gray) => counts.set(gray, (counts.get(gray) ?? 0) + 1));
+  if (geometry.type === "Point") {
+    const gray = sampleGray(raster, bounds, ...geometry.coordinates);
+    if (gray !== null) counts.set(gray, 1);
+    return counts;
+  }
+  eachPixelIn(raster, bounds, ringsOf(geometry), (gray) => counts.set(gray, (counts.get(gray) ?? 0) + 1));
   return counts;
 }
