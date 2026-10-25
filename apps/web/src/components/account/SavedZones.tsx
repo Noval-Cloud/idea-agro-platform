@@ -8,6 +8,7 @@ import ImportZones from "./ImportZones";
 type Props = {
   t: AccountTranslator["t"];
   number: AccountTranslator["number"];
+  degrees: AccountTranslator["degrees"];
   zonePath: string;
   explorePath: string;
   signInPath: string;
@@ -16,7 +17,7 @@ type Props = {
 const card = "rounded-lg border border-line bg-surface p-6";
 
 /** The zones saved to the account: open, rename, delete, and import more from a file. */
-export default function SavedZones({ t, number, zonePath, explorePath, signInPath }: Props) {
+export default function SavedZones({ t, number, degrees, zonePath, explorePath, signInPath }: Props) {
   const [zones, setZones] = useState<SavedZoneOut[] | null | undefined>(undefined);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -122,7 +123,10 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
                         // A site has no area.
                         zone.area_ha
                           ? t("account.zones.area", { value: number(zone.area_ha) })
-                          : t("account.zones.point"),
+                          : t("account.zones.coordinates", {
+                              latitude: degrees(zone.bbox[1]),
+                              longitude: degrees(zone.bbox[0]),
+                            }),
                         zone.department,
                       ]
                         .filter(Boolean)

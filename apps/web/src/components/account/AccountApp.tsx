@@ -45,7 +45,7 @@ export default function AccountApp({
   projectPath,
   explorePath,
 }: Props) {
-  const { t, date, moment, number } = createAccountTranslator(locale, catalog);
+  const { t, date, moment, number, degrees } = createAccountTranslator(locale, catalog);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [ending, setEnding] = useState<"idle" | "working" | "failed">("idle");
 
@@ -178,7 +178,14 @@ export default function AccountApp({
           </>
         ) : section === "zones" ? (
           <>
-            <SavedZones t={t} number={number} zonePath={zonePath} explorePath={explorePath} signInPath={signInPath} />
+            <SavedZones
+              t={t}
+              number={number}
+              degrees={degrees}
+              zonePath={zonePath}
+              explorePath={explorePath}
+              signInPath={signInPath}
+            />
             <Projects t={t} projectPath={projectPath} signInPath={signInPath} />
           </>
         ) : section === "content" ? (

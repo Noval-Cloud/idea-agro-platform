@@ -13,6 +13,7 @@ type Described = { kind: string; title: string; detail?: string; href?: string }
 export function Zones({
   t,
   number,
+  degrees,
   project,
   names,
   zonePath,
@@ -20,6 +21,7 @@ export function Zones({
 }: {
   t: ProjectTranslator["t"];
   number: ProjectTranslator["number"];
+  degrees: ProjectTranslator["degrees"];
   project: ProjectOut;
   names: ZoneNames | null;
   zonePath: string;
@@ -33,7 +35,12 @@ export function Zones({
             title: item.zone.name,
             // A site has no area.
             detail: [
-              item.zone.area_ha ? t("project.area", { value: number(item.zone.area_ha) }) : t("project.point"),
+              item.zone.area_ha
+                ? t("project.area", { value: number(item.zone.area_ha) })
+                : t("project.coordinates", {
+                    latitude: degrees(item.zone.bbox[1]),
+                    longitude: degrees(item.zone.bbox[0]),
+                  }),
               item.zone.department,
             ]
               .filter(Boolean)
@@ -111,12 +118,14 @@ export function Zones({
 export function AddZones({
   t,
   number,
+  degrees,
   held,
   othersCanEdit,
   onAdd,
 }: {
   t: ProjectTranslator["t"];
   number: ProjectTranslator["number"];
+  degrees: ProjectTranslator["degrees"];
   held: Set<string>;
   othersCanEdit: boolean;
   onAdd: (item: ItemIn) => Promise<number>;
@@ -176,7 +185,9 @@ export function AddZones({
                 key={zone.id}
                 title={zone.name}
                 detail={[
-                  zone.area_ha ? t("project.area", { value: number(zone.area_ha) }) : t("project.point"),
+                  zone.area_ha
+                    ? t("project.area", { value: number(zone.area_ha) })
+                    : t("project.coordinates", { latitude: degrees(zone.bbox[1]), longitude: degrees(zone.bbox[0]) }),
                   zone.department,
                 ]
                   .filter(Boolean)

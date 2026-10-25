@@ -686,12 +686,17 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                       : t("explorer.zone.kinds.saved"),
         title: selected.title,
         subtitle: selected.subtitle,
-        area:
+        coordinates:
           selected.geometry.type === "Point"
-            ? t("explorer.zone.point")
-            : selected.areaKm2 < 10
-              ? t("explorer.zone.areaHa", { value: i18n.number(selected.areaKm2 * 100) })
-              : t("explorer.zone.areaKm2", { value: i18n.number(selected.areaKm2) }),
+            ? {
+                latitude: i18n.degrees(selected.geometry.coordinates[1]),
+                longitude: i18n.degrees(selected.geometry.coordinates[0]),
+              }
+            : undefined,
+        area:
+          selected.areaKm2 < 10
+            ? t("explorer.zone.areaHa", { value: i18n.number(selected.areaKm2 * 100) })
+            : t("explorer.zone.areaKm2", { value: i18n.number(selected.areaKm2) }),
         value: zoneValue,
         href: zoneHref(selected),
         onDelete:
@@ -1037,6 +1042,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                       lng: popupAt[0],
                       lat: popupAt[1],
                       content: <ZoneCard zone={summary} variant="popup" onClose={() => select(null)} />,
+                      pin: selected?.geometry.type === "Point",
                     }
                   : null
               }
