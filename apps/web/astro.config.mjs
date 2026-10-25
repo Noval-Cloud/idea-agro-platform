@@ -21,7 +21,7 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self'",
-        `connect-src 'self' blob: ${apiOrigin} ${authConnect} https://tiles.openfreemap.org`,
+        `connect-src 'self' blob: ${apiOrigin} ${authConnect} https://tiles.openfreemap.org https://mapas.ide.uy`,
         `img-src 'self' data: blob: ${apiOrigin} ${process.env.AUTH_CSP_IMAGES ?? ""}`,
         "worker-src 'self' blob:",
         "font-src 'self'",

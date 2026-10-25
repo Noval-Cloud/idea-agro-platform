@@ -4,10 +4,17 @@ import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button } from "@/components/ui/button";
 import { createCatalogTranslator, type Locale } from "@/i18n/core";
-import type { Bounds, PolygonGeometry, Position } from "@/components/explorer/lib/data";
+import {
+  loadManifest,
+  type Bounds,
+  type Manifest,
+  type PolygonGeometry,
+  type Position,
+} from "@/components/explorer/lib/data";
 import { bboxOf } from "@/components/explorer/lib/geo";
 import { basemapStyle } from "@/components/explorer/lib/map-style";
 import { mapMarks, mapTheme, useTheme } from "@/components/explorer/lib/theme";
+import Locator from "@/components/zone/Locator";
 import type { OutlineCatalog, OutlineKey } from "./i18n";
 
 type Props = {
@@ -52,6 +59,7 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
   const [zone, setZone] = useState<Loaded | null>(null);
   const [problem, setProblem] = useState<OutlineKey | null>(null);
   const [saving, setSaving] = useState(false);
+  const [manifest, setManifest] = useState<Manifest | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const draw = useRef<TerraDraw | null>(null);
 
@@ -91,6 +99,11 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
     })();
   }, [target]);
 
+  // Only the country's outline, for the locator; without it the editor still works.
+  useEffect(() => {
+    loadManifest().then(setManifest, () => {});
+  }, []);
+
   useEffect(() => {
     if (zone) document.title = t("outline.title", { name: zone.name });
   }, [zone, t]);
@@ -112,7 +125,7 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
         try {
           map = new Map({
             container: container.current,
-            style: basemapStyle(theme),
+            style: basemapStyle(theme, { imagery: true }),
             bounds: [west, south, east, north],
             fitBoundsOptions: { padding: 48 },
             maxZoom: 18,
@@ -259,13 +272,24 @@ export default function OutlineEditor({ locale, catalog, signInPath, zonePath }:
 
   return (
     <div className="grid gap-4">
-      <h1 className="font-display text-3xl font-medium tracking-tight text-ink">
-        {t("outline.title", { name: zone.name })}
-      </h1>
-      <div className="grid max-w-prose gap-1 text-sm text-ink-muted">
-        <p>{t("outline.help")}</p>
-        <p>{t("outline.versionNote")}</p>
-      </div>
+      <header className="flex items-start justify-between gap-6">
+        <div className="grid gap-4">
+          <h1 className="font-display text-3xl font-medium tracking-tight text-ink">
+            {t("outline.title", { name: zone.name })}
+          </h1>
+          <div className="grid max-w-prose gap-1 text-sm text-ink-muted">
+            <p>{t("outline.help")}</p>
+            <p>{t("outline.versionNote")}</p>
+          </div>
+        </div>
+        {/* Where the zone is in the country, as on the zone's page; its box keeps its size while it loads. */}
+        <div
+          className="w-32 shrink-0"
+          style={manifest ? { aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` } : undefined}
+        >
+          {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
+        </div>
+      </header>
       <div ref={container} className="h-[60vh] min-h-80 overflow-hidden rounded-lg border border-line" />
       {problem && (
         <p role="alert" className="text-sm text-danger">
