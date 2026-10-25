@@ -1,4 +1,4 @@
-import type { PolygonGeometry } from "./data";
+import type { ZoneGeometry } from "./data";
 import { importBatches } from "./files";
 import type { MyZone } from "./my-zones";
 
@@ -19,7 +19,7 @@ export async function loadAccountZones(): Promise<MyZone[]> {
     name: f.properties.name,
     source: f.properties.source,
     areaKm2: f.properties.area_ha / 100,
-    geometry: f.geometry as PolygonGeometry,
+    geometry: f.geometry as ZoneGeometry,
   }));
 }
 

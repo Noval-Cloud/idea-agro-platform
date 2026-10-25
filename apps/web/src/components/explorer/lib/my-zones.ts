@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { PolygonGeometry } from "./data";
+import type { ZoneGeometry } from "./data";
 
 /** A zone of the reader's own, drawn or uploaded. */
 export type MyZone = {
@@ -10,7 +10,7 @@ export type MyZone = {
   /** The file it came from, for an uploaded zone. */
   file?: string;
   areaKm2: number;
-  geometry: PolygonGeometry;
+  geometry: ZoneGeometry;
 };
 
 type MyZones = {

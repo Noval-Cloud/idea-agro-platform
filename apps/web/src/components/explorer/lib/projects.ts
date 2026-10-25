@@ -1,5 +1,5 @@
 import type { ProjectOut, ProjectSummary } from "@idea-agro/api-client";
-import { isDivision, loadPadrones, loadZoneMeta, type DivisionId, type PolygonGeometry } from "./data";
+import { isDivision, loadPadrones, loadZoneMeta, type DivisionId, type ZoneGeometry } from "./data";
 
 /*
  * The reader's projects on the map, through the API. Projects hold references to zones: saved zones are drawn
@@ -18,7 +18,7 @@ export type ProjectZone = {
   division?: DivisionId;
   name: string;
   areaKm2: number;
-  geometry: PolygonGeometry;
+  geometry: ZoneGeometry;
 };
 
 export async function loadProjects(): Promise<ProjectSummary[]> {
@@ -70,7 +70,7 @@ export async function projectZones(
           id: zone.id,
           name: zone.name,
           areaKm2: zone.area_ha / 100,
-          geometry: outline.data as PolygonGeometry,
+          geometry: outline.data as ZoneGeometry,
         };
       }
       if (item.kind === "division") {

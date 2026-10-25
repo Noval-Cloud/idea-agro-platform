@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { GeoJSONSource, ImageSource, Map as MapLibreMap, MapMouseEvent, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Bounds, PolygonGeometry } from "./lib/data";
+import type { Bounds, ZoneGeometry } from "./lib/data";
 import { applyBasemapTheme, basemapStyle, beforeIndicator, beforeZones } from "./lib/map-style";
 import { mapMarks, mapTheme, type MapThemeName } from "./lib/theme";
 import type { Frame } from "./lib/frames";
@@ -11,7 +11,7 @@ export type RegionFeature = {
   type: "Feature";
   /** `own`: a zone the reader uploaded or drew, drawn apart from the predefined divisions. */
   properties: { key: string; own?: boolean };
-  geometry: PolygonGeometry;
+  geometry: ZoneGeometry;
 };
 
 export type MapPointer = { key: string | null; x: number; y: number; lng: number; lat: number };
@@ -51,6 +51,8 @@ const FIT_PADDING = {
 const byZoom = (low: number, mid: number, high: number) =>
   ["interpolate", ["linear"], ["zoom"], 5, low, 9, mid, 13, high] as never;
 const isOwn = ["boolean", ["get", "own"], false] as never;
+const isPoint = ["==", ["geometry-type"], "Point"] as never;
+const selectedPoint = (key: string) => ["all", isPoint, ["==", ["get", "key"], key]] as never;
 const REGION_SOURCE = "regions";
 const INDICATOR_SOURCE = "indicator";
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -80,6 +82,8 @@ function regionPaint(theme: MapThemeName, overRaster: boolean) {
     "regions-selected-fill": { "fill-color": c["zone-selected"] },
     "regions-selected-casing": { "line-color": c["zone-casing"] },
     "regions-selected": { "line-color": c["zone-selected"] },
+    "regions-points": { "circle-color": c["zone-own"], "circle-stroke-color": c["zone-casing"] },
+    "regions-points-selected": { "circle-color": c["zone-selected"], "circle-stroke-color": c["zone-casing"] },
   } as const;
 }
 
@@ -263,6 +267,40 @@ export default function MapView(props: Props) {
             },
             before,
           );
+          // Sites, the reader's points: markers above the outlines, the selected one larger.
+          m.addLayer(
+            {
+              id: "regions-points",
+              type: "circle",
+              source: REGION_SOURCE,
+              filter: isPoint,
+              paint: {
+                ...paint["regions-points"],
+                "circle-radius": mapMarks["point-radius"],
+                "circle-stroke-width": [
+                  "case",
+                  ["boolean", ["feature-state", "hover"], false],
+                  mapMarks["point-hover-stroke-width"],
+                  mapMarks["point-stroke-width"],
+                ] as never,
+              },
+            },
+            before,
+          );
+          m.addLayer(
+            {
+              id: "regions-points-selected",
+              type: "circle",
+              source: REGION_SOURCE,
+              filter: selectedPoint(""),
+              paint: {
+                ...paint["regions-points-selected"],
+                "circle-radius": mapMarks["point-selected-radius"],
+                "circle-stroke-width": mapMarks["point-stroke-width"],
+              },
+            },
+            before,
+          );
           setReady(true);
           callbacks.current.onReady(m);
           // The first view counts too: a link straight to a zoom level must load what it shows.
@@ -270,8 +308,9 @@ export default function MapView(props: Props) {
         });
 
         const pointerAt = (e: MapMouseEvent): MapPointer => {
+          // A point lies above any area it falls in, so it is picked first.
           const feature = e.target.getLayer("regions-fill")
-            ? e.target.queryRenderedFeatures(e.point, { layers: ["regions-fill"] })[0]
+            ? e.target.queryRenderedFeatures(e.point, { layers: ["regions-points", "regions-fill"] })[0]
             : undefined;
           return {
             key: feature ? String(feature.id ?? feature.properties?.key) : null,
@@ -382,6 +421,7 @@ export default function MapView(props: Props) {
       "regions-own-line",
       "regions-hover-casing",
       "regions-hover",
+      "regions-points",
     ])
       map.setLayerZoomRange(layer, props.regionsMinZoom, 24);
   }, [ready, props.regions, props.regionsMinZoom]);
@@ -393,6 +433,7 @@ export default function MapView(props: Props) {
     map.setFilter("regions-selected", filter);
     map.setFilter("regions-selected-casing", filter);
     map.setFilter("regions-selected-fill", filter);
+    map.setFilter("regions-points-selected", selectedPoint(props.selectedKey ?? ""));
   }, [ready, props.selectedKey]);
 
   useEffect(() => {

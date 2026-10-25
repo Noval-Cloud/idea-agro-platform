@@ -171,6 +171,11 @@ export const mapMarks = {
   "zone-selected-fill-opacity": 0.12,
   "zone-selected-width": 3,
   "zone-selected-casing-width": 5,
+  /** Sites (the reader's points): markers above the outlines. */
+  "point-radius": 6,
+  "point-selected-radius": 8,
+  "point-stroke-width": 2,
+  "point-hover-stroke-width": 3.5,
   "boundary-width": 1,
   "road-width": 0.6,
   "raster-opacity": 0.92,

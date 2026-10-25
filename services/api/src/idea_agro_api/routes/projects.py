@@ -16,7 +16,6 @@ from idea_agro_api.models import (
     ActivityOut,
     DivisionItem,
     DivisionItemIn,
-    ZoneGeometry,
     MemberIn,
     MemberOut,
     OutlineChange,
@@ -31,6 +30,7 @@ from idea_agro_api.models import (
     SavedItem,
     SavedItemIn,
     SavedZoneOut,
+    ZoneGeometry,
 )
 from idea_agro_api.projects import Member, NotAllowed, Project, TooManyItems, new_project_id, saved_item
 from idea_agro_api.routes.activity_log import note

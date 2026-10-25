@@ -1,8 +1,8 @@
-import type { PolygonGeometry } from "./data";
+import type { ZoneGeometry } from "./data";
 import { areaKm2 } from "./geo";
 
-/** A polygon read from a file. */
-export type FileZone = { key: string; name: string; areaKm2: number; geometry: PolygonGeometry };
+/** A polygon or a point read from a file. */
+export type FileZone = { key: string; name: string; areaKm2: number; geometry: ZoneGeometry };
 
 type AnyGeoJson = {
   type: string;
@@ -13,8 +13,8 @@ type AnyGeoJson = {
   properties?: Record<string, unknown> | null;
 };
 
-/** Every polygon in a GeoJSON object, with a name when the source has one. */
-function polygons(input: AnyGeoJson | AnyGeoJson[]): { name?: string; geometry: PolygonGeometry }[] {
+/** Every polygon and point in a GeoJSON object, with a name when the source has one. */
+function polygons(input: AnyGeoJson | AnyGeoJson[]): { name?: string; geometry: ZoneGeometry }[] {
   if (Array.isArray(input)) return input.flatMap(polygons);
   if (input.type === "FeatureCollection") return (input.features ?? []).flatMap(polygons);
   if (input.type === "Feature") {
@@ -26,8 +26,8 @@ function polygons(input: AnyGeoJson | AnyGeoJson[]): { name?: string; geometry: 
       : [];
   }
   if (input.type === "GeometryCollection") return (input.geometries ?? []).flatMap(polygons);
-  if (input.type === "Polygon" || input.type === "MultiPolygon")
-    return [{ geometry: input as unknown as PolygonGeometry }];
+  if (input.type === "Polygon" || input.type === "MultiPolygon" || input.type === "Point")
+    return [{ geometry: input as unknown as ZoneGeometry }];
   return [];
 }
 

@@ -22,12 +22,12 @@ import {
   type DivisionId,
   type Manifest,
   type PadronCollection,
-  type PolygonGeometry,
+  type ZoneGeometry,
   type ZoneCollection,
 } from "./lib/data";
 import { getFrame, useFrame } from "./lib/frames";
 import { readZoneFile } from "./lib/files";
-import { anchorOf, areaKm2, bboxOf, ringsOf, unionBounds } from "./lib/geo";
+import { anchorOf, areaKm2, bboxOf, unionBounds } from "./lib/geo";
 import { createAppTranslator, I18nContext, type AppCatalog, type AppKey } from "./lib/i18n";
 import { sampleGray, zonalMean } from "./lib/raster";
 import type { SearchResult } from "./lib/search";
@@ -44,6 +44,7 @@ import { mapMarks, mapTheme, useTheme } from "./lib/theme";
 import { nextZoneNumber, useMyZones, type MyZone } from "./lib/my-zones";
 import { deleteFromAccount, loadAccountZones, saveToAccount } from "./lib/account-zones";
 import MyZonesBar from "./MyZonesBar";
+import type { DrawMode } from "./AddZone";
 import ProjectsBar from "./ProjectsBar";
 import CreateProject from "./CreateProject";
 import AddToProject from "./AddToProject";
@@ -102,7 +103,7 @@ type ZoneRecord = {
   title: string;
   subtitle?: string;
   areaKm2: number;
-  geometry: PolygonGeometry;
+  geometry: ZoneGeometry;
   selection: Selection;
 };
 
@@ -133,7 +134,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const [creatingBusy, setCreatingBusy] = useState(false);
   // Zones just added with a project on the map, until the reader answers whether they go to it too.
   const [asking, setAsking] = useState<MyZone[] | null>(null);
-  const [drawing, setDrawing] = useState(false);
+  const [drawing, setDrawing] = useState<DrawMode | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Tagged with their division, so the map knows when the one in view has not arrived yet.
   const [zones, setZones] = useState<{ division: DivisionId; collection: ZoneCollection } | null>(null);
@@ -630,7 +631,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       }
     } else if (frame && indicatorManifest.kind === "continuous") {
       // Parcels and the reader's zones have no precomputed stats yet: estimate from the raster.
-      const mean = zonalMean(frame.gray, manifest.bounds, ringsOf(selected.geometry) as [number, number][][], (g) =>
+      const mean = zonalMean(frame.gray, manifest.bounds, selected.geometry, (g) =>
         i18n.fromGray(indicatorManifest, g),
       );
       done(
@@ -686,9 +687,11 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         title: selected.title,
         subtitle: selected.subtitle,
         area:
-          selected.areaKm2 < 10
-            ? t("explorer.zone.areaHa", { value: i18n.number(selected.areaKm2 * 100) })
-            : t("explorer.zone.areaKm2", { value: i18n.number(selected.areaKm2) }),
+          selected.geometry.type === "Point"
+            ? t("explorer.zone.point")
+            : selected.areaKm2 < 10
+              ? t("explorer.zone.areaHa", { value: i18n.number(selected.areaKm2 * 100) })
+              : t("explorer.zone.areaKm2", { value: i18n.number(selected.areaKm2) }),
         value: zoneValue,
         href: zoneHref(selected),
         onDelete:
@@ -767,16 +770,17 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
               closingPointColor: color,
             },
           }),
+          new td.TerraDrawPointMode({ styles: { pointColor: color, pointWidth: mapMarks["point-radius"] } }),
         ],
       });
       draw.start();
-      draw.setMode("polygon");
+      draw.setMode(drawing);
       map.doubleClickZoom.disable();
       draw.on("finish", (id) => {
         drawnAt.current = performance.now();
         const feature = draw.getSnapshotFeature(id);
-        if (feature?.geometry.type === "Polygon") {
-          const geometry = feature.geometry as PolygonGeometry;
+        if (feature?.geometry.type === "Polygon" || feature?.geometry.type === "Point") {
+          const geometry = feature.geometry as ZoneGeometry;
           const zone: MyZone = {
             key: `drawn-${Date.now()}`,
             name: t("explorer.zone.customName", { number: nextZoneNumber() }),
@@ -787,12 +791,12 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
           keepZonesRef.current([zone], zone.key);
           setAnchor(anchorOf(geometry));
         }
-        setDrawing(false);
+        setDrawing(null);
       });
       drawRef.current = { stop: () => draw.stop() };
     });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDrawing(false);
+      if (event.key === "Escape") setDrawing(null);
     };
     addEventListener("keydown", onKey);
     return () => {
@@ -966,7 +970,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                     <LoaderCircle size={iconSize.sm} className="animate-spin text-ink-muted" aria-hidden="true" />
                   )}
                   {drawing
-                    ? t("explorer.regions.drawHint")
+                    ? t(drawing === "point" ? "explorer.mine.drawPointHint" : "explorer.regions.drawHint")
                     : notice
                       ? notice
                       : loadingText

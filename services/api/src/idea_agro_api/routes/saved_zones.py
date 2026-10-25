@@ -14,7 +14,6 @@ from idea_agro_api.deps import Caller, CallerDep, ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.geometries import new_file
 from idea_agro_api.models import (
-    ZoneGeometry,
     OutlineChange,
     OutlineVersionOut,
     SavedZoneFeature,
@@ -23,6 +22,7 @@ from idea_agro_api.models import (
     SavedZoneOut,
     SavedZoneRename,
     SavedZonesImport,
+    ZoneGeometry,
 )
 from idea_agro_api.projects import saved_item
 from idea_agro_api.routes.activity_log import note

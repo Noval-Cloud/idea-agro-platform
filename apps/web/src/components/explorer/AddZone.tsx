@@ -1,15 +1,18 @@
 import { useRef, useState } from "react";
 import { Dialog, DropdownMenu } from "radix-ui";
-import { ChevronDown, FileUp, PenLine, Plus, X } from "lucide-react";
+import { ChevronDown, FileUp, MapPin, PenLine, Plus, X } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import { zoneFileTypes } from "./lib/files";
 import { useI18n } from "./lib/i18n";
 
+/** What a drawing on the map makes: an area, or a point for a site. */
+export type DrawMode = "polygon" | "point";
+
 interface Props {
-  drawing: boolean;
+  drawing: DrawMode | null;
   onUpload: (file: File) => void;
-  onDraw: (drawing: boolean) => void;
+  onDraw: (mode: DrawMode | null) => void;
 }
 
 const control =
@@ -35,7 +38,7 @@ export default function AddZone(props: Props) {
       {props.drawing ? (
         <button
           type="button"
-          onClick={() => props.onDraw(false)}
+          onClick={() => props.onDraw(null)}
           aria-pressed="true"
           className={cn(control, "rounded-sm border-action bg-action px-3 text-action-ink")}
         >
@@ -72,9 +75,13 @@ export default function AddZone(props: Props) {
                   <FileUp size={iconSize.sm} className="text-ink-muted" aria-hidden="true" />
                   {t("explorer.mine.uploadFile")}
                 </DropdownMenu.Item>
-                <DropdownMenu.Item className={menuItem} onSelect={() => props.onDraw(true)}>
+                <DropdownMenu.Item className={menuItem} onSelect={() => props.onDraw("polygon")}>
                   <PenLine size={iconSize.sm} className="text-ink-muted" aria-hidden="true" />
                   {t("explorer.mine.drawPolygon")}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item className={menuItem} onSelect={() => props.onDraw("point")}>
+                  <MapPin size={iconSize.sm} className="text-ink-muted" aria-hidden="true" />
+                  {t("explorer.mine.drawPoint")}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>

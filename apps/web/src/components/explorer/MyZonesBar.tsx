@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Command } from "cmdk";
 import { FolderPlus, Search, X } from "lucide-react";
 import { iconSize } from "@/design/tokens";
-import AddZone from "./AddZone";
+import AddZone, { type DrawMode } from "./AddZone";
 import { useI18n } from "./lib/i18n";
 import type { MyZone } from "./lib/my-zones";
 
@@ -12,10 +12,10 @@ interface Props {
   local: ReadonlySet<string>;
   signedIn: boolean;
   signInHref: string;
-  drawing: boolean;
+  drawing: DrawMode | null;
   onPick: (key: string) => void;
   onUpload: (file: File) => void;
-  onDraw: (drawing: boolean) => void;
+  onDraw: (mode: DrawMode | null) => void;
   /** Starts a project with these zones; offered once some are in the account. */
   onCreateProject: (() => void) | null;
 }
@@ -32,9 +32,11 @@ export default function MyZonesBar(props: Props) {
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const detail = (zone: MyZone) =>
     [
-      zone.areaKm2 < 10
-        ? t("explorer.zone.areaHa", { value: i18n.number(zone.areaKm2 * 100) })
-        : t("explorer.zone.areaKm2", { value: i18n.number(zone.areaKm2) }),
+      zone.geometry.type === "Point"
+        ? t("explorer.zone.point")
+        : zone.areaKm2 < 10
+          ? t("explorer.zone.areaHa", { value: i18n.number(zone.areaKm2 * 100) })
+          : t("explorer.zone.areaKm2", { value: i18n.number(zone.areaKm2) }),
       zone.file ?? (zone.source === "drawn" ? t("explorer.mine.drawn") : t("explorer.mine.uploaded")),
       props.local.has(zone.key) ? t("explorer.mine.inBrowser") : null,
     ]

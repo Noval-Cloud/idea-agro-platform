@@ -120,7 +120,9 @@ export default function SavedZones({ t, number, zonePath, explorePath, signInPat
                     <p className="text-xs text-ink-subtle">
                       {[
                         // A site has no area.
-                        zone.area_ha ? t("account.zones.area", { value: number(zone.area_ha) }) : t("account.zones.point"),
+                        zone.area_ha
+                          ? t("account.zones.area", { value: number(zone.area_ha) })
+                          : t("account.zones.point"),
                         zone.department,
                       ]
                         .filter(Boolean)

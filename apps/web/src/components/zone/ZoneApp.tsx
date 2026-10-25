@@ -366,7 +366,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                       />
                     )}
                   </dl>
-                  {zone.target.kind === "saved" && zone.access?.editable && (
+                  {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
                     <a
                       href={`${outlinePath}?${new URLSearchParams({
                         saved: zone.target.id,
@@ -399,7 +399,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                   {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
                 </a>
               </header>
-              {zone.target.kind === "saved" && zone.access?.own && (
+              {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
                 <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
               )}
             </div>
