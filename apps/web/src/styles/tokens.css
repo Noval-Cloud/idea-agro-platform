@@ -48,6 +48,7 @@
   --ia-layout-app: calc(100dvh - var(--ia-layout-header));
   --ia-layout-panel: min(calc(100vw - var(--ia-space-gutter) * 2), 24rem);
   --ia-layout-sidebar: calc(19.5rem + var(--ia-space-gutter) * 2);
+  --ia-layout-nav: calc(12rem + var(--ia-space-gutter) * 2);
   --ia-layout-page: 80rem;
   --ia-layout-prose: 40rem;
   --ia-layout-measure: 68ch;

@@ -1,0 +1,48 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
+import AccountNav from "./AccountNav";
+import { accountSections, pickAccountCatalog, type AccountSection } from "./i18n";
+import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
+
+/*
+ * Every page of the account: its navigation in a column the height of the page, as the explorer's panel, and
+ * the page's content beside it. On phones the navigation is a row of tabs above the content.
+ */
+interface Props {
+  locale: Locale;
+  section: AccountSection;
+  title: string;
+}
+const { locale, section, title } = Astro.props;
+const { t } = createTranslator(locale);
+const account = localizePath("/account/", locale);
+const sectionPaths = Object.fromEntries(
+  accountSections.map((s) => [s, s === "profile" ? account : `${account}${s}/`]),
+) as Record<AccountSection, string>;
+---
+
+<BaseLayout locale={locale} title={title} description={t("meta.description")} noindex>
+  <SiteHeader locale={locale} />
+  <div class="flex min-h-(--ia-layout-app) flex-col lg:flex-row">
+    <aside
+      class="shrink-0 border-b border-line bg-surface px-gutter py-3 lg:w-(--ia-layout-nav) lg:border-r lg:border-b-0 lg:py-6"
+    >
+      <AccountNav
+        client:load
+        locale={locale}
+        catalog={pickAccountCatalog(catalogs[locale])}
+        section={section}
+        sectionPaths={sectionPaths}
+      />
+    </aside>
+    <main id="main" class="min-w-0 grow px-gutter py-8 lg:px-10">
+      <h1 class="sr-only">{t(`account.sections.${section}`)}</h1>
+      <div class="max-w-4xl">
+        <slot />
+      </div>
+    </main>
+  </div>
+  <SiteNavPanels locale={locale} />
+</BaseLayout>

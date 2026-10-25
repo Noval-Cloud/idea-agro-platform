@@ -1,7 +1,5 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import SiteHeader from "@/components/site/SiteHeader.astro";
-import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
+import AccountShell from "@/components/account/AccountShell.astro";
 import ProjectApp from "./ProjectApp";
 import { pickProjectCatalog } from "./i18n";
 import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
@@ -13,17 +11,13 @@ const { locale } = Astro.props;
 const { t } = createTranslator(locale);
 ---
 
-<BaseLayout locale={locale} title={t("project.metaTitle")} description={t("meta.description")} noindex>
-  <SiteHeader locale={locale} />
-  <main id="main" class="mx-auto w-full max-w-3xl px-gutter py-12">
-    <ProjectApp
-      client:load
-      locale={locale}
-      catalog={pickProjectCatalog(catalogs[locale])}
-      signInPath={localizePath("/login/", locale)}
-      projectsPath={localizePath("/account/zones/#projects", locale)}
-      zonePath={localizePath("/zone/", locale)}
-    />
-  </main>
-  <SiteNavPanels locale={locale} />
-</BaseLayout>
+<AccountShell locale={locale} section="projects" title={t("project.metaTitle")}>
+  <ProjectApp
+    client:load
+    locale={locale}
+    catalog={pickProjectCatalog(catalogs[locale])}
+    signInPath={localizePath("/login/", locale)}
+    projectsPath={localizePath("/account/projects/", locale)}
+    zonePath={localizePath("/zone/", locale)}
+  />
+</AccountShell>

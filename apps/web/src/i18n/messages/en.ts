@@ -767,7 +767,6 @@ export const en = {
     notFound: "We could not find this project among yours.",
     signInToSee: "Projects are private. Sign in to see yours.",
     signIn: "Sign in",
-    back: "Your projects",
     edit: "Edit",
     name: "Name",
     description: "Description",
@@ -930,7 +929,8 @@ export const en = {
     sections: {
       label: "Sections of your account",
       profile: "Profile",
-      zones: "Areas and projects",
+      zones: "My areas",
+      projects: "My projects",
       content: "Content",
       admin: "Admin",
     },

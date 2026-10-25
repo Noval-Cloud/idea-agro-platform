@@ -766,7 +766,6 @@ export const pt = {
     notFound: "Não encontramos este projeto entre os seus.",
     signInToSee: "Os projetos são privados. Entre para ver os seus.",
     signIn: "Entrar",
-    back: "Seus projetos",
     edit: "Editar",
     name: "Nome",
     description: "Descrição",
@@ -928,7 +927,8 @@ export const pt = {
     sections: {
       label: "Seções da sua conta",
       profile: "Perfil",
-      zones: "Zonas e projetos",
+      zones: "Minhas áreas",
+      projects: "Meus projetos",
       content: "Conteúdo",
       admin: "Admin",
     },

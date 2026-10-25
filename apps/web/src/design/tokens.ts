@@ -257,6 +257,8 @@ export const layout = {
   panel: "min(calc(100vw - var(--ia-space-gutter) * 2), 24rem)",
   /** Width of the explorer's indicator panel: its content starts on the gutter, under the logo. */
   sidebar: "calc(19.5rem + var(--ia-space-gutter) * 2)",
+  /** Width of the account's navigation column. */
+  nav: "calc(12rem + var(--ia-space-gutter) * 2)",
   page: "80rem",
   prose: "40rem",
   measure: "68ch",
