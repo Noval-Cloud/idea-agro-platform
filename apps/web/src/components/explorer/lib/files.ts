@@ -1,10 +1,8 @@
 import type { PolygonGeometry } from "./data";
 import { areaKm2 } from "./geo";
 
-/** A polygon the reader brought: from a file, drawn on the map, or saved to their account. */
-export type CustomZone = { key: string; name: string; areaKm2: number; geometry: PolygonGeometry };
-/** File and drawn layers live in the session until saved; the saved one comes from the account. */
-export type CustomLayer = { key: string; name: string; source: "file" | "drawn" | "saved"; zones: CustomZone[] };
+/** A polygon read from a file. */
+export type FileZone = { key: string; name: string; areaKm2: number; geometry: PolygonGeometry };
 
 type AnyGeoJson = {
   type: string;
@@ -52,7 +50,7 @@ async function fromKmz(file: File): Promise<AnyGeoJson> {
   return fromKml(new TextDecoder().decode(files[document]));
 }
 
-export async function readZoneFile(file: File, unnamed: (n: number) => string): Promise<CustomZone[]> {
+export async function readZoneFile(file: File, unnamed: (n: number) => string): Promise<FileZone[]> {
   const name = file.name.toLowerCase();
   let data: AnyGeoJson | AnyGeoJson[];
   if (name.endsWith(".zip")) {
@@ -66,7 +64,7 @@ export async function readZoneFile(file: File, unnamed: (n: number) => string): 
     data = JSON.parse(await file.text()) as AnyGeoJson;
   }
   return polygons(data).map((p, i) => ({
-    key: `${file.name}-${i}`,
+    key: `file-${Date.now()}-${i}`,
     name: p.name ?? unnamed(i + 1),
     areaKm2: areaKm2(p.geometry),
     geometry: p.geometry,

@@ -62,6 +62,8 @@ type PrimitiveRef = {
 /** What a color is for. Each theme maps every role to a primitive. */
 export const semanticColors = {
   canvas: { light: "slate.25", dark: "slate.925" },
+  /** Behind a dialog: dark in both themes, so the page falls back in either. */
+  scrim: { light: "slate.950", dark: "slate.950" },
   surface: { light: "slate.0", dark: "slate.900" },
   "surface-sunken": { light: "slate.50", dark: "slate.950" },
   "surface-muted": { light: "slate.100", dark: "slate.800" },
@@ -312,5 +314,7 @@ export const layers = {
   "map-bar": "20",
   header: "40",
   popover: "50",
+  /** Dialogs and their scrim, over everything but tooltips. */
+  modal: "55",
   tooltip: "60",
 } as const;

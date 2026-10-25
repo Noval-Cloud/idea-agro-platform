@@ -31,6 +31,7 @@
   --font-weight-*: initial;
 
   --color-canvas: var(--ia-canvas);
+  --color-scrim: var(--ia-scrim);
   --color-surface: var(--ia-surface);
   --color-surface-sunken: var(--ia-surface-sunken);
   --color-surface-muted: var(--ia-surface-muted);

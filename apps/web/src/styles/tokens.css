@@ -76,6 +76,7 @@
   --ia-layer-map-bar: 20;
   --ia-layer-header: 40;
   --ia-layer-popover: 50;
+  --ia-layer-modal: 55;
   --ia-layer-tooltip: 60;
   --ia-viz-mark-border-width: 0.75;
   --ia-viz-mark-outline-width: 1;
@@ -90,6 +91,7 @@
   --ia-viz-mark-reference-dash: 4 3;
   --ia-viz-mark-area-opacity: 0.1;
   --ia-canvas: oklch(0.985 0.004 260);
+  --ia-scrim: oklch(0.145 0.022 264);
   --ia-surface: oklch(1 0 0);
   --ia-surface-sunken: oklch(0.972 0.006 260);
   --ia-surface-muted: oklch(0.952 0.008 260);
@@ -180,6 +182,7 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --ia-canvas: oklch(0.165 0.025 264);
+    --ia-scrim: oklch(0.145 0.022 264);
     --ia-surface: oklch(0.2 0.028 264);
     --ia-surface-sunken: oklch(0.145 0.022 264);
     --ia-surface-muted: oklch(0.29 0.03 264);
@@ -270,6 +273,7 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --ia-canvas: oklch(0.165 0.025 264);
+  --ia-scrim: oklch(0.145 0.022 264);
   --ia-surface: oklch(0.2 0.028 264);
   --ia-surface-sunken: oklch(0.145 0.022 264);
   --ia-surface-muted: oklch(0.29 0.03 264);
@@ -360,6 +364,7 @@
 .surface-inverse {
   color-scheme: dark;
   --ia-canvas: oklch(0.165 0.025 264);
+  --ia-scrim: oklch(0.145 0.022 264);
   --ia-surface: oklch(0.2 0.028 264);
   --ia-surface-sunken: oklch(0.145 0.022 264);
   --ia-surface-muted: oklch(0.29 0.03 264);

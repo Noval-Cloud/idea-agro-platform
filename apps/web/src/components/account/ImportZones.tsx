@@ -3,7 +3,7 @@ import { Upload } from "lucide-react";
 import type { SavedZoneOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { iconSize } from "@/design/tokens";
-import { importBatches, readZoneFile, zoneFileTypes, type CustomZone } from "@/components/explorer/lib/files";
+import { importBatches, readZoneFile, zoneFileTypes, type FileZone } from "@/components/explorer/lib/files";
 import type { AccountTranslator } from "./i18n";
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
 /** Reads a file's polygons, shows them, and saves them to the library. Drawing stays on the map. */
 export default function ImportZones({ t, number, signInPath, onSaved }: Props) {
   const input = useRef<HTMLInputElement>(null);
-  const [found, setFound] = useState<{ file: string; zones: CustomZone[] } | null>(null);
+  const [found, setFound] = useState<{ file: string; zones: FileZone[] } | null>(null);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
 

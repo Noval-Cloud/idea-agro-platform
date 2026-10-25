@@ -26,7 +26,7 @@ import {
   type ZoneCollection,
 } from "./lib/data";
 import { getFrame, useFrame } from "./lib/frames";
-import { readZoneFile, type CustomLayer } from "./lib/files";
+import { readZoneFile } from "./lib/files";
 import { anchorOf, areaKm2, bboxOf, ringsOf, unionBounds } from "./lib/geo";
 import { createAppTranslator, I18nContext, type AppCatalog, type AppKey } from "./lib/i18n";
 import { sampleGray, zonalMean } from "./lib/raster";
@@ -41,10 +41,11 @@ import {
   type Selection,
 } from "./lib/state";
 import { mapMarks, mapTheme, useTheme } from "./lib/theme";
-import { saveCustomZone } from "./lib/session";
-import { importBatches } from "./lib/files";
+import { nextZoneNumber, useMyZones, type MyZone } from "./lib/my-zones";
+import { deleteFromAccount, loadAccountZones, saveToAccount } from "./lib/account-zones";
+import MyZonesBar from "./MyZonesBar";
+import DeleteZone from "./DeleteZone";
 import { readHint } from "@/lib/account-hint";
-import { signInProviders } from "@/lib/sign-in-providers";
 
 interface Props {
   locale: Locale;
@@ -108,10 +109,10 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const [focus, setFocus] = useState<{ bbox: Bounds; id: number; maxZoom?: number } | null>(null);
   const [anchor, setAnchor] = useState<[number, number] | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
-  const [custom, setCustom] = useState<CustomLayer[]>([]);
+  const local = useMyZones((s) => s.local);
+  const saved = useMyZones((s) => s.saved);
   const [signedIn, setSignedIn] = useState(false);
-  const [saving, setSaving] = useState<string | null>(null);
-  const preparedSignIn = useRef<(() => Promise<unknown>) | null>(null);
+  const [deleting, setDeleting] = useState<MyZone | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Tagged with their division, so the map knows when the one in view has not arrived yet.
@@ -128,6 +129,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   // The address bar holds the state, so a view can be shared; it is read after hydration.
   useEffect(() => {
     const initial = readState(location.search);
+    // The zone selected among the reader's own is kept by the browser, not the address.
+    const kept = useMyZones.getState().selected;
+    if (initial.regions === "mine" && !initial.selection && kept) initial.selection = { kind: "custom", key: kept };
     setState(initial);
     pendingFocus.current = initial.selection;
     setHydrated(true);
@@ -235,108 +239,84 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     }
   }, [neededDepartments, padrones]);
 
-  // "Mis zonas" shows every file and drawing of the session at once, and the zones saved to the account.
-  // Unsaved zones reach the zone page through the session (a new tab gets a copy of it).
-  useEffect(() => {
-    for (const layer of custom)
-      if (layer.source !== "saved")
-        for (const z of layer.zones) saveCustomZone({ key: z.key, name: z.name, geometry: z.geometry });
-  }, [custom]);
+  // The reader's zones: those kept in this browser and those in the account, all drawn at once.
+  const myZones = useMemo(
+    () => [...saved, ...local.filter((z) => !saved.some((s) => s.key === z.key))],
+    [saved, local],
+  );
+  const localKeys = useMemo(() => new Set(local.map((z) => z.key)), [local]);
 
   useEffect(() => {
-    const update = () => {
-      const now = readHint() !== null;
-      setSignedIn(now);
-      // Another person may use this browser next: their map must not show the previous account's zones.
-      if (!now) setCustom((all) => all.filter((l) => l.source !== "saved"));
-    };
+    const update = () => setSignedIn(readHint() !== null);
     update();
     addEventListener("account-change", update);
     return () => removeEventListener("account-change", update);
   }, []);
 
   const loadSaved = useCallback(async () => {
-    const [{ privately, SignedOut }, { getSavedZoneFeatures }] = await Promise.all([
-      import("@/lib/account"),
-      import("@idea-agro/api-client"),
-    ]);
+    const { SignedOut } = await import("@/lib/account");
     try {
-      const response = await privately((init) => getSavedZoneFeatures(init));
-      if (response.status !== 200) throw new Error(`${response.status}`);
-      const zones = response.data.features.map((f) => ({
-        key: f.id,
-        name: f.properties.name,
-        areaKm2: f.properties.area_ha / 100,
-        geometry: f.geometry as PolygonGeometry,
-      }));
-      const saved: CustomLayer[] = zones.length
-        ? [{ key: "saved", name: t("explorer.regions.saved"), source: "saved", zones }]
-        : [];
-      setCustom((all) => [...saved, ...all.filter((l) => l.source !== "saved")]);
+      useMyZones.getState().setSaved(await loadAccountZones());
     } catch (error) {
       if (!(error instanceof SignedOut)) setNotice(t("explorer.regions.loadSavedFailed"));
     }
   }, [t]);
-
   useEffect(() => {
-    if (state.regions === "mine" && signedIn) void loadSaved();
-  }, [state.regions, signedIn, loadSaved]);
+    // Another person may use this browser next: their map must not show the previous account's zones.
+    if (!signedIn) return useMyZones.getState().setSaved([]);
+    void loadSaved();
+  }, [signedIn, loadSaved]);
 
-  // Signed out with zones to save: the sign-in loads ahead, so the save click can open the provider's window.
-  const unsaved = custom.some((l) => l.source !== "saved");
+  // Signed in, every zone kept in this browser goes to the account: those drawn or uploaded now, and those from
+  // before signing in. One sync at a time, so a zone is never sent twice; a refused one waits for the next visit.
+  const syncing = useRef(false);
+  const refused = useRef(new Set<string>());
+  const [syncRound, setSyncRound] = useState(0);
   useEffect(() => {
-    if (signedIn || !unsaved || preparedSignIn.current) return;
-    void import("@/lib/account")
-      .then(({ prepareSignIn }) => prepareSignIn(signInProviders[0]))
-      .then((signIn) => (preparedSignIn.current = signIn))
-      // Without it, the save click sends the person to the sign-in page instead.
-      .catch(() => undefined);
-  }, [signedIn, unsaved]);
-
-  const onSave = async (key: string) => {
-    const layer = custom.find((l) => l.key === key);
-    if (!layer || layer.source === "saved") return;
-    setNotice(null);
-    if (!readHint()) {
-      const signIn = preparedSignIn.current;
-      if (!signIn)
-        return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`);
+    const pending = local.filter((z) => !refused.current.has(z.key));
+    if (!signedIn || !pending.length || syncing.current) return;
+    syncing.current = true;
+    void (async () => {
       try {
-        await signIn();
-      } catch (error) {
-        if (error !== "cancelled") setNotice(t("explorer.regions.signInFailed"));
-        return;
-      }
-    }
-    setSaving(key);
-    try {
-      const [{ privately }, { importSavedZones }] = await Promise.all([
-        import("@/lib/account"),
-        import("@idea-agro/api-client"),
-      ]);
-      const source = layer.source === "drawn" ? ("drawn" as const) : ("uploaded" as const);
-      const zones = layer.zones.map((z) => ({ key: z.key, zone: { name: z.name, source, geometry: z.geometry } }));
-      for (const batch of importBatches(zones)) {
-        const response = await privately((init) => importSavedZones({ zones: batch.map((z) => z.zone) }, init));
-        if (response.status !== 201) {
-          const detail = (response.data as { detail?: string | null }).detail ?? String(response.status);
-          return setNotice(t("explorer.regions.saveFailed", { reason: detail }));
+        const { ids, refused: reason } = await saveToAccount(pending);
+        for (const z of pending) if (!ids.has(z.key)) refused.current.add(z.key);
+        if (ids.size) {
+          // Loaded before the copies here go, so a saved zone never blinks off the map.
+          useMyZones.getState().setSaved(await loadAccountZones());
+          useMyZones.getState().removeLocal([...ids.keys()]);
+          setState((current) =>
+            current.selection?.kind === "custom" && ids.has(current.selection.key)
+              ? { ...current, selection: { kind: "custom", key: ids.get(current.selection.key)! } }
+              : current,
+          );
         }
-        // Saved zones leave the layer one import at a time, so trying again sends only the rest. Zones added
-        // to the layer meanwhile stay.
-        const sent = new Set(batch.map((z) => z.key));
-        setCustom((all) =>
-          all
-            .map((l) => (l.key === key ? { ...l, zones: l.zones.filter((z) => !sent.has(z.key)) } : l))
-            .filter((l) => l.key !== key || l.zones.length > 0),
-        );
+        if (reason) setNotice(t("explorer.mine.keptLocally", { reason }));
+      } catch {
+        for (const z of pending) refused.current.add(z.key);
+        setNotice(t("explorer.mine.keptLocally", { reason: t("explorer.loadError") }));
+      } finally {
+        syncing.current = false;
+        setSyncRound((n) => n + 1);
       }
-      setNotice(t("explorer.regions.saveDone", { count: zones.length }));
-      await loadSaved();
+    })();
+  }, [signedIn, local, syncRound, t]);
+
+  // The selected zone among the reader's own is kept across refreshes and screens.
+  useEffect(() => {
+    if (state.selection?.kind === "custom") useMyZones.getState().select(state.selection.key);
+    else if (hydrated && state.regions === "mine") useMyZones.getState().select(null);
+  }, [state.selection, state.regions, hydrated]);
+
+  const onDelete = async (zone: MyZone) => {
+    setDeleting(null);
+    if (state.selection?.kind === "custom" && state.selection.key === zone.key) select(null);
+    if (localKeys.has(zone.key)) return useMyZones.getState().removeLocal([zone.key]);
+    try {
+      await deleteFromAccount(zone.key);
+      const { saved: now, setSaved } = useMyZones.getState();
+      setSaved(now.filter((z) => z.key !== zone.key));
     } catch {
-      setNotice(t("explorer.regions.saveInterrupted"));
-    } finally {
-      setSaving(null);
+      setNotice(t("explorer.mine.deleteFailed"));
     }
   };
 
@@ -382,21 +362,18 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         });
       }
     }
-    if (state.regions === "mine") {
-      for (const layer of custom)
-        for (const z of layer.zones) {
-          out.set(z.key, {
-            key: z.key,
-            kind: "custom",
-            id: z.key,
-            title: z.name,
-            subtitle: layer.source === "file" ? layer.name : undefined,
-            areaKm2: z.areaKm2,
-            geometry: z.geometry,
-            selection: { kind: "custom", layer: layer.key, key: z.key },
-          });
-        }
-    }
+    if (state.regions === "mine")
+      for (const z of myZones)
+        out.set(z.key, {
+          key: z.key,
+          kind: "custom",
+          id: z.key,
+          title: z.name,
+          subtitle: z.file,
+          areaKm2: z.areaKm2,
+          geometry: z.geometry,
+          selection: { kind: "custom", key: z.key },
+        });
     return out;
   }, [
     division,
@@ -405,7 +382,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     padronDepartments,
     pendingSelectionDepartment,
     state.regions,
-    custom,
+    myZones,
     manifest,
     t,
   ]);
@@ -575,8 +552,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       params.set("d", record.division);
       params.set("id", record.id);
     } else if (record.kind === "padron") params.set("padron", record.id);
-    else if (record.selection.kind === "custom" && record.selection.layer === "saved") params.set("saved", record.id);
-    else params.set("custom", record.key);
+    else if (localKeys.has(record.key)) params.set("custom", record.key);
+    else params.set("saved", record.id);
     if (indicatorId) params.set("ind", indicatorId);
     if (year !== null) params.set("year", String(year));
     return `${zonePath}?${params}`;
@@ -592,9 +569,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
               ? t("explorer.zone.kinds.seccionales")
               : selected.kind === "padron"
                 ? t("explorer.zone.kinds.padrones")
-                : selected.selection.kind === "custom" && selected.selection.layer === "saved"
-                  ? t("explorer.zone.kinds.saved")
-                  : t("explorer.zone.kinds.custom"),
+                : localKeys.has(selected.key)
+                  ? t("explorer.mine.inBrowser")
+                  : t("explorer.zone.kinds.saved"),
         title: selected.title,
         subtitle: selected.subtitle,
         area:
@@ -603,6 +580,10 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             : t("explorer.zone.areaKm2", { value: i18n.number(selected.areaKm2) }),
         value: zoneValue,
         href: zoneHref(selected),
+        onDelete:
+          selected.kind === "custom"
+            ? () => setDeleting(myZones.find((z) => z.key === selected.key) ?? null)
+            : undefined,
       }
     : null;
 
@@ -631,18 +612,22 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     return lines.length ? lines : null;
   }, [pointer, wide, records, frame, indicatorId, indicatorManifest, manifest, i18n, t]);
 
-  // Files and drawings stay in this browser session until they are saved to the account.
-  const addLayer = (layer: CustomLayer) => {
-    setCustom((all) => [...all.filter((l) => l.key !== layer.key), layer]);
-    update({ regions: "mine", selection: null });
-    setFocus({ bbox: unionBounds(layer.zones.map((z) => bboxOf(z.geometry))), id: Date.now(), maxZoom: 13 });
+  // Files and drawings join the reader's zones at once: kept here, and sent to the account when signed in.
+  const keepZones = (zones: MyZone[], selectKey: string | null) => {
+    useMyZones.getState().addLocal(zones);
+    update({ regions: "mine", selection: selectKey ? { kind: "custom", key: selectKey } : null });
+    setFocus({ bbox: unionBounds(zones.map((z) => bboxOf(z.geometry))), id: Date.now(), maxZoom: 13 });
   };
   const onUpload = async (file: File) => {
     setNotice(null);
     try {
-      const found = await readZoneFile(file, (n) => t("explorer.zone.customName", { number: n }));
+      const first = nextZoneNumber();
+      const found = await readZoneFile(file, (n) => t("explorer.zone.customName", { number: first + n - 1 }));
       if (!found.length) return setNotice(t("explorer.regions.uploadEmpty", { name: file.name }));
-      addLayer({ key: `file:${file.name}`, name: file.name, source: "file", zones: found });
+      keepZones(
+        found.map((z) => ({ ...z, source: "uploaded" as const, file: file.name })),
+        found.length === 1 ? found[0].key : null,
+      );
     } catch {
       setNotice(t("explorer.regions.uploadError", { name: file.name }));
     }
@@ -678,24 +663,16 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         const feature = draw.getSnapshotFeature(id);
         if (feature?.geometry.type === "Polygon") {
           const geometry = feature.geometry as PolygonGeometry;
-          setCustom((all) => {
-            const drawn = all.find((l) => l.key === "drawn") ?? {
-              key: "drawn",
-              name: t("explorer.regions.drawn"),
-              source: "drawn" as const,
-              zones: [],
-            };
-            const zone = {
-              key: `drawn-${Date.now()}`,
-              name: t("explorer.zone.customName", { number: drawn.zones.length + 1 }),
-              areaKm2: areaKm2(geometry),
-              geometry,
-            };
-            const next = { ...drawn, zones: [...drawn.zones, zone] };
-            update({ regions: "mine", selection: { kind: "custom", layer: "drawn", key: zone.key } });
-            setAnchor(anchorOf(geometry));
-            return [...all.filter((l) => l.key !== "drawn"), next];
-          });
+          const zone: MyZone = {
+            key: `drawn-${Date.now()}`,
+            name: t("explorer.zone.customName", { number: nextZoneNumber() }),
+            source: "drawn",
+            areaKm2: areaKm2(geometry),
+            geometry,
+          };
+          useMyZones.getState().addLocal([zone]);
+          update({ regions: "mine", selection: { kind: "custom", key: zone.key } });
+          setAnchor(anchorOf(geometry));
         }
         setDrawing(false);
       });
@@ -788,22 +765,34 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             manifest={manifest}
             regions={state.regions}
             grade={state.grade}
-            layers={custom}
             counts={counts}
-            signInHref={signInPath}
-            signedIn={signedIn}
-            saving={saving}
-            onSave={(key) => void onSave(key)}
-            drawing={drawing}
+            mineCount={myZones.length}
             onRegions={(regions) => update({ regions, selection: null })}
             onGrade={(grade) => update({ grade, selection: null })}
             onSearch={onSearch}
-            onUpload={(file) => void onUpload(file)}
-            onDraw={setDrawing}
-            onRemove={(key) => {
-              setCustom((all) => all.filter((l) => l.key !== key));
-              if (state.selection?.kind === "custom" && state.selection.layer === key) select(null);
-            }}
+            mine={
+              <MyZonesBar
+                zones={myZones}
+                local={localKeys}
+                signedIn={signedIn}
+                signInHref={signInPath}
+                drawing={drawing}
+                onPick={(key) => {
+                  const zone = myZones.find((z) => z.key === key);
+                  if (!zone) return;
+                  select({ kind: "custom", key });
+                  setFocus({ bbox: bboxOf(zone.geometry), id: Date.now(), maxZoom: 13 });
+                }}
+                onUpload={(file) => void onUpload(file)}
+                onDraw={setDrawing}
+              />
+            }
+          />
+          <DeleteZone
+            zone={deleting}
+            local={deleting ? localKeys.has(deleting.key) : false}
+            onConfirm={(zone) => void onDelete(zone)}
+            onCancel={() => setDeleting(null)}
           />
 
           <div className="relative min-h-0 grow" role="region" aria-label={t("explorer.controls.map")}>
