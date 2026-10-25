@@ -54,7 +54,7 @@ def test_a_project_is_created_described_and_listed(client: TestClient) -> None:
     assert changed.json()["name"] == "Campo"
     assert changed.json()["description"] == "Tesis de maestría"
     listed = client.get("/v1/projects", headers=ANA).json()
-    assert [(p["id"], p["zone_count"]) for p in listed] == [(id, 0)]
+    assert [(p["id"], p["zone_count"], p["member_count"]) for p in listed] == [(id, 0, 0)]
 
 
 def test_projects_are_private(client: TestClient) -> None:

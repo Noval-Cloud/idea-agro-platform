@@ -1,11 +1,15 @@
 import type { Catalog } from "@/i18n";
 import { createCatalogTranslator, intlLocale, type Leaves, type Locale } from "@/i18n/core";
 import { degreesFormat } from "@/lib/degrees";
+import { relativeTimeFormat } from "@/lib/relative-time";
 
 /** The slice of the catalog the account island ships to the browser. */
-export type AccountCatalog = Pick<Catalog, "account">;
+export type AccountCatalog = Pick<Catalog, "account" | "lists">;
 export type AccountKey = Leaves<AccountCatalog>;
-export const pickAccountCatalog = (catalog: Catalog): AccountCatalog => ({ account: catalog.account });
+export const pickAccountCatalog = (catalog: Catalog): AccountCatalog => ({
+  account: catalog.account,
+  lists: catalog.lists,
+});
 
 /** The account's sections, in the order the panel lists them. */
 export const accountSections = ["profile", "zones", "projects", "content", "admin"] as const;
@@ -19,7 +23,16 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
   const moment = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-  return { ...translator, date, moment, number, degrees: degreesFormat(locale) };
+  const collator = new Intl.Collator(intlLocale[locale], { sensitivity: "base", numeric: true });
+  return {
+    ...translator,
+    date,
+    moment,
+    number,
+    degrees: degreesFormat(locale),
+    ago: relativeTimeFormat(locale),
+    collator,
+  };
 }
 
 export type AccountTranslator = ReturnType<typeof createAccountTranslator>;

@@ -47,6 +47,7 @@
   --color-link: var(--ia-link);
   --color-focus: var(--ia-focus);
   --color-danger: var(--ia-danger);
+  --color-danger-ink: var(--ia-danger-ink);
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -195,6 +196,13 @@
 }
 
 @layer components {
+  /* Menus, popovers and tooltips grow from where they open; closing is instant. */
+  .ia-pop[data-state="open"],
+  .ia-pop[data-state="delayed-open"] {
+    animation: ia-pop-in var(--ia-motion-fast) var(--ia-motion-ease-out);
+    transform-origin: var(--radix-popper-transform-origin);
+  }
+
   /* Chart marks: thin, quiet chrome; the data is the only loud thing. */
   .chart-grid {
     stroke: var(--ia-viz-grid);
@@ -457,5 +465,12 @@
 .maplibregl-ctrl-attrib-button {
   @variant dark {
     filter: invert(1);
+  }
+}
+
+@keyframes ia-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
   }
 }

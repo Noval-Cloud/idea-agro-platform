@@ -80,6 +80,7 @@ export const semanticColors = {
   link: { light: "indigo.600", dark: "indigo.300" },
   focus: { light: "pasture.500", dark: "pasture.300" },
   danger: { light: "ember.500", dark: "ember.300" },
+  "danger-ink": { light: "slate.0", dark: "slate.950" },
 } as const satisfies Record<string, Record<ThemeName, PrimitiveRef>>;
 
 /**
@@ -267,7 +268,7 @@ export const layout = {
 } as const;
 
 /** Icon sizes in pixels (Lucide `size`). */
-export const iconSize = { sm: 16, md: 18, lg: 20 } as const;
+export const iconSize = { xs: 14, sm: 16, md: 18, lg: 20 } as const;
 
 /** Keyboard focus ring. */
 export const focusRing = { width: "2px", offset: "2px" } as const;
@@ -321,6 +322,8 @@ export const layers = {
   "map-overlay": "10",
   /** The regions bar above the map: its search results drop over the map's overlays, under the header. */
   "map-bar": "20",
+  /** A list's toolbar, stuck under the header while its rows scroll. */
+  sticky: "30",
   header: "40",
   popover: "50",
   /** Dialogs and their scrim, over everything but tooltips. */

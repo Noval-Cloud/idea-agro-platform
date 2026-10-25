@@ -12,12 +12,14 @@ const { t } = createTranslator(locale);
 ---
 
 <AccountShell locale={locale} section="projects" title={t("project.metaTitle")}>
-  <ProjectApp
-    client:load
-    locale={locale}
-    catalog={pickProjectCatalog(catalogs[locale])}
-    signInPath={localizePath("/login/", locale)}
-    projectsPath={localizePath("/account/projects/", locale)}
-    zonePath={localizePath("/zone/", locale)}
-  />
+  <div class="max-w-4xl pt-8">
+    <ProjectApp
+      client:load
+      locale={locale}
+      catalog={pickProjectCatalog(catalogs[locale])}
+      signInPath={localizePath("/login/", locale)}
+      projectsPath={localizePath("/account/projects/", locale)}
+      zonePath={localizePath("/zone/", locale)}
+    />
+  </div>
 </AccountShell>

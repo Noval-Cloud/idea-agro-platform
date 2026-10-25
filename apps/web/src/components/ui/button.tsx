@@ -11,6 +11,7 @@ export const buttonVariants = cva(
         primary: "bg-action text-action-ink hover:bg-action-hover",
         outline: "border border-line-strong bg-surface text-ink hover:bg-action-soft",
         ghost: "text-ink hover:bg-action-soft",
+        danger: "bg-danger text-danger-ink hover:bg-danger/90",
         link: "text-link underline-offset-(--ia-link-underline-offset) hover:underline",
       },
       size: {
