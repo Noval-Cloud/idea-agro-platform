@@ -445,6 +445,8 @@ export const pt = {
       "Qualquer indicador sobre o mapa do Uruguai, ano a ano. Escolha uma seccional, uma bacia, um padrón ou sua própria zona e abra seus indicadores.",
     title: "Explorar o mapa",
     loading: "Carregando o mapa…",
+    loadingZones: "Carregando as zonas…",
+    loadingIndicator: "Carregando o mapa de {name}…",
     noWebgl: "Seu navegador não consegue mostrar o mapa interativo: ele precisa de WebGL 2.",
     loadError: "Não conseguimos carregar estes dados. Tente novamente em alguns minutos.",
     groups: {

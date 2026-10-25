@@ -25,8 +25,9 @@ export type ExplorerState = {
 export const defaultState: ExplorerState = {
   indicator: "ppna",
   year: null,
-  regions: "seccionales",
-  grade: 3,
+  // Six basins: the lightest division, so the map shows zones at once while the others load.
+  regions: "cuencas",
+  grade: 1,
   community: 3,
   selection: null,
   view: "panel",

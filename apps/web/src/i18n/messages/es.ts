@@ -439,6 +439,8 @@ export const es = {
       "Cualquier indicador sobre el mapa del Uruguay, año por año. Elegí una seccional, una cuenca, un padrón o tu propia zona y abrí sus indicadores.",
     title: "Explorar el mapa",
     loading: "Cargando el mapa…",
+    loadingZones: "Cargando las zonas…",
+    loadingIndicator: "Cargando el mapa de {name}…",
     noWebgl: "Tu navegador no puede mostrar el mapa interactivo: necesita WebGL 2.",
     loadError: "No pudimos cargar estos datos. Probá de nuevo en unos minutos.",
     groups: {
