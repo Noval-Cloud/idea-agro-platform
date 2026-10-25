@@ -129,9 +129,6 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
   if (state.kind !== "ready") {
     return (
       <div className="grid gap-4">
-        <a href={projectsPath} className="text-sm text-link underline underline-offset-(--ia-link-underline-offset)">
-          {t("project.back")}
-        </a>
         <p role={state.kind === "loading" ? "status" : "alert"} className="text-ink-muted">
           {t(`project.${state.kind === "signedOut" ? "signInToSee" : state.kind}`)}
         </p>
@@ -148,9 +145,6 @@ export default function ProjectApp({ locale, catalog, signInPath, projectsPath, 
   const canEdit = project.role !== "viewer";
   return (
     <div className="grid gap-6">
-      <a href={projectsPath} className="text-sm text-link underline underline-offset-(--ia-link-underline-offset)">
-        {t("project.back")}
-      </a>
       <Header t={t} project={project} onEdit={canEdit ? edit : null} onDelete={() => void destroy(project)} />
       {problem && (
         <p role="alert" className="text-sm text-danger">
