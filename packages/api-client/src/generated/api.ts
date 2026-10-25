@@ -5256,7 +5256,7 @@ export const getGetProjectActivityUrl = (projectId: string,
 }
 
 /**
- * The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on.
+ * The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on. Both moments carry their offset.
  * @summary What happened in a project
  */
 export const getProjectActivity = async (projectId: string,

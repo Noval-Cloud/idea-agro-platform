@@ -84,6 +84,8 @@ export function ZonesTab({
   const [kindValue, setKind] = useQueryState("kind", "all");
   const kind = kinds.includes(kindValue as Kind) ? kindValue : "all";
   const [view, setView] = useListView("project-zones");
+  // One search to add zones, in the toolbar; the empty state opens it too.
+  const [adding, setAdding] = useState(false);
 
   const rows = useMemo(
     () => project.items.map((item) => describe(translator, item, names, zonePath, project.id)),
@@ -129,7 +131,16 @@ export function ZonesTab({
         end={
           <>
             <ViewToggle t={t} view={view} onView={setView} />
-            {onAdd && <AddZones translator={translator} project={project} ask={ask} onAdd={onAdd} />}
+            {onAdd && (
+              <AddZones
+                translator={translator}
+                project={project}
+                ask={ask}
+                onAdd={onAdd}
+                open={adding}
+                onOpenChange={setAdding}
+              />
+            )}
           </>
         }
       >
@@ -166,7 +177,12 @@ export function ZonesTab({
             title={t("project.zones.empty.title")}
             body={onAdd ? t("project.zones.empty.body") : t("project.zones.empty.viewer")}
           >
-            {onAdd && <AddZones translator={translator} project={project} ask={ask} onAdd={onAdd} align="center" />}
+            {onAdd && (
+              <Button size="sm" onClick={() => setAdding(true)}>
+                <Plus aria-hidden="true" />
+                {t("project.add.action")}
+              </Button>
+            )}
           </EmptyState>
         ) : shown.length === 0 ? (
           <EmptyState icon={<SearchX />} title={t("lists.noResults.title")} body={t("lists.noResults.body")}>
@@ -423,20 +439,23 @@ function AddZones({
   project,
   ask,
   onAdd,
-  align = "end",
+  open,
+  onOpenChange,
 }: {
   translator: ProjectTranslator;
   project: ProjectOut;
   ask: Ask;
   onAdd: (item: ItemIn) => Promise<number>;
-  align?: "end" | "center";
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const { t, number, degrees } = translator;
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [library, setLibrary] = useState<SavedZoneOut[] | null>(null);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [adding, setAdding] = useState<string | null>(null);
+  // Zones on their way into the project: several can be picked one after another.
+  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
+  const [full, setFull] = useState(false);
   const held = new Set(project.items.map((i) => i.id));
 
   useEffect(() => {
@@ -497,21 +516,27 @@ function AddZones({
   });
 
   const pick = async (candidate: Candidate) => {
-    if (held.has(candidate.key) || adding) return;
+    if (held.has(candidate.key) || pending.has(candidate.key)) return;
     // Others could reshape the person's own land: they confirm it first.
     if (candidate.saved && project.others_can_edit) {
-      setOpen(false);
+      onOpenChange(false);
       const sure = await ask({
         title: t("project.add.warnShared.title", { name: candidate.title }),
         body: t("project.add.warnShared.body"),
         confirm: t("project.add.warnShared.action"),
         tone: "primary",
+        returnFocus: () => document.getElementById("add-zones"),
       });
       if (!sure) return;
     }
-    setAdding(candidate.key);
-    await onAdd(candidate.item);
-    setAdding(null);
+    setPending((now) => new Set(now).add(candidate.key));
+    const status = await onAdd(candidate.item);
+    setPending((now) => {
+      const next = new Set(now);
+      next.delete(candidate.key);
+      return next;
+    });
+    setFull(status === 409);
   };
 
   const group = (heading: string, candidates: Candidate[]) =>
@@ -543,7 +568,7 @@ function AddZones({
                 <Plus
                   size={iconSize.sm}
                   aria-hidden="true"
-                  className={cn("shrink-0 text-ink-subtle", adding === candidate.key && "animate-pulse")}
+                  className={cn("shrink-0 text-ink-subtle", pending.has(candidate.key) && "animate-pulse")}
                 />
               )}
             </Command.Item>
@@ -553,14 +578,14 @@ function AddZones({
     );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button size="sm" aria-label={t("project.add.action")}>
+        <Button id="add-zones" size="sm" aria-label={t("project.add.action")}>
           <Plus aria-hidden="true" />
-          <span className={align === "center" ? undefined : "hidden sm:inline"}>{t("project.add.action")}</span>
+          <span className="hidden sm:inline">{t("project.add.action")}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align={align} className="w-[min(28rem,calc(100vw-2rem))] p-0">
+      <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
         <Command shouldFilter={false} label={t("project.add.searchLabel")}>
           <div className="flex items-center gap-2 border-b border-line px-3">
             <Search size={iconSize.sm} aria-hidden="true" className="shrink-0 text-ink-subtle" />
@@ -572,14 +597,17 @@ function AddZones({
               className="h-11 min-w-0 grow bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
             />
           </div>
+          {!query.trim() && <p className="px-3 pt-3 text-xs text-ink-subtle">{t("project.add.hint")}</p>}
           <Command.List className="max-h-80 overflow-y-auto overscroll-contain p-1">
             {group(t("project.add.library"), mine)}
             {group(t("project.add.predefined"), predefined)}
-            {!query.trim() && <p className="px-3 py-3 text-xs text-ink-subtle">{t("project.add.hint")}</p>}
-            {query.trim() && mine.length === 0 && predefined.length === 0 && (
-              <p className="px-3 py-3 text-sm text-ink-muted">{t("project.add.noResults")}</p>
+            {query.trim() && (
+              <Command.Empty className="px-3 py-3 text-sm text-ink-muted">{t("project.add.noResults")}</Command.Empty>
             )}
           </Command.List>
+          <p role="alert" className="px-3 pb-3 text-sm text-danger empty:hidden">
+            {full ? t("project.add.full") : ""}
+          </p>
         </Command>
       </PopoverContent>
     </Popover>

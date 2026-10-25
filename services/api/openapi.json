@@ -2568,7 +2568,7 @@
           "Projects"
         ],
         "summary": "What happened in a project",
-        "description": "The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on.",
+        "description": "The latest changes, newest first. To load more, ask again with `before` set to the `at` of the last change received; `since` keeps only the changes from a moment on. Both moments carry their offset.",
         "operationId": "get_project_activity",
         "security": [
           {

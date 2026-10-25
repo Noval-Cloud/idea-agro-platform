@@ -69,6 +69,8 @@ export function PeopleTab({
         client.removeProjectMember(project.id, encodeURIComponent(member.email), init),
       );
       if (gone.status !== 204) return { status: gone.status };
+      // Their row went away with its menu: focus waits in the invitation.
+      requestAnimationFrame(() => document.getElementById("invite-email")?.focus());
       // Their zones left too: the project comes back as it is now.
       const now = await privately((init) => client.getProject(project.id, init));
       return now.status === 200 ? { status: 200, apply: () => now.data } : { status: 204 };
@@ -87,6 +89,7 @@ export function PeopleTab({
         >
           <div className="flex flex-wrap items-center gap-2">
             <Input
+              id="invite-email"
               type="email"
               name="email"
               autoComplete="off"
@@ -187,14 +190,14 @@ function Person({
   menu?: ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
       <span
         aria-hidden="true"
         className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-sm font-medium text-ink uppercase"
       >
         {initial}
       </span>
-      <div className="min-w-0 grow">
+      <div className="min-w-40 grow basis-0">
         <p className="flex min-w-0 items-center gap-2 text-sm text-ink">
           <span className="truncate font-medium">{name}</span>
           {pending && (
@@ -238,11 +241,6 @@ function RoleControl({
   useEffect(() => setRole(member.role), [member.role]);
   return (
     <div className="flex items-center gap-2">
-      {role !== member.role && (
-        <Button size="sm" variant="outline" onClick={() => onChange(role)}>
-          {t("project.members.changeRole")}
-        </Button>
-      )}
       <select
         className={field}
         value={role}
@@ -255,6 +253,11 @@ function RoleControl({
           </option>
         ))}
       </select>
+      {role !== member.role && (
+        <Button size="sm" variant="outline" onClick={() => onChange(role)}>
+          {t("project.members.changeRole")}
+        </Button>
+      )}
     </div>
   );
 }

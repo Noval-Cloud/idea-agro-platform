@@ -840,7 +840,6 @@ export const es = {
     coordinates: "Lat {latitude} · Long {longitude}",
     roles: { owner: "Propietario", collaborator: "Colaborador", viewer: "Lector" },
     members: {
-      count: { one: "{count} persona", other: "{count} personas" },
       intro: "La invitación se acepta cuando esa persona ingresa con ese correo y abre sus proyectos.",
       pending: "Invitación pendiente",
       you: "Vos",

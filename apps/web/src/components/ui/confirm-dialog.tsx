@@ -31,8 +31,9 @@ export function ConfirmDialog({
   // There is no trigger to return to: the dialog opens from code.
   const opener = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
-    if (open && document.activeElement instanceof HTMLElement && document.activeElement !== document.body)
-      opener.current = document.activeElement;
+    if (!open) return;
+    const active = document.activeElement;
+    opener.current = active instanceof HTMLElement && active !== document.body ? active : null;
   }, [open]);
   return (
     <AlertDialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>

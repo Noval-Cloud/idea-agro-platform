@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import type { ProjectTranslator } from "./i18n";
+import { useQueryState } from "@/components/lists/state";
 import { api, zoneName, type ZoneNames } from "./shared";
 
 const ranges = ["today", "week", "month", "all"] as const;
@@ -63,7 +64,8 @@ export function ActivityTab({
   names: ZoneNames | null;
 }) {
   const { t, parts, time, moment, day } = translator;
-  const [range, setRange] = useState<Range>("all");
+  const [rangeValue, setRange] = useQueryState("range", "all");
+  const range: Range = ranges.includes(rangeValue as Range) ? (rangeValue as Range) : "all";
   const [load, setLoad] = useState<Load>({ entries: [], status: "loading", done: false });
   const end = useRef<HTMLDivElement>(null);
   // The request that counts: an older one finishing late is ignored.
@@ -158,7 +160,7 @@ export function ActivityTab({
         value={range}
         onValueChange={(value) => setRange(value as Range)}
         aria-label={t("project.activity.ranges.label")}
-        className="justify-self-start"
+        className="max-w-full justify-self-start overflow-x-auto [scrollbar-width:none]"
       >
         {ranges.map((r) => (
           <SegmentedItem key={r} value={r}>
@@ -205,9 +207,10 @@ export function ActivityTab({
               </ol>
             </section>
           ))}
-          <div ref={end} className="min-h-6 text-sm text-ink-subtle">
+          {/* Always there, so "loading" and "that is all" are announced when they appear. */}
+          <div ref={end} role="status" className="min-h-6 text-sm text-ink-subtle">
             {load.status === "loading" ? (
-              <p role="status">{t("project.activity.loading")}</p>
+              <p>{t("project.activity.loading")}</p>
             ) : load.status === "failed" ? (
               <p role="alert" className="flex items-center gap-3 text-danger">
                 {t("project.activity.failed")}

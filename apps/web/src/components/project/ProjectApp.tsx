@@ -228,7 +228,7 @@ export default function ProjectApp({
             <TabsTrigger value="activity">{t("project.tabs.activity")}</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="zones" className="outline-none">
+        <TabsContent value="zones">
           <ZonesTab
             translator={translator}
             project={project}
@@ -240,10 +240,10 @@ export default function ProjectApp({
             onRemove={canEdit ? (item) => void remove(item) : null}
           />
         </TabsContent>
-        <TabsContent value="people" className="outline-none">
+        <TabsContent value="people">
           <PeopleTab translator={translator} project={project} change={change} ask={ask} />
         </TabsContent>
-        <TabsContent value="activity" className="outline-none">
+        <TabsContent value="activity">
           <ActivityTab translator={translator} projectId={project.id} changedAt={project.updated_at} names={names} />
         </TabsContent>
       </Tabs>
@@ -254,12 +254,14 @@ export default function ProjectApp({
 
 /** An action as an icon with its name in a tooltip: a link when it goes somewhere, a button otherwise. */
 function IconAction({
+  id,
   label,
   icon,
   href,
   danger,
   onClick,
 }: {
+  id?: string;
   label: string;
   icon: ReactNode;
   href?: string;
@@ -277,7 +279,7 @@ function IconAction({
           {icon}
         </a>
       ) : (
-        <button type="button" aria-label={label} onClick={onClick} className={className}>
+        <button id={id} type="button" aria-label={label} onClick={onClick} className={className}>
           {icon}
         </button>
       )}
@@ -302,8 +304,13 @@ function Header({
   onDelete: () => void;
   onLeave: () => void;
 }) {
-  const [editing, setEditing] = useState<{ name: string; description: string } | null>(null);
+  const [editing, setEditingState] = useState<{ name: string; description: string } | null>(null);
   const owner = project.role === "owner";
+  // Closing the form gives focus back to the button that opened it.
+  const setEditing = (next: { name: string; description: string } | null) => {
+    setEditingState(next);
+    if (!next) requestAnimationFrame(() => document.getElementById("project-edit")?.focus());
+  };
   const icon = { size: iconSize.md, "aria-hidden": true } as const;
 
   return (
@@ -374,6 +381,7 @@ function Header({
             <IconAction label={t("project.onMap")} href={mapHref} icon={<MapIcon {...icon} />} />
             {onEdit && (
               <IconAction
+                id="project-edit"
                 label={t("project.edit")}
                 icon={<Pencil {...icon} />}
                 onClick={() => setEditing({ name: project.name, description: project.description })}

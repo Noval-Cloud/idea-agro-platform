@@ -226,6 +226,8 @@ def test_the_activity_loads_in_pages_and_from_a_moment_on(client: TestClient) ->
     assert first + rest == everything
     assert recent == everything[:2]
     assert client.get(f"/v1/projects/{id}/activity", params={"limit": 0}, headers=ANA).status_code == 422
+    # A moment without its offset could mean any time zone.
+    assert client.get(f"/v1/projects/{id}/activity", params={"since": "2020-01-01"}, headers=ANA).status_code == 422
 
 
 def test_deleting_a_project_forgets_its_activity(client: TestClient) -> None:
