@@ -44,6 +44,18 @@ import { mapMarks, mapTheme, useTheme } from "./lib/theme";
 import { nextZoneNumber, useMyZones, type MyZone } from "./lib/my-zones";
 import { deleteFromAccount, loadAccountZones, saveToAccount } from "./lib/account-zones";
 import MyZonesBar from "./MyZonesBar";
+import ProjectsBar from "./ProjectsBar";
+import CreateProject from "./CreateProject";
+import AddToProject from "./AddToProject";
+import type { ProjectSummary } from "@idea-agro/api-client";
+import {
+  addSavedZones,
+  createProject,
+  loadProject,
+  loadProjects,
+  projectZones,
+  type ProjectZone,
+} from "./lib/projects";
 import DeleteZone from "./DeleteZone";
 import { readHint } from "@/lib/account-hint";
 
@@ -83,7 +95,8 @@ const intersects = (a: Bounds, b: Bounds) => a[0] <= b[2] && a[2] >= b[0] && a[1
 
 type ZoneRecord = {
   key: string;
-  kind: "division" | "padron" | "custom";
+  /** "item": a zone of the project on the map. */
+  kind: "division" | "padron" | "custom" | "item";
   division?: DivisionId;
   id: string;
   title: string;
@@ -113,6 +126,13 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   const saved = useMyZones((s) => s.saved);
   const [signedIn, setSignedIn] = useState(false);
   const [deleting, setDeleting] = useState<MyZone | null>(null);
+  const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
+  // Tagged with the project they belong to, so the map never draws one project's zones under another's name.
+  const [shownProject, setShownProject] = useState<{ id: string; zones: ProjectZone[] } | null>(null);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [creatingBusy, setCreatingBusy] = useState(false);
+  // Zones just added with a project on the map, until the reader answers whether they go to it too.
+  const [asking, setAsking] = useState<MyZone[] | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Tagged with their division, so the map knows when the one in view has not arrived yet.
@@ -284,6 +304,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
           // Loaded before the copies here go, so a saved zone never blinks off the map.
           useMyZones.getState().setSaved(await loadAccountZones());
           useMyZones.getState().removeLocal([...ids.keys()]);
+          for (const [key, id] of ids) savedIds.current.set(key, id);
+          void addWaiting();
           setState((current) =>
             current.selection?.kind === "custom" && ids.has(current.selection.key)
               ? { ...current, selection: { kind: "custom", key: ids.get(current.selection.key)! } }
@@ -306,6 +328,68 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     if (state.selection?.kind === "custom") useMyZones.getState().select(state.selection.key);
     else if (hydrated && state.regions === "mine") useMyZones.getState().select(null);
   }, [state.selection, state.regions, hydrated]);
+
+  // Projects: the list, and the zones of the one on the map.
+  const reloadProjects = useCallback(() => {
+    loadProjects().then(setProjects, () => setNotice(t("explorer.projects.loadFailed")));
+  }, [t]);
+  useEffect(() => {
+    if (!signedIn) return setProjects(null);
+    if (state.regions === "projects" || creatingProject) reloadProjects();
+  }, [signedIn, state.regions, creatingProject, reloadProjects]);
+  const shown = state.regions === "projects" && signedIn ? state.project : null;
+  const [projectRound, setProjectRound] = useState(0);
+  useEffect(() => {
+    if (!shown) return;
+    let live = true;
+    loadProject(shown)
+      .then((project) => projectZones(project, { padron: (n) => t("explorer.zone.padron", { number: n }) }))
+      .then((zones) => live && setShownProject({ id: shown, zones }))
+      .catch(() => live && setNotice(t("explorer.projects.loadFailed")));
+    return () => {
+      live = false;
+    };
+  }, [shown, projectRound, t]);
+  const shownZones = shown && shownProject?.id === shown ? shownProject.zones : null;
+  const shownSummary = projects?.find((p) => p.id === shown) ?? null;
+
+  // A zone is added to a project once it is saved: the answer may come before or after the save.
+  const savedIds = useRef(new Map<string, string>());
+  const waiting = useRef(new Map<string, string>());
+  const addWaiting = useCallback(async () => {
+    const ready = [...waiting.current].filter(([key]) => savedIds.current.has(key));
+    if (!ready.length) return;
+    const byProject = new Map<string, string[]>();
+    for (const [key, project] of ready) {
+      waiting.current.delete(key);
+      byProject.set(project, [...(byProject.get(project) ?? []), savedIds.current.get(key)!]);
+    }
+    for (const [project, ids] of byProject)
+      if (await addSavedZones(project, ids)) setNotice(t("explorer.projects.addFailed"));
+    setProjectRound((n) => n + 1);
+  }, [t]);
+  const onAnswer = (add: boolean) => {
+    if (add && asking && shown) {
+      for (const zone of asking) waiting.current.set(zone.key, shown);
+      void addWaiting();
+    }
+    setAsking(null);
+  };
+
+  const onCreateProject = async (name: string, zoneIds: string[]) => {
+    setCreatingBusy(true);
+    try {
+      const id = await createProject(name);
+      if (zoneIds.length && (await addSavedZones(id, zoneIds))) setNotice(t("explorer.projects.addFailed"));
+      setCreatingProject(false);
+      reloadProjects();
+      update({ regions: "projects", project: id, selection: null });
+    } catch (error) {
+      setNotice(t("explorer.projects.createFailed", { reason: error instanceof Error ? error.message : "" }));
+    } finally {
+      setCreatingBusy(false);
+    }
+  };
 
   const onDelete = async (zone: MyZone) => {
     setDeleting(null);
@@ -362,6 +446,18 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         });
       }
     }
+    if (state.regions === "projects")
+      for (const z of shownZones ?? [])
+        out.set(z.key, {
+          key: z.key,
+          kind: "item",
+          division: z.division,
+          id: z.id,
+          title: z.name,
+          areaKm2: z.areaKm2,
+          geometry: z.geometry,
+          selection: { kind: "item", key: z.key },
+        });
     if (state.regions === "mine")
       for (const z of myZones)
         out.set(z.key, {
@@ -383,6 +479,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     pendingSelectionDepartment,
     state.regions,
     myZones,
+    shownZones,
     manifest,
     t,
   ]);
@@ -405,7 +502,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
       ? state.selection.id
       : state.selection?.kind === "padron"
         ? `${state.selection.department}:${state.selection.padron}`
-        : state.selection?.kind === "custom"
+        : state.selection?.kind === "custom" || state.selection?.kind === "item"
           ? state.selection.key
           : null;
   const selected = selectedKey ? (records.get(selectedKey) ?? null) : null;
@@ -475,7 +572,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     const done = (value: ZoneSummary["value"]) => live && setZoneValue(value);
     setZoneValue({ state: "loading", label });
 
-    if (selected.kind === "division" && selected.division) {
+    // A project's predefined zone reads its division's values, as the zone itself does.
+    if ((selected.kind === "division" || selected.kind === "item") && selected.division) {
       const zoneId = selected.id;
       const div = selected.division;
       const kind = indicatorManifest.kind;
@@ -548,7 +646,15 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
 
   const zoneHref = (record: ZoneRecord) => {
     const params = new URLSearchParams();
-    if (record.kind === "division" && record.division) {
+    const item = record.kind === "item" ? shownZones?.find((z) => z.key === record.key) : undefined;
+    if (item?.kind === "saved" && shown) {
+      params.set("saved", item.id);
+      params.set("project", shown);
+    } else if (item?.kind === "division" && item.division) {
+      params.set("d", item.division);
+      params.set("id", item.id);
+    } else if (item?.kind === "padron") params.set("padron", item.id);
+    else if (record.kind === "division" && record.division) {
       params.set("d", record.division);
       params.set("id", record.id);
     } else if (record.kind === "padron") params.set("padron", record.id);
@@ -559,19 +665,24 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     return `${zonePath}?${params}`;
   };
 
+  const itemKind = selected?.kind === "item" ? shownZones?.find((z) => z.key === selected.key)?.kind : undefined;
   const summary: ZoneSummary | null = selected
     ? {
         key: selected.key,
         kind:
-          selected.kind === "division" && selected.division?.startsWith("cuencas-")
-            ? t("explorer.zone.kinds.cuencas", { grade: selected.division.slice(-1) })
-            : selected.kind === "division"
-              ? t("explorer.zone.kinds.seccionales")
-              : selected.kind === "padron"
-                ? t("explorer.zone.kinds.padrones")
-                : localKeys.has(selected.key)
-                  ? t("explorer.mine.inBrowser")
-                  : t("explorer.zone.kinds.saved"),
+          itemKind === "saved"
+            ? t("explorer.zone.kinds.saved")
+            : itemKind === "padron"
+              ? t("explorer.zone.kinds.padrones")
+              : (selected.kind === "division" || itemKind === "division") && selected.division?.startsWith("cuencas-")
+                ? t("explorer.zone.kinds.cuencas", { grade: selected.division.slice(-1) })
+                : selected.kind === "division" || itemKind === "division"
+                  ? t("explorer.zone.kinds.seccionales")
+                  : selected.kind === "padron"
+                    ? t("explorer.zone.kinds.padrones")
+                    : localKeys.has(selected.key)
+                      ? t("explorer.mine.inBrowser")
+                      : t("explorer.zone.kinds.saved"),
         title: selected.title,
         subtitle: selected.subtitle,
         area:
@@ -615,9 +726,12 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   // Files and drawings join the reader's zones at once: kept here, and sent to the account when signed in.
   const keepZones = (zones: MyZone[], selectKey: string | null) => {
     useMyZones.getState().addLocal(zones);
-    update({ regions: "mine", selection: selectKey ? { kind: "custom", key: selectKey } : null });
+    if (shown && shownSummary && shownSummary.role !== "viewer") setAsking(zones);
+    else update({ regions: "mine", selection: selectKey ? { kind: "custom", key: selectKey } : null });
     setFocus({ bbox: unionBounds(zones.map((z) => bboxOf(z.geometry))), id: Date.now(), maxZoom: 13 });
   };
+  const keepZonesRef = useRef(keepZones);
+  keepZonesRef.current = keepZones;
   const onUpload = async (file: File) => {
     setNotice(null);
     try {
@@ -670,8 +784,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             areaKm2: areaKm2(geometry),
             geometry,
           };
-          useMyZones.getState().addLocal([zone]);
-          update({ regions: "mine", selection: { kind: "custom", key: zone.key } });
+          keepZonesRef.current([zone], zone.key);
           setAnchor(anchorOf(geometry));
         }
         setDrawing(false);
@@ -719,7 +832,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
   // What is still on its way, after the map itself: the zones in view, then the indicator's image.
   const loadingText = !manifest
     ? null
-    : division && !divisionZones
+    : (division && !divisionZones) || (shown && !shownZones)
       ? t("explorer.loadingZones")
       : indicatorId && !frame
         ? t("explorer.loadingIndicator", { name: t(`indicators.items.${indicatorId}.name` as AppKey) })
@@ -770,23 +883,50 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             onRegions={(regions) => update({ regions, selection: null })}
             onGrade={(grade) => update({ grade, selection: null })}
             onSearch={onSearch}
-            mine={
-              <MyZonesBar
-                zones={myZones}
-                local={localKeys}
-                signedIn={signedIn}
-                signInHref={signInPath}
-                drawing={drawing}
-                onPick={(key) => {
-                  const zone = myZones.find((z) => z.key === key);
-                  if (!zone) return;
-                  select({ kind: "custom", key });
-                  setFocus({ bbox: bboxOf(zone.geometry), id: Date.now(), maxZoom: 13 });
-                }}
-                onUpload={(file) => void onUpload(file)}
-                onDraw={setDrawing}
-              />
+            tools={
+              state.regions === "projects" ? (
+                <ProjectsBar
+                  projects={projects}
+                  project={state.project}
+                  signedIn={signedIn}
+                  signInHref={signInPath}
+                  drawing={drawing}
+                  onProject={(project) => update({ project, selection: null })}
+                  onUpload={(file) => void onUpload(file)}
+                  onDraw={setDrawing}
+                  onCreate={() => setCreatingProject(true)}
+                />
+              ) : (
+                <MyZonesBar
+                  zones={myZones}
+                  local={localKeys}
+                  signedIn={signedIn}
+                  signInHref={signInPath}
+                  drawing={drawing}
+                  onPick={(key) => {
+                    const zone = myZones.find((z) => z.key === key);
+                    if (!zone) return;
+                    select({ kind: "custom", key });
+                    setFocus({ bbox: bboxOf(zone.geometry), id: Date.now(), maxZoom: 13 });
+                  }}
+                  onUpload={(file) => void onUpload(file)}
+                  onDraw={setDrawing}
+                  onCreateProject={signedIn && saved.length ? () => setCreatingProject(true) : null}
+                />
+              )
             }
+          />
+          <CreateProject
+            open={creatingProject}
+            zones={saved}
+            busy={creatingBusy}
+            onCreate={(name, ids) => void onCreateProject(name, ids)}
+            onClose={() => setCreatingProject(false)}
+          />
+          <AddToProject
+            zones={asking?.map((z) => z.name) ?? null}
+            project={shownSummary?.name ?? ""}
+            onAnswer={onAnswer}
           />
           <DeleteZone
             zone={deleting}

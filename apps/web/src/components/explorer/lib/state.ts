@@ -1,15 +1,20 @@
 import { indicatorIds, type IndicatorId } from "@/data/indicators";
 import { basinGrades, isDivision, type BasinGrade, type DivisionId } from "./data";
 
-/** The kinds of region drawn over the map; only one at a time ("mine": the reader's files and drawings). */
-export type RegionKind = "none" | "seccionales" | "cuencas" | "padrones" | "mine";
-export const regionKinds: RegionKind[] = ["none", "seccionales", "cuencas", "padrones", "mine"];
+/**
+ * The kinds of region drawn over the map; only one at a time ("mine": the reader's files and drawings, "projects":
+ * the zones of one of their projects).
+ */
+export type RegionKind = "none" | "seccionales" | "cuencas" | "padrones" | "mine" | "projects";
+export const regionKinds: RegionKind[] = ["none", "seccionales", "cuencas", "padrones", "mine", "projects"];
 
 export type Selection =
   | { kind: "division"; division: DivisionId; id: string }
   | { kind: "padron"; department: string; padron: number }
   /** A zone of the reader's own: in this browser or in their account. */
-  | { kind: "custom"; key: string };
+  | { kind: "custom"; key: string }
+  /** A zone of the project on the map, by its item key. */
+  | { kind: "item"; key: string };
 
 export type ExplorerState = {
   indicator: IndicatorId | "none";
@@ -17,6 +22,8 @@ export type ExplorerState = {
   year: number | null;
   regions: RegionKind;
   grade: BasinGrade;
+  /** The project drawn when the regions are "projects". */
+  project: string | null;
   /** Grassland community highlighted when the background is `compn`. */
   community: number;
   selection: Selection | null;
@@ -29,6 +36,7 @@ export const defaultState: ExplorerState = {
   // Six basins: the lightest division, so the map shows zones at once while the others load.
   regions: "cuencas",
   grade: 1,
+  project: null,
   community: 3,
   selection: null,
   view: "panel",
@@ -64,6 +72,7 @@ export function readState(search: string): ExplorerState {
     year: Number.isInteger(year) && year > 1900 ? year : null,
     regions: regions && regionKinds.includes(regions) ? regions : defaultState.regions,
     grade: basinGrades.includes(grade) ? grade : defaultState.grade,
+    project: /^[0-9a-f-]{36}$/.test(params.get("proj") ?? "") ? params.get("proj") : null,
     community: community >= 1 && community <= 5 ? community : defaultState.community,
     selection: decodeSelection(params.get("zone")),
     view: params.get("view") === "full" ? "full" : "panel",
@@ -79,6 +88,7 @@ export function writeState(state: ExplorerState): string {
   put("year", state.year);
   put("reg", state.regions, defaultState.regions);
   if (state.regions === "cuencas") put("grade", state.grade, defaultState.grade);
+  if (state.regions === "projects") put("proj", state.project);
   if (state.indicator === "compn") put("com", state.community, defaultState.community);
   put("zone", encodeSelection(state.selection));
   put("view", state.view === "full" ? "full" : null);
