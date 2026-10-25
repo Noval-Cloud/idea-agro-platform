@@ -7,7 +7,7 @@ import { useI18n } from "./lib/i18n";
 import { preloadSearch, search, type SearchResult } from "./lib/search";
 import type { RegionKind } from "./lib/state";
 
-type Scope = Exclude<RegionKind, "mine">;
+type Scope = Exclude<RegionKind, "mine" | "projects">;
 interface Props {
   manifest: Manifest | null;
   /** The kind of region on the map: the search looks only there (and in departments, to find a place). */

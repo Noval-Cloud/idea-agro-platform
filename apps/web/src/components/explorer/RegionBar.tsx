@@ -19,8 +19,8 @@ interface Props {
   onRegions: (regions: RegionKind) => void;
   onGrade: (grade: BasinGrade) => void;
   onSearch: (result: SearchResult) => void;
-  /** The tools for the reader's own zones, shown when they are the regions on the map. */
-  mine: ReactNode;
+  /** The tools for the reader's own zones or projects, shown when those are the regions on the map. */
+  tools: ReactNode;
 }
 
 const pressed = "border-action bg-action text-action-ink";
@@ -36,7 +36,7 @@ export default function RegionBar(props: Props) {
   const i18n = useI18n();
   const { t } = i18n;
   const countKey = (kind: RegionKind) =>
-    kind === "cuencas" ? `cuencas-${props.grade}` : kind === "mine" ? null : kind;
+    kind === "cuencas" ? `cuencas-${props.grade}` : kind === "mine" || kind === "projects" ? null : kind;
   const count = (kind: RegionKind) => {
     const key = countKey(kind);
     const n = kind === "mine" ? props.mineCount : key ? props.counts[key] : undefined;
@@ -136,12 +136,12 @@ export default function RegionBar(props: Props) {
 
       {/* Second row on phones: the search, or the reader's own zones. */}
       <div className="flex min-w-0 items-center gap-2 sm:contents">
-        {props.regions !== "mine" ? (
+        {props.regions === "mine" || props.regions === "projects" ? (
+          props.tools
+        ) : (
           <div className="min-w-0 grow sm:max-w-md">
             <SearchBox manifest={props.manifest} scope={props.regions} onPick={props.onSearch} />
           </div>
-        ) : (
-          props.mine
         )}
       </div>
     </section>
