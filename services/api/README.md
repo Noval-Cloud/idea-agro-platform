@@ -48,6 +48,7 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 - **Privacy:** another person's zone answers 404, as if it did not exist.
 - **Seasonal series:** `/v1/saved-zones/{id}/seasonal`, and the same through a project, give the current outline's productivity, radiation and evapotranspiration on the catalog's dates. The data job computes them (its `saved` task) and keeps them next to the outline as `<outline>.series.json`. Until it has, `computing` is true.
 - **Computing right away:** a new outline (saved, imported or changed) starts the data job's `saved` task for that outline, through a `ZoneJobs` port. A restored outline brings its earlier series along. `ZONE_JOB` is `run://projects/<project>/locations/<region>/jobs/<job>` or `none`. A start that fails is only logged, because the nightly run catches up.
+- **Documents:** the owner attaches files to a saved zone (`/v1/saved-zones/{id}/documents`): PDF, images, text, CSV, spreadsheets and text documents, by extension, which also sets the type they are served with, always as attachments. Their files live in the outlines' bucket under `documents/<zone>/`, apart from what the data job reads, and their records in `zone_documents`. The members of the zone's projects list and download them. Limits: `DOCUMENT_MAX_BYTES` (10 MB), `DOCUMENTS_PER_ZONE` (20), `DOCUMENTS_MAX_BYTES_PER_ACCOUNT` (200 MB). Deleting the zone deletes them.
 
 ## Emails
 
