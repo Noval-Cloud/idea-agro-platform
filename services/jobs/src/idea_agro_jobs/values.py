@@ -3,7 +3,7 @@
 import json
 import logging
 from collections.abc import Callable, Iterable
-from datetime import date
+from datetime import date, timedelta
 from itertools import batched
 from typing import Any, cast
 
@@ -17,6 +17,8 @@ log = logging.getLogger(__name__)
 CATALOG = "catalog.json"
 # Periods computed at once: what one Earth Engine request handles for every zone of a division.
 CHUNK = 100
+# A seasonal indicator whose latest composite started longer ago than this has stopped arriving.
+STALE_AFTER = timedelta(days=45)
 
 
 def values_file(division: Division, indicator: Indicator) -> str:
@@ -70,7 +72,12 @@ def calendars(stored: dict[tuple[Division, Indicator], set[Period]]) -> dict[str
     return calendar
 
 
-def refresh(source: Source, store: ValueStore, files: Files) -> None:
+def stale(calendar: dict[str, list[str]], today: date) -> list[str]:
+    """The seasonal indicators with no composite started within `STALE_AFTER` of `today`."""
+    return [i for i, starts in calendar.items() if not starts or today - date.fromisoformat(starts[-1]) > STALE_AFTER]
+
+
+def refresh(source: Source, store: ValueStore, files: Files, today: date | None = None) -> None:
     composites = store.stored(Table.COMPOSITES)
     years = store.stored(Table.YEARS)
     summaries = store.stored(Table.SUMMARIES)
@@ -107,3 +114,7 @@ def refresh(source: Source, store: ValueStore, files: Files) -> None:
 
     files.update(CATALOG, with_calendar)
     log.info("catalog: %s", {indicator: len(dates) for indicator, dates in calendar.items()})
+    # An error alerts by email (the jobs README says how).
+    for indicator in stale(calendar, today or date.today()):
+        latest = calendar[indicator][-1] if calendar[indicator] else "none"
+        log.error("%s: no new composite for over %d days; the latest starts %s", indicator, STALE_AFTER.days, latest)

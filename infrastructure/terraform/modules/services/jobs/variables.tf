@@ -129,3 +129,27 @@ variable "earth_engine_project" {
   description = "Cloud project registered for Earth Engine that the job computes in, which may be another than its own"
   type        = string
 }
+
+variable "alert_channels" {
+  description = "Notification channels the job's alerts go to"
+  type        = list(string)
+  default     = []
+}
+
+variable "alert_rate_limit" {
+  description = "Least time between two emails of the job's alert"
+  type        = string
+  default     = "3600s"
+}
+
+variable "alert_auto_close" {
+  description = "Time after which an alert with no new error closes by itself"
+  type        = string
+  default     = "86400s"
+}
+
+variable "environment_labels" {
+  description = "The environment's labels, for the resources the provider's default labels do not reach"
+  type        = map(string)
+  default     = {}
+}

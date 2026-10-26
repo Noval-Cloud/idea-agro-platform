@@ -98,3 +98,15 @@ def test_summaries_are_published_once(files: LocalFiles) -> None:
 
     assert source.computed == []
     assert {i for (t, _, i) in store.rows if t == Table.SUMMARIES} == set(SUMMARIZED)
+
+
+def test_an_indicator_without_new_composites_is_reported(files: LocalFiles, caplog: pytest.LogCaptureFixture) -> None:
+    store = MemoryStore()
+
+    values.refresh(FakeSource(STARTS, [2023]), store, files, today=date(2025, 3, 3))
+
+    assert [r.getMessage() for r in caplog.records if r.levelname == "ERROR"] == []
+    values.refresh(FakeSource(STARTS, [2023]), store, files, today=date(2025, 3, 4))
+
+    errors = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
+    assert errors == [f"{i}: no new composite for over 45 days; the latest starts 2025-01-17" for i in SEASONAL]

@@ -4,6 +4,7 @@ region             = "us-central1"
 operator_sa        = "terraform-operator@idea-agro-dev.iam.gserviceaccount.com"
 auth_local_origins = ["http://localhost:4321"]
 admin_emails       = ["yoel@noval.cloud"]
+alert_emails       = ["yoel@noval.cloud"]
 
 # From Noval-Cloud/org-setup's outputs.
 ci = {
