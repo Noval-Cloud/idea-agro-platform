@@ -47,6 +47,7 @@ import { findMyZone } from "@/components/explorer/lib/my-zones";
 import AddToProject from "./AddToProject";
 import Locator from "./Locator";
 import OutlineVersions from "./OutlineVersions";
+import SeasonLegend from "./SeasonLegend";
 
 interface Props {
   locale: Locale;
@@ -674,7 +675,20 @@ function IndicatorView(props: ViewProps) {
   return <HistoryView {...props} />;
 }
 
-/** The chosen productive year against the mean and the range of the complete years, composite by composite. */
+/** Which compare colours go with each family that has seasonal series. */
+const compareFamilies = { productivity: "productivity", water: "water" } as const;
+
+const zoomText = (t: ReturnType<typeof useI18n>["t"]) => ({
+  label: t("zone.zoom.label"),
+  from: t("zone.zoom.from"),
+  to: t("zone.zoom.to"),
+  reset: t("zone.zoom.reset"),
+});
+
+/**
+ * The chosen productive year against the mean and the range of the complete years, composite by composite, with
+ * up to two more years to compare.
+ */
 function SeasonView({ manifest, division, id, title, indicator, year, onYear }: ViewProps & { indicator: SeasonalId }) {
   const i18n = useI18n();
   const { t } = i18n;
@@ -704,6 +718,11 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
     // order and per derive from bands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [series, indicator, bands]);
+
+  // Up to two more years beside the chosen one; each keeps its colour while shown.
+  const [compared, setCompared] = useState<{ year: number; slot: 1 | 2 }[]>([]);
+  const [showMean, setShowMean] = useState(true);
+  const [showRange, setShowRange] = useState(true);
 
   const all = [...byYear.keys()].sort((a, b) => a - b);
   const complete = all.filter((y) => byYear.get(y)?.every((v) => v !== null));
@@ -737,41 +756,70 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
   const dayMonth = new Intl.DateTimeFormat(intl, { day: "numeric", month: "short", timeZone: "UTC" });
   const monthName = new Intl.DateTimeFormat(intl, { month: "short", timeZone: "UTC" });
   const format = (v: number) => i18n.number(v, 1);
+  const family = indicators[indicator].family as keyof typeof compareFamilies;
+  const others = compared.filter((c) => c.year !== chosen && byYear.has(c.year));
+  const compareColor = (slot: 1 | 2) => `var(--ia-viz-compare-${compareFamilies[family]}-${slot})`;
   const chartSeries: ChartSeries[] = [
-    { key: "mean", label: t("zone.season.mean", { count }), values: mean, color: "var(--ia-viz-series-reference)" },
+    ...(showMean
+      ? [
+          {
+            key: "mean",
+            label: t("zone.season.mean", { count }),
+            values: mean,
+            color: "var(--ia-viz-series-reference)",
+          },
+        ]
+      : []),
+    ...others.map((c) => ({
+      key: `year-${c.year}`,
+      label: yearName(c.year),
+      values: byYear.get(c.year) ?? [],
+      color: compareColor(c.slot),
+      points: true,
+    })),
     {
       key: "year",
       label: t("zone.season.year", { year: label }),
       values: byYear.get(chosen) ?? [],
       color: familyColor(indicator),
       emphasis: true,
+      points: true,
     },
   ];
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold text-ink">
-            {t("zone.season.title", { indicator: name, year: label })}
-          </h2>
-          <p className="text-sm text-ink-muted">{unit}</p>
-        </div>
-        <label className="grid gap-1 text-xs text-ink-subtle">
-          {t("zone.yearPick")}
-          <select
-            value={chosen}
-            onChange={(e) => onYear(Number(e.currentTarget.value))}
-            className="h-9 rounded-sm border border-ink-subtle bg-surface px-2 text-sm text-ink"
-          >
-            {[...years].reverse().map((y) => (
-              <option key={y} value={y}>
-                {yearName(y)}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-ink">{t("zone.season.title", { indicator: name, year: label })}</h2>
+        <p className="text-sm text-ink-muted">{unit}</p>
       </div>
+      <SeasonLegend
+        text={{
+          year: t("zone.yearPick"),
+          mean: t("zone.season.mean", { count }),
+          range: t("zone.season.range", { count }),
+          compare: t("zone.season.compare"),
+          remove: (year) => t("zone.season.uncompare", { year }),
+          full: t("zone.season.compareFull"),
+        }}
+        years={[...years].reverse()}
+        yearName={yearName}
+        chosen={chosen}
+        chosenColor={familyColor(indicator)}
+        onChoose={onYear}
+        compared={others.map((c) => ({ year: c.year, color: compareColor(c.slot) }))}
+        limit={2}
+        onCompare={(y) =>
+          setCompared((now) =>
+            [...now, { year: y, slot: now.some((c) => c.slot === 1) ? (2 as const) : (1 as const) }].slice(0, 2),
+          )
+        }
+        onUncompare={(y) => setCompared((now) => now.filter((c) => c.year !== y))}
+        mean={showMean}
+        onMean={setShowMean}
+        range={showRange}
+        onRange={setShowRange}
+      />
       <XYChart
         mode="line"
         title={t("zone.season.title", { indicator: name, year: label })}
@@ -780,15 +828,21 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
         xLabels={dates.map((d) => dayMonth.format(d))}
         xTicks={monthTicks(dates[0], step, per, (d) => monthName.format(d))}
         series={chartSeries}
-        band={{
-          label: t("zone.season.range", { count }),
-          lower: low,
-          upper: high,
-          color: "var(--ia-viz-series-reference)",
-        }}
+        band={
+          showRange
+            ? {
+                label: t("zone.season.range", { count }),
+                lower: low,
+                upper: high,
+                color: "var(--ia-viz-series-reference)",
+              }
+            : undefined
+        }
         format={format}
         table={{ label: t("zone.tableView"), caption: title, xHeader: t("zone.tableDate") }}
         height="lg"
+        legend={false}
+        zoom={zoomText(t)}
       />
       <CsvButton
         onClick={() =>
@@ -881,6 +935,7 @@ function YearlyChart({
       yFromZero={!line}
       domain={share ? [0, 100] : undefined}
       table={{ label: t("zone.tableView"), caption, xHeader: t("zone.tableYear") }}
+      zoom={zoomText(t)}
     />
   );
 }

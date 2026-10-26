@@ -127,6 +127,16 @@ export const vizChrome = {
 } as const satisfies Record<string, Record<ThemeName, PrimitiveRef>>;
 
 /**
+ * Years drawn beside the chosen one on a chart, after the indicator's family colour. Picked per family from the
+ * dataviz reference palette so the three pass its all-pairs CVD check together in both themes (worst ΔE 8.9);
+ * the light pink sits under 3:1, relieved by the legend and the table view.
+ */
+export const vizCompare = {
+  productivity: { light: ["#2a78d6", "#e87ba4"], dark: ["#3987e5", "#d55181"] },
+  water: { light: ["#008300", "#e87ba4"], dark: ["#008300", "#d55181"] },
+} as const satisfies Partial<Record<DataFamily, Record<ThemeName, readonly [string, string]>>>;
+
+/**
  * The explorer's basemap and region outlines. A region line rides on a casing of the
  * opposite lightness, so it stays visible over every step of every ramp.
  */

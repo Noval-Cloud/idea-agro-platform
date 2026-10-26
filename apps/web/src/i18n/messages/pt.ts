@@ -685,11 +685,15 @@ export const pt = {
     tabs: "Indicadores da zona",
     views: {
       label: "Visualização",
-      season: "Dentro do ano",
-      history: "Ano a ano",
+      season: "Ano produtivo",
+      history: "Histórico",
     },
     yearPick: "Ano produtivo",
+    zoom: { label: "Trecho do gráfico", from: "De", to: "Até", reset: "Ver tudo" },
     season: {
+      compare: "Comparar com outro ano",
+      uncompare: "Tirar {year} da comparação",
+      compareFull: "Comparam-se até dois anos de cada vez: tire um para somar outro.",
       title: "{indicator} ao longo do ano produtivo {year}",
       year: "{year}",
       inProgress: "{year} (em andamento)",
