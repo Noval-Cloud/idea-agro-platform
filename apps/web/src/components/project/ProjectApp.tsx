@@ -104,17 +104,17 @@ export default function ProjectApp({
    * Runs a change and applies its result to the latest project, so changes in flight do not undo each other.
    * Refusals show the message given for their status; an ended session leads to sign-in.
    */
-  const change: Change = async (run, messages = {}) => {
+  const change: Change = async (run, messages = {}, quiet = false) => {
     setProblem(null);
     try {
       const { status, apply } = await run(await api());
       if (apply) setState((now) => (now.kind === "ready" ? { kind: "ready", project: apply(now.project) } : now));
-      else if (status >= 400) setProblem(messages[status] ?? "project.changeFailed");
+      else if (status >= 400 && !quiet) setProblem(messages[status] ?? "project.changeFailed");
       return status;
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) location.assign(signIn);
-      else setProblem("project.changeFailed");
+      else if (!quiet) setProblem("project.changeFailed");
       return 0;
     }
   };
@@ -269,7 +269,7 @@ function IconAction({
   onClick?: () => void;
 }) {
   const className = cn(
-    "inline-flex size-9 items-center justify-center rounded-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink",
+    "inline-flex size-10 shrink-0 items-center justify-center rounded-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink",
     danger && "hover:text-danger",
   );
   return (
@@ -313,10 +313,14 @@ function Header({
   };
   const icon = { size: iconSize.md, "aria-hidden": true } as const;
 
-  return (
-    <header className="flex items-start gap-2 pt-6 pb-5 sm:gap-3">
-      <IconAction label={t("project.back")} href={projectsPath} icon={<ArrowLeft {...icon} />} />
-      {editing && onEdit ? (
+  const back = (
+    <IconAction label={t("project.back")} href={projectsPath} icon={<ArrowLeft size={iconSize.lg} aria-hidden />} />
+  );
+
+  if (editing && onEdit)
+    return (
+      <header className="flex items-start gap-2 pt-6 pb-5 sm:gap-3">
+        {back}
         <form
           className="grid min-w-0 grow gap-3"
           onSubmit={(event) => {
@@ -353,48 +357,47 @@ function Header({
             </Button>
           </div>
         </form>
-      ) : (
-        <>
-          <div className="grid min-w-0 grow gap-1.5 pt-0.5">
-            <h1 className="font-display text-3xl font-medium tracking-tight wrap-break-word text-ink">
-              {project.name}
-            </h1>
-            <p className="max-w-prose text-sm whitespace-pre-line text-ink-muted">
-              {project.description || t("project.noDescription")}
-            </p>
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
-              <span
-                className={cn(
-                  "rounded-pill border px-2 py-0.5 font-medium",
-                  owner ? "border-line text-ink-muted" : "border-transparent bg-action-soft text-ink",
-                )}
-              >
-                {t(`project.roles.${project.role}`)}
-              </span>
-              {!owner && project.owner_name && <span>{t("project.sharedBy", { name: project.owner_name })}</span>}
-              <time dateTime={project.updated_at} title={moment(project.updated_at)}>
-                {t("project.changed", { when: ago(project.updated_at) })}
-              </time>
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <IconAction label={t("project.onMap")} href={mapHref} icon={<MapIcon {...icon} />} />
-            {onEdit && (
-              <IconAction
-                id="project-edit"
-                label={t("project.edit")}
-                icon={<Pencil {...icon} />}
-                onClick={() => setEditing({ name: project.name, description: project.description })}
-              />
-            )}
-            {owner ? (
-              <IconAction label={t("project.delete")} icon={<Trash2 {...icon} />} danger onClick={onDelete} />
-            ) : (
-              <IconAction label={t("project.leave")} icon={<LogOut {...icon} />} danger onClick={onLeave} />
-            )}
-          </div>
-        </>
-      )}
+      </header>
+    );
+
+  return (
+    // Arrow, title and actions share the title's first line; on phones the actions go under the text.
+    <header className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1.5 pt-6 pb-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-3">
+      <div className="flex h-lh items-center font-display text-3xl">{back}</div>
+      <h1 className="font-display text-3xl font-medium tracking-tight hyphens-auto text-ink">{project.name}</h1>
+      <div className="col-start-2 row-start-4 flex items-center gap-0.5 sm:col-start-3 sm:row-start-1 sm:h-lh sm:font-display sm:text-3xl">
+        <IconAction label={t("project.onMap")} href={mapHref} icon={<MapIcon {...icon} />} />
+        {onEdit && (
+          <IconAction
+            id="project-edit"
+            label={t("project.edit")}
+            icon={<Pencil {...icon} />}
+            onClick={() => setEditing({ name: project.name, description: project.description })}
+          />
+        )}
+        {owner ? (
+          <IconAction label={t("project.delete")} icon={<Trash2 {...icon} />} danger onClick={onDelete} />
+        ) : (
+          <IconAction label={t("project.leave")} icon={<LogOut {...icon} />} danger onClick={onLeave} />
+        )}
+      </div>
+      <p className="col-start-2 max-w-prose text-sm whitespace-pre-line text-ink-muted">
+        {project.description || t("project.noDescription")}
+      </p>
+      <p className="col-start-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
+        <span
+          className={cn(
+            "rounded-pill border px-2 py-0.5 font-medium",
+            owner ? "border-line text-ink-muted" : "border-transparent bg-action-soft text-ink",
+          )}
+        >
+          {t(`project.roles.${project.role}`)}
+        </span>
+        {!owner && project.owner_name && <span>{t("project.sharedBy", { name: project.owner_name })}</span>}
+        <time dateTime={project.updated_at} title={moment(project.updated_at)}>
+          {t("project.changed", { when: ago(project.updated_at) })}
+        </time>
+      </p>
     </header>
   );
 }

@@ -1,12 +1,13 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
+import { Dialog } from "radix-ui";
 import type { MemberOut, MemberRole, ProjectOut } from "@idea-agro/api-client";
-import { Info, Trash2, UserPlus } from "lucide-react";
+import { Trash2, TriangleAlert, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Question } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import { RowMenu } from "@/components/lists/RowMenu";
 import { iconSize } from "@/design/tokens";
+import { readHint } from "@/lib/account-hint";
 import { cn } from "@/lib/utils";
 import type { ProjectTranslator } from "./i18n";
 import { field, type Change } from "./shared";
@@ -27,8 +28,7 @@ export function PeopleTab({
   change: Change;
   ask: Ask;
 }) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<MemberRole>("viewer");
+  const [notice, setNotice] = useState("");
   const owner = project.role === "owner";
   const nameOf = (member: MemberOut) => member.name || member.email;
 
@@ -48,7 +48,6 @@ export function PeopleTab({
       async ([{ privately }, client]) => {
         const response = await privately((init) => client.shareProject(project.id, { email: to, role: as }, init));
         if (response.status !== 200) return { status: response.status };
-        setEmail("");
         return { status: 200, apply: () => response.data };
       },
       { 409: "project.members.full", 422: "project.members.failed" },
@@ -63,14 +62,15 @@ export function PeopleTab({
       returnFocus: () => document.getElementById(`member-${member.email}`),
     });
     if (!sure) return;
+    setNotice("");
     await change(async ([{ privately }, client]) => {
       // Emails go into the path: encoded, so none can reach another route.
       const gone = await privately((init) =>
         client.removeProjectMember(project.id, encodeURIComponent(member.email), init),
       );
       if (gone.status !== 204) return { status: gone.status };
-      // Their row went away with its menu: focus waits in the invitation.
-      requestAnimationFrame(() => document.getElementById("invite-email")?.focus());
+      // Their row went away with its menu: focus waits on the invite button.
+      requestAnimationFrame(() => document.getElementById("invite")?.focus());
       // Their zones left too: the project comes back as it is now.
       const now = await privately((init) => client.getProject(project.id, init));
       return now.status === 200 ? { status: 200, apply: () => now.data } : { status: 204 };
@@ -80,50 +80,33 @@ export function PeopleTab({
   return (
     <div className="grid gap-6 pt-6">
       {owner && (
-        <form
-          className="grid gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (email.trim()) void share(email.trim(), role);
-          }}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              id="invite-email"
-              type="email"
-              name="email"
-              autoComplete="off"
-              spellCheck={false}
-              value={email}
-              maxLength={254}
-              placeholder={t("project.members.emailPlaceholder")}
-              aria-label={t("project.members.email")}
-              onChange={(event) => setEmail(event.currentTarget.value)}
-              className="h-9 w-full text-sm sm:w-72"
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-prose text-sm text-ink-muted">{t("project.members.lead")}</p>
+            <InviteDialog
+              t={t}
+              members={project.members}
+              onInvite={(to, as) =>
+                change(
+                  async ([{ privately }, client]) => {
+                    const response = await privately((init) =>
+                      client.shareProject(project.id, { email: to, role: as }, init),
+                    );
+                    if (response.status !== 200) return { status: response.status };
+                    setNotice(t("project.members.invited", { email: to }));
+                    return { status: 200, apply: () => response.data };
+                  },
+                  {},
+                  true,
+                )
+              }
             />
-            <Segmented
-              value={role}
-              onValueChange={(value) => setRole(value as MemberRole)}
-              aria-label={t("project.members.role")}
-            >
-              {roles.map((r) => (
-                <SegmentedItem key={r} value={r}>
-                  {t(`project.roles.${r}`)}
-                </SegmentedItem>
-              ))}
-            </Segmented>
-            <Button type="submit" size="sm" disabled={!email.trim()}>
-              <UserPlus aria-hidden="true" />
-              {t("project.members.invite")}
-            </Button>
           </div>
-          <p className="flex items-start gap-1.5 text-xs text-ink-subtle">
-            <Info size={iconSize.xs} aria-hidden="true" className="mt-px shrink-0" />
-            <span>
-              {t("project.members.roleHelp")} {t("project.members.intro")}
-            </span>
+          {/* Always there, so the confirmation is announced when it appears. */}
+          <p role="status" className="text-sm text-ink-muted">
+            {notice}
           </p>
-        </form>
+        </div>
       )}
 
       <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
@@ -259,5 +242,169 @@ function RoleControl({
         </Button>
       )}
     </div>
+  );
+}
+
+/** The same check the API makes: an address with no characters that would change a path's meaning. */
+const EMAIL = /^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$/;
+
+/**
+ * Invites someone by email: what each role may do, and what a collaborator can reach, are said before inviting.
+ * The email is checked when sent and, after that, as one types.
+ */
+function InviteDialog({
+  t,
+  members,
+  onInvite,
+}: {
+  t: ProjectTranslator["t"];
+  members: MemberOut[];
+  onInvite: (email: string, role: MemberRole) => Promise<number>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<MemberRole>("viewer");
+  const [checked, setChecked] = useState(false);
+  const [refused, setRefused] = useState<"full" | "failed" | null>(null);
+  const [sending, setSending] = useState(false);
+  const ids = useId();
+
+  const address = email.trim().toLowerCase();
+  const problem = !EMAIL.test(address)
+    ? t("project.members.emailInvalid")
+    : address === readHint()?.email?.toLowerCase()
+      ? t("project.members.emailOwn")
+      : members.some((m) => m.email === address)
+        ? t("project.members.emailTaken", { email: address })
+        : null;
+
+  /** Opens clean; while an invitation is on its way the dialog stays open, so its answer has a place. */
+  const reset = (next: boolean) => {
+    if (!next && sending) return;
+    setOpen(next);
+    setEmail("");
+    setRole("viewer");
+    setChecked(false);
+    setRefused(null);
+  };
+
+  const send = async () => {
+    setChecked(true);
+    setRefused(null);
+    if (problem) return document.getElementById(`${ids}-email`)?.focus();
+    setSending(true);
+    const status = await onInvite(address, role);
+    setSending(false);
+    if (status === 200) {
+      setOpen(false);
+      return;
+    }
+    setRefused(status === 409 ? "full" : "failed");
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={reset}>
+      <Dialog.Trigger asChild>
+        <Button id="invite" size="sm">
+          <UserPlus aria-hidden="true" />
+          {t("project.members.invite")}
+        </Button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-(--ia-layer-modal) bg-scrim/50" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-(--ia-layer-modal) grid max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-md border border-line bg-surface p-6 text-ink shadow-overlay">
+          <form
+            noValidate
+            className="grid gap-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send();
+            }}
+          >
+            <div className="grid gap-1">
+              <Dialog.Title className="text-lg font-medium">{t("project.members.inviteTitle")}</Dialog.Title>
+              <Dialog.Description className="text-sm text-ink-muted">{t("project.members.intro")}</Dialog.Description>
+            </div>
+
+            <div className="grid gap-1.5">
+              <label htmlFor={`${ids}-email`} className="text-sm font-medium text-ink">
+                {t("project.members.email")}
+              </label>
+              <Input
+                id={`${ids}-email`}
+                type="email"
+                name="email"
+                inputMode="email"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={254}
+                value={email}
+                placeholder={t("project.members.emailPlaceholder")}
+                aria-invalid={checked && problem !== null}
+                aria-describedby={`${ids}-error`}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+                className="h-10 text-sm"
+                autoFocus
+              />
+              {/* Always there, so a problem found on sending is announced even with focus in the field. */}
+              <p id={`${ids}-error`} aria-live="polite" className="text-sm text-danger">
+                {checked ? problem : null}
+              </p>
+            </div>
+
+            <fieldset className="grid gap-2">
+              <legend className="mb-1.5 text-sm font-medium text-ink">{t("project.members.role")}</legend>
+              {roles.map((r) => (
+                <label
+                  key={r}
+                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-line p-3 transition-colors duration-(--ia-motion-fast) hover:border-ink-subtle has-checked:border-ink-subtle has-checked:bg-surface-selected has-focus-visible:outline-(length:--ia-focus-width) has-focus-visible:outline-offset-(--ia-focus-offset) has-focus-visible:outline-focus"
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={r}
+                    checked={role === r}
+                    onChange={() => setRole(r)}
+                    aria-describedby={r === "collaborator" ? `${ids}-${r} ${ids}-warning` : `${ids}-${r}`}
+                    className="mt-0.5 size-4 shrink-0 focus-visible:outline-none"
+                  />
+                  <span className="grid gap-0.5">
+                    <span className="text-sm font-medium text-ink">{t(`project.roles.${r}`)}</span>
+                    <span id={`${ids}-${r}`} className="text-sm text-ink-muted">
+                      {t(`project.members.roleBodies.${r}`)}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+
+            {role === "collaborator" && (
+              <p
+                id={`${ids}-warning`}
+                className="flex items-start gap-2 rounded-sm bg-action-soft p-3 text-sm text-ink"
+              >
+                <TriangleAlert size={iconSize.sm} aria-hidden="true" className="mt-0.5 shrink-0" />
+                {t("project.members.confirmCollaborator.body")}
+              </p>
+            )}
+
+            <p role="alert" className="text-sm text-danger">
+              {refused ? t(`project.members.${refused}`) : ""}
+            </p>
+
+            <div className="flex justify-end gap-2">
+              <Dialog.Close asChild>
+                <Button type="button" size="sm" variant="ghost" disabled={sending}>
+                  {t("project.cancel")}
+                </Button>
+              </Dialog.Close>
+              <Button type="submit" size="sm" disabled={sending}>
+                {sending ? t("project.members.inviting") : t("project.members.invite")}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

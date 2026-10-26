@@ -21,6 +21,8 @@ export type Outcome = { status: number; apply?: (project: ProjectOut) => Project
 export type Change = (
   run: (modules: Modules) => Promise<Outcome>,
   messages?: Partial<Record<number, ProjectKey>>,
+  /** The caller shows refusals and failures itself, as a dialog does next to its fields. */
+  quiet?: boolean,
 ) => Promise<number>;
 
 /** A key matching the API's item ids, to tell which zones the project already holds. */

@@ -21,6 +21,8 @@ export function TabsTrigger({
       className={cn(
         "relative inline-flex h-11 shrink-0 items-center gap-2 text-sm font-medium whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:text-ink data-[state=active]:text-ink",
         "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-pill after:bg-transparent data-[state=active]:after:bg-ink",
+        // Keyboard focus shows as a soft background and the underline in the focus color, not as a box.
+        "-mx-1.5 rounded-xs px-1.5 focus-visible:bg-surface-selected focus-visible:text-ink focus-visible:outline-none focus-visible:after:bg-focus",
         className,
       )}
       {...props}
