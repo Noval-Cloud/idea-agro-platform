@@ -32,6 +32,7 @@ module "api" {
   records_database = module.platform.firestore_database
   values_dataset   = module.platform.values_dataset
   admin_emails     = var.admin_emails
+  site_url         = module.web.url
 }
 
 module "jobs" {

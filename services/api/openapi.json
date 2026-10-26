@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.9.0"
+    "version": "1.10.0"
   },
   "paths": {
     "/health": {
@@ -2361,7 +2361,7 @@
           "Projects"
         ],
         "summary": "Share a project, or change a member's role",
-        "description": "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.",
+        "description": "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.",
         "operationId": "share_project",
         "security": [
           {
@@ -2398,7 +2398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProjectOut"
+                  "$ref": "#/components/schemas/SharedOut"
                 }
               }
             }
@@ -4327,6 +4327,17 @@
           "role": {
             "$ref": "#/components/schemas/MemberRole",
             "description": "`collaborator` edits the project's zones; `viewer` only reads."
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "pt"
+            ],
+            "title": "Language",
+            "description": "The language of the invitation email, the inviter's own.",
+            "default": "es"
           }
         },
         "type": "object",
@@ -5468,6 +5479,121 @@
         ],
         "title": "SeasonalSeries",
         "description": "One indicator's seasonal series in a zone: the zone's mean for each composite of the satellite record."
+      },
+      "SharedOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The project's id."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "items": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SavedItem"
+                },
+                {
+                  "$ref": "#/components/schemas/DivisionItem"
+                },
+                {
+                  "$ref": "#/components/schemas/PadronItem"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "division": "#/components/schemas/DivisionItem",
+                  "padron": "#/components/schemas/PadronItem",
+                  "saved": "#/components/schemas/SavedItem"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "collaborator",
+              "viewer"
+            ],
+            "title": "Role",
+            "description": "Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads)."
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "The owner's name."
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "type": "array",
+            "title": "Members",
+            "description": "Everyone the owner shared the project with."
+          },
+          "others_can_edit": {
+            "type": "boolean",
+            "title": "Others Can Edit",
+            "description": "Whether someone else can change the outline of the zones you add: worth a warning."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "invitation_sent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invitation Sent",
+            "description": "`true` when the invitation email left, `false` when it could not; `null` for a role change."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "items",
+          "role",
+          "owner_name",
+          "members",
+          "others_can_edit",
+          "created_at",
+          "updated_at",
+          "invitation_sent"
+        ],
+        "title": "SharedOut",
+        "description": "The project once shared, and whether the person invited was told by email."
       },
       "Theme": {
         "type": "string",

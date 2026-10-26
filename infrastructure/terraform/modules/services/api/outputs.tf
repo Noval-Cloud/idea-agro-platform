@@ -9,3 +9,7 @@ output "url" {
 output "zones_bucket" {
   value = google_storage_bucket.zones.name
 }
+
+output "mail_key_secret" {
+  value = google_secret_manager_secret.mail_key.secret_id
+}

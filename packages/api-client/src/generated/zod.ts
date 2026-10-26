@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.9.0
+ * OpenAPI spec version: 1.10.0
  */
 import * as zod from 'zod';
 
@@ -1030,7 +1030,7 @@ export const RemoveProjectItemResponse = zod.void()
 
 
 /**
- * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.
  * @summary Share a project, or change a member's role
  */
 export const ShareProjectParams = zod.object({
@@ -1041,11 +1041,12 @@ export const shareProjectBodyEmailMax = 254;
 
 
 export const shareProjectBodyEmailRegExp = new RegExp('^[^@\\s/?#%]+@[^@\\s/?#%]+\\.[^@\\s/?#%]+$');
-
+export const shareProjectBodyLanguageDefault = `es`;
 
 export const ShareProjectBody = zod.object({
   "email": zod.string().max(shareProjectBodyEmailMax).regex(shareProjectBodyEmailRegExp).describe('Their email, as they sign in with it.'),
-  "role": zod.enum(['collaborator', 'viewer']).describe('`collaborator` edits the project\'s zones; `viewer` only reads.')
+  "role": zod.enum(['collaborator', 'viewer']).describe('`collaborator` edits the project\'s zones; `viewer` only reads.'),
+  "language": zod.enum(['es', 'en', 'pt']).default(shareProjectBodyLanguageDefault).describe('The language of the invitation email, the inviter\'s own.')
 }).describe('Someone to share the project with, or a member\'s new role.')
 
 export const shareProjectResponseItemsItemOneZoneOneBboxMin = 4;
@@ -1098,8 +1099,9 @@ export const ShareProjectResponse = zod.object({
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
   "created_at": zod.iso.datetime({"offset":true}),
-  "updated_at": zod.iso.datetime({"offset":true})
-}).describe('A project and its zones, in the order they were added.')
+  "updated_at": zod.iso.datetime({"offset":true}),
+  "invitation_sent": zod.union([zod.boolean(),zod.null()]).describe('`true` when the invitation email left, `false` when it could not; `null` for a role change.')
+}).describe('The project once shared, and whether the person invited was told by email.')
 
 
 /**

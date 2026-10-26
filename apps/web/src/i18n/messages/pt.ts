@@ -851,8 +851,9 @@ export const pt = {
       emailOwn: "Esse é o seu e-mail: você já é o proprietário do projeto.",
       emailTaken: "{email} já está no projeto.",
       inviting: "Convidando…",
-      invited:
-        "Você convidou {email}. O projeto aparece entre os projetos dessa pessoa quando ela entra com esse e-mail.",
+      invited: "Enviamos para {email} um e-mail com o convite.",
+      invitedUnsent:
+        "Você convidou {email}, mas não conseguimos enviar o e-mail: avise que entre com esse endereço para ver o projeto.",
       roleBodies: {
         collaborator: "Adiciona e remove zonas e muda seus contornos.",
         viewer: "Vê o projeto, suas zonas e sua atividade, sem mudar nada.",

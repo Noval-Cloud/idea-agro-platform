@@ -852,7 +852,9 @@ export const en = {
       emailOwn: "That is your email: you already own the project.",
       emailTaken: "{email} is already in the project.",
       inviting: "Inviting…",
-      invited: "You invited {email}. The project shows among their projects once they sign in with that email.",
+      invited: "We emailed {email} the invitation.",
+      invitedUnsent:
+        "You invited {email}, but we could not send the email: tell them to sign in with that address to see the project.",
       roleBodies: {
         collaborator: "Adds and removes areas and changes their outlines.",
         viewer: "Sees the project, its areas and its activity, without changing anything.",

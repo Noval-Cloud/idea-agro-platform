@@ -57,6 +57,27 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ADMIN_EMAILS"
         value = join(",", var.admin_emails)
       }
+      env {
+        name  = "SITE_URL"
+        value = var.site_url
+      }
+      env {
+        name  = "MAILER"
+        value = var.mailer
+      }
+      env {
+        name  = "MAIL_FROM"
+        value = var.mail_from
+      }
+      env {
+        name = "MAIL_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.mail_key.secret_id
+            version = var.mail_key_version
+          }
+        }
+      }
 
       resources {
         cpu_idle = var.cpu_idle
@@ -67,6 +88,9 @@ resource "google_cloud_run_v2_service" "api" {
       }
     }
   }
+
+  # A revision reads the key when it starts: the API may read it before.
+  depends_on = [google_secret_manager_secret_iam_member.api_reads_mail_key]
 
   # The image belongs to the deploy: Terraform never changes it after creation.
   lifecycle {

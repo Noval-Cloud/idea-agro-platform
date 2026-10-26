@@ -66,3 +66,7 @@ output "auth_csp" {
 output "ci_image" {
   value = module.ci.ci_image
 }
+
+output "mail_key_secret" {
+  value = module.api.mail_key_secret
+}

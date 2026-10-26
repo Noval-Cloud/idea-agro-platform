@@ -34,3 +34,9 @@ resource "google_project_iam_member" "api_identity" {
   role    = google_project_iam_custom_role.identity.id
   member  = google_service_account.api.member
 }
+
+resource "google_secret_manager_secret_iam_member" "api_reads_mail_key" {
+  secret_id = google_secret_manager_secret.mail_key.id
+  role      = var.secret_reader_role
+  member    = google_service_account.api.member
+}

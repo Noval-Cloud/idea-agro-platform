@@ -169,3 +169,38 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "mail_key_secret_id" {
+  description = "Secret holding the mail provider's API key"
+  type        = string
+  default     = "mail-api-key"
+}
+
+variable "secret_reader_role" {
+  description = "Role that lets the API read its secrets' values"
+  type        = string
+  default     = "roles/secretmanager.secretAccessor"
+}
+
+variable "site_url" {
+  description = "The website's address, which the API's emails link to"
+  type        = string
+}
+
+variable "mailer" {
+  description = "How the API sends email: resend://, or none"
+  type        = string
+  default     = "resend://"
+}
+
+variable "mail_from" {
+  description = "Sender of the API's emails, as Name <address>"
+  type        = string
+  default     = "IDEA-Agro <no-reply@idea-agro.org>"
+}
+
+variable "mail_key_version" {
+  description = "Version of the mail provider's key the API reads"
+  type        = string
+  default     = "latest"
+}
