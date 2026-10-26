@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.12.0
+ * OpenAPI spec version: 1.13.0
  */
 import * as zod from 'zod';
 
@@ -543,7 +543,7 @@ export const RenameSavedZoneResponse = zod.object({
 
 
 /**
- * Deletes the zone and every version of its outline, and takes it out of every project.
+ * Deletes the zone, every version of its outline and its documents, and takes it out of every project.
  * @summary Delete a saved zone
  */
 export const DeleteSavedZoneParams = zod.object({
@@ -727,6 +727,102 @@ export const RestoreSavedZoneVersionResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Oldest first.
+ * @summary The documents of a saved zone
+ */
+export const ListSavedZoneDocumentsParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const ListSavedZoneDocumentsResponseItem = zod.object({
+  "id": zod.string().describe('The document\'s id.'),
+  "name": zod.string().describe('The file\'s name as it was uploaded.'),
+  "media_type": zod.string().describe('The file\'s type, from its extension.'),
+  "size": zod.int().describe('The file\'s size, in bytes.'),
+  "uploaded_at": zod.iso.datetime({"offset":true}).describe('When it was uploaded.'),
+  "uploaded_by": zod.union([zod.string(),zod.null()]).describe('Who uploaded it, by name; null when the account has none.')
+}).describe('A document kept with a saved zone.')
+export const ListSavedZoneDocumentsResponse = zod.array(ListSavedZoneDocumentsResponseItem)
+
+
+/**
+ * For the zone's owner. PDF, images (PNG, JPEG, WebP), text, CSV, spreadsheets (XLSX, XLS, ODS) and text documents (DOCX, ODT), each up to `DOCUMENT_MAX_BYTES` (10 MB). The members of the zone's projects can read them.
+ * @summary Attach a document to a saved zone
+ */
+export const AttachSavedZoneDocumentParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const AttachSavedZoneDocumentBody = zod.object({
+  "file": zod.instanceof(Blob)
+})
+
+export const AttachSavedZoneDocumentResponse = zod.object({
+  "id": zod.string().describe('The document\'s id.'),
+  "name": zod.string().describe('The file\'s name as it was uploaded.'),
+  "media_type": zod.string().describe('The file\'s type, from its extension.'),
+  "size": zod.int().describe('The file\'s size, in bytes.'),
+  "uploaded_at": zod.iso.datetime({"offset":true}).describe('When it was uploaded.'),
+  "uploaded_by": zod.union([zod.string(),zod.null()]).describe('Who uploaded it, by name; null when the account has none.')
+}).describe('A document kept with a saved zone.')
+
+
+/**
+ * @summary Download a document of a saved zone
+ */
+export const GetSavedZoneDocumentParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.'),
+  "document_id": zod.uuid().describe('The document\'s id.')
+})
+
+export const GetSavedZoneDocumentResponse = zod.unknown()
+
+
+/**
+ * @summary Delete a document of a saved zone
+ */
+export const DeleteSavedZoneDocumentParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.'),
+  "document_id": zod.uuid().describe('The document\'s id.')
+})
+
+export const DeleteSavedZoneDocumentResponse = zod.void()
+
+
+/**
+ * For every member. Oldest first.
+ * @summary The documents of a saved zone of a project
+ */
+export const ListProjectZoneDocumentsParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const ListProjectZoneDocumentsResponseItem = zod.object({
+  "id": zod.string().describe('The document\'s id.'),
+  "name": zod.string().describe('The file\'s name as it was uploaded.'),
+  "media_type": zod.string().describe('The file\'s type, from its extension.'),
+  "size": zod.int().describe('The file\'s size, in bytes.'),
+  "uploaded_at": zod.iso.datetime({"offset":true}).describe('When it was uploaded.'),
+  "uploaded_by": zod.union([zod.string(),zod.null()]).describe('Who uploaded it, by name; null when the account has none.')
+}).describe('A document kept with a saved zone.')
+export const ListProjectZoneDocumentsResponse = zod.array(ListProjectZoneDocumentsResponseItem)
+
+
+/**
+ * For every member.
+ * @summary Download a document of a saved zone of a project
+ */
+export const GetProjectZoneDocumentParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The zone\'s id.'),
+  "document_id": zod.uuid().describe('The document\'s id.')
+})
+
+export const GetProjectZoneDocumentResponse = zod.unknown()
 
 
 /**

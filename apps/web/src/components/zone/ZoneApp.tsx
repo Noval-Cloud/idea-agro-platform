@@ -48,6 +48,7 @@ import { findMyZone } from "@/components/explorer/lib/my-zones";
 import AddToProject from "./AddToProject";
 import Locator from "./Locator";
 import OutlineVersions from "./OutlineVersions";
+import ZoneDocuments from "./ZoneDocuments";
 import SeasonLegend from "./SeasonLegend";
 
 interface Props {
@@ -408,6 +409,15 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
               </header>
               {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
                 <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
+              )}
+              {zone.target.kind === "saved" && (
+                <ZoneDocuments
+                  t={t}
+                  locale={locale}
+                  zoneId={zone.target.id}
+                  project={zone.target.project}
+                  own={zone.access?.own ?? false}
+                />
               )}
             </div>
             <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">

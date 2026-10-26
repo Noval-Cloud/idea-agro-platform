@@ -8,6 +8,14 @@ from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.activity import ActivityStore, MemoryActivity, activity_from
 from idea_agro_api.audit import AuditStore, MemoryAudit, audit_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
+from idea_agro_api.documents import (
+    DocumentFiles,
+    DocumentStore,
+    MemoryDocumentFiles,
+    MemoryDocuments,
+    document_files_from,
+    documents_from,
+)
 from idea_agro_api.emails.templates import Templates
 from idea_agro_api.emails.words import BuiltInTemplates
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
@@ -44,6 +52,9 @@ class Limits:
     outline_versions: int = 50
     # How recent a sign-in sensitive admin actions need.
     recent_sign_in_seconds: int = 300
+    document_bytes: int = 10_000_000
+    documents_per_zone: int = 20
+    documents_bytes_per_account: int = 200_000_000
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -63,10 +74,16 @@ class Limits:
             invitation_resend_minutes=int(env.get("INVITATION_RESEND_MINUTES", "10")),
             outline_versions=int(env.get("OUTLINE_VERSIONS", "50")),
             recent_sign_in_seconds=int(env.get("RECENT_SIGN_IN_SECONDS", "300")),
+            document_bytes=int(env.get("DOCUMENT_MAX_BYTES", "10000000")),
+            documents_per_zone=int(env.get("DOCUMENTS_PER_ZONE", "20")),
+            documents_bytes_per_account=int(env.get("DOCUMENTS_MAX_BYTES_PER_ACCOUNT", "200000000")),
         )
 
     def body_bytes(self, path: str) -> int:
-        """The largest request body a route takes: an import, or else one outline."""
+        """The largest request body a route takes: a document, an import, or else one outline."""
+        if path.startswith("/v1/saved-zones/") and path.endswith("/documents"):
+            # The form around the file takes a little more than the file.
+            return self.document_bytes + 64_000
         return self.import_bytes if path == "/v1/saved-zones/import" else self.geometry_bytes
 
 
@@ -87,6 +104,9 @@ class Services:
     mailer: Mailer = field(default_factory=NoMailer)
     # The emails' words: the code's own, until a store people edit replaces them.
     templates: Templates = field(default_factory=BuiltInTemplates)
+    # Documents kept with saved zones: their records, and their files beside the outlines.
+    documents: DocumentStore = field(default_factory=MemoryDocuments)
+    document_files: DocumentFiles = field(default_factory=MemoryDocumentFiles)
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -125,6 +145,8 @@ class Services:
             activity=activity_from(records),
             audit=audit_from(records),
             geometries=geometries_from(outlines),
+            documents=documents_from(records),
+            document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),
