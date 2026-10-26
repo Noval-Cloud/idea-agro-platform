@@ -82,7 +82,12 @@ export type Question = {
 /** A confirmation to await, like `window.confirm` but in the page's own dialog. Render `dialog` once. */
 export function useConfirm(cancel: string) {
   const [asked, setAsked] = useState<(Question & { answer: (yes: boolean) => void }) | null>(null);
-  const ask = (question: Question) => new Promise<boolean>((answer) => setAsked({ ...question, answer }));
+  // Focus returns after the dialog has closed and `asked` is gone: the question's choice is kept apart.
+  const returnTo = useRef<Question["returnFocus"]>(undefined);
+  const ask = (question: Question) => {
+    returnTo.current = question.returnFocus;
+    return new Promise<boolean>((answer) => setAsked({ ...question, answer }));
+  };
   const close = (yes: boolean) => {
     asked?.answer(yes);
     setAsked(null);
@@ -95,7 +100,7 @@ export function useConfirm(cancel: string) {
       confirm={asked?.confirm ?? ""}
       cancel={cancel}
       tone={asked?.tone}
-      returnFocus={asked?.returnFocus}
+      returnFocus={() => returnTo.current?.() ?? null}
       onConfirm={() => close(true)}
       onCancel={() => close(false)}
     />
