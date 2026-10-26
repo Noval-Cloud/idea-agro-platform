@@ -10,6 +10,7 @@ import {
   divergingPoles,
   divergingArm,
   vizChrome,
+  vizCompare,
   vizMarks,
   mapChrome,
   mapMarks,
@@ -96,6 +97,8 @@ function themeBlock(theme: ThemeName): string[] {
     lines.push(`--ia-${role}: ${css(resolveRef(refs[theme]))};`);
   for (const [role, refs] of Object.entries(vizChrome))
     lines.push(`--ia-viz-${role}: ${css(resolveRef(refs[theme]))};`);
+  for (const [family, colors] of Object.entries(vizCompare))
+    colors[theme].forEach((ref, i) => lines.push(`--ia-viz-compare-${family}-${i + 1}: ${css(resolveRef(ref))};`));
   for (const [name, ramp] of Object.entries(ramps[theme])) {
     ramp.forEach((value, i) => lines.push(`--ia-viz-${name}-${i + 1}: ${css(value)};`));
   }

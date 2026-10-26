@@ -48,6 +48,18 @@ export const primitives = {
     500: [0.55, 0.19, 27],
     300: [0.7, 0.17, 27],
   },
+  /** Years compared on a chart: steps of the dataviz reference palette (see `vizCompare`). */
+  azure: {
+    450: [0.6221, 0.1612, 255.05],
+    500: [0.5753, 0.1626, 255.53],
+  },
+  rose: {
+    400: [0.7163, 0.1412, 357.39],
+    500: [0.6224, 0.1712, 0.84],
+  },
+  leaf: {
+    600: [0.5285, 0.1798, 142.5],
+  },
   /** Basemap water: a quiet blue that never competes with the water data family. */
   lake: {
     200: [0.885, 0.03, 232],
@@ -127,6 +139,16 @@ export const vizChrome = {
   "series-reference": { light: "slate.500", dark: "slate.400" },
   "series-emphasis": { light: "indigo.700", dark: "indigo.300" },
 } as const satisfies Record<string, Record<ThemeName, PrimitiveRef>>;
+
+/**
+ * Years drawn beside the chosen one on a chart, after the indicator's family colour. Picked per family from the
+ * dataviz reference palette so the three pass its all-pairs CVD check together in both themes (worst ΔE 8.9);
+ * the light pink sits under 3:1, relieved by the legend and the table view.
+ */
+export const vizCompare = {
+  productivity: { light: ["azure.500", "rose.400"], dark: ["azure.450", "rose.500"] },
+  water: { light: ["leaf.600", "rose.400"], dark: ["leaf.600", "rose.500"] },
+} as const satisfies Partial<Record<DataFamily, Record<ThemeName, readonly [PrimitiveRef, PrimitiveRef]>>>;
 
 /**
  * The explorer's basemap and region outlines. A region line rides on a casing of the

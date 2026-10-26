@@ -687,11 +687,15 @@ export const en = {
     tabs: "Area indicators",
     views: {
       label: "View",
-      season: "Within the year",
-      history: "Year by year",
+      season: "Productive year",
+      history: "History",
     },
     yearPick: "Productive year",
+    zoom: { label: "Stretch of the chart", from: "From", to: "To", reset: "See all" },
     season: {
+      compare: "Compare with another year",
+      uncompare: "Remove {year} from the comparison",
+      compareFull: "Up to two years are compared at once: remove one to add another.",
       title: "{indicator} through the productive year {year}",
       year: "{year}",
       inProgress: "{year} (in progress)",

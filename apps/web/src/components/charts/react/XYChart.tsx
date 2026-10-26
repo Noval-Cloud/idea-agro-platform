@@ -1,6 +1,11 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { finite, linear, linePath, niceTicks } from "../scale";
 import { cn } from "@/lib/utils";
+import { vizMarks } from "@/design/tokens";
+import RangeBar, { type RangeText } from "./RangeBar";
+
+/** The room one dot takes with its ring: closer than this, points are left to the line. */
+const dotRoom = (Number(vizMarks["marker-radius"]) + Number(vizMarks["ring-width"])) * 2;
 
 /*
  * The client twin of the Astro LineChart/BarChart: same classes, same reading rules.
@@ -15,6 +20,8 @@ export type ChartSeries = {
   color: string;
   /** The series the chart is about; others recede. */
   emphasis?: boolean;
+  /** Each value drawn as a dot on the line, for series read value by value. */
+  points?: boolean;
 };
 export type ChartBand = { label: string; lower: (number | null)[]; upper: (number | null)[]; color: string };
 export type ChartReference = { label: string; value: number; color: string };
@@ -35,15 +42,63 @@ interface Props {
   domain?: [number, number];
   table: { label: string; caption: string; xHeader: string };
   height?: "md" | "lg";
+  /** False when the page draws its own legend, as one that adds and removes series. */
+  legend?: boolean;
+  /** A bar under the chart to narrow it to a stretch of the x axis. */
+  zoom?: RangeText;
 }
 
+/** The props narrowed to the indexes from `start` to `end`, ticks renumbered; a short stretch gets its own ticks. */
+function windowed(props: Props, start: number, end: number) {
+  const cut = <T,>(values: T[]) => values.slice(start, end + 1);
+  const inside = props.xTicks.filter((t) => t.index >= start && t.index <= end);
+  const length = end - start + 1;
+  const every = Math.max(1, Math.ceil(length / 6));
+  const xTicks =
+    inside.length >= 2
+      ? inside.map((t) => ({ ...t, index: t.index - start }))
+      : Array.from({ length }, (_, i) => i)
+          .filter((i) => i % every === 0)
+          .map((i) => ({ index: i, label: props.xLabels[start + i], minor: false }));
+  return {
+    xLabels: cut(props.xLabels),
+    xTicks,
+    series: props.series.map((s) => ({ ...s, values: cut(s.values) })),
+    band: props.band && { ...props.band, lower: cut(props.band.lower), upper: cut(props.band.upper) },
+  };
+}
+
+/** The series drawn behind the range bar: the one with the most values, so a year in progress does not stop it short. */
+const overview = (series: ChartSeries[]) =>
+  series.reduce<ChartSeries | null>(
+    (best, s) => (!best || finite(s.values).length > finite(best.values).length ? s : best),
+    null,
+  )?.values ?? [];
+
 export default function XYChart(props: Props) {
-  const { mode, xLabels, series, band, reference, format, yFromZero = true } = props;
+  const full = props.xLabels.length;
+  const [range, setRange] = useState<[number, number]>([0, Math.max(0, full - 1)]);
+  // An axis of another length (another view) shows whole again; another year keeps the stretch.
+  useEffect(() => setRange([0, Math.max(0, full - 1)]), [full]);
+  const [start, end] = props.zoom ? [Math.min(range[0], full - 1), Math.min(range[1], full - 1)] : [0, full - 1];
+  const view = useMemo(() => windowed(props, start, end), [props, start, end]);
+  const { mode, reference, format, yFromZero = true } = props;
+  const { xLabels, series, band } = view;
   const id = useId();
   const n = xLabels.length;
   const [active, setActive] = useState<number | null>(null);
   const [announce, setAnnounce] = useState("");
   const hit = useRef<HTMLDivElement>(null);
+  const plot = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(0);
+  useEffect(() => {
+    const element = plot.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => entry && setPlotWidth(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const roomy = plotWidth / Math.max(1, n - 1) >= dotRoom;
 
   const ticks = useMemo(() => {
     if (props.domain)
@@ -123,7 +178,7 @@ export default function XYChart(props: Props) {
       <figcaption className="sr-only">
         {props.title}. {props.summary}
       </figcaption>
-      {legend.length > 1 && (
+      {props.legend !== false && legend.length > 1 && (
         <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-muted" aria-hidden="true">
           {legend.map((item) => (
             <li key={item.key} className="flex items-center gap-2">
@@ -139,7 +194,7 @@ export default function XYChart(props: Props) {
         </ul>
       )}
       <div className={cn("relative pb-7 pl-12", heightClass)}>
-        <div className="absolute inset-y-0 right-0 bottom-7 left-12">
+        <div ref={plot} className="absolute inset-y-0 right-0 bottom-7 left-12">
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -223,7 +278,7 @@ export default function XYChart(props: Props) {
               {format(tick)}
             </span>
           ))}
-          {props.xTicks.map((tick) => (
+          {view.xTicks.map((tick) => (
             <span
               key={`${tick.index}-${tick.label}`}
               className={cn(
@@ -236,6 +291,23 @@ export default function XYChart(props: Props) {
               {tick.label}
             </span>
           ))}
+
+          {mode === "line" &&
+            roomy &&
+            series.map(
+              (s) =>
+                s.points &&
+                s.values.map((v, i) =>
+                  v === null ? null : (
+                    <span
+                      key={`${s.key}-${i}`}
+                      className="chart-dot"
+                      style={{ left: `${x(i)}%`, top: `${y(v)}%`, ["--series-color" as string]: s.color }}
+                      aria-hidden="true"
+                    />
+                  ),
+                ),
+            )}
 
           {active !== null && (
             <>
@@ -307,6 +379,18 @@ export default function XYChart(props: Props) {
           />
         </div>
       </div>
+      {props.zoom && full > 2 && (
+        <RangeBar
+          values={overview(props.series)}
+          labels={props.xLabels}
+          range={[start, end]}
+          onRange={(next) => {
+            setRange(next);
+            setActive(null);
+          }}
+          text={props.zoom}
+        />
+      )}
       <p id={`${id}-keys`} className="sr-only">
         {props.instructions}
       </p>
