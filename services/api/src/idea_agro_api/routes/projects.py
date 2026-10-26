@@ -374,7 +374,8 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
     invited = False
     # Made once, outside the change, which may run more than once.
     code, kept = new_code()
-    until = datetime.now(UTC) + timedelta(days=services.limits.invitation_days)
+    now = datetime.now(UTC)
+    until = now + timedelta(days=services.limits.invitation_days)
 
     def sharing(project: Project) -> Project:
         nonlocal invited
@@ -387,7 +388,10 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
             raise TooManyItems
         else:
             invited = True
-            members = (*project.members, Member(email, member.role, invitation=kept, invited_until=until))
+            members = (
+                *project.members,
+                Member(email, member.role, invitation=kept, invited_until=until, invited_at=now),
+            )
         return replace(project, members=members, updated_at=datetime.now(UTC))
 
     try:
@@ -417,7 +421,9 @@ def resend_invitation(
     reachable(services, caller, project_id, "own")
     email = email.lower()
     code, kept = new_code()
-    until = datetime.now(UTC) + timedelta(days=services.limits.invitation_days)
+    now = datetime.now(UTC)
+    until = now + timedelta(days=services.limits.invitation_days)
+    pause = timedelta(minutes=services.limits.invitation_resend_minutes)
     role: MemberRole | None = None
 
     def renewing(project: Project) -> Project:
@@ -427,9 +433,13 @@ def resend_invitation(
         member = next((m for m in project.members if m.email == email), None)
         if member is None or member.account is not None:
             raise MissingInvitation
+        # Against flooding someone's inbox: one email per invitation every few minutes.
+        if member.invited_at and now - member.invited_at < pause:
+            raise TooSoon(int((member.invited_at + pause - now).total_seconds()) + 1)
         role = member.role
         members = tuple(
-            replace(m, invitation=kept, invited_until=until) if m.email == email else m for m in project.members
+            replace(m, invitation=kept, invited_until=until, invited_at=now) if m.email == email else m
+            for m in project.members
         )
         return replace(project, members=members)
 
@@ -439,6 +449,10 @@ def resend_invitation(
         raise HTTPException(403, OWNER_ONLY) from error
     except MissingInvitation as error:
         raise HTTPException(409, "There is no pending invitation for that email.") from error
+    except TooSoon as error:
+        raise HTTPException(
+            429, "The invitation was emailed a moment ago: try again later.", {"Retry-After": str(error.seconds)}
+        ) from error
     if project is None or role is None:
         raise HTTPException(404, NO_PROJECT)
     note(services, [project.id], caller, Action.MEMBER_INVITED, email, role.value)
@@ -448,6 +462,11 @@ def resend_invitation(
 
 class MissingInvitation(Exception):
     pass
+
+
+class TooSoon(Exception):
+    def __init__(self, seconds: int) -> None:
+        self.seconds = seconds
 
 
 def tell(

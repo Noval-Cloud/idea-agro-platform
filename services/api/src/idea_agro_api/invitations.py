@@ -1,9 +1,8 @@
 """The email that tells someone they were invited to a project, in the inviter's language."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from html import escape
 from typing import Literal
-from urllib.parse import quote
 
 from idea_agro_api.mail import Email
 from idea_agro_api.projects import MemberRole
@@ -97,6 +96,9 @@ MONTHS: dict[Language, tuple[str, ...]] = {
     ),
 }
 
+# Dates in the email are Uruguay's, which keeps UTC-3 all year.
+URUGUAY = timezone(timedelta(hours=-3))
+
 # The site's address prefix for each language: Spanish is the default, at the root.
 PREFIX: dict[Language, str] = {"es": "", "en": "/en", "pt": "/pt"}
 
@@ -125,10 +127,8 @@ BUTTON = (
 
 
 def invitation_link(site: str, language: Language, project_id: str, code: str) -> str:
-    """The sign-in page, which opens the invitation once the person is in."""
-    prefix = PREFIX[language]
-    page = f"{prefix}/invitation/?project={project_id}&code={code}"
-    return f"{site.rstrip('/')}{prefix}/login/?next={quote(page, safe='')}"
+    """The invitation's page; the code rides in the fragment, which browsers never send to a server."""
+    return f"{site.rstrip('/')}{PREFIX[language]}/invitation/#project={project_id}&code={code}"
 
 
 def invitation(
@@ -136,7 +136,8 @@ def invitation(
 ) -> Email:
     m = MESSAGES[language]
     who = inviter or m["someone"]
-    date = m["date"].format(day=until.day, month=MONTHS[language][until.month - 1], year=until.year)
+    local = until.astimezone(URUGUAY)
+    date = m["date"].format(day=local.day, month=MONTHS[language][local.month - 1], year=local.year)
     values = {"inviter": who, "project": project, "role": m[role.value], "email": to, "until": date}
     lead = m["lead"].format(**values)
     body = m[f"{role.value}_body"]

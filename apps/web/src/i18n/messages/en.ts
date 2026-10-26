@@ -798,6 +798,7 @@ export const en = {
     declinedTitle: "You declined the invitation",
     declinedBody: "If you change your mind, ask whoever invited you to do it again.",
     projects: "Go to My projects",
+    retry: "Try again",
     failed: "We could not complete the action. Try again in a moment.",
   },
   project: {
@@ -880,7 +881,8 @@ export const en = {
       expired: "Invitation expired",
       resend: "Send the invitation again",
       deleteInvitation: "Delete the invitation",
-      resent: "We sent {email} the invitation again, with a new code that expires in a week.",
+      resendSoon: "The invitation was sent a moment ago: try again in a few minutes.",
+      resent: "We sent {email} the invitation again, with a new code that expires on {date}.",
       lead: "People you invite see the project, its areas and its activity; collaborators also change it.",
       inviteTitle: "Invite someone",
       emailInvalid: "Write a valid email, such as name@example.org.",

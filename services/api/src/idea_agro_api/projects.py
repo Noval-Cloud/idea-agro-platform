@@ -30,6 +30,8 @@ class Member:
     # While pending: the digest of the invitation's code (the code itself is only in the email), and its end.
     invitation: str = ""
     invited_until: datetime | None = None
+    # When the invitation was last emailed: resending waits a while after it.
+    invited_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -241,6 +243,7 @@ def _to_document(project: Project) -> dict[str, Any]:
                 "account": m.account,
                 "invitation": m.invitation,
                 "invited_until": m.invited_until,
+                "invited_at": m.invited_at,
             }
             for m in project.members
         ],
@@ -268,6 +271,7 @@ def _from_document(id: str, data: dict[str, Any]) -> Project:
                 m.get("account"),
                 m.get("invitation", ""),
                 m.get("invited_until"),
+                m.get("invited_at"),
             )
             for m in members
         ),

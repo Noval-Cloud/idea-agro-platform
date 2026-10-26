@@ -118,7 +118,13 @@ export async function prepareSignIn(way: SignInProvider): Promise<() => Promise<
   }
   const auth = await provider();
   const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
-  const providers = { google: () => new GoogleAuthProvider() } satisfies Record<SignInProvider, unknown>;
+  const google = () => {
+    const chosen = new GoogleAuthProvider();
+    // Always asks which account: someone with two can switch, as an invitation for another email needs.
+    chosen.setCustomParameters({ prompt: "select_account" });
+    return chosen;
+  };
+  const providers = { google } satisfies Record<SignInProvider, unknown>;
   const chosen = providers[way]();
   return async () => {
     try {

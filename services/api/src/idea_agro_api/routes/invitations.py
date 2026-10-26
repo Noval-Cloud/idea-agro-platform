@@ -92,19 +92,25 @@ def accept_invitation(invite: InvitationCode, caller: CallerDep, services: Servi
     if expired(member):
         raise HTTPException(410, EXPIRED)
     me = caller.account.id
+    joined = False
 
     def joining(current: Project) -> Project:
+        nonlocal joined
+        # Set on every run: a change may run more than once.
         still = pending(current, invite.code)
+        joined = still is not None
         if still is None:
             return current
-        joined = accepted(current, me, still.email)
-        members = tuple(replace(m, invitation="", invited_until=None) if m.account == me else m for m in joined.members)
-        return replace(joined, members=members, updated_at=datetime.now(UTC))
+        taken = accepted(current, me, still.email)
+        members = tuple(replace(m, invitation="", invited_until=None) if m.account == me else m for m in taken.members)
+        return replace(taken, members=members, updated_at=datetime.now(UTC))
 
     changed = services.projects.change(project.id, joining)
-    if changed is None:
+    # Resent or deleted meanwhile: only someone already inside gets the project back.
+    if changed is None or (not joined and changed.role_of(me) is None):
         raise HTTPException(404, NO_INVITATION)
-    note(services, [project.id], caller, Action.MEMBER_JOINED, member.email)
+    if joined:
+        note(services, [project.id], caller, Action.MEMBER_JOINED, member.email)
     return detail(services, changed, caller)
 
 
@@ -121,11 +127,16 @@ def decline_invitation(invite: InvitationCode, caller: CallerDep, services: Serv
         raise HTTPException(404, NO_INVITATION)
     mine(caller, member)
 
-    def declining(current: Project) -> Project:
-        members = tuple(m for m in current.members if not (m.account is None and matches(invite.code, m.invitation)))
-        return replace(current, members=members, updated_at=datetime.now(UTC))
+    removed = False
 
-    if services.projects.change(project.id, declining) is None:
+    def declining(current: Project) -> Project:
+        nonlocal removed
+        members = tuple(m for m in current.members if not (m.account is None and matches(invite.code, m.invitation)))
+        removed = len(members) < len(current.members)
+        return replace(current, members=members, updated_at=datetime.now(UTC)) if removed else current
+
+    # Resent or deleted meanwhile: there is nothing left to decline.
+    if services.projects.change(project.id, declining) is None or not removed:
         raise HTTPException(404, NO_INVITATION)
     note(services, [project.id], caller, Action.MEMBER_DECLINED, member.email)
     return Response(status_code=204)

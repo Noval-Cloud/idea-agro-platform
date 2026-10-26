@@ -35,6 +35,8 @@ class Limits:
     members_per_project: int = 20
     # How long an invitation's link works.
     invitation_days: int = 7
+    # How long an invitation waits before it can be emailed again.
+    invitation_resend_minutes: int = 10
     # The oldest versions of an outline beyond this many are dropped.
     outline_versions: int = 50
     # How recent a sign-in sensitive admin actions need.
@@ -55,6 +57,7 @@ class Limits:
             zones_per_project=int(env.get("ZONES_PER_PROJECT", "500")),
             members_per_project=int(env.get("MEMBERS_PER_PROJECT", "20")),
             invitation_days=int(env.get("INVITATION_DAYS", "7")),
+            invitation_resend_minutes=int(env.get("INVITATION_RESEND_MINUTES", "10")),
             outline_versions=int(env.get("OUTLINE_VERSIONS", "50")),
             recent_sign_in_seconds=int(env.get("RECENT_SIGN_IN_SECONDS", "300")),
         )

@@ -19,7 +19,7 @@ type Ask = (question: Question) => Promise<boolean>;
 
 /** Who the project is shared with. The owner invites, changes roles and removes people. */
 export function PeopleTab({
-  translator: { t, ago },
+  translator: { t, ago, date },
   language,
   project,
   change,
@@ -66,19 +66,23 @@ export function PeopleTab({
 
   /** A new code and a new week, emailed again in the page's language. */
   const resend = (member: MemberOut) =>
-    change(async ([{ privately }, client]) => {
-      // Emails go into the path: encoded, so none can reach another route.
-      const response = await privately((init) =>
-        client.resendInvitation(project.id, encodeURIComponent(member.email), { language }, init),
-      );
-      if (response.status !== 200) return { status: response.status };
-      setNotice(
-        t(response.data.invitation_sent === false ? "project.members.invitedUnsent" : "project.members.resent", {
-          email: member.email,
-        }),
-      );
-      return { status: 200, apply: () => response.data };
-    });
+    change(
+      async ([{ privately }, client]) => {
+        // Emails go into the path: encoded, so none can reach another route.
+        const response = await privately((init) =>
+          client.resendInvitation(project.id, encodeURIComponent(member.email), { language }, init),
+        );
+        if (response.status !== 200) return { status: response.status };
+        const renewed = response.data.members.find((m) => m.email === member.email)?.invited_until;
+        setNotice(
+          response.data.invitation_sent === false
+            ? t("project.members.invitedUnsent", { email: member.email })
+            : t("project.members.resent", { email: member.email, date: renewed ? date(renewed) : "" }),
+        );
+        return { status: 200, apply: () => response.data };
+      },
+      { 429: "project.members.resendSoon" },
+    );
 
   const remove = async (member: MemberOut) => {
     const sure = await ask({

@@ -70,7 +70,7 @@ def latest_code(client: TestClient) -> dict[str, str]:
     """The project and the code of the latest invitation emailed, as its link carries them."""
     mailer = cast(MemoryMailer, cast(FastAPI, client.app).state.services.mailer)
     link = mailer.sent[-1].text.split("https://")[1].split()[0]
-    page = parse_qs(urlsplit(parse_qs(urlsplit(link).query)["next"][0]).query)
+    page = parse_qs(urlsplit(link).fragment)
     return {"project_id": page["project"][0], "code": page["code"][0]}
 
 

@@ -798,6 +798,7 @@ export const pt = {
     declinedTitle: "Você recusou o convite",
     declinedBody: "Se mudar de ideia, peça a quem convidou que o faça de novo.",
     projects: "Ir para Meus projetos",
+    retry: "Tentar de novo",
     failed: "Não conseguimos concluir a ação. Tente de novo em um momento.",
   },
   project: {
@@ -880,7 +881,8 @@ export const pt = {
       expired: "Convite vencido",
       resend: "Reenviar o convite",
       deleteInvitation: "Excluir o convite",
-      resent: "Reenviamos o convite para {email}, com um código novo que vence em uma semana.",
+      resendSoon: "O convite foi enviado há pouco: tente de novo em alguns minutos.",
+      resent: "Reenviamos o convite para {email}, com um código novo que vence em {date}.",
       lead: "Quem você convida vê o projeto, suas zonas e sua atividade; os colaboradores também o alteram.",
       inviteTitle: "Convidar uma pessoa",
       emailInvalid: "Escreva um e-mail válido, como nome@exemplo.org.",

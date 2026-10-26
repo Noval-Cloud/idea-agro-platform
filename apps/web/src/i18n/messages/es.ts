@@ -792,6 +792,7 @@ export const es = {
     declinedTitle: "Rechazaste la invitación",
     declinedBody: "Si cambiás de idea, pedile a quien te invitó que lo haga de nuevo.",
     projects: "Ir a Mis proyectos",
+    retry: "Intentar de nuevo",
     failed: "No pudimos completar la acción. Intentá de nuevo en un momento.",
   },
   project: {
@@ -879,7 +880,8 @@ export const es = {
       expired: "Invitación vencida",
       resend: "Reenviar la invitación",
       deleteInvitation: "Eliminar la invitación",
-      resent: "Le reenviamos a {email} la invitación, con un código nuevo que vence en una semana.",
+      resendSoon: "La invitación se envió hace un momento: probá de nuevo en unos minutos.",
+      resent: "Le reenviamos a {email} la invitación, con un código nuevo que vence el {date}.",
       lead: "Quienes invitás ven el proyecto, sus zonas y su actividad; los colaboradores además lo cambian.",
       inviteTitle: "Invitar a una persona",
       emailInvalid: "Escribí un correo válido, como nombre@ejemplo.org.",
