@@ -542,7 +542,7 @@ requires-dist = [
     { name = "google-cloud-storage", specifier = "==3.17.1" },
     { name = "pyjwt", extras = ["crypto"], specifier = "==2.15.1" },
     { name = "pyproj", specifier = "==3.8.0" },
-    { name = "python-multipart", specifier = ">=0.0.32" },
+    { name = "python-multipart", specifier = "==0.0.32" },
     { name = "shapely", specifier = "==2.2.0" },
     { name = "uvicorn", specifier = "==0.54.0" },
 ]

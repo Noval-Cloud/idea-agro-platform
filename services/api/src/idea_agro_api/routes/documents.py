@@ -11,7 +11,7 @@ from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.deps import CallerDep, ServicesDep
-from idea_agro_api.documents import Document, file_name, media_type, new_document_id
+from idea_agro_api.documents import Document, file_name, media_type, new_document_id, readable
 from idea_agro_api.errors import problems
 from idea_agro_api.models import DocumentOut
 from idea_agro_api.routes.projects import ProjectId, project_zone
@@ -40,8 +40,8 @@ def out(document: Document) -> DocumentOut:
 
 
 def attachment(name: str) -> str:
-    """Saved under its own name, accents included where the browser can; plain ASCII elsewhere."""
-    plain = name.encode("ascii", "replace").decode().replace("?", "_").replace('"', "_")
+    """Saved under its own name, accents included where the browser can; printable ASCII elsewhere."""
+    plain = "".join(c if " " <= c <= "~" and c not in '"\\' else "_" for c in name)
     return f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(name)}"
 
 
@@ -89,8 +89,8 @@ def attach_saved_zone_document(
     limits = services.limits
     # Only the name itself: a path the browser sent along is dropped.
     name = PurePath((file.filename or "").replace("\\", "/")).name.strip()
-    if not name or len(name) > 200:
-        raise HTTPException(422, "The file needs a name of at most 200 characters.")
+    if not name or len(name) > 200 or not readable(name):
+        raise HTTPException(422, "The file needs a name of at most 200 characters, without control characters.")
     kind = media_type(name)
     if kind is None:
         raise HTTPException(415, "Attach a PDF, an image, a text, a spreadsheet or a text document.")
@@ -99,6 +99,7 @@ def attach_saved_zone_document(
         raise HTTPException(413, f"A document takes at most {limits.document_bytes} bytes.")
     if not content:
         raise HTTPException(422, "The file is empty.")
+    # Checked before writing, so uploads made at the same moment can pass a limit by a few.
     if len(services.documents.of_zone(zone.id)) >= limits.documents_per_zone:
         raise HTTPException(409, f"A zone keeps at most {limits.documents_per_zone} documents.")
     if services.documents.bytes_of(zone.owner) + len(content) > limits.documents_bytes_per_account:

@@ -310,10 +310,11 @@ def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep)
     zone = owned(services, caller.account.id, zone_id)
     # The record goes first: an outline left behind by a failure is unreachable, a record without one is not.
     # References go last: a project left holding one shows the zone as deleted.
-    services.saved_zones.delete(zone.id)
-    services.geometries.delete_all(zone.id)
+    # Documents go first: while the zone stands, a failed delete can be retried.
     services.documents.delete_zone(zone.id)
     services.document_files.delete_zone(zone.id)
+    services.saved_zones.delete(zone.id)
+    services.geometries.delete_all(zone.id)
     held = services.projects.remove_everywhere(saved_item(zone.id))
     note(services, held, caller, Action.ZONE_REMOVED, saved_item(zone.id), zone.name)
     return Response(status_code=204)

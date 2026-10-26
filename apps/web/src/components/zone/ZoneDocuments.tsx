@@ -20,6 +20,8 @@ const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-c
 
 /** What the API takes; the picker offers only these. */
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.xlsx,.xls,.ods,.docx,.odt";
+/** The API's limit per file: a larger one is refused before it travels. */
+const MAX_BYTES = 10_000_000;
 
 function Glyph({ type }: { type: string }) {
   const Icon = type.startsWith("image/") ? FileImage : /sheet|excel|csv/.test(type) ? FileSpreadsheet : FileText;
@@ -31,6 +33,7 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
   const [documents, setDocuments] = useState<DocumentOut[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [news, setNews] = useState("");
   const picker = useRef<HTMLInputElement>(null);
   const attachButton = useRef<HTMLButtonElement>(null);
   const { ask, dialog } = useConfirm(t("zone.documents.cancel"));
@@ -62,13 +65,19 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium" }).format(new Date(value));
 
   const upload = async (file: File) => {
-    setBusy(true);
     setProblem(null);
+    setNews("");
+    if (file.size > MAX_BYTES) return setProblem(t("zone.documents.tooLarge"));
+    if (!file.size) return setProblem(t("zone.documents.emptyFile"));
+    setBusy(true);
     try {
       const [{ privately }, client] = await api();
       const response = await privately((init) => client.attachSavedZoneDocument(zoneId, { file }, init));
-      if (response.status === 201) setDocuments((now) => [...(now ?? []), response.data]);
-      else
+      if (response.status === 201) {
+        const added = response.data;
+        setDocuments((now) => [...(now ?? []), added]);
+        setNews(t("zone.documents.attached", { name: added.name }));
+      } else
         setProblem(
           response.status === 413
             ? t("zone.documents.tooLarge")
@@ -76,7 +85,9 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
               ? t("zone.documents.unsupported")
               : response.status === 409
                 ? t("zone.documents.full")
-                : t("zone.documents.failed"),
+                : response.status === 422
+                  ? t("zone.documents.badName")
+                  : t("zone.documents.failed"),
         );
     } catch {
       setProblem(t("zone.documents.failed"));
@@ -95,7 +106,8 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
       if (!response.ok) return setProblem(t("zone.documents.failed"));
       const url = URL.createObjectURL(await response.blob());
       Object.assign(window.document.createElement("a"), { href: url, download: document.name }).click();
-      URL.revokeObjectURL(url);
+      // Some browsers start the download after the click returns: the address waits a moment.
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch {
       setProblem(t("zone.documents.failed"));
     }
@@ -148,8 +160,9 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
               ref={attachButton}
               size="sm"
               variant="outline"
-              disabled={busy}
-              onClick={() => picker.current?.click()}
+              // Disabled, the button would drop the focus it has while the file uploads.
+              aria-disabled={busy}
+              onClick={() => !busy && picker.current?.click()}
             >
               <Paperclip size={iconSize.sm} aria-hidden="true" />
               {busy ? t("zone.documents.uploading") : t("zone.documents.attach")}
@@ -194,6 +207,9 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
       )}
       <p role="alert" className="mt-2 text-danger empty:hidden">
         {problem ?? ""}
+      </p>
+      <p role="status" className="sr-only">
+        {news}
       </p>
       {dialog}
     </section>

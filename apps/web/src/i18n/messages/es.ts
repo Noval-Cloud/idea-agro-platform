@@ -762,6 +762,9 @@ export const es = {
       tooLarge: "El archivo pasa de 10 MB.",
       unsupported: "Ese tipo de archivo no se acepta: probá con PDF, una imagen, una planilla o un texto.",
       full: "No entra: una zona guarda hasta 20 documentos, y tus documentos hasta 200 MB en total.",
+      emptyFile: "El archivo está vacío.",
+      badName: "El nombre del archivo es muy largo o tiene caracteres raros: cambialo y probá de nuevo.",
+      attached: "Se adjuntó {name}.",
       failed: "No se pudo completar. Probá de nuevo en un momento.",
     },
     chartKeys:

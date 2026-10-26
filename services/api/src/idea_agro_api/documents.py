@@ -1,5 +1,6 @@
 """Documents kept with a saved zone, such as soil studies: their records, and their files in the private bucket."""
 
+import unicodedata
 import uuid
 from contextlib import suppress
 from dataclasses import dataclass
@@ -27,8 +28,23 @@ MEDIA_TYPES = {
 }
 
 
+# Already compressed, or nearly: the API sends them as they are.
+COMPRESSED = (
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.oasis.opendocument.text",
+)
+
+
 def media_type(name: str) -> str | None:
     return MEDIA_TYPES.get(PurePath(name).suffix.lower())
+
+
+def readable(name: str) -> bool:
+    """No control or formatting characters, which break headers or disguise an extension."""
+    return not any(unicodedata.category(c) in ("Cc", "Cf") for c in name)
 
 
 @dataclass(frozen=True)
@@ -107,7 +123,7 @@ class FirestoreDocuments:
         return sorted(found, key=lambda d: d.uploaded_at)
 
     def bytes_of(self, owner: str) -> int:
-        # A few hundred records at most: adding them up here needs no composite index.
+        # Adding them up here needs no composite index; an upload reads one record per document of the account.
         return sum(int(d.to_dict()["size"]) for d in self._where("owner", owner).select(["size"]).stream())
 
     def get(self, id: str) -> Document | None:

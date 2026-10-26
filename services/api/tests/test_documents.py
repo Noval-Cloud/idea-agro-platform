@@ -146,3 +146,28 @@ def test_a_deleted_zone_takes_its_documents_along(client: TestClient) -> None:
     client.delete(f"/v1/saved-zones/{id}", headers=ANA)
 
     assert files_of(client) == {}
+
+
+@pytest.mark.parametrize("name", ["informe\x00.pdf", "informe\x1b.pdf", "evil\u202etxt.pdf"])
+def test_a_name_with_control_characters_is_refused(client: TestClient, name: str) -> None:
+    # Written by hand: the test client would escape the name.
+    body = (
+        b'--b\r\nContent-Disposition: form-data; name="file"; filename="'
+        + name.encode()
+        + b'"\r\nContent-Type: application/pdf\r\n\r\n'
+        + PDF
+        + b"\r\n--b--\r\n"
+    )
+    headers = ANA | {"Content-Type": "multipart/form-data; boundary=b"}
+
+    assert client.post(f"/v1/saved-zones/{zone(client)}/documents", content=body, headers=headers).status_code == 422
+
+
+def test_a_compressed_file_is_sent_as_it_is(client: TestClient) -> None:
+    id = zone(client)
+    document = attach(client, id, content=PDF * 200).json()
+
+    file = client.get(f"/v1/saved-zones/{id}/documents/{document['id']}", headers=ANA | {"Accept-Encoding": "gzip"})
+
+    assert "content-encoding" not in file.headers
+    assert file.content == PDF * 200

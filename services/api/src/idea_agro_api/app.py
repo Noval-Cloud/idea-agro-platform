@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
+from starlette.middleware.gzip import DEFAULT_EXCLUDED_CONTENT_TYPES
 
+from idea_agro_api.documents import COMPRESSED
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
 from idea_agro_api.routes import (
     admin,
@@ -93,7 +95,9 @@ def create_app(services: Services) -> FastAPI:
     )
     app.middleware("http")(security_headers)
     # Geometries and indexes are megabytes of text; Cloud Run does not compress by itself.
-    app.add_middleware(GZipMiddleware, minimum_size=1024)
+    app.add_middleware(
+        GZipMiddleware, minimum_size=1024, exclude_content_types=DEFAULT_EXCLUDED_CONTENT_TYPES + COMPRESSED
+    )
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
     for module in (service, catalog, zones, maps, padrones, me, saved_zones, documents, projects, invitations, admin):
