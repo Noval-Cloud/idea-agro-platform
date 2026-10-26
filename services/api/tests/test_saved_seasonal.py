@@ -59,7 +59,8 @@ def test_a_new_zone_starts_its_computing(setup: Setup) -> None:
 
     response = setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=ANA)
 
-    assert setup.jobs.started == 1
+    assert len(setup.jobs.started) == 1
+    assert setup.jobs.started[0][0].startswith(f"zones/{zone['id']}/v1-")
     assert response.json() == {"computing": True}
 
 
@@ -87,7 +88,7 @@ def test_a_new_outline_is_computed_again(setup: Setup) -> None:
     )
 
     assert changed.status_code == 200
-    assert setup.jobs.started == 2
+    assert len(setup.jobs.started) == 2
     assert setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=ANA).json() == {"computing": True}
 
 
@@ -102,3 +103,15 @@ def test_a_zones_series_is_its_owners_and_its_projects(setup: Setup) -> None:
     assert through.json()["ppna"]["values"] == [120.5, None]
     assert setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=BO).status_code == 404
     assert setup.client.get(f"/v1/projects/{project}/zones/{zone['id']}/seasonal", headers=BO).status_code == 404
+
+
+def test_a_restored_outline_brings_its_series_along(setup: Setup) -> None:
+    zone = setup.save()
+    setup.computed(zone, {"ppna": {"2025-01-01": 120.5}})
+    setup.client.put(f"/v1/saved-zones/{zone['id']}/geometry", json={"version": 1, "geometry": SQUARE}, headers=ANA)
+
+    restored = setup.client.post(f"/v1/saved-zones/{zone['id']}/versions/1/restore", headers=ANA)
+
+    assert restored.status_code == 200
+    found = setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=ANA).json()
+    assert found["ppna"]["values"] == [120.5, None]

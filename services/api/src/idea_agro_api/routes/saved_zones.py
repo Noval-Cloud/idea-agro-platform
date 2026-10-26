@@ -105,6 +105,7 @@ def change_outline(
     geojson: dict[str, Any],
     caller: Caller,
     restored_from: int | None = None,
+    restored_file: str | None = None,
 ) -> SavedZone:
     """Writes the outline as a new version on top of `base`, and notes it in the zone's projects.
 
@@ -147,10 +148,13 @@ def change_outline(
         raise HTTPException(404, "The zone was deleted meanwhile.")
     changed, dropped = replaced
     for old in dropped:
-        with suppress(Exception):
-            services.geometries.delete(old)
-            services.geometries.delete(series_file(old))
-    services.zone_jobs.compute()
+        for name in (old, series_file(old)):
+            with suppress(Exception):
+                services.geometries.delete(name)
+    if restored_file and (computed := services.geometries.get(series_file(restored_file))):
+        # A restored outline is one already computed: its series comes along, and only new composites remain.
+        services.geometries.put(series_file(file), computed)
+    services.zone_jobs.compute([file])
     action = Action.OUTLINE_RESTORED if restored_from else Action.OUTLINE_CHANGED
     projects = [p.id for p in services.projects.containing(saved_item(zone.id))]
     note(services, projects, caller, action, saved_item(zone.id), zone.name)
@@ -176,7 +180,7 @@ def keep(services: Services, owner: str, prepared: list[tuple[SavedZone, bytes]]
             with suppress(Exception):
                 services.geometries.delete(file)
         raise
-    services.zone_jobs.compute()
+    services.zone_jobs.compute([zone.file for zone, _ in prepared])
     return [zone for zone, _ in prepared]
 
 
@@ -366,4 +370,5 @@ def restore_saved_zone_version(
     content = services.geometries.get(kept.file) if kept else None
     if content is None:
         raise HTTPException(404, "The zone keeps no such version.")
-    return out(change_outline(services, zone, zone.version, json.loads(content), caller, restored_from=version))
+    restored = json.loads(content)
+    return out(change_outline(services, zone, zone.version, restored, caller, version, kept.file if kept else None))

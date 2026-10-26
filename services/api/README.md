@@ -47,7 +47,7 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 - **Limits:** `SAVED_ZONES_PER_ACCOUNT` (500), `GEOMETRY_MAX_BYTES` (1 MB) and `IMPORT_MAX_BYTES` (5 MB).
 - **Privacy:** another person's zone answers 404, as if it did not exist.
 - **Seasonal series:** `/v1/saved-zones/{id}/seasonal`, and the same through a project, give the current outline's productivity, radiation and evapotranspiration on the catalog's dates. The data job computes them (its `saved` task) and keeps them next to the outline as `<outline>.series.json`. Until it has, `computing` is true.
-- **Computing right away:** a new outline (saved, imported, changed or restored) starts the data job's `saved` task through a `ZoneJobs` port. `ZONE_JOB` is `run://projects/<project>/locations/<region>/jobs/<job>` or `none`. A start that fails is only logged: the nightly run catches up.
+- **Computing right away:** a new outline (saved, imported or changed) starts the data job's `saved` task for that outline, through a `ZoneJobs` port. A restored outline brings its earlier series along. `ZONE_JOB` is `run://projects/<project>/locations/<region>/jobs/<job>` or `none`. A start that fails is only logged, because the nightly run catches up.
 
 ## Emails
 

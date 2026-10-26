@@ -42,10 +42,10 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 `idea-agro-jobs saved` computes the seasonal series of the zones people save, for the API's `/v1/saved-zones/{id}/seasonal`.
 
-- **Where:** the API's private bucket (`SAVED_ZONES`). Next to each outline (`zones/<zone>/<version>.geojson`) goes `<version>.series.json`, each seasonal indicator's value by composite start. The job may write only files named that way.
-- **What:** the mean of the outline's 250 m pixels for each composite, 100 composites per request. bestEffort coarsens the pixels of very large zones. A zone too small to hold a pixel takes the pixel at its center, and a point takes its own.
-- **When:** the API starts the task whenever an outline is new, and the nightly run adds the composites every series lacks. A series whose outline is gone is deleted.
-- **One at a time:** an outline Earth Engine cannot read is logged as a warning and retried by the next run, without holding back the others.
+- **Where:** the API's private bucket (`SAVED_ZONES`). Next to each outline (`zones/<zone>/v<version>-<id>.geojson`) goes the same name ending in `.series.json`: each seasonal indicator's value by composite start. The job may read only under `zones/`, and write only the series there.
+- **What:** the mean of the outline's 250 m pixels for each composite, 100 composites per request; past about 625 km², Earth Engine reads coarser pixels. A zone that holds no pixel takes the one at its center, and a point takes its own.
+- **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along.
+- **Failures:** an outline Earth Engine cannot read is logged as an error, which alerts. The others go on, and the next run tries it again.
 
 ## Earth Engine
 

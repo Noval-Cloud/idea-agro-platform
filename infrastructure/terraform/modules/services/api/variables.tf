@@ -216,3 +216,15 @@ variable "zone_job_role" {
   type        = string
   default     = "roles/run.jobsExecutorWithOverrides"
 }
+
+variable "outlines_prefix" {
+  description = "Where the saved zones' outlines are in their bucket, apart from their documents"
+  type        = string
+  default     = "zones/"
+}
+
+variable "series_suffix" {
+  description = "How the names of the outlines' seasonal series end, next to each outline"
+  type        = string
+  default     = ".series.json"
+}

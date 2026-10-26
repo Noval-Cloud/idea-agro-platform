@@ -1260,15 +1260,15 @@ function useSavedSeasonal(zone: Zone): SavedSeasonal {
         own || !project ? api.getSavedZoneSeasonal(id, init) : api.getProjectZoneSeasonal(project, id, init),
       );
       if (!live) return;
-      if (response.status !== 200) return setValue(null);
-      if (response.data.computing) {
-        asked += 1;
-        setValue(asked < ASKS ? "computing" : "slow");
-        if (asked < ASKS) timer = window.setTimeout(() => void load().catch(() => live && setValue(null)), ASK_EVERY);
-        return;
+      if (response.status === 200 && !response.data.computing) {
+        const { ppna, apar, et } = response.data;
+        return setValue({ ppna: ppna?.values, apar: apar?.values, et: et?.values });
       }
-      const { ppna, apar, et } = response.data;
-      setValue({ ppna: ppna?.values, apar: apar?.values, et: et?.values });
+      // A refusal for load or a passing failure is asked again, like a series still being computed.
+      if (response.status !== 200 && response.status !== 429 && response.status < 500) return setValue(null);
+      asked += 1;
+      setValue(asked < ASKS ? "computing" : "slow");
+      if (asked < ASKS) timer = window.setTimeout(() => void load().catch(() => live && setValue(null)), ASK_EVERY);
     };
     void load().catch(() => live && setValue(null));
     return () => {
@@ -1306,7 +1306,11 @@ function SavedSeasonView({
         <EstimatedView manifest={manifest} zone={zone} indicator={indicator} seasonShown />
       ) : series === "computing" || series === "slow" ? (
         <div role="status" className="grid min-h-60 place-content-center justify-items-center gap-2 text-center">
-          <LoaderCircle size={iconSize.lg} aria-hidden="true" className="text-ink-subtle motion-safe:animate-spin" />
+          <LoaderCircle
+            size={iconSize.lg}
+            aria-hidden="true"
+            className={cn("text-ink-subtle", series === "computing" && "motion-safe:animate-spin")}
+          />
           <p className="text-base font-semibold text-ink">{t("zone.computing.title")}</p>
           <p className="max-w-measure text-sm text-ink-muted">
             {series === "slow" ? t("zone.computing.slow") : t("zone.computing.body")}

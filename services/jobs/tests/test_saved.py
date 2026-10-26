@@ -75,7 +75,7 @@ def test_a_current_series_costs_nothing(files: LocalFiles) -> None:
 def test_an_outline_that_fails_holds_back_no_other(files: LocalFiles, caplog: pytest.LogCaptureFixture) -> None:
     files.write("zones/z2/v1-def.geojson", json.dumps({"type": "Point", "coordinates": [-56, -32]}).encode())
 
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.ERROR):
         saved.refresh(FakeOutlines(STARTS, failing="Point"), files)
 
     assert files.exists("zones/z1/v1-abc.series.json")
@@ -90,3 +90,26 @@ def test_the_series_of_a_removed_outline_is_deleted(files: LocalFiles) -> None:
     saved.refresh(FakeOutlines(STARTS), files)
 
     assert not files.exists("zones/z1/v1-abc.series.json")
+
+
+def test_only_each_zones_latest_version_is_kept_current(files: LocalFiles) -> None:
+    files.write("zones/z1/v2-def.geojson", json.dumps(POLYGON).encode())
+    source = FakeOutlines(STARTS)
+
+    saved.refresh(source, files)
+
+    assert files.exists("zones/z1/v2-def.series.json")
+    assert not files.exists("zones/z1/v1-abc.series.json")
+    assert len(source.computed) == len(SEASONAL)
+
+
+def test_a_run_asked_for_some_outlines_computes_only_those(files: LocalFiles) -> None:
+    files.write("zones/z2/v1-def.geojson", json.dumps(POLYGON).encode())
+    files.write("zones/z3/v1-ghi.series.json", b"{}")
+
+    saved.refresh(FakeOutlines(STARTS), files, only=["zones/z2/v1-def.geojson"])
+
+    assert files.exists("zones/z2/v1-def.series.json")
+    assert not files.exists("zones/z1/v1-abc.series.json")
+    # Only a full run cleans up.
+    assert files.exists("zones/z3/v1-ghi.series.json")

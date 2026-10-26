@@ -47,6 +47,11 @@ def main() -> None:
         help="where the values come from: Earth Engine, or the values the public files hold",
     )
     parser.add_argument("--force", action="store_true", help="publish the outlines even if no asset changed")
+    parser.add_argument(
+        "--outline",
+        action="append",
+        help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
+    )
     arguments = parser.parse_args()
 
     handler = logging.StreamHandler()
@@ -71,7 +76,7 @@ def main() -> None:
         elif task == "maps":
             maps.refresh(earth_engine(), files, maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))))
         elif task == "saved":
-            saved.refresh(earth_engine(), files_from(os.environ["SAVED_ZONES"]))
+            saved.refresh(earth_engine(), files_from(os.environ["SAVED_ZONES"]), only=arguments.outline)
 
 
 if __name__ == "__main__":

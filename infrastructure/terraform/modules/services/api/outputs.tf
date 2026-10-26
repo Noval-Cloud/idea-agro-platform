@@ -17,3 +17,11 @@ output "mail_key_secret" {
 output "geometries_bucket" {
   value = google_storage_bucket.geometries.name
 }
+
+output "outlines_prefix" {
+  value = var.outlines_prefix
+}
+
+output "series_suffix" {
+  value = var.series_suffix
+}

@@ -48,6 +48,8 @@ module "jobs" {
   zones_bucket   = module.api.zones_bucket
 
   saved_zones_bucket = module.api.geometries_bucket
+  outlines_prefix    = module.api.outlines_prefix
+  series_suffix      = module.api.series_suffix
 
   earth_engine_project = var.earth_engine_project
   alert_channels       = module.platform.alert_channels

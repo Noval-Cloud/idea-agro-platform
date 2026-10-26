@@ -61,6 +61,8 @@ COMPOSITE_SCALE = 1000
 OUTLINE_SCALE = 250
 # Composites reduced at once over a saved zone.
 OUTLINE_CHUNK = 100
+# About 625 km² of 250 m pixels; a larger zone is read with coarser ones.
+OUTLINE_PIXELS = 100_000
 ATTEMPTS = 4
 
 
@@ -194,12 +196,17 @@ class EarthEngine:
             found: dict[str, Any] = {}
             # Every composite at once exceeds Earth Engine's memory on large zones.
             for chunk in batched(chosen, OUTLINE_CHUNK, strict=False):
-                # bestEffort coarsens the pixels of a zone too large to read at 250 m.
                 reduced = (
                     ee.Image(asset)
                     .select(list(chunk))
                     .reduceRegion(
-                        reducer=ee.Reducer.mean(), geometry=geometry, scale=OUTLINE_SCALE, bestEffort=True, tileScale=4
+                        reducer=ee.Reducer.mean(),
+                        geometry=geometry,
+                        scale=OUTLINE_SCALE,
+                        # Past this many pixels, Earth Engine reads coarser ones instead of failing.
+                        maxPixels=OUTLINE_PIXELS,
+                        bestEffort=True,
+                        tileScale=4,
                     )
                 )
                 found |= cast(dict[str, Any], retry(f"outline {indicator} {chunk[0]}", reduced.getInfo))
@@ -207,7 +214,10 @@ class EarthEngine:
 
         found = reduce(region)
         if outline["type"] != "Point" and all(found.get(band) is None for band in chosen):
-            found = reduce(region.centroid(1))
+            # Without data there, a zone keeps its nulls; only one that holds no pixel at all takes its center's.
+            pixels = ee.Image.constant(1).reduceRegion(ee.Reducer.count(), region, OUTLINE_SCALE, maxPixels=10**9)
+            if not cast(dict[str, Any], retry(f"outline {indicator} pixels", pixels.getInfo)).get("constant"):
+                found = reduce(region.centroid(1))
         return {band_start(band): None if found.get(band) is None else round(float(found[band]), 2) for band in chosen}
 
     def _year_image(self, indicator: Indicator, year: int) -> ee.Image:

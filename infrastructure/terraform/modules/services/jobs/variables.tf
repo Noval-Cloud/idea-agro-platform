@@ -171,8 +171,24 @@ variable "series_role" {
   default     = "roles/storage.objectUser"
 }
 
+variable "outlines_prefix" {
+  description = "Where the saved zones' outlines are in their bucket, which bounds what the job may read and write"
+  type        = string
+}
+
 variable "series_suffix" {
   description = "How the names of the saved zones' series end, which bounds what the job may write"
   type        = string
-  default     = ".series.json"
+}
+
+variable "outlines_condition_title" {
+  description = "Title of the condition that keeps the job's reading to the outlines"
+  type        = string
+  default     = "Saved zones' outlines only"
+}
+
+variable "series_condition_title" {
+  description = "Title of the condition that keeps the job's writing to the series"
+  type        = string
+  default     = "Saved zones' series only"
 }
