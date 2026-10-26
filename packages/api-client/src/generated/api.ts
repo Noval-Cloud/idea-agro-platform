@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.12.0
+ * OpenAPI spec version: 1.13.0
  */
 import {
   useMutation,
@@ -141,6 +141,11 @@ export interface AuditOut {
   target_email: string;
   /** The roles given, for a role change; `provider_failed` when the sign-in provider did not take it. */
   detail: string;
+}
+
+export interface BodyAttachSavedZoneDocument {
+  /** The document. */
+  file: Blob | File;
 }
 
 /**
@@ -341,6 +346,24 @@ export type DivisionValuesValues = {[key: string]: (number | null)[] | ValueSumm
 export interface DivisionValues {
   years: number[] | null;
   values: DivisionValuesValues;
+}
+
+/**
+ * A document kept with a saved zone.
+ */
+export interface DocumentOut {
+  /** The document's id. */
+  id: string;
+  /** The file's name as it was uploaded. */
+  name: string;
+  /** The file's type, from its extension. */
+  media_type: string;
+  /** The file's size, in bytes. */
+  size: number;
+  /** When it was uploaded. */
+  uploaded_at: string;
+  /** Who uploaded it, by name; null when the account has none. */
+  uploaded_by: string | null;
 }
 
 export type ValidationErrorCtx = { [key: string]: unknown };
@@ -3593,7 +3616,7 @@ export const getDeleteSavedZoneUrl = (zoneId: string,) => {
 }
 
 /**
- * Deletes the zone and every version of its outline, and takes it out of every project.
+ * Deletes the zone, every version of its outline and its documents, and takes it out of every project.
  * @summary Delete a saved zone
  */
 export const deleteSavedZone = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteSavedZoneResponse> => {
@@ -4340,6 +4363,848 @@ export const useRestoreSavedZoneVersion = <TError = Problem,
       > => {
       return useMutation(getRestoreSavedZoneVersionMutationOptions(options), queryClient);
     }
+
+export type listSavedZoneDocumentsResponse200 = {
+  data: DocumentOut[]
+  status: 200
+}
+
+export type listSavedZoneDocumentsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listSavedZoneDocumentsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listSavedZoneDocumentsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type listSavedZoneDocumentsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type listSavedZoneDocumentsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listSavedZoneDocumentsResponseSuccess = (listSavedZoneDocumentsResponse200) & {
+  headers: Headers;
+};
+export type listSavedZoneDocumentsResponseError = (listSavedZoneDocumentsResponse401 | listSavedZoneDocumentsResponse403 | listSavedZoneDocumentsResponse404 | listSavedZoneDocumentsResponse422 | listSavedZoneDocumentsResponse429) & {
+  headers: Headers;
+};
+
+export type listSavedZoneDocumentsResponse = (listSavedZoneDocumentsResponseSuccess | listSavedZoneDocumentsResponseError)
+
+export const getListSavedZoneDocumentsUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/documents`
+}
+
+/**
+ * Oldest first.
+ * @summary The documents of a saved zone
+ */
+export const listSavedZoneDocuments = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listSavedZoneDocumentsResponse> => {
+
+  return apiFetch<listSavedZoneDocumentsResponse>(getListSavedZoneDocumentsUrl(zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSavedZoneDocumentsQueryKey = (zoneId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}/documents`
+    ] as const;
+    }
+
+
+export const getListSavedZoneDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError = Problem>(zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSavedZoneDocumentsQueryKey(zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSavedZoneDocuments>>> = ({ signal }) => listSavedZoneDocuments(zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSavedZoneDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedZoneDocuments>>>
+export type ListSavedZoneDocumentsQueryError = Problem
+
+
+export function useListSavedZoneDocuments<TData = Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError = Problem>(
+ zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZoneDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZoneDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZoneDocuments<TData = Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSavedZoneDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listSavedZoneDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSavedZoneDocuments<TData = Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The documents of a saved zone
+ */
+
+export function useListSavedZoneDocuments<TData = Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSavedZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSavedZoneDocumentsQueryOptions(zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type attachSavedZoneDocumentResponse201 = {
+  data: DocumentOut
+  status: 201
+}
+
+export type attachSavedZoneDocumentResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type attachSavedZoneDocumentResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type attachSavedZoneDocumentResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type attachSavedZoneDocumentResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type attachSavedZoneDocumentResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type attachSavedZoneDocumentResponse415 = {
+  data: Problem
+  status: 415
+}
+
+export type attachSavedZoneDocumentResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type attachSavedZoneDocumentResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type attachSavedZoneDocumentResponseSuccess = (attachSavedZoneDocumentResponse201) & {
+  headers: Headers;
+};
+export type attachSavedZoneDocumentResponseError = (attachSavedZoneDocumentResponse401 | attachSavedZoneDocumentResponse403 | attachSavedZoneDocumentResponse404 | attachSavedZoneDocumentResponse409 | attachSavedZoneDocumentResponse413 | attachSavedZoneDocumentResponse415 | attachSavedZoneDocumentResponse422 | attachSavedZoneDocumentResponse429) & {
+  headers: Headers;
+};
+
+export type attachSavedZoneDocumentResponse = (attachSavedZoneDocumentResponseSuccess | attachSavedZoneDocumentResponseError)
+
+export const getAttachSavedZoneDocumentUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/documents`
+}
+
+/**
+ * For the zone's owner. PDF, images (PNG, JPEG, WebP), text, CSV, spreadsheets (XLSX, XLS, ODS) and text documents (DOCX, ODT), each up to `DOCUMENT_MAX_BYTES` (10 MB). The members of the zone's projects can read them.
+ * @summary Attach a document to a saved zone
+ */
+export const attachSavedZoneDocument = async (zoneId: string,
+    bodyAttachSavedZoneDocument: BodyAttachSavedZoneDocument, options?: Parameters<typeof apiFetch>[1]): Promise<attachSavedZoneDocumentResponse> => {
+    const formData = new FormData();
+formData.append(`file`, bodyAttachSavedZoneDocument.file);
+
+  return apiFetch<attachSavedZoneDocumentResponse>(getAttachSavedZoneDocumentUrl(zoneId),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getAttachSavedZoneDocumentMutationKey = () => ['attachSavedZoneDocument'] as const;
+
+export const getAttachSavedZoneDocumentMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachSavedZoneDocument>>, TError,AttachSavedZoneDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attachSavedZoneDocument>>, TError,AttachSavedZoneDocumentMutationVariables, TContext> => {
+
+const mutationKey = getAttachSavedZoneDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachSavedZoneDocument>>, AttachSavedZoneDocumentMutationVariables> = (props) => {
+          const {zoneId,data} = props ?? {};
+
+          return  attachSavedZoneDocument(zoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachSavedZoneDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof attachSavedZoneDocument>>>
+    export type AttachSavedZoneDocumentMutationBody = BodyAttachSavedZoneDocument
+    export type AttachSavedZoneDocumentMutationError = Problem
+    export type AttachSavedZoneDocumentMutationVariables = {zoneId: string;data: BodyAttachSavedZoneDocument}
+
+    /**
+ * @summary Attach a document to a saved zone
+ */
+export const useAttachSavedZoneDocument = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachSavedZoneDocument>>, TError,AttachSavedZoneDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof attachSavedZoneDocument>>,
+        TError,
+        AttachSavedZoneDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAttachSavedZoneDocumentMutationOptions(options), queryClient);
+    }
+
+export type getSavedZoneDocumentResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getSavedZoneDocumentResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getSavedZoneDocumentResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getSavedZoneDocumentResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getSavedZoneDocumentResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getSavedZoneDocumentResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getSavedZoneDocumentResponseSuccess = (getSavedZoneDocumentResponse200) & {
+  headers: Headers;
+};
+export type getSavedZoneDocumentResponseError = (getSavedZoneDocumentResponse401 | getSavedZoneDocumentResponse403 | getSavedZoneDocumentResponse404 | getSavedZoneDocumentResponse422 | getSavedZoneDocumentResponse429) & {
+  headers: Headers;
+};
+
+export type getSavedZoneDocumentResponse = (getSavedZoneDocumentResponseSuccess | getSavedZoneDocumentResponseError)
+
+export const getGetSavedZoneDocumentUrl = (zoneId: string,
+    documentId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/documents/${documentId}`
+}
+
+/**
+ * @summary Download a document of a saved zone
+ */
+export const getSavedZoneDocument = async (zoneId: string,
+    documentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneDocumentResponse> => {
+
+  return apiFetch<getSavedZoneDocumentResponse>(getGetSavedZoneDocumentUrl(zoneId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedZoneDocumentQueryKey = (zoneId: string,
+    documentId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}/documents/${documentId}`
+    ] as const;
+    }
+
+
+export const getGetSavedZoneDocumentQueryOptions = <TData = Awaited<ReturnType<typeof getSavedZoneDocument>>, TError = Problem>(zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedZoneDocumentQueryKey(zoneId,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedZoneDocument>>> = ({ signal }) => getSavedZoneDocument(zoneId,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined && documentId !== null && documentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavedZoneDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedZoneDocument>>>
+export type GetSavedZoneDocumentQueryError = Problem
+
+
+export function useGetSavedZoneDocument<TData = Awaited<ReturnType<typeof getSavedZoneDocument>>, TError = Problem>(
+ zoneId: string,
+    documentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneDocument<TData = Awaited<ReturnType<typeof getSavedZoneDocument>>, TError = Problem>(
+ zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneDocument<TData = Awaited<ReturnType<typeof getSavedZoneDocument>>, TError = Problem>(
+ zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download a document of a saved zone
+ */
+
+export function useGetSavedZoneDocument<TData = Awaited<ReturnType<typeof getSavedZoneDocument>>, TError = Problem>(
+ zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavedZoneDocumentQueryOptions(zoneId,documentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type deleteSavedZoneDocumentResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteSavedZoneDocumentResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type deleteSavedZoneDocumentResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type deleteSavedZoneDocumentResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deleteSavedZoneDocumentResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type deleteSavedZoneDocumentResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type deleteSavedZoneDocumentResponseSuccess = (deleteSavedZoneDocumentResponse204) & {
+  headers: Headers;
+};
+export type deleteSavedZoneDocumentResponseError = (deleteSavedZoneDocumentResponse401 | deleteSavedZoneDocumentResponse403 | deleteSavedZoneDocumentResponse404 | deleteSavedZoneDocumentResponse422 | deleteSavedZoneDocumentResponse429) & {
+  headers: Headers;
+};
+
+export type deleteSavedZoneDocumentResponse = (deleteSavedZoneDocumentResponseSuccess | deleteSavedZoneDocumentResponseError)
+
+export const getDeleteSavedZoneDocumentUrl = (zoneId: string,
+    documentId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/documents/${documentId}`
+}
+
+/**
+ * @summary Delete a document of a saved zone
+ */
+export const deleteSavedZoneDocument = async (zoneId: string,
+    documentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteSavedZoneDocumentResponse> => {
+
+  return apiFetch<deleteSavedZoneDocumentResponse>(getDeleteSavedZoneDocumentUrl(zoneId,documentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSavedZoneDocumentMutationKey = () => ['deleteSavedZoneDocument'] as const;
+
+export const getDeleteSavedZoneDocumentMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZoneDocument>>, TError,DeleteSavedZoneDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZoneDocument>>, TError,DeleteSavedZoneDocumentMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSavedZoneDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSavedZoneDocument>>, DeleteSavedZoneDocumentMutationVariables> = (props) => {
+          const {zoneId,documentId} = props ?? {};
+
+          return  deleteSavedZoneDocument(zoneId,documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSavedZoneDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSavedZoneDocument>>>
+
+    export type DeleteSavedZoneDocumentMutationError = Problem
+    export type DeleteSavedZoneDocumentMutationVariables = {zoneId: string;documentId: string}
+
+    /**
+ * @summary Delete a document of a saved zone
+ */
+export const useDeleteSavedZoneDocument = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedZoneDocument>>, TError,DeleteSavedZoneDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSavedZoneDocument>>,
+        TError,
+        DeleteSavedZoneDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSavedZoneDocumentMutationOptions(options), queryClient);
+    }
+
+export type listProjectZoneDocumentsResponse200 = {
+  data: DocumentOut[]
+  status: 200
+}
+
+export type listProjectZoneDocumentsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listProjectZoneDocumentsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listProjectZoneDocumentsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type listProjectZoneDocumentsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type listProjectZoneDocumentsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listProjectZoneDocumentsResponseSuccess = (listProjectZoneDocumentsResponse200) & {
+  headers: Headers;
+};
+export type listProjectZoneDocumentsResponseError = (listProjectZoneDocumentsResponse401 | listProjectZoneDocumentsResponse403 | listProjectZoneDocumentsResponse404 | listProjectZoneDocumentsResponse422 | listProjectZoneDocumentsResponse429) & {
+  headers: Headers;
+};
+
+export type listProjectZoneDocumentsResponse = (listProjectZoneDocumentsResponseSuccess | listProjectZoneDocumentsResponseError)
+
+export const getListProjectZoneDocumentsUrl = (projectId: string,
+    zoneId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}/documents`
+}
+
+/**
+ * For every member. Oldest first.
+ * @summary The documents of a saved zone of a project
+ */
+export const listProjectZoneDocuments = async (projectId: string,
+    zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listProjectZoneDocumentsResponse> => {
+
+  return apiFetch<listProjectZoneDocumentsResponse>(getListProjectZoneDocumentsUrl(projectId,zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectZoneDocumentsQueryKey = (projectId: string,
+    zoneId: string,) => {
+    return [
+    `/v1/projects/${projectId}/zones/${zoneId}/documents`
+    ] as const;
+    }
+
+
+export const getListProjectZoneDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError = Problem>(projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectZoneDocumentsQueryKey(projectId,zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectZoneDocuments>>> = ({ signal }) => listProjectZoneDocuments(projectId,zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListProjectZoneDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectZoneDocuments>>>
+export type ListProjectZoneDocumentsQueryError = Problem
+
+
+export function useListProjectZoneDocuments<TData = Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProjectZoneDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listProjectZoneDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProjectZoneDocuments<TData = Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProjectZoneDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listProjectZoneDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProjectZoneDocuments<TData = Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The documents of a saved zone of a project
+ */
+
+export function useListProjectZoneDocuments<TData = Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProjectZoneDocuments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListProjectZoneDocumentsQueryOptions(projectId,zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getProjectZoneDocumentResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getProjectZoneDocumentResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getProjectZoneDocumentResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getProjectZoneDocumentResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getProjectZoneDocumentResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getProjectZoneDocumentResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getProjectZoneDocumentResponseSuccess = (getProjectZoneDocumentResponse200) & {
+  headers: Headers;
+};
+export type getProjectZoneDocumentResponseError = (getProjectZoneDocumentResponse401 | getProjectZoneDocumentResponse403 | getProjectZoneDocumentResponse404 | getProjectZoneDocumentResponse422 | getProjectZoneDocumentResponse429) & {
+  headers: Headers;
+};
+
+export type getProjectZoneDocumentResponse = (getProjectZoneDocumentResponseSuccess | getProjectZoneDocumentResponseError)
+
+export const getGetProjectZoneDocumentUrl = (projectId: string,
+    zoneId: string,
+    documentId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}/documents/${documentId}`
+}
+
+/**
+ * For every member.
+ * @summary Download a document of a saved zone of a project
+ */
+export const getProjectZoneDocument = async (projectId: string,
+    zoneId: string,
+    documentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectZoneDocumentResponse> => {
+
+  return apiFetch<getProjectZoneDocumentResponse>(getGetProjectZoneDocumentUrl(projectId,zoneId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectZoneDocumentQueryKey = (projectId: string,
+    zoneId: string,
+    documentId: string,) => {
+    return [
+    `/v1/projects/${projectId}/zones/${zoneId}/documents/${documentId}`
+    ] as const;
+    }
+
+
+export const getGetProjectZoneDocumentQueryOptions = <TData = Awaited<ReturnType<typeof getProjectZoneDocument>>, TError = Problem>(projectId: string,
+    zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectZoneDocumentQueryKey(projectId,zoneId,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectZoneDocument>>> = ({ signal }) => getProjectZoneDocument(projectId,zoneId,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && zoneId !== null && zoneId !== undefined && documentId !== null && documentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProjectZoneDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectZoneDocument>>>
+export type GetProjectZoneDocumentQueryError = Problem
+
+
+export function useGetProjectZoneDocument<TData = Awaited<ReturnType<typeof getProjectZoneDocument>>, TError = Problem>(
+ projectId: string,
+    zoneId: string,
+    documentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneDocument<TData = Awaited<ReturnType<typeof getProjectZoneDocument>>, TError = Problem>(
+ projectId: string,
+    zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneDocument<TData = Awaited<ReturnType<typeof getProjectZoneDocument>>, TError = Problem>(
+ projectId: string,
+    zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download a document of a saved zone of a project
+ */
+
+export function useGetProjectZoneDocument<TData = Awaited<ReturnType<typeof getProjectZoneDocument>>, TError = Problem>(
+ projectId: string,
+    zoneId: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProjectZoneDocumentQueryOptions(projectId,zoneId,documentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type listProjectsResponse200 = {
   data: ProjectSummary[]

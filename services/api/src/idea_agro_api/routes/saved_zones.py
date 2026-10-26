@@ -303,7 +303,7 @@ def rename_saved_zone(
     "/v1/saved-zones/{zone_id}",
     status_code=204,
     summary="Delete a saved zone",
-    description="Deletes the zone and every version of its outline, and takes it out of every project.",
+    description="Deletes the zone, every version of its outline and its documents, and takes it out of every project.",
     responses=problems(401, 403, 404, 422, 429),
 )
 def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> Response:
@@ -312,6 +312,8 @@ def delete_saved_zone(zone_id: ZoneId, caller: CallerDep, services: ServicesDep)
     # References go last: a project left holding one shows the zone as deleted.
     services.saved_zones.delete(zone.id)
     services.geometries.delete_all(zone.id)
+    services.documents.delete_zone(zone.id)
+    services.document_files.delete_zone(zone.id)
     held = services.projects.remove_everywhere(saved_item(zone.id))
     note(services, held, caller, Action.ZONE_REMOVED, saved_item(zone.id), zone.name)
     return Response(status_code=204)

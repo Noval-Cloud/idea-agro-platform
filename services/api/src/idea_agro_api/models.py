@@ -29,6 +29,17 @@ class SeasonalSeries(BaseModel):
     )
 
 
+class DocumentOut(BaseModel):
+    """A document kept with a saved zone."""
+
+    id: str = Field(description="The document's id.")
+    name: str = Field(description="The file's name as it was uploaded.", examples=["analisis-de-suelo-2024.pdf"])
+    media_type: str = Field(description="The file's type, from its extension.", examples=["application/pdf"])
+    size: int = Field(description="The file's size, in bytes.")
+    uploaded_at: datetime = Field(description="When it was uploaded.")
+    uploaded_by: str | None = Field(description="Who uploaded it, by name; null when the account has none.")
+
+
 class SavedZoneSeasonal(BaseModel):
     """The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out."""
 

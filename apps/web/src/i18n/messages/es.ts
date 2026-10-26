@@ -747,6 +747,23 @@ export const es = {
       body: "Medimos cada compuesto satelital desde 2001 dentro de su contorno. Suele llevar unos minutos, y esta vista se actualiza sola.",
       slow: "Todavía se está calculando. Volvé a abrir la zona en unos minutos.",
     },
+    documents: {
+      title: "Documentos",
+      attach: "Adjuntar documento",
+      uploading: "Subiendo…",
+      empty:
+        "Guardá estudios de suelo, planos o planillas junto a la zona. PDF, imágenes, planillas y textos, de hasta 10 MB cada uno. Los miembros de sus proyectos también los ven.",
+      download: "Descargar {name}",
+      delete: "Eliminar",
+      deleteNamed: "Eliminar {name}",
+      confirmTitle: "¿Eliminar el documento?",
+      confirmBody: "«{name}» deja de estar en la zona y en sus proyectos. No se puede deshacer.",
+      cancel: "Cancelar",
+      tooLarge: "El archivo pasa de 10 MB.",
+      unsupported: "Ese tipo de archivo no se acepta: probá con PDF, una imagen, una planilla o un texto.",
+      full: "No entra: una zona guarda hasta 20 documentos, y tus documentos hasta 200 MB en total.",
+      failed: "No se pudo completar. Probá de nuevo en un momento.",
+    },
     chartKeys:
       "Usá las flechas izquierda y derecha para recorrer los valores; Inicio y Fin van al primero y al último.",
   },

@@ -753,6 +753,23 @@ export const pt = {
       body: "Medimos cada composto de satélite desde 2001 dentro do seu contorno. Costuma levar alguns minutos, e esta vista se atualiza sozinha.",
       slow: "Ainda está sendo calculado. Abra a zona de novo em alguns minutos.",
     },
+    documents: {
+      title: "Documentos",
+      attach: "Anexar documento",
+      uploading: "Enviando…",
+      empty:
+        "Guarde estudos de solo, plantas ou planilhas junto à zona. PDF, imagens, planilhas e textos, de até 10 MB cada um. Os membros dos seus projetos também os veem.",
+      download: "Baixar {name}",
+      delete: "Excluir",
+      deleteNamed: "Excluir {name}",
+      confirmTitle: "Excluir o documento?",
+      confirmBody: "“{name}” deixa de estar na zona e nos seus projetos. Não é possível desfazer.",
+      cancel: "Cancelar",
+      tooLarge: "O arquivo passa de 10 MB.",
+      unsupported: "Esse tipo de arquivo não é aceito: tente um PDF, uma imagem, uma planilha ou um texto.",
+      full: "Não cabe: uma zona guarda até 20 documentos, e os seus documentos até 200 MB no total.",
+      failed: "Não foi possível concluir. Tente de novo em instantes.",
+    },
     chartKeys:
       "Use as setas esquerda e direita do teclado para percorrer os valores; Home e End levam ao primeiro e ao último.",
   },
