@@ -90,6 +90,17 @@ The `identity` module adds Firebase to the project, turns on Identity Platform w
 
 Google as a provider is the one step done by hand, once per environment, because only the Firebase console creates its OAuth client: Firebase console → the project → Authentication → Sign-in method → Google → Enable, with the support email. Until then, the sign-in page answers that Google sign-in is not enabled.
 
+## Domain
+
+An environment answers at its own domain once `domain` is set in its `terraform.tfvars`: the website at the domain, and the API at `api.` under it, both with certificates Google manages. Cloud Run domain mappings do it, with no load balancer and so no monthly cost. The run.app addresses keep working.
+
+1. **Verify the domain** in Google Search Console (DNS TXT record) with your account. Add the environment's operator account (`terraform-operator@<project>.iam.gserviceaccount.com`) as an owner there, since it creates the mappings.
+2. **Set `domain`**, then `make tf-plan` and `make tf-apply`. Terraform:
+   - adds the domain to sign-in's authorized domains and the browser key's referrers;
+   - passes the new addresses to the website's build (`SITE_URL`, the API's URL) and to the API (`SITE_URL`, which emails link to).
+3. **Set the DNS records** that `terraform output dns_records` lists at the domain's DNS provider: A and AAAA for the domain, and a CNAME for `api`. Certificates follow within an hour or so of the records resolving.
+4. **Rebuild the website** (`make web-deploy`, or the next merge), so it calls the API at its new address.
+
 ## CI/CD
 
 Builds run in the organization's CI/CD project, `novalcloud-setup`, which [Noval-Cloud/org-setup](https://github.com/Noval-Cloud/org-setup) manages. It holds the connection to GitHub, the link to this repository, the shared Docker repository and this product's build identity, `idea-agro-build`. The environment's `ci` variable takes those from org-setup's outputs.

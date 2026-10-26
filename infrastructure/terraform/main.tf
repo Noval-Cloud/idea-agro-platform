@@ -10,15 +10,17 @@ module "platform" {
 module "web" {
   source = "./modules/services/web"
 
+  project        = var.project
   region         = var.region
   builder_member = local.builder_member
+  domain         = var.domain
 }
 
 module "identity" {
   source = "./modules/identity"
 
   project            = var.project
-  app_origins        = concat([module.web.url], var.auth_local_origins)
+  app_origins        = concat([module.web.url], var.domain == "" ? [] : [local.site_url], var.auth_local_origins)
   firestore_database = module.platform.firestore_database
 }
 
@@ -34,8 +36,9 @@ module "api" {
   records_database = module.platform.firestore_database
   values_dataset   = module.platform.values_dataset
   admin_emails     = var.admin_emails
-  site_url         = module.web.url
+  site_url         = local.site_url
   zone_job         = module.jobs.job
+  domain           = var.domain == "" ? "" : "${var.api_subdomain}.${var.domain}"
 }
 
 module "jobs" {
@@ -71,8 +74,8 @@ module "ci" {
   jobs_job         = module.jobs.job
   web_service      = module.web.service
   web_settings = {
-    site_url    = module.web.url
-    api_url     = module.api.url
+    site_url    = local.site_url
+    api_url     = local.api_url
     auth_domain = module.identity.auth_domain
     auth_key    = module.identity.browser_key
     csp         = module.identity.csp

@@ -1,3 +1,8 @@
+variable "project" {
+  description = "The GCP project id"
+  type        = string
+}
+
 variable "region" {
   description = "The region of the Cloud Run service"
   type        = string
@@ -78,4 +83,10 @@ variable "labels" {
   description = "Labels of the service, on top of the environment's"
   type        = map(string)
   default     = { owner = "web" }
+}
+
+variable "domain" {
+  description = "The domain the service answers at besides Cloud Run's address; empty maps none"
+  type        = string
+  default     = ""
 }

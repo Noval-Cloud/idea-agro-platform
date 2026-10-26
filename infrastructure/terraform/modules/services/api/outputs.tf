@@ -25,3 +25,12 @@ output "outlines_prefix" {
 output "series_suffix" {
   value = var.series_suffix
 }
+
+output "dns_records" {
+  description = "The DNS records the domain mapping waits for"
+  value = flatten([
+    for mapping in google_cloud_run_domain_mapping.api : [
+      for record in mapping.status[0].resource_records : { name = mapping.name, type = record.type, rrdata = record.rrdata }
+    ]
+  ])
+}

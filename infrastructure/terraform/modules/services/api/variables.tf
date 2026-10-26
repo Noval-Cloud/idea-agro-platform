@@ -228,3 +228,9 @@ variable "series_suffix" {
   type        = string
   default     = ".series.json"
 }
+
+variable "domain" {
+  description = "The domain the service answers at besides Cloud Run's address; empty maps none"
+  type        = string
+  default     = ""
+}
