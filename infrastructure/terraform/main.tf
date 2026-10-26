@@ -43,6 +43,8 @@ module "jobs" {
   builder_member = local.builder_member
   values_dataset = module.platform.values_dataset
   zones_bucket   = module.api.zones_bucket
+
+  earth_engine_project = var.earth_engine_project
 }
 
 module "ci" {

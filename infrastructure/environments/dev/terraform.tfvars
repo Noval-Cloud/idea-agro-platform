@@ -14,3 +14,7 @@ ci = {
   sources_bucket   = "novalcloud-setup-build-sources"
   shared           = true
 }
+
+# Earth Engine computes in the pastizales project, registered for non-commercial use; the job's account has
+# Earth Engine Resource Viewer and Service Usage Consumer there.
+earth_engine_project = "pastizales-uy"

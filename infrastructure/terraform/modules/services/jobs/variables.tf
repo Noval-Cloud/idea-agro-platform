@@ -124,3 +124,8 @@ variable "files_role" {
   type        = string
   default     = "roles/storage.objectUser"
 }
+
+variable "earth_engine_project" {
+  description = "Cloud project registered for Earth Engine that the job computes in, which may be another than its own"
+  type        = string
+}
