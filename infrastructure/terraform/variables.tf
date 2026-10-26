@@ -51,3 +51,8 @@ variable "ci" {
     shared = bool
   })
 }
+
+variable "earth_engine_project" {
+  description = "Cloud project registered for Earth Engine where the data job computes"
+  type        = string
+}

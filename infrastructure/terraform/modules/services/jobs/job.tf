@@ -29,7 +29,7 @@ resource "google_cloud_run_v2_job" "data" {
         }
         env {
           name  = "EARTH_ENGINE_PROJECT"
-          value = var.project
+          value = var.earth_engine_project
         }
 
         resources {
