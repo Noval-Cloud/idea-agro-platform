@@ -1,16 +1,18 @@
 # Any error of the job or of its schedule: a failed run, or the job reporting that new data stopped arriving.
+# Changes to the job (activity audit logs) are left out: a refused deploy is not a failed run.
 resource "google_monitoring_alert_policy" "data" {
   display_name          = "Data job: failed, or data stopped arriving"
   combiner              = "OR"
   notification_channels = var.alert_channels
-  user_labels           = var.labels
+  # The provider's default labels do not reach user labels.
+  user_labels = merge(var.environment_labels, var.labels)
 
   conditions {
     display_name = "An error logged by the data job or its schedule"
 
     condition_matched_log {
       filter = <<-EOT
-        severity>=ERROR AND (
+        severity>=ERROR AND -logName:"cloudaudit.googleapis.com%2Factivity" AND (
           (resource.type="cloud_run_job" AND resource.labels.job_name="${google_cloud_run_v2_job.data.name}") OR
           (resource.type="cloud_scheduler_job" AND resource.labels.job_id="${google_cloud_scheduler_job.daily.name}")
         )

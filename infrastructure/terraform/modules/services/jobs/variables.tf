@@ -147,3 +147,9 @@ variable "alert_auto_close" {
   type        = string
   default     = "86400s"
 }
+
+variable "environment_labels" {
+  description = "The environment's labels, for the resources the provider's default labels do not reach"
+  type        = map(string)
+  default     = {}
+}

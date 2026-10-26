@@ -4,6 +4,7 @@ module "platform" {
   project      = var.project
   region       = var.region
   alert_emails = var.alert_emails
+  labels       = local.labels
 }
 
 module "web" {
@@ -47,6 +48,7 @@ module "jobs" {
 
   earth_engine_project = var.earth_engine_project
   alert_channels       = module.platform.alert_channels
+  environment_labels   = local.labels
 }
 
 module "ci" {

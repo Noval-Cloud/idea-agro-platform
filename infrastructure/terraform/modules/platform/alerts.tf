@@ -4,6 +4,7 @@ resource "google_monitoring_notification_channel" "email" {
 
   display_name = "IDEA-Agro alerts: ${each.value}"
   type         = "email"
+  user_labels  = var.labels
   labels = {
     email_address = each.value
   }

@@ -31,3 +31,9 @@ variable "alert_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "labels" {
+  description = "The environment's labels, for the resources the provider's default labels do not reach"
+  type        = map(string)
+  default     = {}
+}

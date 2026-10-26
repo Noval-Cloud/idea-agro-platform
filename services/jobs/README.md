@@ -70,6 +70,7 @@ Any error the job or its schedule logs is emailed to `alert_emails` (Terraform),
 
 - **A failed run:** the error is in the run's logs. Once the cause is fixed, `make jobs-run` adds whatever the failed run missed.
 - **Data stopped arriving:** a run logs `<indicator>: no new composite for over 45 days` when the latest composite of ppna, apar or et started longer ago than `STALE_AFTER` (`values.py`). The indicators' scripts update those assets outside this repository, so ask whoever runs them.
+- **Not covered:** a schedule that is paused or deleted logs nothing, so it alerts nobody.
 
 ## Running it
 
