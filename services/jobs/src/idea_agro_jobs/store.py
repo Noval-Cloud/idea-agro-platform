@@ -73,12 +73,16 @@ class BigQueryStore:
         schema = cast(list[bigquery.SchemaField], self._client.get_table(target).schema)  # pyright: ignore[reportUnknownMemberType]
         try:
             self._client.load_table_from_json(rows, staging, job_config=bigquery.LoadJobConfig(schema=schema)).result()
+            # The division and indicator, as constants, let BigQuery read only their clustered blocks.
             self._query(
                 f"MERGE `{target}` t USING `{staging}` s "
-                f"ON t.division = s.division AND t.zone = s.zone AND t.indicator = s.indicator "
+                "ON t.division = @division AND t.indicator = @indicator "
+                f"AND t.division = s.division AND t.zone = s.zone AND t.indicator = s.indicator "
                 f"AND t.{period} = s.{period} "
                 "WHEN MATCHED THEN UPDATE SET value = s.value, computed_at = s.computed_at "
-                "WHEN NOT MATCHED THEN INSERT ROW"
+                "WHEN NOT MATCHED THEN INSERT ROW",
+                division=division,
+                indicator=indicator,
             )
         finally:
             self._client.delete_table(staging, not_found_ok=True)
