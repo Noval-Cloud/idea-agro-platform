@@ -18,6 +18,8 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
   The job is their only writer. A run loads the new rows and merges them, so running it again replaces rows instead of repeating them.
 
+- **Cost:** the tables are clustered by division, zone and indicator. The API reads one zone, and each merge names its division and indicator, so BigQuery bills only their blocks. Partitioning by period would cut merges further, but only by rebuilding the tables.
+
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
 
