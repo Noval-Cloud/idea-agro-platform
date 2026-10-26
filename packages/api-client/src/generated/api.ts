@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.13.0
+ * OpenAPI spec version: 1.14.0
  */
 import {
   useMutation,
@@ -649,6 +649,94 @@ export interface PadronItemIn {
      * @maximum 99999999
      */
   padron: number;
+}
+
+/**
+ * The language of the email, the inviter's.
+ */
+export type PlatformInvitationInLanguage = typeof PlatformInvitationInLanguage[keyof typeof PlatformInvitationInLanguage];
+
+
+export const PlatformInvitationInLanguage = {
+  es: 'es',
+  en: 'en',
+  pt: 'pt',
+} as const;
+
+/**
+ * Someone to invite to the platform.
+ */
+export interface PlatformInvitationIn {
+  /**
+     * Their email, as they will sign in with it.
+     * @maxLength 254
+     * @pattern ^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$
+     */
+  email: string;
+  /** The language of the email, the inviter's. */
+  language?: PlatformInvitationInLanguage;
+}
+
+/**
+ * `accepted` once an account with that verified email exists; `expired` past its term.
+ */
+export type PlatformInvitationOutState = typeof PlatformInvitationOutState[keyof typeof PlatformInvitationOutState];
+
+
+export const PlatformInvitationOutState = {
+  pending: 'pending',
+  accepted: 'accepted',
+  expired: 'expired',
+} as const;
+
+/**
+ * An invitation to the platform, as its sender follows it.
+ */
+export interface PlatformInvitationOut {
+  /** The invitation's id. */
+  id: string;
+  /** Who is invited. */
+  email: string;
+  /** `accepted` once an account with that verified email exists; `expired` past its term. */
+  state: PlatformInvitationOutState;
+  /** When it was last emailed. */
+  invited_at: string;
+  /** Until when it can be accepted. */
+  invited_until: string;
+  /** When it was accepted; null until then. */
+  accepted_at: string | null;
+}
+
+/**
+ * `accepted` once an account with that verified email exists; `expired` past its term.
+ */
+export type PlatformInvitationSentState = typeof PlatformInvitationSentState[keyof typeof PlatformInvitationSentState];
+
+
+export const PlatformInvitationSentState = {
+  pending: 'pending',
+  accepted: 'accepted',
+  expired: 'expired',
+} as const;
+
+/**
+ * An invitation just emailed.
+ */
+export interface PlatformInvitationSent {
+  /** The invitation's id. */
+  id: string;
+  /** Who is invited. */
+  email: string;
+  /** `accepted` once an account with that verified email exists; `expired` past its term. */
+  state: PlatformInvitationSentState;
+  /** When it was last emailed. */
+  invited_at: string;
+  /** Until when it can be accepted. */
+  invited_until: string;
+  /** When it was accepted; null until then. */
+  accepted_at: string | null;
+  /** Whether the email left; the invitation stands either way. */
+  invitation_sent: boolean;
 }
 
 /**
@@ -7613,6 +7701,513 @@ export const useDeclineInvitation = <TError = Problem,
         TContext
       > => {
       return useMutation(getDeclineInvitationMutationOptions(options), queryClient);
+    }
+
+export type listPlatformInvitationsResponse200 = {
+  data: PlatformInvitationOut[]
+  status: 200
+}
+
+export type listPlatformInvitationsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listPlatformInvitationsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listPlatformInvitationsResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type listPlatformInvitationsResponseSuccess = (listPlatformInvitationsResponse200) & {
+  headers: Headers;
+};
+export type listPlatformInvitationsResponseError = (listPlatformInvitationsResponse401 | listPlatformInvitationsResponse403 | listPlatformInvitationsResponse429) & {
+  headers: Headers;
+};
+
+export type listPlatformInvitationsResponse = (listPlatformInvitationsResponseSuccess | listPlatformInvitationsResponseError)
+
+export const getListPlatformInvitationsUrl = () => {
+
+
+
+
+  return `/v1/me/invitations`
+}
+
+/**
+ * Newest first, with their state.
+ * @summary Your invitations to the platform
+ */
+export const listPlatformInvitations = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listPlatformInvitationsResponse> => {
+
+  return apiFetch<listPlatformInvitationsResponse>(getListPlatformInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlatformInvitationsQueryKey = () => {
+    return [
+    `/v1/me/invitations`
+    ] as const;
+    }
+
+
+export const getListPlatformInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listPlatformInvitations>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlatformInvitationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlatformInvitations>>> = ({ signal }) => listPlatformInvitations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPlatformInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listPlatformInvitations>>>
+export type ListPlatformInvitationsQueryError = Problem
+
+
+export function useListPlatformInvitations<TData = Awaited<ReturnType<typeof listPlatformInvitations>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformInvitations<TData = Awaited<ReturnType<typeof listPlatformInvitations>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformInvitations<TData = Awaited<ReturnType<typeof listPlatformInvitations>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Your invitations to the platform
+ */
+
+export function useListPlatformInvitations<TData = Awaited<ReturnType<typeof listPlatformInvitations>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformInvitations>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPlatformInvitationsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type inviteToPlatformResponse201 = {
+  data: PlatformInvitationSent
+  status: 201
+}
+
+export type inviteToPlatformResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type inviteToPlatformResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type inviteToPlatformResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type inviteToPlatformResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type inviteToPlatformResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type inviteToPlatformResponseSuccess = (inviteToPlatformResponse201) & {
+  headers: Headers;
+};
+export type inviteToPlatformResponseError = (inviteToPlatformResponse401 | inviteToPlatformResponse403 | inviteToPlatformResponse409 | inviteToPlatformResponse422 | inviteToPlatformResponse429) & {
+  headers: Headers;
+};
+
+export type inviteToPlatformResponse = (inviteToPlatformResponseSuccess | inviteToPlatformResponseError)
+
+export const getInviteToPlatformUrl = () => {
+
+
+
+
+  return `/v1/me/invitations`
+}
+
+/**
+ * Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person starts at most `PLATFORM_INVITATIONS_PER_DAY` (10) a day and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.
+ * @summary Invite someone to the platform
+ */
+export const inviteToPlatform = async (platformInvitationIn: PlatformInvitationIn, options?: Parameters<typeof apiFetch>[1]): Promise<inviteToPlatformResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<inviteToPlatformResponse>(getInviteToPlatformUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(platformInvitationIn)
+  }
+);}
+
+
+
+
+
+export const getInviteToPlatformMutationKey = () => ['inviteToPlatform'] as const;
+
+export const getInviteToPlatformMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inviteToPlatform>>, TError,InviteToPlatformMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inviteToPlatform>>, TError,InviteToPlatformMutationVariables, TContext> => {
+
+const mutationKey = getInviteToPlatformMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inviteToPlatform>>, InviteToPlatformMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  inviteToPlatform(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InviteToPlatformMutationResult = NonNullable<Awaited<ReturnType<typeof inviteToPlatform>>>
+    export type InviteToPlatformMutationBody = PlatformInvitationIn
+    export type InviteToPlatformMutationError = Problem
+    export type InviteToPlatformMutationVariables = {data: PlatformInvitationIn}
+
+    /**
+ * @summary Invite someone to the platform
+ */
+export const useInviteToPlatform = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inviteToPlatform>>, TError,InviteToPlatformMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof inviteToPlatform>>,
+        TError,
+        InviteToPlatformMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInviteToPlatformMutationOptions(options), queryClient);
+    }
+
+export type resendPlatformInvitationResponse200 = {
+  data: PlatformInvitationSent
+  status: 200
+}
+
+export type resendPlatformInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type resendPlatformInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type resendPlatformInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type resendPlatformInvitationResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type resendPlatformInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type resendPlatformInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type resendPlatformInvitationResponseSuccess = (resendPlatformInvitationResponse200) & {
+  headers: Headers;
+};
+export type resendPlatformInvitationResponseError = (resendPlatformInvitationResponse401 | resendPlatformInvitationResponse403 | resendPlatformInvitationResponse404 | resendPlatformInvitationResponse409 | resendPlatformInvitationResponse422 | resendPlatformInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type resendPlatformInvitationResponse = (resendPlatformInvitationResponseSuccess | resendPlatformInvitationResponseError)
+
+export const getResendPlatformInvitationUrl = (invitationId: string,) => {
+
+
+
+
+  return `/v1/me/invitations/${invitationId}/resend`
+}
+
+/**
+ * With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email.
+ * @summary Send an invitation to the platform again
+ */
+export const resendPlatformInvitation = async (invitationId: string,
+    invitationAgain: InvitationAgain, options?: Parameters<typeof apiFetch>[1]): Promise<resendPlatformInvitationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<resendPlatformInvitationResponse>(getResendPlatformInvitationUrl(invitationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationAgain)
+  }
+);}
+
+
+
+
+
+export const getResendPlatformInvitationMutationKey = () => ['resendPlatformInvitation'] as const;
+
+export const getResendPlatformInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendPlatformInvitation>>, TError,ResendPlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendPlatformInvitation>>, TError,ResendPlatformInvitationMutationVariables, TContext> => {
+
+const mutationKey = getResendPlatformInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendPlatformInvitation>>, ResendPlatformInvitationMutationVariables> = (props) => {
+          const {invitationId,data} = props ?? {};
+
+          return  resendPlatformInvitation(invitationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendPlatformInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof resendPlatformInvitation>>>
+    export type ResendPlatformInvitationMutationBody = InvitationAgain
+    export type ResendPlatformInvitationMutationError = Problem
+    export type ResendPlatformInvitationMutationVariables = {invitationId: string;data: InvitationAgain}
+
+    /**
+ * @summary Send an invitation to the platform again
+ */
+export const useResendPlatformInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendPlatformInvitation>>, TError,ResendPlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resendPlatformInvitation>>,
+        TError,
+        ResendPlatformInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendPlatformInvitationMutationOptions(options), queryClient);
+    }
+
+export type deletePlatformInvitationResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deletePlatformInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type deletePlatformInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type deletePlatformInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deletePlatformInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type deletePlatformInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type deletePlatformInvitationResponseSuccess = (deletePlatformInvitationResponse204) & {
+  headers: Headers;
+};
+export type deletePlatformInvitationResponseError = (deletePlatformInvitationResponse401 | deletePlatformInvitationResponse403 | deletePlatformInvitationResponse404 | deletePlatformInvitationResponse422 | deletePlatformInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type deletePlatformInvitationResponse = (deletePlatformInvitationResponseSuccess | deletePlatformInvitationResponseError)
+
+export const getDeletePlatformInvitationUrl = (invitationId: string,) => {
+
+
+
+
+  return `/v1/me/invitations/${invitationId}`
+}
+
+/**
+ * An accepted one only leaves your list.
+ * @summary Delete an invitation to the platform
+ */
+export const deletePlatformInvitation = async (invitationId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deletePlatformInvitationResponse> => {
+
+  return apiFetch<deletePlatformInvitationResponse>(getDeletePlatformInvitationUrl(invitationId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePlatformInvitationMutationKey = () => ['deletePlatformInvitation'] as const;
+
+export const getDeletePlatformInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformInvitation>>, TError,DeletePlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlatformInvitation>>, TError,DeletePlatformInvitationMutationVariables, TContext> => {
+
+const mutationKey = getDeletePlatformInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlatformInvitation>>, DeletePlatformInvitationMutationVariables> = (props) => {
+          const {invitationId} = props ?? {};
+
+          return  deletePlatformInvitation(invitationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlatformInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlatformInvitation>>>
+
+    export type DeletePlatformInvitationMutationError = Problem
+    export type DeletePlatformInvitationMutationVariables = {invitationId: string}
+
+    /**
+ * @summary Delete an invitation to the platform
+ */
+export const useDeletePlatformInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformInvitation>>, TError,DeletePlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlatformInvitation>>,
+        TError,
+        DeletePlatformInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePlatformInvitationMutationOptions(options), queryClient);
     }
 
 export type listAccountsResponse200 = {

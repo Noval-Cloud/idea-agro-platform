@@ -21,6 +21,11 @@ from idea_agro_api.emails.words import BuiltInTemplates
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
 from idea_agro_api.mail import Mailer, NoMailer, mailer_from
+from idea_agro_api.platform_invitations import (
+    MemoryPlatformInvitations,
+    PlatformInvitationStore,
+    platform_invitations_from,
+)
 from idea_agro_api.projects import MemoryProjects, ProjectStore, projects_from
 from idea_agro_api.public_data import PublicData
 from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zones_from
@@ -55,6 +60,9 @@ class Limits:
     document_bytes: int = 10_000_000
     documents_per_zone: int = 20
     documents_bytes_per_account: int = 200_000_000
+    # Invitations to the platform a person may start a day, and keep pending at once.
+    platform_invitations_per_day: int = 10
+    platform_invitations_pending: int = 50
     # West, south, east, north: Uruguay with a margin. A zone must touch it.
     coverage: tuple[float, float, float, float] = (-58.6, -35.1, -53.0, -30.0)
 
@@ -77,6 +85,8 @@ class Limits:
             document_bytes=int(env.get("DOCUMENT_MAX_BYTES", "10000000")),
             documents_per_zone=int(env.get("DOCUMENTS_PER_ZONE", "20")),
             documents_bytes_per_account=int(env.get("DOCUMENTS_MAX_BYTES_PER_ACCOUNT", "200000000")),
+            platform_invitations_per_day=int(env.get("PLATFORM_INVITATIONS_PER_DAY", "10")),
+            platform_invitations_pending=int(env.get("PLATFORM_INVITATIONS_PENDING", "50")),
         )
 
     def body_bytes(self, path: str) -> int:
@@ -107,6 +117,7 @@ class Services:
     # Documents kept with saved zones: their records, and their files beside the outlines.
     documents: DocumentStore = field(default_factory=MemoryDocuments)
     document_files: DocumentFiles = field(default_factory=MemoryDocumentFiles)
+    platform_invitations: PlatformInvitationStore = field(default_factory=MemoryPlatformInvitations)
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -146,6 +157,7 @@ class Services:
             audit=audit_from(records),
             geometries=geometries_from(outlines),
             documents=documents_from(records),
+            platform_invitations=platform_invitations_from(records),
             document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,

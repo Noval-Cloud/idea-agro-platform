@@ -20,6 +20,7 @@ from idea_agro_api.routes import (
     maps,
     me,
     padrones,
+    platform_invitations,
     projects,
     saved_zones,
     service,
@@ -29,7 +30,7 @@ from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.13.0"
+API_VERSION = "1.14.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -100,7 +101,20 @@ def create_app(services: Services) -> FastAPI:
     )
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    for module in (service, catalog, zones, maps, padrones, me, saved_zones, documents, projects, invitations, admin):
+    for module in (
+        service,
+        catalog,
+        zones,
+        maps,
+        padrones,
+        me,
+        saved_zones,
+        documents,
+        projects,
+        invitations,
+        platform_invitations,
+        admin,
+    ):
         app.include_router(module.router)
 
     def openapi() -> dict[str, Any]:

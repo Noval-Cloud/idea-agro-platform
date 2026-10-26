@@ -13,6 +13,7 @@ class Kind(StrEnum):
 
     INVITATION_TO_COLLABORATE = "invitation-to-collaborate"
     INVITATION_TO_VIEW = "invitation-to-view"
+    PLATFORM_INVITATION = "platform-invitation"
 
 
 @dataclass(frozen=True)
@@ -24,7 +25,11 @@ class Shape:
 
 
 INVITATION = Shape(frozenset({"inviter", "project", "email", "until"}), links=True)
-SHAPES: dict[Kind, Shape] = {Kind.INVITATION_TO_COLLABORATE: INVITATION, Kind.INVITATION_TO_VIEW: INVITATION}
+SHAPES: dict[Kind, Shape] = {
+    Kind.INVITATION_TO_COLLABORATE: INVITATION,
+    Kind.INVITATION_TO_VIEW: INVITATION,
+    Kind.PLATFORM_INVITATION: Shape(frozenset({"inviter", "email", "until"}), links=True),
+}
 
 
 @dataclass(frozen=True)

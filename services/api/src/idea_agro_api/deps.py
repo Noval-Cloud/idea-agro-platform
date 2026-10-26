@@ -1,5 +1,6 @@
 """What routes declare they need: the services, and for private routes, the account calling."""
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Annotated
@@ -14,6 +15,7 @@ from idea_agro_api.auth import Identity, InvalidToken, KeysUnavailable
 from idea_agro_api.security import client_key
 from idea_agro_api.services import Services
 
+log = logging.getLogger(__name__)
 bearer = HTTPBearer(auto_error=False, description="A token from the sign-in provider, as `Bearer <token>`.")
 
 
@@ -57,7 +59,7 @@ def caller(
         raise unauthorized("The token is not valid.") from error
     except KeysUnavailable as error:
         raise HTTPException(503, "Tokens cannot be checked right now: try again later.") from error
-    account = found.accounts.by_identity(identity) or found.accounts.create(new_account(identity), identity)
+    account = found.accounts.by_identity(identity) or joined(found, identity)
     limited(found, f"account:{account.id}")
     if account.disabled:
         raise HTTPException(403, "The account is disabled.")
@@ -66,6 +68,18 @@ def caller(
     if changes := profile_changes(account, identity):
         account = found.accounts.update(account.id, **changes)
     return Caller(account=bootstrapped(found, account, identity), identity=identity)
+
+
+def joined(found: Services, identity: Identity) -> Account:
+    """A new account; the invitations to the platform of its verified email are accepted."""
+    account = found.accounts.create(new_account(identity), identity)
+    if identity.email_verified and identity.email:
+        try:
+            found.platform_invitations.accept(identity.email.lower(), datetime.now(UTC))
+        except Exception:
+            # The account matters more than the inviter learning of it.
+            log.warning("The invitations of a new account could not be marked accepted", exc_info=True)
+    return account
 
 
 def bootstrapped(found: Services, account: Account, identity: Identity) -> Account:

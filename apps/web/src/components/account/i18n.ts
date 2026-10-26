@@ -12,7 +12,7 @@ export const pickAccountCatalog = (catalog: Catalog): AccountCatalog => ({
 });
 
 /** The account's sections, in the order the panel lists them. */
-export const accountSections = ["profile", "zones", "projects", "content", "admin"] as const;
+export const accountSections = ["profile", "zones", "projects", "invitations", "content", "admin"] as const;
 export type AccountSection = (typeof accountSections)[number];
 
 export function createAccountTranslator(locale: Locale, catalog: AccountCatalog) {

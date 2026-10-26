@@ -7,6 +7,7 @@ import type { Locale } from "@/i18n/core";
 import { createAccountTranslator, type AccountCatalog, type AccountSection } from "./i18n";
 import { sectionRoles } from "./AccountNav";
 import SavedZones from "./SavedZones";
+import Invitations from "./Invitations";
 import Projects from "./Projects";
 import Users from "./Users";
 
@@ -104,6 +105,7 @@ export default function AccountApp({
     );
   if (section === "projects")
     return <Projects translator={translator} projectPath={projectPath} mapPath={mapPath} signInPath={signInPath} />;
+  if (section === "invitations") return <Invitations translator={translator} locale={locale} signInPath={signInPath} />;
   if (section === "content")
     return (
       <section id="content" aria-labelledby="content-title" className="grid max-w-3xl gap-2 pt-8">

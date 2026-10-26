@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.13.0"
+    "version": "1.14.0"
   },
   "paths": {
     "/health": {
@@ -4278,6 +4278,347 @@
         ]
       }
     },
+    "/v1/me/invitations": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your invitations to the platform",
+        "description": "Newest first, with their state.",
+        "operationId": "list_platform_invitations",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformInvitationOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Platform Invitations"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Invite someone to the platform",
+        "description": "Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person starts at most `PLATFORM_INVITATIONS_PER_DAY` (10) a day and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.",
+        "operationId": "invite_to_platform",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformInvitationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformInvitationSent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me/invitations/{invitation_id}/resend": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Send an invitation to the platform again",
+        "description": "With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email.",
+        "operationId": "resend_platform_invitation",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The invitation's id.",
+              "title": "Invitation Id"
+            },
+            "description": "The invitation's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAgain"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformInvitationSent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/invitations/{invitation_id}": {
+      "delete": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Delete an invitation to the platform",
+        "description": "An accepted one only leaves your list.",
+        "operationId": "delete_platform_invitation",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The invitation's id.",
+              "title": "Invitation Id"
+            },
+            "description": "The invitation's id."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/accounts": {
       "get": {
         "tags": [
@@ -6140,6 +6481,160 @@
           "area_ha"
         ],
         "title": "PadronProperties"
+      },
+      "PlatformInvitationIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "pattern": "^[^@\\s/?#%]+@[^@\\s/?#%]+\\.[^@\\s/?#%]+$",
+            "title": "Email",
+            "description": "Their email, as they will sign in with it."
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "pt"
+            ],
+            "title": "Language",
+            "description": "The language of the email, the inviter's.",
+            "default": "es"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "PlatformInvitationIn",
+        "description": "Someone to invite to the platform."
+      },
+      "PlatformInvitationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The invitation's id."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Who is invited."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "expired"
+            ],
+            "title": "State",
+            "description": "`accepted` once an account with that verified email exists; `expired` past its term."
+          },
+          "invited_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Invited At",
+            "description": "When it was last emailed."
+          },
+          "invited_until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Invited Until",
+            "description": "Until when it can be accepted."
+          },
+          "accepted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At",
+            "description": "When it was accepted; null until then."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "state",
+          "invited_at",
+          "invited_until",
+          "accepted_at"
+        ],
+        "title": "PlatformInvitationOut",
+        "description": "An invitation to the platform, as its sender follows it."
+      },
+      "PlatformInvitationSent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The invitation's id."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Who is invited."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "expired"
+            ],
+            "title": "State",
+            "description": "`accepted` once an account with that verified email exists; `expired` past its term."
+          },
+          "invited_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Invited At",
+            "description": "When it was last emailed."
+          },
+          "invited_until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Invited Until",
+            "description": "Until when it can be accepted."
+          },
+          "accepted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At",
+            "description": "When it was accepted; null until then."
+          },
+          "invitation_sent": {
+            "type": "boolean",
+            "title": "Invitation Sent",
+            "description": "Whether the email left; the invitation stands either way."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "state",
+          "invited_at",
+          "invited_until",
+          "accepted_at",
+          "invitation_sent"
+        ],
+        "title": "PlatformInvitationSent",
+        "description": "An invitation just emailed."
       },
       "Point": {
         "properties": {
