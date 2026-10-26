@@ -2,6 +2,9 @@
 
 from idea_agro_api.emails.templates import Kind, Language, Template
 
+# Who invites, when the account has neither a name nor an email.
+SOMEONE: dict[Language, str] = {"es": "Alguien", "en": "Someone", "pt": "Alguém"}
+
 WORDS: dict[Kind, dict[Language, Template]] = {
     Kind.INVITATION_TO_COLLABORATE: {
         "es": Template(

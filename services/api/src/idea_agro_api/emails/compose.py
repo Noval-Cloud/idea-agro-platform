@@ -3,13 +3,15 @@
 import re
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from string import Formatter
 
 from idea_agro_api.emails import layout
-from idea_agro_api.emails.templates import PLACEHOLDERS, Kind, Language, Templates, check
+from idea_agro_api.emails.templates import SHAPES, Kind, Language, Templates, check
 from idea_agro_api.mail import Email
 
-type Value = str | int | float | date | datetime
+# A `Decimal` keeps its own decimals; a float is written with two at most.
+type Value = str | int | float | Decimal | date | datetime
 
 # Dates in emails are Uruguay's, which keeps UTC-3 all year.
 URUGUAY = timezone(timedelta(hours=-3))
@@ -82,7 +84,11 @@ def written(value: Value, language: Language) -> str:
         return DATE[language].format(day=value.day, month=MONTHS[language][value.month - 1], year=value.year)
     if isinstance(value, str):
         return value
-    number = f"{value:,}" if isinstance(value, int) else f"{value:,.2f}".rstrip("0").rstrip(".")
+    if isinstance(value, float):
+        # Adding 0.0 turns a -0.0 into 0.0, so nothing is written "-0".
+        number = f"{round(value, 2) + 0.0:,.2f}".rstrip("0").rstrip(".")
+    else:
+        number = f"{value:,f}" if isinstance(value, Decimal) else f"{value:,}"
     return number if language == "en" else number.translate(str.maketrans(",.", ".,"))
 
 
@@ -103,8 +109,10 @@ def compose(
     """The email of `kind` to `to`: `values` gives each of the kind's placeholders, and the button goes to `link`."""
     template = templates.template(kind, language)
     check(kind, template)
-    if missing := PLACEHOLDERS[kind] - values.keys():
+    if missing := SHAPES[kind].placeholders - values.keys():
         raise ValueError(f"{kind} emails need {', '.join(sorted(missing))}")
+    if SHAPES[kind].links and not link:
+        raise ValueError(f"{kind} emails need a link")
     words = {name: written(value, language) for name, value in values.items()}
     parts = layout.Parts(
         subject=fill(template.subject, words),

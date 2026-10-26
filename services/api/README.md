@@ -52,10 +52,10 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.
 
 - **Sending:** a sender calls `compose` with the kind, the values of the kind's placeholders and, for a button, its link, then hands the `Email` to the `Mailer`. It never writes HTML.
-- **Words:** they come from a `Templates` port, the code's own (`emails/words.py`) today. A store people edit can replace it as `Services.templates`, and `check` refuses a template that places a value its kind does not give.
-- **Look:** `emails/layout.py` gives every email the same plain layout, with inline styles, a plain-text copy and an inbox preview line. Dates are written in Uruguay time and numbers with the language's separators.
+- **Words:** they come from a `Templates` port, the code's own (`emails/words.py`) today. A store people edit can replace it as `Services.templates`. `check` refuses a template that places a value its kind does not give, lacks a part its kind writes, or breaks a one-line part; a refused template leaves the email unsent, never the request failed.
+- **Look:** `emails/layout.py` gives every email the same plain layout, built to hold up in Outlook, with inline styles, a plain-text copy and an inbox preview line. Its own few words (the footer and the line under the button) stay in the code. Dates are written in Uruguay time, and numbers with the language's separators.
 - **Provider:** behind the `Mailer` port (`mail.py`). `MAILER` is `resend://`, with `MAIL_API_KEY` and `MAIL_FROM`, or `none`, which sends nothing. Links point to `SITE_URL`.
-- **A new kind:** add it to `Kind` with its placeholders, then add its words in every language; the tests check them.
+- **A new kind:** add it to `Kind` with its `Shape` (its placeholders, and whether it has a button), then add its words in every language; the tests check them.
 
 ## Errors
 

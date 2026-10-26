@@ -15,11 +15,16 @@ class Kind(StrEnum):
     INVITATION_TO_VIEW = "invitation-to-view"
 
 
-# The values every sender of a kind gives, which its templates may place.
-PLACEHOLDERS: dict[Kind, frozenset[str]] = {
-    Kind.INVITATION_TO_COLLABORATE: frozenset({"inviter", "project", "email", "until"}),
-    Kind.INVITATION_TO_VIEW: frozenset({"inviter", "project", "email", "until"}),
-}
+@dataclass(frozen=True)
+class Shape:
+    """What every sender of a kind gives: the values its templates may place, and whether a link for its button."""
+
+    placeholders: frozenset[str]
+    links: bool
+
+
+INVITATION = Shape(frozenset({"inviter", "project", "email", "until"}), links=True)
+SHAPES: dict[Kind, Shape] = {Kind.INVITATION_TO_COLLABORATE: INVITATION, Kind.INVITATION_TO_VIEW: INVITATION}
 
 
 @dataclass(frozen=True)
@@ -34,8 +39,14 @@ class Template:
     # Small print under the button.
     note: str | None = None
 
-    def texts(self) -> tuple[str, ...]:
-        return (self.subject, self.heading, self.body, self.action or "", self.note or "")
+    def texts(self) -> dict[str, str]:
+        return {
+            "subject": self.subject,
+            "heading": self.heading,
+            "body": self.body,
+            "action": self.action or "",
+            "note": self.note or "",
+        }
 
 
 class TemplateError(ValueError):
@@ -53,14 +64,22 @@ def placeholders(text: str) -> set[str]:
         if name is None:
             continue
         if not name.isidentifier() or spec or conversion:
-            raise TemplateError(f"Write placeholders as {{name}}, not {{{name}}} in {text!r}")
+            field = name + (f"!{conversion}" if conversion else "") + (f":{spec}" if spec else "")
+            raise TemplateError(f"Write placeholders as {{name}}, not {{{field}}}, in {text!r}")
         found.add(name)
     return found
 
 
 def check(kind: Kind, template: Template) -> None:
-    """Refuses a template that places a value its kind does not give."""
-    unknown = set[str]().union(*(placeholders(text) for text in template.texts())) - PLACEHOLDERS[kind]
+    """Refuses a template its kind's emails could not be written with."""
+    texts = template.texts()
+    for part in ("subject", "heading", "body") + (("action",) if SHAPES[kind].links else ()):
+        if not texts[part].strip():
+            raise TemplateError(f"{kind} emails need their {part}")
+    for part in ("subject", "heading", "action"):
+        if "\n" in texts[part] or "\r" in texts[part]:
+            raise TemplateError(f"The {part} is one line")
+    unknown = set[str]().union(*(placeholders(text) for text in texts.values())) - SHAPES[kind].placeholders
     if unknown:
         raise TemplateError(f"{kind} emails do not give {', '.join(sorted(unknown))}")
 
