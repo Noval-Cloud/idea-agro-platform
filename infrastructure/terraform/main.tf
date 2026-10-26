@@ -35,6 +35,7 @@ module "api" {
   values_dataset   = module.platform.values_dataset
   admin_emails     = var.admin_emails
   site_url         = module.web.url
+  zone_job         = module.jobs.job
 }
 
 module "jobs" {
@@ -45,6 +46,10 @@ module "jobs" {
   builder_member = local.builder_member
   values_dataset = module.platform.values_dataset
   zones_bucket   = module.api.zones_bucket
+
+  saved_zones_bucket = module.api.geometries_bucket
+  outlines_prefix    = module.api.outlines_prefix
+  series_suffix      = module.api.series_suffix
 
   earth_engine_project = var.earth_engine_project
   alert_channels       = module.platform.alert_channels

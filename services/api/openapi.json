@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.11.0"
+    "version": "1.12.0"
   },
   "paths": {
     "/health": {
@@ -1473,6 +1473,97 @@
           },
           "413": {
             "description": "It is larger than allowed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/saved-zones/{zone_id}/seasonal": {
+      "get": {
+        "tags": [
+          "Saved zones"
+        ],
+        "summary": "Seasonal series of a saved zone",
+        "description": "Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.",
+        "operationId": "get_saved_zone_seasonal",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The zone's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneSeasonal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3156,6 +3247,109 @@
           },
           "413": {
             "description": "It is larger than allowed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/zones/{zone_id}/seasonal": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Seasonal series of a saved zone of a project",
+        "description": "For every member. The same series as the zone's owner sees: `computing` is true until it is ready.",
+        "operationId": "get_project_zone_seasonal",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "zone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The saved zone's id.",
+              "title": "Zone Id"
+            },
+            "description": "The saved zone's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedZoneSeasonal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5917,6 +6111,54 @@
           "name"
         ],
         "title": "SavedZoneRename"
+      },
+      "SavedZoneSeasonal": {
+        "properties": {
+          "computing": {
+            "type": "boolean",
+            "title": "Computing",
+            "description": "Whether the series of the zone's current outline is still being computed; ask again in a minute."
+          },
+          "ppna": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Aboveground net primary productivity: forage production, in 16-day totals."
+          },
+          "apar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absorbed photosynthetically active radiation, in 16-day totals."
+          },
+          "et": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Evapotranspiration, as a daily rate every 8 days."
+          }
+        },
+        "type": "object",
+        "required": [
+          "computing"
+        ],
+        "title": "SavedZoneSeasonal",
+        "description": "The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out."
       },
       "SavedZonesImport": {
         "properties": {

@@ -1,8 +1,9 @@
 """Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps`.
 
 `PUBLIC_DATA` is where the API's public files are (`gs://<bucket>` or a folder), `VALUES_STORE` the BigQuery
-dataset of the zones' values (`bigquery://<project>/<dataset>`), `EARTH_ENGINE_PROJECT` the Cloud project
-registered for Earth Engine, and `MAP_THEME` the website's map palettes.
+dataset of the zones' values (`bigquery://<project>/<dataset>`), `SAVED_ZONES` where the API keeps the saved zones'
+outlines, `EARTH_ENGINE_PROJECT` the Cloud project registered for Earth Engine, and `MAP_THEME` the website's map
+palettes.
 """
 
 import argparse
@@ -11,7 +12,7 @@ import logging
 import os
 from pathlib import Path
 
-from idea_agro_jobs import maps, outlines, values
+from idea_agro_jobs import maps, outlines, saved, values
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
 from idea_agro_jobs.sources import PublicFiles, Source
@@ -21,6 +22,7 @@ TASKS = {
     "outlines": "publish the zones, the search index and the parcels when an Earth Engine asset changed",
     "values": "add the periods BigQuery is missing and publish the values",
     "maps": "draw the maps of new years, and the thumbnails of the latest",
+    "saved": "add the composites the saved zones' seasonal series lack",
 }
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
@@ -45,6 +47,11 @@ def main() -> None:
         help="where the values come from: Earth Engine, or the values the public files hold",
     )
     parser.add_argument("--force", action="store_true", help="publish the outlines even if no asset changed")
+    parser.add_argument(
+        "--outline",
+        action="append",
+        help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
+    )
     arguments = parser.parse_args()
 
     handler = logging.StreamHandler()
@@ -68,6 +75,8 @@ def main() -> None:
             values.refresh(source, store_from(os.environ["VALUES_STORE"]), files)
         elif task == "maps":
             maps.refresh(earth_engine(), files, maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))))
+        elif task == "saved":
+            saved.refresh(earth_engine(), files_from(os.environ["SAVED_ZONES"]), only=arguments.outline)
 
 
 if __name__ == "__main__":

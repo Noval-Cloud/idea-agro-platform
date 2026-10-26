@@ -204,3 +204,27 @@ variable "mail_key_version" {
   type        = string
   default     = "latest"
 }
+
+variable "zone_job" {
+  description = "The data job the API starts when a saved zone's outline changes, to compute its series; empty starts none"
+  type        = string
+  default     = ""
+}
+
+variable "zone_job_role" {
+  description = "Role that lets the API start the data job with arguments of its own"
+  type        = string
+  default     = "roles/run.jobsExecutorWithOverrides"
+}
+
+variable "outlines_prefix" {
+  description = "Where the saved zones' outlines are in their bucket, apart from their documents"
+  type        = string
+  default     = "zones/"
+}
+
+variable "series_suffix" {
+  description = "How the names of the outlines' seasonal series end, next to each outline"
+  type        = string
+  default     = ".series.json"
+}

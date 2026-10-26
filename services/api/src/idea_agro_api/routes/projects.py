@@ -37,6 +37,7 @@ from idea_agro_api.models import (
     SavedItem,
     SavedItemIn,
     SavedZoneOut,
+    SavedZoneSeasonal,
     SharedOut,
     ZoneGeometry,
 )
@@ -50,7 +51,7 @@ from idea_agro_api.projects import (
     saved_item,
 )
 from idea_agro_api.routes.activity_log import note
-from idea_agro_api.routes.saved_zones import change_outline
+from idea_agro_api.routes.saved_zones import change_outline, seasonal
 from idea_agro_api.routes.saved_zones import out as saved_zone_out
 from idea_agro_api.saved_zones import SavedZone
 from idea_agro_api.services import Services
@@ -600,6 +601,19 @@ def get_project_zone_geometry(
     if content is None:
         raise HTTPException(404, "The zone's outline is missing.")
     return json.loads(content)
+
+
+@router.get(
+    "/v1/projects/{project_id}/zones/{zone_id}/seasonal",
+    summary="Seasonal series of a saved zone of a project",
+    description="For every member. The same series as the zone's owner sees: `computing` is true until it is ready.",
+    response_model_exclude_none=True,
+    responses=problems(401, 403, 404, 422, 429),
+)
+def get_project_zone_seasonal(
+    project_id: ProjectId, zone_id: ZoneId, caller: CallerDep, services: ServicesDep
+) -> SavedZoneSeasonal:
+    return seasonal(services, project_zone(services, caller, project_id, zone_id))
 
 
 @router.put(

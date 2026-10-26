@@ -40,3 +40,13 @@ resource "google_secret_manager_secret_iam_member" "api_reads_mail_key" {
   role      = var.secret_reader_role
   member    = google_service_account.api.member
 }
+
+# A saved zone's new outline starts the data job's saved task, so its series need not wait for the night.
+resource "google_cloud_run_v2_job_iam_member" "api_starts_zone_job" {
+  count = var.zone_job == "" ? 0 : 1
+
+  name     = var.zone_job
+  location = var.region
+  role     = var.zone_job_role
+  member   = google_service_account.api.member
+}

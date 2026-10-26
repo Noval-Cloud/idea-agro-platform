@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.11.0
+ * OpenAPI spec version: 1.12.0
  */
 import * as zod from 'zod';
 
@@ -647,6 +647,37 @@ export const ChangeSavedZoneGeometryResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.
+ * @summary Seasonal series of a saved zone
+ */
+export const GetSavedZoneSeasonalParams = zod.object({
+  "zone_id": zod.uuid().describe('The zone\'s id.')
+})
+
+export const GetSavedZoneSeasonalResponse = zod.object({
+  "computing": zod.boolean().describe('Whether the series of the zone\'s current outline is still being computed; ask again in a minute.'),
+  "ppna": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Aboveground net primary productivity: forage production, in 16-day totals.'),
+  "apar": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Absorbed photosynthetically active radiation, in 16-day totals.'),
+  "et": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
+}).describe('The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out.')
 
 
 /**
@@ -1351,6 +1382,38 @@ export const ChangeProjectZoneGeometryResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * For every member. The same series as the zone's owner sees: `computing` is true until it is ready.
+ * @summary Seasonal series of a saved zone of a project
+ */
+export const GetProjectZoneSeasonalParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.')
+})
+
+export const GetProjectZoneSeasonalResponse = zod.object({
+  "computing": zod.boolean().describe('Whether the series of the zone\'s current outline is still being computed; ask again in a minute.'),
+  "ppna": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Aboveground net primary productivity: forage production, in 16-day totals.'),
+  "apar": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Absorbed photosynthetically active radiation, in 16-day totals.'),
+  "et": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
+}).describe('The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out.')
 
 
 /**

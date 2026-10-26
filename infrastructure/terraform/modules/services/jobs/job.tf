@@ -31,6 +31,10 @@ resource "google_cloud_run_v2_job" "data" {
           name  = "EARTH_ENGINE_PROJECT"
           value = var.earth_engine_project
         }
+        env {
+          name  = "SAVED_ZONES"
+          value = "gs://${var.saved_zones_bucket}"
+        }
 
         resources {
           limits = {

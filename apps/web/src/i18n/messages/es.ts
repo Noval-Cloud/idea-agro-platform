@@ -742,6 +742,11 @@ export const es = {
       value: "Valor estimado",
       seasonUnavailable: "La curva dentro del año va a estar disponible con la API.",
     },
+    computing: {
+      title: "Calculando los valores de esta zona",
+      body: "Medimos cada compuesto satelital desde 2001 dentro de su contorno. Suele llevar unos minutos, y esta vista se actualiza sola.",
+      slow: "Todavía se está calculando. Volvé a abrir la zona en unos minutos.",
+    },
     chartKeys:
       "Usá las flechas izquierda y derecha para recorrer los valores; Inicio y Fin van al primero y al último.",
   },

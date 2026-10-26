@@ -29,6 +29,21 @@ class SeasonalSeries(BaseModel):
     )
 
 
+class SavedZoneSeasonal(BaseModel):
+    """The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out."""
+
+    computing: bool = Field(
+        description="Whether the series of the zone's current outline is still being computed; ask again in a minute."
+    )
+    ppna: SeasonalSeries | None = Field(
+        default=None, description="Aboveground net primary productivity: forage production, in 16-day totals."
+    )
+    apar: SeasonalSeries | None = Field(
+        default=None, description="Absorbed photosynthetically active radiation, in 16-day totals."
+    )
+    et: SeasonalSeries | None = Field(default=None, description="Evapotranspiration, as a daily rate every 8 days.")
+
+
 class ZoneSeasonal(BaseModel):
     """The seasonal series of a zone. An indicator without data in the zone is left out."""
 
