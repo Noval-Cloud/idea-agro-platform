@@ -47,6 +47,16 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 - **Limits:** `SAVED_ZONES_PER_ACCOUNT` (500), `GEOMETRY_MAX_BYTES` (1 MB) and `IMPORT_MAX_BYTES` (5 MB).
 - **Privacy:** another person's zone answers 404, as if it did not exist.
 
+## Emails
+
+Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.
+
+- **Sending:** a sender calls `compose` with the kind, the values of the kind's placeholders and, for a button, its link, then hands the `Email` to the `Mailer`. It never writes HTML.
+- **Words:** they come from a `Templates` port, the code's own (`emails/words.py`) today. A store people edit can replace it as `Services.templates`, and `check` refuses a template that places a value its kind does not give.
+- **Look:** `emails/layout.py` gives every email the same plain layout, with inline styles, a plain-text copy and an inbox preview line. Dates are written in Uruguay time and numbers with the language's separators.
+- **Provider:** behind the `Mailer` port (`mail.py`). `MAILER` is `resend://`, with `MAIL_API_KEY` and `MAIL_FROM`, or `none`, which sends nothing. Links point to `SITE_URL`.
+- **A new kind:** add it to `Kind` with its placeholders, then add its words in every language; the tests check them.
+
 ## Errors
 
 Every error is a Problem Details object (RFC 9457) served as `application/problem+json`: `type`, `title`, `status`, `detail`, `instance`, and `errors` for invalid parameters.

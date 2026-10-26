@@ -8,6 +8,8 @@ from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.activity import ActivityStore, MemoryActivity, activity_from
 from idea_agro_api.audit import AuditStore, MemoryAudit, audit_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
+from idea_agro_api.emails.templates import Templates
+from idea_agro_api.emails.words import BuiltInTemplates
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
 from idea_agro_api.mail import Mailer, NoMailer, mailer_from
@@ -82,6 +84,8 @@ class Services:
     verifier: TokenVerifier | None = None
     identity_admin: IdentityAdmin = field(default_factory=NoIdentityAdmin)
     mailer: Mailer = field(default_factory=NoMailer)
+    # The emails' words: the code's own, until a store people edit replaces them.
+    templates: Templates = field(default_factory=BuiltInTemplates)
     # The website's address, which emails link to.
     site_url: str = ""
     rate_limit: RateLimit = field(default_factory=lambda: RateLimit(per_minute=60))

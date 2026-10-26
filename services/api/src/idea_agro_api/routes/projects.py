@@ -13,8 +13,9 @@ from starlette.exceptions import HTTPException
 from idea_agro_api.activity import Action
 from idea_agro_api.codes import new_code
 from idea_agro_api.deps import Caller, CallerDep, ServicesDep
+from idea_agro_api.emails.compose import compose, page
+from idea_agro_api.emails.templates import Kind, Language
 from idea_agro_api.errors import problems
-from idea_agro_api.invitations import Language, invitation, invitation_link
 from idea_agro_api.mail import MailFailed
 from idea_agro_api.models import (
     ActivityOut,
@@ -480,14 +481,20 @@ def tell(
     until: datetime,
 ) -> bool:
     """Emails the invitation; the invitation stands whether or not the email leaves."""
-    message = invitation(
+    message = compose(
+        services.templates,
+        Kind.INVITATION_TO_COLLABORATE if role == MemberRole.COLLABORATOR else Kind.INVITATION_TO_VIEW,
         language=language,
         to=email,
-        inviter=caller.account.name or caller.account.email,
-        project=project.name,
-        role=role,
-        link=invitation_link(services.site_url, language, project.id, code),
-        until=until,
+        values={
+            "inviter": caller.account.name or caller.account.email or "IDEA-Agro",
+            "project": project.name,
+            "email": email,
+            "until": until,
+        },
+        # The code rides in the fragment, which browsers never send to a server.
+        link=page(services.site_url, language, f"/invitation/#project={project.id}&code={code}"),
+        site=services.site_url,
     )
     try:
         services.mailer.send(message)
