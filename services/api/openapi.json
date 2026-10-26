@@ -4343,7 +4343,7 @@
           "Account"
         ],
         "summary": "Invite someone to the platform",
-        "description": "Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person starts at most `PLATFORM_INVITATIONS_PER_DAY` (10) a day and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.",
+        "description": "Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person with a verified email sends at most `PLATFORM_INVITATIONS_PER_DAY` (10) emails a day, first or again, and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.",
         "operationId": "invite_to_platform",
         "requestBody": {
           "content": {
@@ -4430,7 +4430,7 @@
           "Account"
         ],
         "summary": "Send an invitation to the platform again",
-        "description": "With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email.",
+        "description": "With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email; it counts against the day's invitations.",
         "operationId": "resend_platform_invitation",
         "security": [
           {
@@ -4541,7 +4541,7 @@
           "Account"
         ],
         "summary": "Delete an invitation to the platform",
-        "description": "An accepted one only leaves your list.",
+        "description": "It leaves your list; the emails it took still count against the day's invitations.",
         "operationId": "delete_platform_invitation",
         "security": [
           {

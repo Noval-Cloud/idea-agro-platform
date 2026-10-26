@@ -55,8 +55,8 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 A signed-in person invites an email to the platform under `/v1/me/invitations` (private), and sees each invitation's state.
 
 - **Accepted** once an account with that verified email is created within `INVITATION_DAYS` (7). Such an invitation grants nothing, so its link needs no code: it leads to sign-in.
-- **Limits:** `PLATFORM_INVITATIONS_PER_DAY` (10) new ones a day, and `PLATFORM_INVITATIONS_PENDING` (50) pending at once. Resending waits `INVITATION_RESEND_MINUTES` (10) and renews the term.
-- **The email** is the `platform-invitation` kind (see Emails).
+- **Against spam:** only a verified email invites. Every email, first or again, counts against `PLATFORM_INVITATIONS_PER_DAY` (10) a day. Deleting an invitation only hides it, so it cannot refill that budget. At most `PLATFORM_INVITATIONS_PENDING` (50) are pending at once, and resending waits `INVITATION_RESEND_MINUTES` (10) and renews the term.
+- **The email** is the `platform-invitation` kind (see Emails). It shows the inviter's name, cleaned and cut short, and their verified address.
 
 ## Emails
 

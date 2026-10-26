@@ -9,6 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal, Protocol, cast
 
+from google.api_core.exceptions import NotFound
 from google.cloud import firestore  # pyright: ignore[reportMissingTypeStubs]
 
 Language = Literal["es", "en", "pt"]
@@ -25,6 +26,9 @@ class PlatformInvitation:
     invited_at: datetime
     invited_until: datetime
     accepted_at: datetime | None = None
+    # Every time it was emailed, which a person's daily budget counts, and when its sender dropped it.
+    sent: tuple[datetime, ...] = ()
+    deleted_at: datetime | None = None
 
     def state(self, now: datetime) -> Literal["pending", "accepted", "expired"]:
         if self.accepted_at:
@@ -38,7 +42,7 @@ def new_invitation_id() -> str:
 
 class PlatformInvitationStore(Protocol):
     def of_inviter(self, inviter: str) -> list[PlatformInvitation]:
-        """Newest first."""
+        """Newest first, deleted ones too: they still count against their sender's budget."""
         ...
 
     def get(self, id: str) -> PlatformInvitation | None: ...
@@ -79,7 +83,7 @@ class MemoryPlatformInvitations:
 
     def accept(self, email: str, at: datetime) -> None:
         for invitation in list(self._invitations.values()):
-            if invitation.email == email and invitation.state(at) == "pending":
+            if invitation.email == email and invitation.state(at) == "pending" and not invitation.deleted_at:
                 self._invitations[invitation.id] = replace(invitation, accepted_at=at)
 
 
@@ -108,7 +112,14 @@ class FirestorePlatformInvitations:
         found = self.get(id)
         if found is None:
             return None
-        self._invitations.document(id).update(fields)  # pyright: ignore[reportUnknownMemberType]
+        stored: dict[str, Any] = {
+            name: list(cast(tuple[Any, ...], value)) if isinstance(value, tuple) else value
+            for name, value in fields.items()
+        }
+        try:
+            self._invitations.document(id).update(stored)  # pyright: ignore[reportUnknownMemberType]
+        except NotFound:
+            return None
         return replace(found, **fields)
 
     def delete(self, id: str) -> None:
@@ -116,7 +127,7 @@ class FirestorePlatformInvitations:
 
     def accept(self, email: str, at: datetime) -> None:
         for invitation in self._where("email", email):
-            if invitation.state(at) == "pending":
+            if invitation.state(at) == "pending" and not invitation.deleted_at:
                 self._invitations.document(invitation.id).update({"accepted_at": at})  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -129,6 +140,8 @@ def _to_record(invitation: PlatformInvitation) -> dict[str, Any]:
         "invited_at": invitation.invited_at,
         "invited_until": invitation.invited_until,
         "accepted_at": invitation.accepted_at,
+        "sent": list(invitation.sent),
+        "deleted_at": invitation.deleted_at,
     }
 
 
@@ -142,6 +155,8 @@ def _from_record(id: str, data: dict[str, Any]) -> PlatformInvitation:
         invited_at=data["invited_at"],
         invited_until=data["invited_until"],
         accepted_at=data.get("accepted_at"),
+        sent=tuple(cast(list[datetime], data.get("sent", []))),
+        deleted_at=data.get("deleted_at"),
     )
 
 

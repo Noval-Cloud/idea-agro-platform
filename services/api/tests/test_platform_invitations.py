@@ -79,7 +79,51 @@ def test_invitations_are_capped(tmp_path: Path, verifier: OidcVerifier) -> None:
     assert invite(client, "bo@example.org").status_code == 201
     assert invite(client, "BO@example.org").status_code == 409
     assert invite(client, "cy@example.org").status_code == 201
-    assert invite(client, "di@example.org").status_code == 409
+    capped = invite(client, "di@example.org")
+    assert capped.status_code == 429
+    assert int(capped.headers["Retry-After"]) > 0
+
+
+def test_deleting_and_inviting_again_spends_the_same_budget(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox, platform_invitations_per_day=2)
+
+    for _ in range(2):
+        sent = invite(client).json()
+        assert client.delete(f"/v1/me/invitations/{sent['id']}", headers=ANA).status_code == 204
+
+    assert invite(client).status_code == 429
+    assert len(outbox.sent) == 2
+    assert client.get("/v1/me/invitations", headers=ANA).json() == []
+
+
+def test_resending_spends_the_budget_too(tmp_path: Path, verifier: OidcVerifier) -> None:
+    client = app(tmp_path, verifier, MemoryMailer(), platform_invitations_per_day=2, invitation_resend_minutes=0)
+    sent = invite(client).json()
+
+    assert client.post(f"/v1/me/invitations/{sent['id']}/resend", json={}, headers=ANA).status_code == 200
+    assert client.post(f"/v1/me/invitations/{sent['id']}/resend", json={}, headers=ANA).status_code == 429
+
+
+def test_an_unverified_email_invites_no_one(tmp_path: Path, verifier: OidcVerifier) -> None:
+    client = app(tmp_path, verifier, MemoryMailer())
+
+    assert invite(client, headers=bearer(make_token("ana", email_verified=False))).status_code == 403
+
+
+def test_the_email_shows_who_invites_by_a_clean_name_and_their_address(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    name = "Alerta\u202e de seguridad:\n verificá tu cuenta en evil.example " + "x" * 80
+
+    invite(client, headers=bearer(make_token("ana", name=name)))
+
+    [email] = outbox.sent
+    assert "\u202e" not in email.subject
+    assert "\n" not in email.subject
+    assert email.subject.startswith("Alerta de seguridad: verificá tu cuenta")
+    assert "…" in email.subject
+    assert "(ana@example.org) te invita" in email.text
 
 
 def test_an_invitation_is_resent_with_a_new_term_but_not_at_once(tmp_path: Path, verifier: OidcVerifier) -> None:

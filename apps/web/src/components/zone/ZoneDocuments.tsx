@@ -119,16 +119,16 @@ export default function ZoneDocuments({ t, locale, zoneId, project, own }: Props
       body: t("zone.documents.confirmBody", { name: document.name }),
       confirm: t("zone.documents.delete"),
       tone: "danger",
-      // The row goes away: focus waits on the button that adds documents.
-      returnFocus: () => attachButton.current,
     });
     if (!yes) return;
     setProblem(null);
     try {
       const [{ privately }, client] = await api();
       const response = await privately((init) => client.deleteSavedZoneDocument(zoneId, document.id, init));
-      if (response.status === 204) setDocuments((now) => (now ?? []).filter((d) => d.id !== document.id));
-      else setProblem(t("zone.documents.failed"));
+      if (response.status !== 204) return setProblem(t("zone.documents.failed"));
+      setDocuments((now) => (now ?? []).filter((d) => d.id !== document.id));
+      // Its row is gone: focus waits on the button that adds documents, once the list has changed.
+      requestAnimationFrame(() => attachButton.current?.focus());
     } catch {
       setProblem(t("zone.documents.failed"));
     }

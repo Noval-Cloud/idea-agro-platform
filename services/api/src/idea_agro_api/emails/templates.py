@@ -28,7 +28,7 @@ INVITATION = Shape(frozenset({"inviter", "project", "email", "until"}), links=Tr
 SHAPES: dict[Kind, Shape] = {
     Kind.INVITATION_TO_COLLABORATE: INVITATION,
     Kind.INVITATION_TO_VIEW: INVITATION,
-    Kind.PLATFORM_INVITATION: Shape(frozenset({"inviter", "email", "until"}), links=True),
+    Kind.PLATFORM_INVITATION: Shape(frozenset({"inviter", "inviter_email", "email", "until"}), links=True),
 }
 
 

@@ -75,8 +75,8 @@ WORDS: dict[Kind, dict[Language, Template]] = {
             subject="{inviter} te invita a IDEA-Agro",
             heading="Te invitaron a IDEA-Agro",
             body=(
-                "{inviter} te invita a IDEA-Agro, la plataforma abierta de indicadores ambientales y productivos "
-                "del agro uruguayo.\n\n"
+                "{inviter} ({inviter_email}) te invita a IDEA-Agro, la plataforma abierta de indicadores "
+                "ambientales y productivos del agro uruguayo.\n\n"
                 "Con tu cuenta vas a poder guardar tus zonas, seguir sus indicadores mes a mes y compartirlas en "
                 "proyectos."
             ),
@@ -87,8 +87,8 @@ WORDS: dict[Kind, dict[Language, Template]] = {
             subject="{inviter} invites you to IDEA-Agro",
             heading="You were invited to IDEA-Agro",
             body=(
-                "{inviter} invites you to IDEA-Agro, the open platform of environmental and productive indicators "
-                "of Uruguay's farmland.\n\n"
+                "{inviter} ({inviter_email}) invites you to IDEA-Agro, the open platform of environmental and "
+                "productive indicators of Uruguay's farmland.\n\n"
                 "With an account you can save your own areas, follow their indicators month by month and share them "
                 "in projects."
             ),
@@ -99,8 +99,8 @@ WORDS: dict[Kind, dict[Language, Template]] = {
             subject="{inviter} convida você para o IDEA-Agro",
             heading="Você foi convidado para o IDEA-Agro",
             body=(
-                "{inviter} convida você para o IDEA-Agro, a plataforma aberta de indicadores ambientais e produtivos "
-                "do agro uruguaio.\n\n"
+                "{inviter} ({inviter_email}) convida você para o IDEA-Agro, a plataforma aberta de indicadores "
+                "ambientais e produtivos do agro uruguaio.\n\n"
                 "Com a sua conta você vai poder guardar suas zonas, acompanhar seus indicadores mês a mês e "
                 "compartilhá-las em projetos."
             ),

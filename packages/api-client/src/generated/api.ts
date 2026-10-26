@@ -7882,7 +7882,7 @@ export const getInviteToPlatformUrl = () => {
 }
 
 /**
- * Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person starts at most `PLATFORM_INVITATIONS_PER_DAY` (10) a day and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.
+ * Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person with a verified email sends at most `PLATFORM_INVITATIONS_PER_DAY` (10) emails a day, first or again, and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.
  * @summary Invite someone to the platform
  */
 export const inviteToPlatform = async (platformInvitationIn: PlatformInvitationIn, options?: Parameters<typeof apiFetch>[1]): Promise<inviteToPlatformResponse> => {
@@ -8015,7 +8015,7 @@ export const getResendPlatformInvitationUrl = (invitationId: string,) => {
 }
 
 /**
- * With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email.
+ * With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email; it counts against the day's invitations.
  * @summary Send an invitation to the platform again
  */
 export const resendPlatformInvitation = async (invitationId: string,
@@ -8144,7 +8144,7 @@ export const getDeletePlatformInvitationUrl = (invitationId: string,) => {
 }
 
 /**
- * An accepted one only leaves your list.
+ * It leaves your list; the emails it took still count against the day's invitations.
  * @summary Delete an invitation to the platform
  */
 export const deletePlatformInvitation = async (invitationId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deletePlatformInvitationResponse> => {

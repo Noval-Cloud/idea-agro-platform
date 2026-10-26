@@ -76,14 +76,14 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       body: t("account.invitations.confirmBody", { email: invitation.email }),
       confirm: t("account.invitations.delete"),
       tone: "danger",
-      // The row goes away: focus waits on the button that invites.
-      returnFocus: () => inviteButton.current,
     });
     if (!yes) return;
     await call(async ([{ privately }, client]) => {
       const response = await privately((init) => client.deletePlatformInvitation(invitation.id, init));
-      if (response.status === 204) setInvitations((now) => (now ?? []).filter((i) => i.id !== invitation.id));
-      else setProblem(t("account.invitations.failed"));
+      if (response.status !== 204) return setProblem(t("account.invitations.failed"));
+      setInvitations((now) => (now ?? []).filter((i) => i.id !== invitation.id));
+      // Its row is gone: focus waits on the button that invites, once the list has changed.
+      requestAnimationFrame(() => inviteButton.current?.focus());
     });
   };
 
@@ -146,7 +146,7 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       <p role="alert" className="text-sm text-danger empty:hidden">
         {problem}
       </p>
-      <p role="status" className="sr-only">
+      <p role="status" className="text-sm text-ink-muted empty:hidden">
         {news}
       </p>
       {dialog}
@@ -168,7 +168,7 @@ function InviteDialog({
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [checked, setChecked] = useState(false);
-  const [refused, setRefused] = useState<"limit" | "failed" | null>(null);
+  const [refused, setRefused] = useState<"taken" | "limit" | "unverified" | "failed" | null>(null);
   const [sending, setSending] = useState(false);
   const ids = useId();
 
@@ -198,7 +198,7 @@ function InviteDialog({
     const status = await onInvite(address);
     setSending(false);
     if (status === 201) return setOpen(false);
-    setRefused(status === 409 ? "limit" : "failed");
+    setRefused(status === 409 ? "taken" : status === 429 ? "limit" : status === 403 ? "unverified" : "failed");
   };
 
   return (

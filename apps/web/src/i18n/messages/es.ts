@@ -1116,7 +1116,10 @@ export const es = {
       emailInvalid: "Escribí un correo válido, como nombre@ejemplo.com.",
       emailOwn: "Ese es tu correo: ya estás en IDEA-Agro.",
       emailTaken: "Ya invitaste a {email}: podés reenviar la invitación desde la lista.",
-      limit: "Llegaste al límite: hasta 10 invitaciones por día y 50 pendientes.",
+      limit:
+        "Llegaste al límite de invitaciones por hoy, o tenés demasiadas pendientes. Probá mañana o eliminá alguna.",
+      taken: "Ya invitaste a ese correo: podés reenviar la invitación desde la lista.",
+      unverified: "Verificá tu correo antes de invitar a otras personas.",
       failed: "No se pudo completar. Probá de nuevo en un momento.",
       cancel: "Cancelar",
       loading: "Cargando tus invitaciones…",
