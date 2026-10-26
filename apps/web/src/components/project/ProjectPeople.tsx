@@ -9,6 +9,7 @@ import { RowMenu } from "@/components/lists/RowMenu";
 import { iconSize } from "@/design/tokens";
 import { readHint } from "@/lib/account-hint";
 import { cn } from "@/lib/utils";
+import type { Locale } from "@/i18n/core";
 import type { ProjectTranslator } from "./i18n";
 import { field, type Change } from "./shared";
 
@@ -19,11 +20,14 @@ type Ask = (question: Question) => Promise<boolean>;
 /** Who the project is shared with. The owner invites, changes roles and removes people. */
 export function PeopleTab({
   translator: { t },
+  language,
   project,
   change,
   ask,
 }: {
   translator: ProjectTranslator;
+  /** The page's language, which the invitation email is written in. */
+  language: Locale;
   project: ProjectOut;
   change: Change;
   ask: Ask;
@@ -90,10 +94,17 @@ export function PeopleTab({
                 change(
                   async ([{ privately }, client]) => {
                     const response = await privately((init) =>
-                      client.shareProject(project.id, { email: to, role: as }, init),
+                      client.shareProject(project.id, { email: to, role: as, language }, init),
                     );
                     if (response.status !== 200) return { status: response.status };
-                    setNotice(t("project.members.invited", { email: to }));
+                    setNotice(
+                      t(
+                        response.data.invitation_sent === false
+                          ? "project.members.invitedUnsent"
+                          : "project.members.invited",
+                        { email: to },
+                      ),
+                    );
                     return { status: 200, apply: () => response.data };
                   },
                   {},

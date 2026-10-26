@@ -181,3 +181,26 @@ variable "secret_reader_role" {
   type        = string
   default     = "roles/secretmanager.secretAccessor"
 }
+
+variable "site_url" {
+  description = "The website's address, which the API's emails link to"
+  type        = string
+}
+
+variable "mailer" {
+  description = "How the API sends email: resend://, or none"
+  type        = string
+  default     = "resend://"
+}
+
+variable "mail_from" {
+  description = "Sender of the API's emails, as Name <address>"
+  type        = string
+  default     = "IDEA-Agro <no-reply@idea-agro.org>"
+}
+
+variable "mail_key_version" {
+  description = "Version of the mail provider's key the API reads"
+  type        = string
+  default     = "latest"
+}

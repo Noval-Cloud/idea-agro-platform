@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.9.0
+ * OpenAPI spec version: 1.10.0
  */
 import {
   useMutation,
@@ -387,6 +387,18 @@ export interface Me {
   created_at: string;
 }
 
+/**
+ * The language of the invitation email, the inviter's own.
+ */
+export type MemberInLanguage = typeof MemberInLanguage[keyof typeof MemberInLanguage];
+
+
+export const MemberInLanguage = {
+  es: 'es',
+  en: 'en',
+  pt: 'pt',
+} as const;
+
 export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
 
 
@@ -407,6 +419,8 @@ export interface MemberIn {
   email: string;
   /** `collaborator` edits the project's zones; `viewer` only reads. */
   role: MemberRole;
+  /** The language of the invitation email, the inviter's own. */
+  language?: MemberInLanguage;
 }
 
 export interface MemberOut {
@@ -802,6 +816,41 @@ export interface SeasonalSeries {
   dates: string[];
   /** The zone's mean for each date, in the same order as `dates`; null where there is no data. */
   values: (number | null)[];
+}
+
+/**
+ * Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).
+ */
+export type SharedOutRole = typeof SharedOutRole[keyof typeof SharedOutRole];
+
+
+export const SharedOutRole = {
+  owner: 'owner',
+  collaborator: 'collaborator',
+  viewer: 'viewer',
+} as const;
+
+/**
+ * The project once shared, and whether the person invited was told by email.
+ */
+export interface SharedOut {
+  /** The project's id. */
+  id: string;
+  name: string;
+  description: string;
+  items: (SavedItem | DivisionItem | PadronItem)[];
+  /** Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads). */
+  role: SharedOutRole;
+  /** The owner's name. */
+  owner_name: string | null;
+  /** Everyone the owner shared the project with. */
+  members: MemberOut[];
+  /** Whether someone else can change the outline of the zones you add: worth a warning. */
+  others_can_edit: boolean;
+  created_at: string;
+  updated_at: string;
+  /** `true` when the invitation email left, `false` when it could not; `null` for a role change. */
+  invitation_sent: boolean | null;
 }
 
 export type Theme = typeof Theme[keyof typeof Theme];
@@ -4951,7 +5000,7 @@ export const useRemoveProjectItem = <TError = Problem,
     }
 
 export type shareProjectResponse200 = {
-  data: ProjectOut
+  data: SharedOut
   status: 200
 }
 
@@ -5003,7 +5052,7 @@ export const getShareProjectUrl = (projectId: string,) => {
 }
 
 /**
- * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.
  * @summary Share a project, or change a member's role
  */
 export const shareProject = async (projectId: string,

@@ -10,6 +10,7 @@ from idea_agro_api.audit import AuditStore, MemoryAudit, audit_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
+from idea_agro_api.mail import Mailer, NoMailer, mailer_from
 from idea_agro_api.projects import MemoryProjects, ProjectStore, projects_from
 from idea_agro_api.public_data import PublicData
 from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zones_from
@@ -74,6 +75,9 @@ class Services:
     # None when sign-in is not configured: private routes then answer 503.
     verifier: TokenVerifier | None = None
     identity_admin: IdentityAdmin = field(default_factory=NoIdentityAdmin)
+    mailer: Mailer = field(default_factory=NoMailer)
+    # The website's address, which emails link to.
+    site_url: str = ""
     rate_limit: RateLimit = field(default_factory=lambda: RateLimit(per_minute=60))
     limits: Limits = field(default_factory=Limits)
     # Verified emails made admins when they sign in: the first admins, who name the rest.
@@ -111,6 +115,8 @@ class Services:
             departments=Departments(files),
             verifier=verifier,
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),
+            mailer=mailer_from(env.get("MAILER", "none"), env.get("MAIL_API_KEY", ""), env.get("MAIL_FROM", "")),
+            site_url=env.get("SITE_URL", ""),
             rate_limit=RateLimit(per_minute=int(env.get("PRIVATE_REQUESTS_PER_MINUTE", "60"))),
             limits=Limits.from_env(),
             admin_emails=frozenset(e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()),

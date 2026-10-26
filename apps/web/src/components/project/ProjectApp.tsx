@@ -241,7 +241,7 @@ export default function ProjectApp({
           />
         </TabsContent>
         <TabsContent value="people">
-          <PeopleTab translator={translator} project={project} change={change} ask={ask} />
+          <PeopleTab translator={translator} language={locale} project={project} change={change} ask={ask} />
         </TabsContent>
         <TabsContent value="activity">
           <ActivityTab translator={translator} projectId={project.id} changedAt={project.updated_at} names={names} />

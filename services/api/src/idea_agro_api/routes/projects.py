@@ -13,6 +13,8 @@ from starlette.exceptions import HTTPException
 from idea_agro_api.activity import Action
 from idea_agro_api.deps import Caller, CallerDep, ServicesDep
 from idea_agro_api.errors import problems
+from idea_agro_api.invitations import invitation, project_link
+from idea_agro_api.mail import MailFailed
 from idea_agro_api.models import (
     ActivityOut,
     DivisionItem,
@@ -31,6 +33,7 @@ from idea_agro_api.models import (
     SavedItem,
     SavedItemIn,
     SavedZoneOut,
+    SharedOut,
     ZoneGeometry,
 )
 from idea_agro_api.projects import Member, NotAllowed, Project, TooManyItems, new_project_id, saved_item
@@ -376,12 +379,12 @@ def remove_project_item(project_id: ProjectId, item_id: ItemId, caller: CallerDe
     summary="Share a project, or change a member's role",
     description=(
         "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) "
-        "or `viewer` (only reads). The invitation is accepted when that person, signed in with that verified "
-        "email, opens their projects."
+        "or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when "
+        "that person, signed in with that verified email, opens their projects."
     ),
     responses=problems(401, 403, 404, 409, 422, 429),
 )
-def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, services: ServicesDep) -> ProjectOut:
+def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, services: ServicesDep) -> SharedOut:
     me = caller.account.id
     reachable(services, caller, project_id, "own")
     email = member.email.lower()
@@ -414,7 +417,26 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
         raise HTTPException(404, NO_PROJECT)
     action = Action.MEMBER_INVITED if invited else Action.MEMBER_ROLE_CHANGED
     note(services, [project.id], caller, action, email, member.role.value)
-    return detail(services, project, caller)
+    sent = tell(services, caller, project, email, member) if invited else None
+    return SharedOut(**detail(services, project, caller).model_dump(), invitation_sent=sent)
+
+
+def tell(services: Services, caller: Caller, project: Project, email: str, member: MemberIn) -> bool:
+    """Emails the invitation; the invitation stands whether or not the email leaves."""
+    message = invitation(
+        language=member.language,
+        to=email,
+        inviter=caller.account.name or caller.account.email,
+        project=project.name,
+        role=member.role,
+        link=project_link(services.site_url, member.language, project.id),
+    )
+    try:
+        services.mailer.send(message)
+    except MailFailed:
+        log.warning("The invitation email to a new member of project %s did not leave", project.id, exc_info=True)
+        return False
+    return True
 
 
 @router.delete(

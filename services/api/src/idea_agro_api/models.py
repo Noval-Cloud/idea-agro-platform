@@ -247,6 +247,9 @@ class MemberIn(BaseModel):
         description="Their email, as they sign in with it.",
     )
     role: MemberRole = Field(description="`collaborator` edits the project's zones; `viewer` only reads.")
+    language: Literal["es", "en", "pt"] = Field(
+        default="es", description="The language of the invitation email, the inviter's own."
+    )
 
 
 class MemberOut(BaseModel):
@@ -270,6 +273,14 @@ class ProjectOut(BaseModel):
     others_can_edit: bool = Field(description=OTHERS_CAN_EDIT)
     created_at: datetime
     updated_at: datetime
+
+
+class SharedOut(ProjectOut):
+    """The project once shared, and whether the person invited was told by email."""
+
+    invitation_sent: bool | None = Field(
+        description="`true` when the invitation email left, `false` when it could not; `null` for a role change."
+    )
 
 
 class ActivityOut(BaseModel):
