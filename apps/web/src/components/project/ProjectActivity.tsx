@@ -12,6 +12,7 @@ import {
   UserCog,
   UserMinus,
   UserPlus,
+  UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
@@ -34,6 +35,7 @@ const icons: Record<ActivityOut["action"], ReactNode> = {
   outline_restored: <RotateCcw />,
   member_invited: <UserPlus />,
   member_joined: <UserCheck />,
+  member_declined: <UserX />,
   member_role_changed: <UserCog />,
   member_removed: <UserMinus />,
   member_left: <LogOut />,

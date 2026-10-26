@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.10.0"
+    "version": "1.11.0"
   },
   "paths": {
     "/health": {
@@ -1718,7 +1718,7 @@
           "Projects"
         ],
         "summary": "Your projects",
-        "description": "Yours and those shared with you. Opening them accepts the invitations to your verified email.",
+        "description": "Yours and those shared with you.",
         "operationId": "list_projects",
         "responses": {
           "200": {
@@ -1863,7 +1863,6 @@
           "Projects"
         ],
         "summary": "One of your projects",
-        "description": "Opening a project you were invited to accepts the invitation.",
         "operationId": "get_project",
         "security": [
           {
@@ -2361,7 +2360,7 @@
           "Projects"
         ],
         "summary": "Share a project, or change a member's role",
-        "description": "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.",
+        "description": "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is emailed, in `language`, a link with a code that expires; they accept it signed in with that verified email.",
         "operationId": "share_project",
         "security": [
           {
@@ -2388,6 +2387,129 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MemberIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/members/{email}/invitation": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Send a pending invitation again",
+        "description": "For the owner. The invitation gets a new code and a new term, and is emailed again in `language`.",
+        "operationId": "resend_invitation",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The project's id.",
+              "title": "Project Id"
+            },
+            "description": "The project's id."
+          },
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 254,
+              "description": "The member's email.",
+              "title": "Email"
+            },
+            "description": "The member's email."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAgain"
               }
             }
           }
@@ -3065,6 +3187,270 @@
         }
       }
     },
+    "/v1/invitations/open": {
+      "post": {
+        "tags": [
+          "invitations"
+        ],
+        "summary": "What an invitation offers",
+        "description": "The code comes from the invitation's email. A code already used answers `joined` to who used it.",
+        "operationId": "open_invitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/invitations/accept": {
+      "post": {
+        "tags": [
+          "invitations"
+        ],
+        "summary": "Accept an invitation",
+        "description": "Signed in with the invited email, before the invitation expires. Answers the project.",
+        "operationId": "accept_invitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "It existed, but no longer can be used.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/invitations/decline": {
+      "post": {
+        "tags": [
+          "invitations"
+        ],
+        "summary": "Decline an invitation",
+        "description": "Signed in with the invited email. The invitation is deleted.",
+        "operationId": "decline_invitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests: wait the seconds in `Retry-After`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/admin/accounts": {
       "get": {
         "tags": [
@@ -3671,6 +4057,7 @@
           "outline_restored",
           "member_invited",
           "member_joined",
+          "member_declined",
           "member_role_changed",
           "member_removed",
           "member_left"
@@ -4213,6 +4600,126 @@
         "title": "IndicatorRange",
         "description": "What an indicator holds."
       },
+      "InvitationAgain": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "pt"
+            ],
+            "title": "Language",
+            "description": "The language of the email.",
+            "default": "es"
+          }
+        },
+        "type": "object",
+        "title": "InvitationAgain",
+        "description": "How to send a pending invitation again."
+      },
+      "InvitationCode": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 16,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "code"
+        ],
+        "title": "InvitationCode",
+        "description": "The project and the code an invitation's link carries."
+      },
+      "InvitationOut": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "inviter_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inviter Name",
+            "description": "The project's owner, who invited."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "collaborator",
+              "viewer"
+            ],
+            "title": "Role",
+            "description": "The role offered, or the caller's once they joined."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "The email it is for: only an account with that email accepts it."
+          },
+          "invited_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited Until"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "expired",
+              "joined"
+            ],
+            "title": "State",
+            "description": "`joined` when the caller is in the project already, as after accepting."
+          },
+          "yours": {
+            "type": "boolean",
+            "title": "Yours",
+            "description": "Whether it is for the caller's verified email."
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "project_name",
+          "inviter_name",
+          "role",
+          "email",
+          "invited_until",
+          "state",
+          "yours"
+        ],
+        "title": "InvitationOut",
+        "description": "What an invitation offers, for its page."
+      },
       "MapOutline": {
         "properties": {
           "width": {
@@ -4372,7 +4879,20 @@
           "pending": {
             "type": "boolean",
             "title": "Pending",
-            "description": "Invited, and not yet joined: they join when they open their projects."
+            "description": "Invited, and not yet joined: they join with the link their email carries."
+          },
+          "invited_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited Until",
+            "description": "While pending: when the invitation's link stops working."
           },
           "you": {
             "type": "boolean",

@@ -10,12 +10,12 @@ from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
-from idea_agro_api.routes import admin, catalog, maps, me, padrones, projects, saved_zones, service, zones
+from idea_agro_api.routes import admin, catalog, invitations, maps, me, padrones, projects, saved_zones, service, zones
 from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.10.0"
+API_VERSION = "1.11.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -84,7 +84,7 @@ def create_app(services: Services) -> FastAPI:
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_exception_handler(HTTPException, http_problem)
     app.add_exception_handler(RequestValidationError, validation_problem)
-    for module in (service, catalog, zones, maps, padrones, me, saved_zones, projects, admin):
+    for module in (service, catalog, zones, maps, padrones, me, saved_zones, projects, invitations, admin):
         app.include_router(module.router)
 
     def openapi() -> dict[str, Any]:

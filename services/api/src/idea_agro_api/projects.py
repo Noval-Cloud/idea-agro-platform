@@ -25,8 +25,11 @@ class Member:
     # Lower case: invitations are by email.
     email: str
     role: MemberRole
-    # None while the invitation is pending: it is accepted when that person opens their projects.
+    # None while the invitation is pending: that person accepts it with the code their email carries.
     account: str | None = None
+    # While pending: the digest of the invitation's code (the code itself is only in the email), and its end.
+    invitation: str = ""
+    invited_until: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -76,10 +79,6 @@ class ProjectStore(Protocol):
 
     def shared_with(self, account: str) -> list[Project]: ...
 
-    def invited(self, email: str) -> list[Project]:
-        """Projects with a pending invitation for the email."""
-        ...
-
     def containing(self, item: str) -> list[Project]: ...
 
     def count_owned(self, owner: str) -> int: ...
@@ -114,9 +113,6 @@ class MemoryProjects:
 
     def shared_with(self, account: str) -> list[Project]:
         return [p for p in self._projects.values() if any(m.account == account for m in p.members)]
-
-    def invited(self, email: str) -> list[Project]:
-        return [p for p in self._projects.values() if any(m.email == email and not m.account for m in p.members)]
 
     def containing(self, item: str) -> list[Project]:
         return [p for p in self._projects.values() if item in p.items]
@@ -173,9 +169,6 @@ class FirestoreProjects:
 
     def shared_with(self, account: str) -> list[Project]:
         return self._where("member_ids", "array_contains", account)
-
-    def invited(self, email: str) -> list[Project]:
-        return self._where("invited_emails", "array_contains", email)
 
     def containing(self, item: str) -> list[Project]:
         return self._where("items", "array_contains", item)
@@ -241,10 +234,18 @@ def _to_document(project: Project) -> dict[str, Any]:
         "name": project.name,
         "description": project.description,
         "items": list(project.items),
-        "members": [{"email": m.email, "role": m.role.value, "account": m.account} for m in project.members],
-        # For the queries of shared projects and pending invitations.
+        "members": [
+            {
+                "email": m.email,
+                "role": m.role.value,
+                "account": m.account,
+                "invitation": m.invitation,
+                "invited_until": m.invited_until,
+            }
+            for m in project.members
+        ],
+        # For the query of shared projects.
         "member_ids": [m.account for m in project.members if m.account],
-        "invited_emails": [m.email for m in project.members if not m.account],
         "created_at": project.created_at,
         "updated_at": project.updated_at,
     }
@@ -260,7 +261,16 @@ def _from_document(id: str, data: dict[str, Any]) -> Project:
         items=tuple(data.get("items", [])),
         created_at=data["created_at"],
         updated_at=data["updated_at"],
-        members=tuple(Member(m["email"], MemberRole(m["role"]), m.get("account")) for m in members),
+        members=tuple(
+            Member(
+                m["email"],
+                MemberRole(m["role"]),
+                m.get("account"),
+                m.get("invitation", ""),
+                m.get("invited_until"),
+            )
+            for m in members
+        ),
     )
 
 

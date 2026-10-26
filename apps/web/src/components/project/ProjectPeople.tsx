@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import type { MemberOut, MemberRole, ProjectOut } from "@idea-agro/api-client";
-import { Trash2, TriangleAlert, UserPlus } from "lucide-react";
+import { Send, Trash2, TriangleAlert, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Question } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ type Ask = (question: Question) => Promise<boolean>;
 
 /** Who the project is shared with. The owner invites, changes roles and removes people. */
 export function PeopleTab({
-  translator: { t },
+  translator: { t, ago },
   language,
   project,
   change,
@@ -57,6 +57,28 @@ export function PeopleTab({
       { 409: "project.members.full", 422: "project.members.failed" },
     );
   };
+
+  /** Pending, with when its link stops working; an invitation from before links expired is shown expired. */
+  const invitationState = (member: MemberOut) =>
+    member.invited_until && new Date(member.invited_until).getTime() > Date.now()
+      ? `${t("project.members.pending")} · ${t("project.members.pendingUntil", { when: ago(member.invited_until) })}`
+      : t("project.members.expired");
+
+  /** A new code and a new week, emailed again in the page's language. */
+  const resend = (member: MemberOut) =>
+    change(async ([{ privately }, client]) => {
+      // Emails go into the path: encoded, so none can reach another route.
+      const response = await privately((init) =>
+        client.resendInvitation(project.id, encodeURIComponent(member.email), { language }, init),
+      );
+      if (response.status !== 200) return { status: response.status };
+      setNotice(
+        t(response.data.invitation_sent === false ? "project.members.invitedUnsent" : "project.members.resent", {
+          email: member.email,
+        }),
+      );
+      return { status: 200, apply: () => response.data };
+    });
 
   const remove = async (member: MemberOut) => {
     const sure = await ask({
@@ -132,7 +154,7 @@ export function PeopleTab({
             initial={nameOf(member).slice(0, 1)}
             name={member.you ? t("project.members.you") : nameOf(member)}
             detail={member.name ? member.email : undefined}
-            pending={member.pending ? t("project.members.pending") : undefined}
+            pending={member.pending ? invitationState(member) : undefined}
             role={
               owner ? (
                 <RoleControl
@@ -150,14 +172,26 @@ export function PeopleTab({
                 <RowMenu
                   id={`member-${member.email}`}
                   label={t("lists.more", { name: nameOf(member) })}
-                  actions={[
-                    {
-                      label: t("project.members.remove"),
-                      icon: <Trash2 />,
-                      onSelect: () => void remove(member),
-                      danger: true,
-                    },
-                  ]}
+                  actions={
+                    member.pending
+                      ? [
+                          { label: t("project.members.resend"), icon: <Send />, onSelect: () => void resend(member) },
+                          {
+                            label: t("project.members.deleteInvitation"),
+                            icon: <Trash2 />,
+                            onSelect: () => void remove(member),
+                            danger: true,
+                          },
+                        ]
+                      : [
+                          {
+                            label: t("project.members.remove"),
+                            icon: <Trash2 />,
+                            onSelect: () => void remove(member),
+                            danger: true,
+                          },
+                        ]
+                  }
                 />
               ) : undefined
             }

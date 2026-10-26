@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.10.0
+ * OpenAPI spec version: 1.11.0
  */
 import * as zod from 'zod';
 
@@ -699,7 +699,7 @@ export const RestoreSavedZoneVersionResponse = zod.object({
 
 
 /**
- * Yours and those shared with you. Opening them accepts the invitations to your verified email.
+ * Yours and those shared with you.
  * @summary Your projects
  */
 export const ListProjectsResponseItem = zod.object({
@@ -777,7 +777,8 @@ export const CreateProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
   "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
@@ -787,7 +788,6 @@ export const CreateProjectResponse = zod.object({
 
 
 /**
- * Opening a project you were invited to accepts the invitation.
  * @summary One of your projects
  */
 export const GetProjectParams = zod.object({
@@ -839,7 +839,8 @@ export const GetProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
   "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
@@ -912,7 +913,8 @@ export const ChangeProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
   "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
@@ -1004,7 +1006,8 @@ export const AddProjectItemResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
   "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
@@ -1030,7 +1033,7 @@ export const RemoveProjectItemResponse = zod.void()
 
 
 /**
- * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is emailed, in `language`, a link with a code that expires; they accept it signed in with that verified email.
  * @summary Share a project, or change a member's role
  */
 export const ShareProjectParams = zod.object({
@@ -1094,7 +1097,83 @@ export const ShareProjectResponse = zod.object({
   "email": zod.string(),
   "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
   "role": zod.enum(['collaborator', 'viewer']),
-  "pending": zod.boolean().describe('Invited, and not yet joined: they join when they open their projects.'),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
+  "you": zod.boolean().describe('Whether this member is you.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true}),
+  "invitation_sent": zod.union([zod.boolean(),zod.null()]).describe('`true` when the invitation email left, `false` when it could not; `null` for a role change.')
+}).describe('The project once shared, and whether the person invited was told by email.')
+
+
+/**
+ * For the owner. The invitation gets a new code and a new term, and is emailed again in `language`.
+ * @summary Send a pending invitation again
+ */
+export const resendInvitationPathEmailMax = 254;
+
+
+
+export const ResendInvitationParams = zod.object({
+  "project_id": zod.uuid().describe('The project\'s id.'),
+  "email": zod.string().max(resendInvitationPathEmailMax).describe('The member\'s email.')
+})
+
+export const resendInvitationBodyLanguageDefault = `es`;
+
+export const ResendInvitationBody = zod.object({
+  "language": zod.enum(['es', 'en', 'pt']).default(resendInvitationBodyLanguageDefault).describe('The language of the email.')
+}).describe('How to send a pending invitation again.')
+
+export const resendInvitationResponseItemsItemOneZoneOneBboxMin = 4;
+export const resendInvitationResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const resendInvitationResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const resendInvitationResponseItemsItemThreePadronMin = 0;
+export const resendInvitationResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const ResendInvitationResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid; 0 for a point.'),
+  "bbox": zod.array(zod.number()).min(resendInvitationResponseItemsItemOneZoneOneBboxMin).max(resendInvitationResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior (or the point) falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(resendInvitationResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(resendInvitationResponseItemsItemThreePadronMin).max(resendInvitationResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
   "you": zod.boolean().describe('Whether this member is you.')
 })).describe('Everyone the owner shared the project with.'),
   "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
@@ -1142,7 +1221,7 @@ export const GetProjectActivityQueryParams = zod.object({
 export const GetProjectActivityResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),
   "actor_name": zod.string().describe('Who made the change, by their name at the time.'),
-  "action": zod.enum(['created', 'renamed', 'described', 'zone_added', 'zone_removed', 'outline_changed', 'outline_restored', 'member_invited', 'member_joined', 'member_role_changed', 'member_removed', 'member_left']),
+  "action": zod.enum(['created', 'renamed', 'described', 'zone_added', 'zone_removed', 'outline_changed', 'outline_restored', 'member_invited', 'member_joined', 'member_declined', 'member_role_changed', 'member_removed', 'member_left']),
   "subject": zod.string().describe('The item\'s id or the member\'s email the change was about, if any.'),
   "detail": zod.string().describe('A zone\'s name or a role, when it helps to read the change.')
 }).describe('One change in a project.')
@@ -1272,6 +1351,124 @@ export const ChangeProjectZoneGeometryResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.')
+
+
+/**
+ * The code comes from the invitation's email. A code already used answers `joined` to who used it.
+ * @summary What an invitation offers
+ */
+export const openInvitationBodyCodeMin = 16;
+export const openInvitationBodyCodeMax = 64;
+
+
+export const openInvitationBodyCodeRegExp = new RegExp('^[A-Za-z0-9_-]+$');
+
+
+export const OpenInvitationBody = zod.object({
+  "project_id": zod.uuid(),
+  "code": zod.string().min(openInvitationBodyCodeMin).max(openInvitationBodyCodeMax).regex(openInvitationBodyCodeRegExp)
+}).describe('The project and the code an invitation\'s link carries.')
+
+export const OpenInvitationResponse = zod.object({
+  "project_id": zod.string(),
+  "project_name": zod.string(),
+  "inviter_name": zod.union([zod.string(),zod.null()]).describe('The project\'s owner, who invited.'),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('The role offered, or the caller\'s once they joined.'),
+  "email": zod.string().describe('The email it is for: only an account with that email accepts it.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]),
+  "state": zod.enum(['pending', 'expired', 'joined']).describe('`joined` when the caller is in the project already, as after accepting.'),
+  "yours": zod.boolean().describe('Whether it is for the caller\'s verified email.')
+}).describe('What an invitation offers, for its page.')
+
+
+/**
+ * Signed in with the invited email, before the invitation expires. Answers the project.
+ * @summary Accept an invitation
+ */
+export const acceptInvitationBodyCodeMin = 16;
+export const acceptInvitationBodyCodeMax = 64;
+
+
+export const acceptInvitationBodyCodeRegExp = new RegExp('^[A-Za-z0-9_-]+$');
+
+
+export const AcceptInvitationBody = zod.object({
+  "project_id": zod.uuid(),
+  "code": zod.string().min(acceptInvitationBodyCodeMin).max(acceptInvitationBodyCodeMax).regex(acceptInvitationBodyCodeRegExp)
+}).describe('The project and the code an invitation\'s link carries.')
+
+export const acceptInvitationResponseItemsItemOneZoneOneBboxMin = 4;
+export const acceptInvitationResponseItemsItemOneZoneOneBboxMax = 4;
+
+export const acceptInvitationResponseItemsItemTwoZoneIdRegExp = new RegExp('^[0-9A-Za-z-]{1,40}$');
+export const acceptInvitationResponseItemsItemThreePadronMin = 0;
+export const acceptInvitationResponseItemsItemThreePadronMax = 99999999;
+
+
+
+export const AcceptInvitationResponse = zod.object({
+  "id": zod.string().describe('The project\'s id.'),
+  "name": zod.string(),
+  "description": zod.string(),
+  "items": zod.array(zod.union([zod.object({
+  "kind": zod.literal("saved").meta({ title: 'Kind' }),
+  "zone_id": zod.uuid().describe('The saved zone\'s id.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.'),
+  "zone": zod.union([zod.object({
+  "id": zod.string().describe('The zone\'s id.'),
+  "name": zod.string().describe('The zone\'s name.'),
+  "source": zod.enum(['drawn', 'uploaded']).describe('Whether it was drawn on the map or uploaded.'),
+  "version": zod.int().describe('The version of its outline: it grows each time the outline changes.'),
+  "area_ha": zod.number().describe('Its area, in hectares, measured on the WGS 84 ellipsoid; 0 for a point.'),
+  "bbox": zod.array(zod.number()).min(acceptInvitationResponseItemsItemOneZoneOneBboxMin).max(acceptInvitationResponseItemsItemOneZoneOneBboxMax).describe('West, south, east and north, in degrees.'),
+  "department": zod.union([zod.string(),zod.null()]).describe('The department its interior (or the point) falls in, or null outside every one.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
+}),zod.object({
+  "kind": zod.literal("division").meta({ title: 'Kind' }),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "zone_id": zod.string().regex(acceptInvitationResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+}),zod.object({
+  "kind": zod.literal("padron").meta({ title: 'Kind' }),
+  "department": zod.enum(['artigas', 'canelones', 'cerro-largo', 'colonia', 'durazno', 'flores', 'florida', 'lavalleja', 'maldonado', 'montevideo', 'paysandu', 'rio-negro', 'rivera', 'rocha', 'salto', 'san-jose', 'soriano', 'tacuarembo', 'treinta-y-tres']).describe('A department of Uruguay, as cadastral parcels are filed by.'),
+  "padron": zod.int().min(acceptInvitationResponseItemsItemThreePadronMin).max(acceptInvitationResponseItemsItemThreePadronMax).describe('The parcel\'s number in its department.'),
+  "id": zod.string().describe('The item\'s id in the project, used to remove it.')
+})])),
+  "role": zod.enum(['owner', 'collaborator', 'viewer']).describe('Your role in the project: `owner`, `collaborator` (edits its zones) or `viewer` (only reads).'),
+  "owner_name": zod.union([zod.string(),zod.null()]).describe('The owner\'s name.'),
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.union([zod.string(),zod.null()]).describe('Their name, once they joined.'),
+  "role": zod.enum(['collaborator', 'viewer']),
+  "pending": zod.boolean().describe('Invited, and not yet joined: they join with the link their email carries.'),
+  "invited_until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('While pending: when the invitation\'s link stops working.'),
+  "you": zod.boolean().describe('Whether this member is you.')
+})).describe('Everyone the owner shared the project with.'),
+  "others_can_edit": zod.boolean().describe('Whether someone else can change the outline of the zones you add: worth a warning.'),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "updated_at": zod.iso.datetime({"offset":true})
+}).describe('A project and its zones, in the order they were added.')
+
+
+/**
+ * Signed in with the invited email. The invitation is deleted.
+ * @summary Decline an invitation
+ */
+export const declineInvitationBodyCodeMin = 16;
+export const declineInvitationBodyCodeMax = 64;
+
+
+export const declineInvitationBodyCodeRegExp = new RegExp('^[A-Za-z0-9_-]+$');
+
+
+export const DeclineInvitationBody = zod.object({
+  "project_id": zod.uuid(),
+  "code": zod.string().min(declineInvitationBodyCodeMin).max(declineInvitationBodyCodeMax).regex(declineInvitationBodyCodeRegExp)
+}).describe('The project and the code an invitation\'s link carries.')
+
+export const DeclineInvitationResponse = zod.void()
 
 
 /**

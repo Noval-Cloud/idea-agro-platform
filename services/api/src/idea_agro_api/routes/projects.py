@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -11,14 +11,16 @@ from pydantic import AwareDatetime
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.activity import Action
+from idea_agro_api.codes import new_code
 from idea_agro_api.deps import Caller, CallerDep, ServicesDep
 from idea_agro_api.errors import problems
-from idea_agro_api.invitations import invitation, project_link
+from idea_agro_api.invitations import Language, invitation, invitation_link
 from idea_agro_api.mail import MailFailed
 from idea_agro_api.models import (
     ActivityOut,
     DivisionItem,
     DivisionItemIn,
+    InvitationAgain,
     MemberIn,
     MemberOut,
     OutlineChange,
@@ -36,7 +38,15 @@ from idea_agro_api.models import (
     SharedOut,
     ZoneGeometry,
 )
-from idea_agro_api.projects import Member, NotAllowed, Project, TooManyItems, new_project_id, saved_item
+from idea_agro_api.projects import (
+    Member,
+    MemberRole,
+    NotAllowed,
+    Project,
+    TooManyItems,
+    new_project_id,
+    saved_item,
+)
 from idea_agro_api.routes.activity_log import note
 from idea_agro_api.routes.saved_zones import change_outline
 from idea_agro_api.routes.saved_zones import out as saved_zone_out
@@ -86,35 +96,6 @@ def accepted(project: Project, account: str, email: str) -> Project:
         if not (inside and m.email == email and m.account is None)
     )
     return replace(project, members=members)
-
-
-def join(services: Services, caller: Caller, projects: list[Project]) -> list[Project]:
-    """Accepts the caller's pending invitations among `projects`: the owner invited their verified email."""
-    email = verified_email(caller)
-    if email is None:
-        return projects
-    me = caller.account.id
-    found: list[Project] = []
-    for project in projects:
-        if any(m.email == email and m.account is None for m in project.members):
-            joined = False
-
-            def accepting(current: Project) -> Project:
-                nonlocal joined
-                # Set on every attempt: a transaction may run more than once.
-                joined = current.role_of(me) is None and any(
-                    m.email == email and m.account is None for m in current.members
-                )
-                return accepted(current, me, email)
-
-            changed = services.projects.change(project.id, accepting)
-            if changed is None:
-                continue
-            if joined:
-                note(services, [project.id], caller, Action.MEMBER_JOINED, email)
-            project = changed
-        found.append(project)
-    return found
 
 
 def item_key(item: SavedItemIn | DivisionItemIn | PadronItemIn) -> str:
@@ -199,7 +180,12 @@ def detail(services: Services, project: Project, caller: Caller) -> ProjectOut:
         owner_name=names.of(project.owner),
         members=[
             MemberOut(
-                email=m.email, name=names.of(m.account), role=m.role, pending=m.account is None, you=m.account == me
+                email=m.email,
+                name=names.of(m.account),
+                role=m.role,
+                pending=m.account is None,
+                invited_until=m.invited_until if m.account is None else None,
+                you=m.account == me,
             )
             for m in project.members
         ],
@@ -212,13 +198,11 @@ def detail(services: Services, project: Project, caller: Caller) -> ProjectOut:
 @router.get(
     "/v1/projects",
     summary="Your projects",
-    description="Yours and those shared with you. Opening them accepts the invitations to your verified email.",
+    description="Yours and those shared with you.",
     responses=problems(401, 403, 429),
 )
 def list_projects(caller: CallerDep, services: ServicesDep) -> list[ProjectSummary]:
     me = caller.account.id
-    email = verified_email(caller)
-    join(services, caller, services.projects.invited(email) if email else [])
     found = {p.id: p for p in [*services.projects.owned_by(me), *services.projects.shared_with(me)]}
     names = Names(services)
     projects = sorted(found.values(), key=lambda p: p.updated_at, reverse=True)
@@ -253,13 +237,9 @@ def create_project(project: ProjectIn, caller: CallerDep, services: ServicesDep)
 @router.get(
     "/v1/projects/{project_id}",
     summary="One of your projects",
-    description="Opening a project you were invited to accepts the invitation.",
     responses=problems(401, 403, 404, 422, 429),
 )
 def get_project(project_id: ProjectId, caller: CallerDep, services: ServicesDep) -> ProjectOut:
-    found = services.projects.get(str(project_id))
-    if found:
-        join(services, caller, [found])
     return detail(services, reachable(services, caller, project_id), caller)
 
 
@@ -379,8 +359,8 @@ def remove_project_item(project_id: ProjectId, item_id: ItemId, caller: CallerDe
     summary="Share a project, or change a member's role",
     description=(
         "For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) "
-        "or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when "
-        "that person, signed in with that verified email, opens their projects."
+        "or `viewer` (only reads). A new member is emailed, in `language`, a link with a code that expires; "
+        "they accept it signed in with that verified email."
     ),
     responses=problems(401, 403, 404, 409, 422, 429),
 )
@@ -392,6 +372,9 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
         raise HTTPException(422, "You own this project.")
     limit = services.limits.members_per_project
     invited = False
+    # Made once, outside the change, which may run more than once.
+    code, kept = new_code()
+    until = datetime.now(UTC) + timedelta(days=services.limits.invitation_days)
 
     def sharing(project: Project) -> Project:
         nonlocal invited
@@ -404,7 +387,7 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
             raise TooManyItems
         else:
             invited = True
-            members = (*project.members, Member(email, member.role))
+            members = (*project.members, Member(email, member.role, invitation=kept, invited_until=until))
         return replace(project, members=members, updated_at=datetime.now(UTC))
 
     try:
@@ -417,19 +400,75 @@ def share_project(project_id: ProjectId, member: MemberIn, caller: CallerDep, se
         raise HTTPException(404, NO_PROJECT)
     action = Action.MEMBER_INVITED if invited else Action.MEMBER_ROLE_CHANGED
     note(services, [project.id], caller, action, email, member.role.value)
-    sent = tell(services, caller, project, email, member) if invited else None
+    sent = tell(services, caller, project, email, member.role, member.language, code, until) if invited else None
     return SharedOut(**detail(services, project, caller).model_dump(), invitation_sent=sent)
 
 
-def tell(services: Services, caller: Caller, project: Project, email: str, member: MemberIn) -> bool:
+@router.post(
+    "/v1/projects/{project_id}/members/{email}/invitation",
+    summary="Send a pending invitation again",
+    description="For the owner. The invitation gets a new code and a new term, and is emailed again in `language`.",
+    responses=problems(401, 403, 404, 409, 422, 429),
+)
+def resend_invitation(
+    project_id: ProjectId, email: Email, again: InvitationAgain, caller: CallerDep, services: ServicesDep
+) -> SharedOut:
+    me = caller.account.id
+    reachable(services, caller, project_id, "own")
+    email = email.lower()
+    code, kept = new_code()
+    until = datetime.now(UTC) + timedelta(days=services.limits.invitation_days)
+    role: MemberRole | None = None
+
+    def renewing(project: Project) -> Project:
+        nonlocal role
+        if project.owner != me:
+            raise NotAllowed
+        member = next((m for m in project.members if m.email == email), None)
+        if member is None or member.account is not None:
+            raise MissingInvitation
+        role = member.role
+        members = tuple(
+            replace(m, invitation=kept, invited_until=until) if m.email == email else m for m in project.members
+        )
+        return replace(project, members=members)
+
+    try:
+        project = services.projects.change(str(project_id), renewing)
+    except NotAllowed as error:
+        raise HTTPException(403, OWNER_ONLY) from error
+    except MissingInvitation as error:
+        raise HTTPException(409, "There is no pending invitation for that email.") from error
+    if project is None or role is None:
+        raise HTTPException(404, NO_PROJECT)
+    note(services, [project.id], caller, Action.MEMBER_INVITED, email, role.value)
+    sent = tell(services, caller, project, email, role, again.language, code, until)
+    return SharedOut(**detail(services, project, caller).model_dump(), invitation_sent=sent)
+
+
+class MissingInvitation(Exception):
+    pass
+
+
+def tell(
+    services: Services,
+    caller: Caller,
+    project: Project,
+    email: str,
+    role: MemberRole,
+    language: Language,
+    code: str,
+    until: datetime,
+) -> bool:
     """Emails the invitation; the invitation stands whether or not the email leaves."""
     message = invitation(
-        language=member.language,
+        language=language,
         to=email,
         inviter=caller.account.name or caller.account.email,
         project=project.name,
-        role=member.role,
-        link=project_link(services.site_url, member.language, project.id),
+        role=role,
+        link=invitation_link(services.site_url, language, project.id, code),
+        until=until,
     )
     try:
         services.mailer.send(message)

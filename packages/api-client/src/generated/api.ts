@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.10.0
+ * OpenAPI spec version: 1.11.0
  */
 import {
   useMutation,
@@ -80,6 +80,7 @@ export const Action = {
   outline_restored: 'outline_restored',
   member_invited: 'member_invited',
   member_joined: 'member_joined',
+  member_declined: 'member_declined',
   member_role_changed: 'member_role_changed',
   member_removed: 'member_removed',
   member_left: 'member_left',
@@ -361,6 +362,82 @@ export interface Health {
   status: string;
 }
 
+/**
+ * The language of the email.
+ */
+export type InvitationAgainLanguage = typeof InvitationAgainLanguage[keyof typeof InvitationAgainLanguage];
+
+
+export const InvitationAgainLanguage = {
+  es: 'es',
+  en: 'en',
+  pt: 'pt',
+} as const;
+
+/**
+ * How to send a pending invitation again.
+ */
+export interface InvitationAgain {
+  /** The language of the email. */
+  language?: InvitationAgainLanguage;
+}
+
+/**
+ * The project and the code an invitation's link carries.
+ */
+export interface InvitationCode {
+  project_id: string;
+  /**
+     * @minLength 16
+     * @maxLength 64
+     * @pattern ^[A-Za-z0-9_-]+$
+     */
+  code: string;
+}
+
+/**
+ * The role offered, or the caller's once they joined.
+ */
+export type InvitationOutRole = typeof InvitationOutRole[keyof typeof InvitationOutRole];
+
+
+export const InvitationOutRole = {
+  owner: 'owner',
+  collaborator: 'collaborator',
+  viewer: 'viewer',
+} as const;
+
+/**
+ * `joined` when the caller is in the project already, as after accepting.
+ */
+export type InvitationOutState = typeof InvitationOutState[keyof typeof InvitationOutState];
+
+
+export const InvitationOutState = {
+  pending: 'pending',
+  expired: 'expired',
+  joined: 'joined',
+} as const;
+
+/**
+ * What an invitation offers, for its page.
+ */
+export interface InvitationOut {
+  project_id: string;
+  project_name: string;
+  /** The project's owner, who invited. */
+  inviter_name: string | null;
+  /** The role offered, or the caller's once they joined. */
+  role: InvitationOutRole;
+  /** The email it is for: only an account with that email accepts it. */
+  email: string;
+  invited_until: string | null;
+  /** `joined` when the caller is in the project already, as after accepting. */
+  state: InvitationOutState;
+  /** Whether it is for the caller's verified email. */
+  yours: boolean;
+}
+
 export type MapSize = typeof MapSize[keyof typeof MapSize];
 
 
@@ -428,8 +505,10 @@ export interface MemberOut {
   /** Their name, once they joined. */
   name: string | null;
   role: MemberRole;
-  /** Invited, and not yet joined: they join when they open their projects. */
+  /** Invited, and not yet joined: they join with the link their email carries. */
   pending: boolean;
+  /** While pending: when the invitation's link stops working. */
+  invited_until?: string | null;
   /** Whether this member is you. */
   you: boolean;
 }
@@ -4145,7 +4224,7 @@ export const getListProjectsUrl = () => {
 }
 
 /**
- * Yours and those shared with you. Opening them accepts the invitations to your verified email.
+ * Yours and those shared with you.
  * @summary Your projects
  */
 export const listProjects = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listProjectsResponse> => {
@@ -4413,7 +4492,6 @@ export const getGetProjectUrl = (projectId: string,) => {
 }
 
 /**
- * Opening a project you were invited to accepts the invitation.
  * @summary One of your projects
  */
 export const getProject = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectResponse> => {
@@ -5052,7 +5130,7 @@ export const getShareProjectUrl = (projectId: string,) => {
 }
 
 /**
- * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is told by email, in `language`; the invitation is accepted when that person, signed in with that verified email, opens their projects.
+ * For the owner. Invites the email as `collaborator` (changes the project's zones, their outlines included) or `viewer` (only reads). A new member is emailed, in `language`, a link with a code that expires; they accept it signed in with that verified email.
  * @summary Share a project, or change a member's role
  */
 export const shareProject = async (projectId: string,
@@ -5131,6 +5209,142 @@ export const useShareProject = <TError = Problem,
         TContext
       > => {
       return useMutation(getShareProjectMutationOptions(options), queryClient);
+    }
+
+export type resendInvitationResponse200 = {
+  data: SharedOut
+  status: 200
+}
+
+export type resendInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type resendInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type resendInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type resendInvitationResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type resendInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type resendInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type resendInvitationResponseSuccess = (resendInvitationResponse200) & {
+  headers: Headers;
+};
+export type resendInvitationResponseError = (resendInvitationResponse401 | resendInvitationResponse403 | resendInvitationResponse404 | resendInvitationResponse409 | resendInvitationResponse422 | resendInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type resendInvitationResponse = (resendInvitationResponseSuccess | resendInvitationResponseError)
+
+export const getResendInvitationUrl = (projectId: string,
+    email: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/members/${email}/invitation`
+}
+
+/**
+ * For the owner. The invitation gets a new code and a new term, and is emailed again in `language`.
+ * @summary Send a pending invitation again
+ */
+export const resendInvitation = async (projectId: string,
+    email: string,
+    invitationAgain: InvitationAgain, options?: Parameters<typeof apiFetch>[1]): Promise<resendInvitationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<resendInvitationResponse>(getResendInvitationUrl(projectId,email),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationAgain)
+  }
+);}
+
+
+
+
+
+export const getResendInvitationMutationKey = () => ['resendInvitation'] as const;
+
+export const getResendInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,ResendInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,ResendInvitationMutationVariables, TContext> => {
+
+const mutationKey = getResendInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendInvitation>>, ResendInvitationMutationVariables> = (props) => {
+          const {projectId,email,data} = props ?? {};
+
+          return  resendInvitation(projectId,email,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof resendInvitation>>>
+    export type ResendInvitationMutationBody = InvitationAgain
+    export type ResendInvitationMutationError = Problem
+    export type ResendInvitationMutationVariables = {projectId: string;email: string;data: InvitationAgain}
+
+    /**
+ * @summary Send a pending invitation again
+ */
+export const useResendInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,ResendInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resendInvitation>>,
+        TError,
+        ResendInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendInvitationMutationOptions(options), queryClient);
     }
 
 export type removeProjectMemberResponse204 = {
@@ -5841,6 +6055,395 @@ export const useChangeProjectZoneGeometry = <TError = Problem,
         TContext
       > => {
       return useMutation(getChangeProjectZoneGeometryMutationOptions(options), queryClient);
+    }
+
+export type openInvitationResponse200 = {
+  data: InvitationOut
+  status: 200
+}
+
+export type openInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type openInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type openInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type openInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type openInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type openInvitationResponseSuccess = (openInvitationResponse200) & {
+  headers: Headers;
+};
+export type openInvitationResponseError = (openInvitationResponse401 | openInvitationResponse403 | openInvitationResponse404 | openInvitationResponse422 | openInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type openInvitationResponse = (openInvitationResponseSuccess | openInvitationResponseError)
+
+export const getOpenInvitationUrl = () => {
+
+
+
+
+  return `/v1/invitations/open`
+}
+
+/**
+ * The code comes from the invitation's email. A code already used answers `joined` to who used it.
+ * @summary What an invitation offers
+ */
+export const openInvitation = async (invitationCode: InvitationCode, options?: Parameters<typeof apiFetch>[1]): Promise<openInvitationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<openInvitationResponse>(getOpenInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationCode)
+  }
+);}
+
+
+
+
+
+export const getOpenInvitationMutationKey = () => ['openInvitation'] as const;
+
+export const getOpenInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openInvitation>>, TError,OpenInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openInvitation>>, TError,OpenInvitationMutationVariables, TContext> => {
+
+const mutationKey = getOpenInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openInvitation>>, OpenInvitationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  openInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof openInvitation>>>
+    export type OpenInvitationMutationBody = InvitationCode
+    export type OpenInvitationMutationError = Problem
+    export type OpenInvitationMutationVariables = {data: InvitationCode}
+
+    /**
+ * @summary What an invitation offers
+ */
+export const useOpenInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openInvitation>>, TError,OpenInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof openInvitation>>,
+        TError,
+        OpenInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getOpenInvitationMutationOptions(options), queryClient);
+    }
+
+export type acceptInvitationResponse200 = {
+  data: ProjectOut
+  status: 200
+}
+
+export type acceptInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type acceptInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type acceptInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type acceptInvitationResponse410 = {
+  data: Problem
+  status: 410
+}
+
+export type acceptInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type acceptInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type acceptInvitationResponseSuccess = (acceptInvitationResponse200) & {
+  headers: Headers;
+};
+export type acceptInvitationResponseError = (acceptInvitationResponse401 | acceptInvitationResponse403 | acceptInvitationResponse404 | acceptInvitationResponse410 | acceptInvitationResponse422 | acceptInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type acceptInvitationResponse = (acceptInvitationResponseSuccess | acceptInvitationResponseError)
+
+export const getAcceptInvitationUrl = () => {
+
+
+
+
+  return `/v1/invitations/accept`
+}
+
+/**
+ * Signed in with the invited email, before the invitation expires. Answers the project.
+ * @summary Accept an invitation
+ */
+export const acceptInvitation = async (invitationCode: InvitationCode, options?: Parameters<typeof apiFetch>[1]): Promise<acceptInvitationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<acceptInvitationResponse>(getAcceptInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationCode)
+  }
+);}
+
+
+
+
+
+export const getAcceptInvitationMutationKey = () => ['acceptInvitation'] as const;
+
+export const getAcceptInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,AcceptInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,AcceptInvitationMutationVariables, TContext> => {
+
+const mutationKey = getAcceptInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptInvitation>>, AcceptInvitationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptInvitation>>>
+    export type AcceptInvitationMutationBody = InvitationCode
+    export type AcceptInvitationMutationError = Problem
+    export type AcceptInvitationMutationVariables = {data: InvitationCode}
+
+    /**
+ * @summary Accept an invitation
+ */
+export const useAcceptInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,AcceptInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof acceptInvitation>>,
+        TError,
+        AcceptInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptInvitationMutationOptions(options), queryClient);
+    }
+
+export type declineInvitationResponse204 = {
+  data: void
+  status: 204
+}
+
+export type declineInvitationResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type declineInvitationResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type declineInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type declineInvitationResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type declineInvitationResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type declineInvitationResponseSuccess = (declineInvitationResponse204) & {
+  headers: Headers;
+};
+export type declineInvitationResponseError = (declineInvitationResponse401 | declineInvitationResponse403 | declineInvitationResponse404 | declineInvitationResponse422 | declineInvitationResponse429) & {
+  headers: Headers;
+};
+
+export type declineInvitationResponse = (declineInvitationResponseSuccess | declineInvitationResponseError)
+
+export const getDeclineInvitationUrl = () => {
+
+
+
+
+  return `/v1/invitations/decline`
+}
+
+/**
+ * Signed in with the invited email. The invitation is deleted.
+ * @summary Decline an invitation
+ */
+export const declineInvitation = async (invitationCode: InvitationCode, options?: Parameters<typeof apiFetch>[1]): Promise<declineInvitationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<declineInvitationResponse>(getDeclineInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationCode)
+  }
+);}
+
+
+
+
+
+export const getDeclineInvitationMutationKey = () => ['declineInvitation'] as const;
+
+export const getDeclineInvitationMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineInvitation>>, TError,DeclineInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declineInvitation>>, TError,DeclineInvitationMutationVariables, TContext> => {
+
+const mutationKey = getDeclineInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declineInvitation>>, DeclineInvitationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  declineInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclineInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof declineInvitation>>>
+    export type DeclineInvitationMutationBody = InvitationCode
+    export type DeclineInvitationMutationError = Problem
+    export type DeclineInvitationMutationVariables = {data: InvitationCode}
+
+    /**
+ * @summary Decline an invitation
+ */
+export const useDeclineInvitation = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineInvitation>>, TError,DeclineInvitationMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof declineInvitation>>,
+        TError,
+        DeclineInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeclineInvitationMutationOptions(options), queryClient);
     }
 
 export type listAccountsResponse200 = {

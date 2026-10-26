@@ -11,16 +11,31 @@ from idea_agro_api import mail
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
 from idea_agro_api.mail import Email, MailFailed, MemoryMailer, NoMailer, ResendMailer, mailer_from
-from idea_agro_api.services import services_for_tests
+from idea_agro_api.services import Limits, services_for_tests
 from idea_agro_api.zones import LocalFiles
 
 ANA = bearer(make_token("ana"))
+BO = bearer(make_token("bo"))
+CY = bearer(make_token("cy"))
 SITE = "https://site.example"
 
 
-def app(tmp_path: Path, verifier: OidcVerifier, mailer: mail.Mailer) -> TestClient:
-    services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, mailer=mailer, site_url=SITE)
+def app(tmp_path: Path, verifier: OidcVerifier, mailer: mail.Mailer, days: int = 7) -> TestClient:
+    services = services_for_tests(
+        files=LocalFiles(tmp_path),
+        verifier=verifier,
+        mailer=mailer,
+        site_url=SITE,
+        limits=Limits(invitation_days=days),
+    )
     return TestClient(create_app(services))
+
+
+def code_of(sent: Email) -> dict[str, str]:
+    """The project and the code an invitation email's link carries."""
+    link = urlsplit(sent.text.split("https://")[1].split()[0])
+    page = parse_qs(urlsplit(parse_qs(link.query)["next"][0]).query)
+    return {"project_id": page["project"][0], "code": page["code"][0]}
 
 
 def project(client: TestClient, name: str = "Campo") -> str:
@@ -44,9 +59,13 @@ def test_a_new_member_is_told_by_email_in_the_inviters_language(tmp_path: Path, 
     assert sent.to == "bo@example.org"
     assert sent.subject == "Ana invited you to “Campo” on IDEA-Agro"
     assert "as a collaborator" in sent.text
-    link = urlsplit(sent.text.split("Open the project: ")[1].split()[0])
+    link = urlsplit(sent.text.split("See the invitation: ")[1].split()[0])
     assert f"{link.scheme}://{link.netloc}{link.path}" == f"{SITE}/en/login/"
-    assert parse_qs(link.query)["next"] == [f"/en/project/?id={id}"]
+    page = urlsplit(parse_qs(link.query)["next"][0])
+    assert page.path == "/en/invitation/"
+    assert parse_qs(page.query)["project"] == [id]
+    assert len(parse_qs(page.query)["code"][0]) >= 32
+    assert "expires on" in sent.text
 
 
 def test_a_role_change_sends_nothing(tmp_path: Path, verifier: OidcVerifier) -> None:
@@ -121,3 +140,93 @@ def test_the_provider_gets_the_sender_the_message_and_the_key(monkeypatch: pytes
         "text": "t",
         "html": "<p>h</p>",
     }
+
+
+def test_the_invitation_page_says_what_is_offered_and_to_whom(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    id = project(client)
+    share(client, id, "bo@example.org", "collaborator")
+    code = code_of(outbox.sent[-1])
+
+    seen = client.post("/v1/invitations/open", json=code, headers=BO).json()
+    other = client.post("/v1/invitations/open", json=code, headers=CY).json()
+
+    assert (seen["project_name"], seen["inviter_name"], seen["role"], seen["state"], seen["yours"]) == (
+        "Campo",
+        "Ana",
+        "collaborator",
+        "pending",
+        True,
+    )
+    assert (other["email"], other["yours"]) == ("bo@example.org", False)
+
+
+def test_only_the_invited_email_accepts(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    id = project(client)
+    share(client, id, "bo@example.org")
+
+    refused = client.post("/v1/invitations/accept", json=code_of(outbox.sent[-1]), headers=CY)
+
+    assert refused.status_code == 403
+    assert refused.json()["type"] == "urn:idea-agro:problem:invitation-for-another-email"
+    assert client.get(f"/v1/projects/{id}", headers=CY).status_code == 404
+
+
+def test_an_expired_invitation_is_not_accepted(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox, days=0)
+    id = project(client)
+    share(client, id, "bo@example.org")
+    code = code_of(outbox.sent[-1])
+
+    assert client.post("/v1/invitations/open", json=code, headers=BO).json()["state"] == "expired"
+    assert client.post("/v1/invitations/accept", json=code, headers=BO).status_code == 410
+
+
+def test_a_resent_invitation_gets_a_new_code(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    id = project(client)
+    share(client, id, "bo@example.org")
+    first = code_of(outbox.sent[-1])
+
+    resent = client.post(f"/v1/projects/{id}/members/bo@example.org/invitation", json={"language": "pt"}, headers=ANA)
+    second = code_of(outbox.sent[-1])
+
+    assert resent.json()["invitation_sent"] is True
+    assert "Ver o convite" in outbox.sent[-1].text
+    assert client.post("/v1/invitations/accept", json=first, headers=BO).status_code == 404
+    assert client.post("/v1/invitations/accept", json=second, headers=BO).status_code == 200
+    # Accepted: a pending invitation no longer exists to resend.
+    assert client.post(f"/v1/projects/{id}/members/bo@example.org/invitation", json={}, headers=ANA).status_code == 409
+
+
+def test_a_used_code_answers_joined_and_accepting_again_is_harmless(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    id = project(client)
+    share(client, id, "bo@example.org")
+    code = code_of(outbox.sent[-1])
+    client.post("/v1/invitations/accept", json=code, headers=BO)
+
+    assert client.post("/v1/invitations/open", json=code, headers=BO).json()["state"] == "joined"
+    assert client.post("/v1/invitations/accept", json=code, headers=BO).status_code == 200
+    assert client.post("/v1/invitations/open", json=code, headers=CY).status_code == 404
+
+
+def test_a_declined_invitation_leaves_the_project(tmp_path: Path, verifier: OidcVerifier) -> None:
+    outbox = MemoryMailer()
+    client = app(tmp_path, verifier, outbox)
+    id = project(client)
+    share(client, id, "bo@example.org")
+    code = code_of(outbox.sent[-1])
+
+    declined = client.post("/v1/invitations/decline", json=code, headers=BO)
+
+    assert declined.status_code == 204
+    assert client.get(f"/v1/projects/{id}", headers=ANA).json()["members"] == []
+    actions = [a["action"] for a in client.get(f"/v1/projects/{id}/activity", headers=ANA).json()]
+    assert actions[0] == "member_declined"

@@ -18,6 +18,7 @@ class Action(StrEnum):
     OUTLINE_RESTORED = "outline_restored"
     MEMBER_INVITED = "member_invited"
     MEMBER_JOINED = "member_joined"
+    MEMBER_DECLINED = "member_declined"
     MEMBER_ROLE_CHANGED = "member_role_changed"
     MEMBER_REMOVED = "member_removed"
     MEMBER_LEFT = "member_left"

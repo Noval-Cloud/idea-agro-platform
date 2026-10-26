@@ -1,5 +1,6 @@
 """The email that tells someone they were invited to a project, in the inviter's language."""
 
+from datetime import datetime
 from html import escape
 from typing import Literal
 from urllib.parse import quote
@@ -18,8 +19,9 @@ MESSAGES: dict[Language, dict[str, str]] = {
         "viewer": "lector",
         "collaborator_body": "Vas a poder agregar y quitar zonas y cambiar sus contornos.",
         "viewer_body": "Vas a poder ver el proyecto, sus zonas y su actividad.",
-        "button": "Abrir el proyecto",
-        "note": "Ingresá con {email} para verlo. Si no esperabas esta invitación, podés ignorar este correo.",
+        "button": "Ver la invitación",
+        "note": "Es para {email} y vence el {until}. Si no la esperabas, podés ignorar este correo.",
+        "date": "{day} de {month} de {year}",
         "someone": "Alguien",
     },
     "en": {
@@ -30,8 +32,9 @@ MESSAGES: dict[Language, dict[str, str]] = {
         "viewer": "viewer",
         "collaborator_body": "You will be able to add and remove areas and change their outlines.",
         "viewer_body": "You will be able to see the project, its areas and its activity.",
-        "button": "Open the project",
-        "note": "Sign in with {email} to see it. If you did not expect this invitation, you can ignore this email.",
+        "button": "See the invitation",
+        "note": "It is for {email} and expires on {until}. If you did not expect it, you can ignore this email.",
+        "date": "{day} {month} {year}",
         "someone": "Someone",
     },
     "pt": {
@@ -42,10 +45,56 @@ MESSAGES: dict[Language, dict[str, str]] = {
         "viewer": "leitor",
         "collaborator_body": "Você vai poder adicionar e remover zonas e mudar seus contornos.",
         "viewer_body": "Você vai poder ver o projeto, suas zonas e sua atividade.",
-        "button": "Abrir o projeto",
-        "note": "Entre com {email} para vê-lo. Se você não esperava este convite, pode ignorar este e-mail.",
+        "button": "Ver o convite",
+        "note": "É para {email} e vence em {until}. Se você não esperava, pode ignorar este e-mail.",
+        "date": "{day} de {month} de {year}",
         "someone": "Alguém",
     },
+}
+
+MONTHS: dict[Language, tuple[str, ...]] = {
+    "es": (
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ),
+    "en": (
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ),
+    "pt": (
+        "janeiro",
+        "fevereiro",
+        "março",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ),
 }
 
 # The site's address prefix for each language: Spanish is the default, at the root.
@@ -75,16 +124,20 @@ BUTTON = (
 )
 
 
-def project_link(site: str, language: Language, project_id: str) -> str:
-    """The sign-in page, which opens the project once the person is in."""
+def invitation_link(site: str, language: Language, project_id: str, code: str) -> str:
+    """The sign-in page, which opens the invitation once the person is in."""
     prefix = PREFIX[language]
-    return f"{site.rstrip('/')}{prefix}/login/?next={quote(f'{prefix}/project/?id={project_id}', safe='')}"
+    page = f"{prefix}/invitation/?project={project_id}&code={code}"
+    return f"{site.rstrip('/')}{prefix}/login/?next={quote(page, safe='')}"
 
 
-def invitation(*, language: Language, to: str, inviter: str | None, project: str, role: MemberRole, link: str) -> Email:
+def invitation(
+    *, language: Language, to: str, inviter: str | None, project: str, role: MemberRole, link: str, until: datetime
+) -> Email:
     m = MESSAGES[language]
     who = inviter or m["someone"]
-    values = {"inviter": who, "project": project, "role": m[role.value], "email": to}
+    date = m["date"].format(day=until.day, month=MONTHS[language][until.month - 1], year=until.year)
+    values = {"inviter": who, "project": project, "role": m[role.value], "email": to, "until": date}
     lead = m["lead"].format(**values)
     body = m[f"{role.value}_body"]
     note = m["note"].format(**values)
