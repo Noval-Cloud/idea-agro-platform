@@ -29,6 +29,12 @@ variable "auth_local_origins" {
   default     = []
 }
 
+variable "alert_emails" {
+  description = "Emails the platform's alerts go to, such as a failed data job"
+  type        = list(string)
+  default     = []
+}
+
 variable "admin_emails" {
   description = "Emails made admins when they sign in with them verified: the first admins, who name the rest"
   type        = list(string)

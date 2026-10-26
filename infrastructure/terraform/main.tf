@@ -1,8 +1,9 @@
 module "platform" {
   source = "./modules/platform"
 
-  project = var.project
-  region  = var.region
+  project      = var.project
+  region       = var.region
+  alert_emails = var.alert_emails
 }
 
 module "web" {
@@ -45,6 +46,7 @@ module "jobs" {
   zones_bucket   = module.api.zones_bucket
 
   earth_engine_project = var.earth_engine_project
+  alert_channels       = module.platform.alert_channels
 }
 
 module "ci" {

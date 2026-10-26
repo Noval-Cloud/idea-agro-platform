@@ -62,7 +62,14 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 ## Schedule
 
-Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. A run with nothing new ends in a minute or two.
+Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. That is how new satellite data reaches the platform without anyone running it: each run adds the composites and years the assets gained, publishes the outlines only when an asset changed, and draws the maps of new years. A run with nothing new ends in a minute or two.
+
+## Alerts
+
+Any error the job or its schedule logs is emailed to `alert_emails` (Terraform), at most once an hour. In Cloud Run the job logs JSON lines, so each entry keeps its severity.
+
+- **A failed run:** the error is in the run's logs. Once the cause is fixed, `make jobs-run` adds whatever the failed run missed.
+- **Data stopped arriving:** a run logs `<indicator>: no new composite for over 45 days` when the latest composite of ppna, apar or et started longer ago than `STALE_AFTER` (`values.py`). The indicators' scripts update those assets outside this repository, so ask whoever runs them.
 
 ## Running it
 

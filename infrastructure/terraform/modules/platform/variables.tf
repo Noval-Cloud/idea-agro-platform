@@ -25,3 +25,9 @@ variable "values_dataset" {
   type        = string
   default     = "zone_values"
 }
+
+variable "alert_emails" {
+  description = "Emails the platform's alerts go to"
+  type        = list(string)
+  default     = []
+}

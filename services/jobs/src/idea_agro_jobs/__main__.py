@@ -6,6 +6,7 @@ registered for Earth Engine, and `MAP_THEME` the website's map palettes.
 """
 
 import argparse
+import json
 import logging
 import os
 from pathlib import Path
@@ -24,6 +25,16 @@ TASKS = {
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
 
+class CloudFormatter(logging.Formatter):
+    """One JSON object per line, which Cloud Logging reads with its severity."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        message = f"{record.name}: {record.getMessage()}"
+        if record.exc_info:
+            message += "\n" + self.formatException(record.exc_info)
+        return json.dumps({"severity": record.levelname, "message": message}, ensure_ascii=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="idea-agro-jobs", description=__doc__)
     parser.add_argument("tasks", nargs="+", choices=list(TASKS), help="; ".join(f"{t}: {h}" for t, h in TASKS.items()))
@@ -36,7 +47,11 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="publish the outlines even if no asset changed")
     arguments = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    handler = logging.StreamHandler()
+    # Cloud Run sets CLOUD_RUN_JOB; a local run keeps plain lines.
+    cloud = "CLOUD_RUN_JOB" in os.environ
+    handler.setFormatter(CloudFormatter() if cloud else logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
     files = files_from(os.environ["PUBLIC_DATA"])
     earth: EarthEngine | None = None
 
