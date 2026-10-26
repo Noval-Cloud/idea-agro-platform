@@ -70,3 +70,8 @@ output "ci_image" {
 output "mail_key_secret" {
   value = module.api.mail_key_secret
 }
+
+output "dns_records" {
+  description = "What the domain's DNS provider needs, once the mappings exist"
+  value       = concat(module.web.dns_records, module.api.dns_records)
+}

@@ -62,3 +62,15 @@ variable "earth_engine_project" {
   description = "Cloud project registered for Earth Engine where the data job computes"
   type        = string
 }
+
+variable "domain" {
+  description = "The platform's own domain, such as idea-agro.org, verified in Search Console with the operator as an owner; empty keeps the run.app addresses only"
+  type        = string
+  default     = ""
+}
+
+variable "api_subdomain" {
+  description = "Where the API answers under the domain"
+  type        = string
+  default     = "api"
+}
