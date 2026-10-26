@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help setup lint format typecheck test build generate contract specs check tf-setup tf-plan tf-apply web-deploy \
-	public-data api-dev api-deploy jobs-deploy jobs-run ci-image ci-checks
+	public-data api-dev api-deploy jobs-deploy jobs-run ci-image ci-checks mail-key
 
 TF := terraform -chdir=infrastructure/terraform
 # Terraform starts from the person's gcloud credentials, then impersonates the operator account.
@@ -63,6 +63,10 @@ tf-plan: ## Save ENV's Terraform plan, read-only
 	$(require_env)
 	$(TF_INIT)
 	$(TF_AS_PERSON) plan -input=false -var-file=../environments/$(ENV)/terraform.tfvars -out=$(ENV).tfplan
+
+mail-key: ## Store a new mail provider (Resend) API key for ENV's API, asking for it
+	$(require_env)
+	infrastructure/setup/mail-key.sh $(ENV)
 
 tf-apply: ## Apply the plan tf-plan saved for ENV
 	$(require_env)

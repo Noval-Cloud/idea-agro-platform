@@ -169,3 +169,15 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "mail_key_secret_id" {
+  description = "Secret holding the mail provider's API key"
+  type        = string
+  default     = "mail-api-key"
+}
+
+variable "secret_reader_role" {
+  description = "Role that lets the API read its secrets' values"
+  type        = string
+  default     = "roles/secretmanager.secretAccessor"
+}
