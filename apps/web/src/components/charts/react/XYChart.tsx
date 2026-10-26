@@ -1,7 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { finite, linear, linePath, niceTicks } from "../scale";
 import { cn } from "@/lib/utils";
+import { vizMarks } from "@/design/tokens";
 import RangeBar, { type RangeText } from "./RangeBar";
+
+/** The room one dot takes with its ring: closer than this, points are left to the line. */
+const dotRoom = (Number(vizMarks["marker-radius"]) + Number(vizMarks["ring-width"])) * 2;
 
 /*
  * The client twin of the Astro LineChart/BarChart: same classes, same reading rules.
@@ -74,7 +78,7 @@ const overview = (series: ChartSeries[]) =>
 export default function XYChart(props: Props) {
   const full = props.xLabels.length;
   const [range, setRange] = useState<[number, number]>([0, Math.max(0, full - 1)]);
-  // A new axis (another year, another indicator) shows whole again.
+  // An axis of another length (another view) shows whole again; another year keeps the stretch.
   useEffect(() => setRange([0, Math.max(0, full - 1)]), [full]);
   const [start, end] = props.zoom ? [Math.min(range[0], full - 1), Math.min(range[1], full - 1)] : [0, full - 1];
   const view = useMemo(() => windowed(props, start, end), [props, start, end]);
@@ -85,6 +89,16 @@ export default function XYChart(props: Props) {
   const [active, setActive] = useState<number | null>(null);
   const [announce, setAnnounce] = useState("");
   const hit = useRef<HTMLDivElement>(null);
+  const plot = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(0);
+  useEffect(() => {
+    const element = plot.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => entry && setPlotWidth(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const roomy = plotWidth / Math.max(1, n - 1) >= dotRoom;
 
   const ticks = useMemo(() => {
     if (props.domain)
@@ -180,7 +194,7 @@ export default function XYChart(props: Props) {
         </ul>
       )}
       <div className={cn("relative pb-7 pl-12", heightClass)}>
-        <div className="absolute inset-y-0 right-0 bottom-7 left-12">
+        <div ref={plot} className="absolute inset-y-0 right-0 bottom-7 left-12">
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -279,6 +293,7 @@ export default function XYChart(props: Props) {
           ))}
 
           {mode === "line" &&
+            roomy &&
             series.map(
               (s) =>
                 s.points &&

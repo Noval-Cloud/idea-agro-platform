@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Select } from "radix-ui";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import {
@@ -6,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,7 @@ export default function SeasonLegend({
   range: boolean;
   onRange: (shown: boolean) => void;
 }) {
+  const ids = useId();
   const free = years.filter((y) => y !== chosen && !compared.some((c) => c.year === y));
   const toggle = (label: string, shown: boolean, onShown: (shown: boolean) => void, key: "line" | "band") => (
     <button
@@ -80,7 +81,7 @@ export default function SeasonLegend({
   );
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <>
       <ul className="mb-4 flex flex-wrap items-center gap-2" aria-label={text.year}>
         <li>
           <Select.Root value={String(chosen)} onValueChange={(value) => onChoose(Number(value))}>
@@ -136,12 +137,21 @@ export default function SeasonLegend({
         ))}
         <li>
           {compared.length >= limit ? (
-            <Tooltip label={text.full}>
-              <span tabIndex={0} className={cn(chip, "border-dashed border-line text-ink-subtle")}>
+            // Said in words beside it, so touch readers see why it does nothing.
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-disabled="true"
+                aria-describedby={`${ids}-full`}
+                className={cn(chip, "cursor-not-allowed border-dashed border-line text-ink-subtle")}
+              >
                 <Plus size={iconSize.xs} aria-hidden="true" />
                 {text.compare}
+              </button>
+              <span id={`${ids}-full`} className="text-xs text-ink-subtle">
+                {text.full}
               </span>
-            </Tooltip>
+            </span>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -164,6 +174,6 @@ export default function SeasonLegend({
           )}
         </li>
       </ul>
-    </TooltipProvider>
+    </>
   );
 }

@@ -806,7 +806,11 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
         yearName={yearName}
         chosen={chosen}
         chosenColor={familyColor(indicator)}
-        onChoose={onYear}
+        onChoose={(y) => {
+          // The chosen year is never also a compared one.
+          setCompared((now) => now.filter((c) => c.year !== y));
+          onYear(y);
+        }}
         compared={others.map((c) => ({ year: c.year, color: compareColor(c.slot) }))}
         limit={2}
         onCompare={(y) =>
@@ -851,6 +855,7 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
             [
               t("zone.tableDate"),
               `${label} (${unit})`,
+              ...others.map((c) => `${yearName(c.year)} (${unit})`),
               `${t("zone.season.mean", { count })} (${unit})`,
               `min (${unit})`,
               `max (${unit})`,
@@ -858,6 +863,7 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
             dates.map((d, p) => [
               d.toISOString().slice(0, 10),
               exact(byYear.get(chosen)?.[p]),
+              ...others.map((c) => exact(byYear.get(c.year)?.[p])),
               exact(mean[p]),
               exact(low[p]),
               exact(high[p]),

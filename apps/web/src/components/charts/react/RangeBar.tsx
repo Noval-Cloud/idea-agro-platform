@@ -32,13 +32,16 @@ export default function RangeBar({
   const y = linear(vs.length ? [Math.min(...vs), Math.max(...vs)] : [0, 1], [85, 15]);
 
   const grab = (event: PointerEvent<HTMLSpanElement>) => {
-    // The window itself moves; a press elsewhere on the track moves the nearest end, as Radix does.
+    // With the whole axis shown there is no window to move: the press moves the nearest end, as Radix does.
+    if (whole) return;
+    // The window itself moves; Radix would otherwise move the nearest end to the pointer.
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { x: event.clientX, start: range[0] };
   };
   const move = (event: PointerEvent<HTMLSpanElement>) => {
     const from = drag.current;
+    if (from) event.stopPropagation();
     const box = track.current?.getBoundingClientRect();
     if (!from || !box) return;
     const steps = Math.round(((event.clientX - from.x) / box.width) * (n - 1));
@@ -55,6 +58,7 @@ export default function RangeBar({
         minStepsBetweenThumbs={1}
         value={range}
         onValueChange={(next) => onRange([next[0], next[1]])}
+        role="group"
         aria-label={text.label}
         className="relative flex h-8 touch-none items-center select-none"
       >
@@ -78,17 +82,24 @@ export default function RangeBar({
           <Slider.Range
             onPointerDown={grab}
             onPointerMove={move}
-            onPointerUp={() => (drag.current = null)}
-            onPointerCancel={() => (drag.current = null)}
+            onPointerUp={(event) => {
+              if (drag.current) event.stopPropagation();
+              drag.current = null;
+            }}
+            onPointerCancel={(event) => {
+              if (drag.current) event.stopPropagation();
+              drag.current = null;
+            }}
             className="absolute h-full cursor-grab border-x border-ink-subtle bg-action-soft/60 active:cursor-grabbing"
           />
         </Slider.Track>
         {(["from", "to"] as const).map((end, i) => (
           <Slider.Thumb
             key={end}
-            aria-label={text[end]}
+            aria-label={`${text.label}: ${text[end]}`}
             aria-valuetext={labels[range[i]]}
-            className="block h-7 w-3 cursor-ew-resize rounded-xs border border-ink-subtle bg-surface shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            // The visible handle is narrow; the press area around it is wide enough for a finger.
+            className="relative block h-7 w-3 cursor-ew-resize rounded-xs border border-ink-subtle bg-surface shadow-raised before:absolute before:-inset-x-2.5 before:-inset-y-1 before:content-[''] focus-visible:outline-(length:--ia-focus-width) focus-visible:outline-offset-(--ia-focus-offset) focus-visible:outline-focus"
           />
         ))}
       </Slider.Root>
