@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException
 from idea_agro_api.activity import Action
 from idea_agro_api.codes import new_code
 from idea_agro_api.deps import Caller, CallerDep, ServicesDep
-from idea_agro_api.emails.compose import compose, page
+from idea_agro_api.emails.compose import compose, page, plain_name
 from idea_agro_api.emails.templates import Kind, Language, TemplateError
 from idea_agro_api.emails.words import SOMEONE
 from idea_agro_api.errors import problems
@@ -491,7 +491,7 @@ def tell(
                 language=language,
                 to=email,
                 values={
-                    "inviter": caller.account.name or caller.account.email or SOMEONE[language],
+                    "inviter": plain_name(caller.account.name or "") or caller.account.email or SOMEONE[language],
                     "project": project.name,
                     "email": email,
                     "until": until,

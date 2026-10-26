@@ -1,6 +1,7 @@
 """Writes an email: its kind's words, the sender's values written in the email's language, and the shared look."""
 
 import re
+import unicodedata
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -90,6 +91,15 @@ def written(value: Value, language: Language) -> str:
     else:
         number = f"{value:,f}" if isinstance(value, Decimal) else f"{value:,}"
     return number if language == "en" else number.translate(str.maketrans(",.", ".,"))
+
+
+def plain_name(text: str, limit: int = 60) -> str:
+    """A person's own name for an email: one line, no control or formatting characters, and short."""
+    kept = "".join(
+        " " if c.isspace() else c for c in text if unicodedata.category(c) not in ("Cc", "Cf") or c.isspace()
+    )
+    words = " ".join(kept.split())
+    return words if len(words) <= limit else words[: limit - 1].rstrip() + "…"
 
 
 def fill(text: str, words: Mapping[str, str]) -> str:

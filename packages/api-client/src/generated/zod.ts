@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.13.0
+ * OpenAPI spec version: 1.14.0
  */
 import * as zod from 'zod';
 
@@ -1628,6 +1628,83 @@ export const DeclineInvitationBody = zod.object({
 }).describe('The project and the code an invitation\'s link carries.')
 
 export const DeclineInvitationResponse = zod.void()
+
+
+/**
+ * Newest first, with their state.
+ * @summary Your invitations to the platform
+ */
+export const ListPlatformInvitationsResponseItem = zod.object({
+  "id": zod.string().describe('The invitation\'s id.'),
+  "email": zod.string().describe('Who is invited.'),
+  "state": zod.enum(['pending', 'accepted', 'expired']).describe('`accepted` once an account with that verified email exists; `expired` past its term.'),
+  "invited_at": zod.iso.datetime({"offset":true}).describe('When it was last emailed.'),
+  "invited_until": zod.iso.datetime({"offset":true}).describe('Until when it can be accepted.'),
+  "accepted_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was accepted; null until then.')
+}).describe('An invitation to the platform, as its sender follows it.')
+export const ListPlatformInvitationsResponse = zod.array(ListPlatformInvitationsResponseItem)
+
+
+/**
+ * Emails them, in `language`, who invites them and a link to sign in. The invitation is accepted when an account with that verified email is created within `INVITATION_DAYS` (7). A person with a verified email sends at most `PLATFORM_INVITATIONS_PER_DAY` (10) emails a day, first or again, and keeps at most `PLATFORM_INVITATIONS_PENDING` (50) pending.
+ * @summary Invite someone to the platform
+ */
+export const inviteToPlatformBodyEmailMax = 254;
+
+
+export const inviteToPlatformBodyEmailRegExp = new RegExp('^[^@\\s/?#%]+@[^@\\s/?#%]+\\.[^@\\s/?#%]+$');
+export const inviteToPlatformBodyLanguageDefault = `es`;
+
+export const InviteToPlatformBody = zod.object({
+  "email": zod.string().max(inviteToPlatformBodyEmailMax).regex(inviteToPlatformBodyEmailRegExp).describe('Their email, as they will sign in with it.'),
+  "language": zod.enum(['es', 'en', 'pt']).default(inviteToPlatformBodyLanguageDefault).describe('The language of the email, the inviter\'s.')
+}).describe('Someone to invite to the platform.')
+
+export const InviteToPlatformResponse = zod.object({
+  "id": zod.string().describe('The invitation\'s id.'),
+  "email": zod.string().describe('Who is invited.'),
+  "state": zod.enum(['pending', 'accepted', 'expired']).describe('`accepted` once an account with that verified email exists; `expired` past its term.'),
+  "invited_at": zod.iso.datetime({"offset":true}).describe('When it was last emailed.'),
+  "invited_until": zod.iso.datetime({"offset":true}).describe('Until when it can be accepted.'),
+  "accepted_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was accepted; null until then.'),
+  "invitation_sent": zod.boolean().describe('Whether the email left; the invitation stands either way.')
+}).describe('An invitation just emailed.')
+
+
+/**
+ * With a new term. Not before `INVITATION_RESEND_MINUTES` (10) after the last email; it counts against the day's invitations.
+ * @summary Send an invitation to the platform again
+ */
+export const ResendPlatformInvitationParams = zod.object({
+  "invitation_id": zod.uuid().describe('The invitation\'s id.')
+})
+
+export const resendPlatformInvitationBodyLanguageDefault = `es`;
+
+export const ResendPlatformInvitationBody = zod.object({
+  "language": zod.enum(['es', 'en', 'pt']).default(resendPlatformInvitationBodyLanguageDefault).describe('The language of the email.')
+}).describe('How to send a pending invitation again.')
+
+export const ResendPlatformInvitationResponse = zod.object({
+  "id": zod.string().describe('The invitation\'s id.'),
+  "email": zod.string().describe('Who is invited.'),
+  "state": zod.enum(['pending', 'accepted', 'expired']).describe('`accepted` once an account with that verified email exists; `expired` past its term.'),
+  "invited_at": zod.iso.datetime({"offset":true}).describe('When it was last emailed.'),
+  "invited_until": zod.iso.datetime({"offset":true}).describe('Until when it can be accepted.'),
+  "accepted_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was accepted; null until then.'),
+  "invitation_sent": zod.boolean().describe('Whether the email left; the invitation stands either way.')
+}).describe('An invitation just emailed.')
+
+
+/**
+ * It leaves your list; the emails it took still count against the day's invitations.
+ * @summary Delete an invitation to the platform
+ */
+export const DeletePlatformInvitationParams = zod.object({
+  "invitation_id": zod.uuid().describe('The invitation\'s id.')
+})
+
+export const DeletePlatformInvitationResponse = zod.void()
 
 
 /**

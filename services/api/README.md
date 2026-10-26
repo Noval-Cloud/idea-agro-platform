@@ -50,6 +50,14 @@ A person's library of zones, apart from any project, under `/v1/saved-zones` (pr
 - **Computing right away:** a new outline (saved, imported or changed) starts the data job's `saved` task for that outline, through a `ZoneJobs` port. A restored outline brings its earlier series along. `ZONE_JOB` is `run://projects/<project>/locations/<region>/jobs/<job>` or `none`. A start that fails is only logged, because the nightly run catches up.
 - **Documents:** the owner attaches files to a saved zone (`/v1/saved-zones/{id}/documents`): PDF, images, text, CSV, spreadsheets and text documents, by extension, which also sets the type they are served with, always as attachments. Their files live in the outlines' bucket under `documents/<zone>/`, apart from what the data job reads, and their records in `zone_documents`. The members of the zone's projects list and download them. The limits are `DOCUMENT_MAX_BYTES` (10 MB), `DOCUMENTS_PER_ZONE` (20) and `DOCUMENTS_MAX_BYTES_PER_ACCOUNT` (200 MB). They are checked before each upload, so uploads made at the same moment can pass one by a few. A name with control or formatting characters is refused. Deleting the zone deletes its documents.
 
+## Invitations to the platform
+
+A signed-in person invites an email to the platform under `/v1/me/invitations` (private), and sees each invitation's state.
+
+- **Accepted** once an account with that verified email is created within `INVITATION_DAYS` (7). Such an invitation grants nothing, so its link needs no code: it leads to sign-in.
+- **Against spam:** only a verified email invites. Every email, first or again, counts against `PLATFORM_INVITATIONS_PER_DAY` (10) a day. Deleting an invitation only hides it, so it cannot refill that budget. At most `PLATFORM_INVITATIONS_PENDING` (50) are pending at once, and resending waits `INVITATION_RESEND_MINUTES` (10) and renews the term.
+- **The email** is the `platform-invitation` kind (see Emails). It shows the inviter's name, cleaned and cut short, and their verified address.
+
 ## Emails
 
 Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.

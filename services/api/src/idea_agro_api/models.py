@@ -304,6 +304,36 @@ class ProjectOut(BaseModel):
     updated_at: datetime
 
 
+class PlatformInvitationIn(BaseModel):
+    """Someone to invite to the platform."""
+
+    email: str = Field(
+        max_length=254,
+        pattern=r"^[^@\s/?#%]+@[^@\s/?#%]+\.[^@\s/?#%]+$",
+        description="Their email, as they will sign in with it.",
+    )
+    language: Literal["es", "en", "pt"] = Field(default="es", description="The language of the email, the inviter's.")
+
+
+class PlatformInvitationOut(BaseModel):
+    """An invitation to the platform, as its sender follows it."""
+
+    id: str = Field(description="The invitation's id.")
+    email: str = Field(description="Who is invited.")
+    state: Literal["pending", "accepted", "expired"] = Field(
+        description="`accepted` once an account with that verified email exists; `expired` past its term."
+    )
+    invited_at: datetime = Field(description="When it was last emailed.")
+    invited_until: datetime = Field(description="Until when it can be accepted.")
+    accepted_at: datetime | None = Field(description="When it was accepted; null until then.")
+
+
+class PlatformInvitationSent(PlatformInvitationOut):
+    """An invitation just emailed."""
+
+    invitation_sent: bool = Field(description="Whether the email left; the invitation stands either way.")
+
+
 class InvitationAgain(BaseModel):
     """How to send a pending invitation again."""
 
