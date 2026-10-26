@@ -32,3 +32,21 @@ resource "google_storage_bucket_iam_member" "jobs_publish" {
   role   = var.files_role
   member = google_service_account.jobs.member
 }
+
+# The saved zones' outlines are the API's: the job reads them, and writes only their series.
+resource "google_storage_bucket_iam_member" "jobs_read_outlines" {
+  bucket = var.saved_zones_bucket
+  role   = var.outlines_role
+  member = google_service_account.jobs.member
+}
+
+resource "google_storage_bucket_iam_member" "jobs_write_series" {
+  bucket = var.saved_zones_bucket
+  role   = var.series_role
+  member = google_service_account.jobs.member
+
+  condition {
+    title      = "Saved zones' series only"
+    expression = "resource.name.endsWith(\"${var.series_suffix}\")"
+  }
+}

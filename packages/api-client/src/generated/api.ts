@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.11.0
+ * OpenAPI spec version: 1.12.0
  */
 import {
   useMutation,
@@ -873,17 +873,6 @@ export interface SavedZoneRename {
 }
 
 /**
- * Several zones to save at once, such as the polygons of an uploaded file.
- */
-export interface SavedZonesImport {
-  /**
-     * The zones, at most as many as the import limit.
-     * @minItems 1
-     */
-  zones: SavedZoneIn[];
-}
-
-/**
  * One indicator's seasonal series in a zone: the zone's mean for each composite of the satellite record.
  */
 export interface SeasonalSeries {
@@ -895,6 +884,31 @@ export interface SeasonalSeries {
   dates: string[];
   /** The zone's mean for each date, in the same order as `dates`; null where there is no data. */
   values: (number | null)[];
+}
+
+/**
+ * The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out.
+ */
+export interface SavedZoneSeasonal {
+  /** Whether the series of the zone's current outline is still being computed; ask again in a minute. */
+  computing: boolean;
+  /** Aboveground net primary productivity: forage production, in 16-day totals. */
+  ppna?: SeasonalSeries | null;
+  /** Absorbed photosynthetically active radiation, in 16-day totals. */
+  apar?: SeasonalSeries | null;
+  /** Evapotranspiration, as a daily rate every 8 days. */
+  et?: SeasonalSeries | null;
+}
+
+/**
+ * Several zones to save at once, such as the polygons of an uploaded file.
+ */
+export interface SavedZonesImport {
+  /**
+     * The zones, at most as many as the import limit.
+     * @minItems 1
+     */
+  zones: SavedZoneIn[];
 }
 
 /**
@@ -3924,6 +3938,147 @@ export const useChangeSavedZoneGeometry = <TError = Problem,
       return useMutation(getChangeSavedZoneGeometryMutationOptions(options), queryClient);
     }
 
+export type getSavedZoneSeasonalResponse200 = {
+  data: SavedZoneSeasonal
+  status: 200
+}
+
+export type getSavedZoneSeasonalResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getSavedZoneSeasonalResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getSavedZoneSeasonalResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getSavedZoneSeasonalResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getSavedZoneSeasonalResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getSavedZoneSeasonalResponseSuccess = (getSavedZoneSeasonalResponse200) & {
+  headers: Headers;
+};
+export type getSavedZoneSeasonalResponseError = (getSavedZoneSeasonalResponse401 | getSavedZoneSeasonalResponse403 | getSavedZoneSeasonalResponse404 | getSavedZoneSeasonalResponse422 | getSavedZoneSeasonalResponse429) & {
+  headers: Headers;
+};
+
+export type getSavedZoneSeasonalResponse = (getSavedZoneSeasonalResponseSuccess | getSavedZoneSeasonalResponseError)
+
+export const getGetSavedZoneSeasonalUrl = (zoneId: string,) => {
+
+
+
+
+  return `/v1/saved-zones/${zoneId}/seasonal`
+}
+
+/**
+ * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.
+ * @summary Seasonal series of a saved zone
+ */
+export const getSavedZoneSeasonal = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneSeasonalResponse> => {
+
+  return apiFetch<getSavedZoneSeasonalResponse>(getGetSavedZoneSeasonalUrl(zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedZoneSeasonalQueryKey = (zoneId: string,) => {
+    return [
+    `/v1/saved-zones/${zoneId}/seasonal`
+    ] as const;
+    }
+
+
+export const getGetSavedZoneSeasonalQueryOptions = <TData = Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError = Problem>(zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedZoneSeasonalQueryKey(zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedZoneSeasonal>>> = ({ signal }) => getSavedZoneSeasonal(zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavedZoneSeasonalQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedZoneSeasonal>>>
+export type GetSavedZoneSeasonalQueryError = Problem
+
+
+export function useGetSavedZoneSeasonal<TData = Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError = Problem>(
+ zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneSeasonal>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneSeasonal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneSeasonal<TData = Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavedZoneSeasonal>>,
+          TError,
+          Awaited<ReturnType<typeof getSavedZoneSeasonal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSavedZoneSeasonal<TData = Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Seasonal series of a saved zone
+ */
+
+export function useGetSavedZoneSeasonal<TData = Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError = Problem>(
+ zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavedZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavedZoneSeasonalQueryOptions(zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type listSavedZoneVersionsResponse200 = {
   data: OutlineVersionOut[]
   status: 200
@@ -6056,6 +6211,155 @@ export const useChangeProjectZoneGeometry = <TError = Problem,
       > => {
       return useMutation(getChangeProjectZoneGeometryMutationOptions(options), queryClient);
     }
+
+export type getProjectZoneSeasonalResponse200 = {
+  data: SavedZoneSeasonal
+  status: 200
+}
+
+export type getProjectZoneSeasonalResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getProjectZoneSeasonalResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getProjectZoneSeasonalResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getProjectZoneSeasonalResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getProjectZoneSeasonalResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type getProjectZoneSeasonalResponseSuccess = (getProjectZoneSeasonalResponse200) & {
+  headers: Headers;
+};
+export type getProjectZoneSeasonalResponseError = (getProjectZoneSeasonalResponse401 | getProjectZoneSeasonalResponse403 | getProjectZoneSeasonalResponse404 | getProjectZoneSeasonalResponse422 | getProjectZoneSeasonalResponse429) & {
+  headers: Headers;
+};
+
+export type getProjectZoneSeasonalResponse = (getProjectZoneSeasonalResponseSuccess | getProjectZoneSeasonalResponseError)
+
+export const getGetProjectZoneSeasonalUrl = (projectId: string,
+    zoneId: string,) => {
+
+
+
+
+  return `/v1/projects/${projectId}/zones/${zoneId}/seasonal`
+}
+
+/**
+ * For every member. The same series as the zone's owner sees: `computing` is true until it is ready.
+ * @summary Seasonal series of a saved zone of a project
+ */
+export const getProjectZoneSeasonal = async (projectId: string,
+    zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectZoneSeasonalResponse> => {
+
+  return apiFetch<getProjectZoneSeasonalResponse>(getGetProjectZoneSeasonalUrl(projectId,zoneId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectZoneSeasonalQueryKey = (projectId: string,
+    zoneId: string,) => {
+    return [
+    `/v1/projects/${projectId}/zones/${zoneId}/seasonal`
+    ] as const;
+    }
+
+
+export const getGetProjectZoneSeasonalQueryOptions = <TData = Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError = Problem>(projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectZoneSeasonalQueryKey(projectId,zoneId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectZoneSeasonal>>> = ({ signal }) => getProjectZoneSeasonal(projectId,zoneId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && zoneId !== null && zoneId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProjectZoneSeasonalQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectZoneSeasonal>>>
+export type GetProjectZoneSeasonalQueryError = Problem
+
+
+export function useGetProjectZoneSeasonal<TData = Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneSeasonal>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneSeasonal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneSeasonal<TData = Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProjectZoneSeasonal>>,
+          TError,
+          Awaited<ReturnType<typeof getProjectZoneSeasonal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProjectZoneSeasonal<TData = Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Seasonal series of a saved zone of a project
+ */
+
+export function useGetProjectZoneSeasonal<TData = Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError = Problem>(
+ projectId: string,
+    zoneId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjectZoneSeasonal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProjectZoneSeasonalQueryOptions(projectId,zoneId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type openInvitationResponse200 = {
   data: InvitationOut

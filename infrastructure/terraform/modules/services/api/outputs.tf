@@ -13,3 +13,7 @@ output "zones_bucket" {
 output "mail_key_secret" {
   value = google_secret_manager_secret.mail_key.secret_id
 }
+
+output "geometries_bucket" {
+  value = google_storage_bucket.geometries.name
+}

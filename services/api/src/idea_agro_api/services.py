@@ -19,6 +19,7 @@ from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zo
 from idea_agro_api.security import RateLimit
 from idea_agro_api.series import ZoneStore, values_from
 from idea_agro_api.shapes import Departments
+from idea_agro_api.zone_jobs import NoZoneJobs, ZoneJobs, zone_jobs_from
 from idea_agro_api.zones import Files, LocalFiles, files_from
 
 
@@ -86,6 +87,8 @@ class Services:
     mailer: Mailer = field(default_factory=NoMailer)
     # The emails' words: the code's own, until a store people edit replaces them.
     templates: Templates = field(default_factory=BuiltInTemplates)
+    # Computes saved zones' series when their outline changes.
+    zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
     site_url: str = ""
     rate_limit: RateLimit = field(default_factory=lambda: RateLimit(per_minute=60))
@@ -127,6 +130,7 @@ class Services:
             identity_admin=identity_admin_from(env.get("IDENTITY_ADMIN", "none")),
             mailer=mailer_from(env.get("MAILER", "none"), env.get("MAIL_API_KEY", ""), env.get("MAIL_FROM", "")),
             site_url=env.get("SITE_URL", ""),
+            zone_jobs=zone_jobs_from(env.get("ZONE_JOB", "none")),
             rate_limit=RateLimit(per_minute=int(env.get("PRIVATE_REQUESTS_PER_MINUTE", "60"))),
             limits=Limits.from_env(),
             admin_emails=frozenset(e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()),

@@ -44,7 +44,7 @@ variable "placeholder_image" {
 variable "args" {
   description = "Arguments of a run that does not override them: the task and its options"
   type        = list(string)
-  default     = ["outlines", "values", "maps"]
+  default     = ["outlines", "values", "maps", "saved"]
 }
 
 variable "cpu" {
@@ -152,4 +152,27 @@ variable "environment_labels" {
   description = "The environment's labels, for the resources the provider's default labels do not reach"
   type        = map(string)
   default     = {}
+}
+
+variable "saved_zones_bucket" {
+  description = "The API's private bucket of saved zones' outlines, next to which the job keeps their series"
+  type        = string
+}
+
+variable "outlines_role" {
+  description = "Role that lets the job list and read the saved zones' outlines"
+  type        = string
+  default     = "roles/storage.objectViewer"
+}
+
+variable "series_role" {
+  description = "Role that lets the job write and delete the saved zones' series, and nothing else in their bucket"
+  type        = string
+  default     = "roles/storage.objectUser"
+}
+
+variable "series_suffix" {
+  description = "How the names of the saved zones' series end, which bounds what the job may write"
+  type        = string
+  default     = ".series.json"
 }

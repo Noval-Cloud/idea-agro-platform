@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Department } from "@idea-agro/api-client";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, LoaderCircle } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
 import { references, type Reference } from "@/data/references";
@@ -32,6 +32,7 @@ import {
   type DivisionId,
   type Manifest,
   type ZoneGeometry,
+  type ZoneSeasonal,
   type SeasonalId,
 } from "@/components/explorer/lib/data";
 import { areaKm2 } from "@/components/explorer/lib/geo";
@@ -534,6 +535,8 @@ interface PanelProps {
 
 function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps) {
   const target = zone.target;
+  // Loaded here, outside the views each indicator remounts, so switching indicators does not ask again.
+  const saved = useSavedSeasonal(zone);
   return (
     <section id="indicator-panel" role="tabpanel" aria-labelledby={`tab-${indicator}`} className="grid gap-8">
       <div className="min-h-120 min-w-0 rounded-lg border border-line bg-surface p-5 sm:p-6">
@@ -547,6 +550,16 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             indicator={indicator}
             year={year}
             onYear={onYear}
+          />
+        ) : target.kind === "saved" && isSeasonal(indicator) ? (
+          <SavedSeasonView
+            key={indicator}
+            manifest={manifest}
+            zone={zone}
+            indicator={indicator}
+            year={year}
+            onYear={onYear}
+            series={saved}
           />
         ) : (
           <EstimatedView key={indicator} manifest={manifest} zone={zone} indicator={indicator} />
@@ -667,7 +680,7 @@ function IndicatorView(props: ViewProps) {
             { value: "history", label: t("zone.views.history") },
           ]}
         />
-        {view === "season" ? <SeasonView {...props} indicator={indicator} /> : <HistoryView {...props} />}
+        {view === "season" ? <DivisionSeasonView {...props} indicator={indicator} /> : <HistoryView {...props} />}
       </>
     );
   if (indicator === "compn") return <CompositionView {...props} />;
@@ -689,10 +702,27 @@ const zoomText = (t: ReturnType<typeof useI18n>["t"]) => ({
  * The chosen productive year against the mean and the range of the complete years, composite by composite, with
  * up to two more years to compare.
  */
-function SeasonView({ manifest, division, id, title, indicator, year, onYear }: ViewProps & { indicator: SeasonalId }) {
+function DivisionSeasonView(props: ViewProps & { indicator: SeasonalId }) {
+  const { division, id } = props;
+  const series = useData(() => loadZoneSeasonal(division, id), [division, id]);
+  return <SeasonView {...props} series={series} file={`${division}-${id}`} />;
+}
+
+interface SeasonProps {
+  manifest: Manifest;
+  title: string;
+  indicator: SeasonalId;
+  year: number | null;
+  onYear: (year: number | null) => void;
+  /** Aligned with `manifest.seasonal`; `undefined` while loading, `null` on failure. */
+  series: ZoneSeasonal | null | undefined;
+  /** Names the downloaded CSV. */
+  file: string;
+}
+
+function SeasonView({ manifest, title, indicator, year, onYear, series, file }: SeasonProps) {
   const i18n = useI18n();
   const { t } = i18n;
-  const series = useData(() => loadZoneSeasonal(division, id), [division, id]);
   const bands = manifest.seasonal[indicator];
   const per = bands.filter((b) => b.startsWith("b2002-")).length;
   const step = per === 23 ? 16 : 8;
@@ -851,7 +881,7 @@ function SeasonView({ manifest, division, id, title, indicator, year, onYear }: 
       <CsvButton
         onClick={() =>
           downloadCsv(
-            `${division}-${id}-${indicator}-${chosen}`,
+            `${file}-${indicator}-${chosen}`,
             [
               t("zone.tableDate"),
               `${label} (${unit})`,
@@ -1205,11 +1235,114 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
   );
 }
 
+type SavedSeasonal = ZoneSeasonal | "computing" | "slow" | null | undefined;
+
+/** How often, and how many times, a zone whose series is being computed asks again: about ten minutes. */
+const ASK_EVERY = 15_000;
+const ASKS = 40;
+
+/** A saved zone's seasonal series, computed by the API for its outline; asks again while it is being computed. */
+function useSavedSeasonal(zone: Zone): SavedSeasonal {
+  const target = zone.target;
+  const own = zone.access?.own ?? false;
+  const [value, setValue] = useState<SavedSeasonal>(undefined);
+  const id = target.kind === "saved" ? target.id : null;
+  const project = target.kind === "saved" ? target.project : undefined;
+  useEffect(() => {
+    if (!id) return;
+    let live = true;
+    let timer: number | undefined;
+    let asked = 0;
+    const load = async () => {
+      const [{ privately }, api] = await Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
+      // The library route answers only the zone's owner; members reach it through the project.
+      const response = await privately((init) =>
+        own || !project ? api.getSavedZoneSeasonal(id, init) : api.getProjectZoneSeasonal(project, id, init),
+      );
+      if (!live) return;
+      if (response.status !== 200) return setValue(null);
+      if (response.data.computing) {
+        asked += 1;
+        setValue(asked < ASKS ? "computing" : "slow");
+        if (asked < ASKS) timer = window.setTimeout(() => void load().catch(() => live && setValue(null)), ASK_EVERY);
+        return;
+      }
+      const { ppna, apar, et } = response.data;
+      setValue({ ppna: ppna?.values, apar: apar?.values, et: et?.values });
+    };
+    void load().catch(() => live && setValue(null));
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+    };
+  }, [id, project, own]);
+  return value;
+}
+
+/** A saved zone's productive year, from its own outline; its yearly history is estimated from the map. */
+function SavedSeasonView({
+  manifest,
+  zone,
+  indicator,
+  year,
+  onYear,
+  series,
+}: PanelProps & { indicator: SeasonalId; series: SavedSeasonal }) {
+  const { t } = useI18n();
+  const [view, setView] = useState<"season" | "history">("season");
+  return (
+    <>
+      <Segmented
+        name="zone-view"
+        label={t("zone.views.label")}
+        value={view}
+        onChange={setView}
+        options={[
+          { value: "season", label: t("zone.views.season") },
+          { value: "history", label: t("zone.views.history") },
+        ]}
+      />
+      {view === "history" ? (
+        <EstimatedView manifest={manifest} zone={zone} indicator={indicator} seasonShown />
+      ) : series === "computing" || series === "slow" ? (
+        <div role="status" className="grid min-h-60 place-content-center justify-items-center gap-2 text-center">
+          <LoaderCircle size={iconSize.lg} aria-hidden="true" className="text-ink-subtle motion-safe:animate-spin" />
+          <p className="text-base font-semibold text-ink">{t("zone.computing.title")}</p>
+          <p className="max-w-measure text-sm text-ink-muted">
+            {series === "slow" ? t("zone.computing.slow") : t("zone.computing.body")}
+          </p>
+        </div>
+      ) : (
+        <SeasonView
+          manifest={manifest}
+          title={zone.title}
+          indicator={indicator}
+          year={year}
+          onYear={onYear}
+          series={series}
+          file={zone.title}
+        />
+      )}
+    </>
+  );
+}
+
 /*
  * Parcels and the reader's own zones have no precomputed stats yet: their indicators are estimated
  * in the browser from the map's rasters (the same pixels the explorer shows), year by year.
  */
-function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone: Zone; indicator: IndicatorId }) {
+function EstimatedView({
+  manifest,
+  zone,
+  indicator,
+  seasonShown = false,
+}: {
+  manifest: Manifest;
+  zone: Zone;
+  indicator: IndicatorId;
+  /** Whether the zone has its season view too, so the note need not say it is missing. */
+  seasonShown?: boolean;
+}) {
   const i18n = useI18n();
   const { t } = i18n;
   const info = manifest.indicators[indicator];
@@ -1256,7 +1389,9 @@ function EstimatedView({ manifest, zone, indicator }: { manifest: Manifest; zone
   const note = (
     <p className="mb-5 rounded-md border border-line bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
       {t("zone.estimated.note")}
-      {isSeasonal(indicator) && <span className="mt-1 block">{t("zone.estimated.seasonUnavailable")}</span>}
+      {isSeasonal(indicator) && !seasonShown && (
+        <span className="mt-1 block">{t("zone.estimated.seasonUnavailable")}</span>
+      )}
     </p>
   );
   if (info.kind === "categorical")

@@ -21,11 +21,15 @@ from idea_agro_api.models import (
     SavedZoneIn,
     SavedZoneOut,
     SavedZoneRename,
+    SavedZoneSeasonal,
     SavedZonesImport,
+    SeasonalSeries,
     ZoneGeometry,
 )
 from idea_agro_api.projects import saved_item
 from idea_agro_api.routes.activity_log import note
+from idea_agro_api.routes.zones import SEASONAL_UNITS
+from idea_agro_api.saved_series import saved_seasonal, series_file
 from idea_agro_api.saved_zones import OutlineChanged, OutlineVersion, SavedZone, Source, new_zone_id
 from idea_agro_api.services import Services
 from idea_agro_api.shapes import InvalidShape, Outline, outline_from
@@ -145,6 +149,8 @@ def change_outline(
     for old in dropped:
         with suppress(Exception):
             services.geometries.delete(old)
+            services.geometries.delete(series_file(old))
+    services.zone_jobs.compute()
     action = Action.OUTLINE_RESTORED if restored_from else Action.OUTLINE_CHANGED
     projects = [p.id for p in services.projects.containing(saved_item(zone.id))]
     note(services, projects, caller, action, saved_item(zone.id), zone.name)
@@ -170,7 +176,22 @@ def keep(services: Services, owner: str, prepared: list[tuple[SavedZone, bytes]]
             with suppress(Exception):
                 services.geometries.delete(file)
         raise
+    services.zone_jobs.compute()
     return [zone for zone, _ in prepared]
+
+
+def seasonal(services: Services, zone: SavedZone) -> SavedZoneSeasonal:
+    """The series of the zone's current outline, on the catalog's calendar."""
+    found = saved_seasonal(services.geometries, zone.file, services.zones.calendar())
+    if found is None:
+        return SavedZoneSeasonal(computing=True)
+    series = {
+        indicator.value: SeasonalSeries(
+            unit=SEASONAL_UNITS[indicator][0], cadence_days=SEASONAL_UNITS[indicator][1], dates=dates, values=values
+        )
+        for indicator, (dates, values) in found.items()
+    }
+    return SavedZoneSeasonal(computing=False, **series)
 
 
 @router.get("/v1/saved-zones", summary="Your saved zones", responses=problems(401, 403, 429))
@@ -246,6 +267,21 @@ def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: Servic
     if content is None:
         raise HTTPException(404, "The zone's outline is missing.")
     return json.loads(content)
+
+
+@router.get(
+    "/v1/saved-zones/{zone_id}/seasonal",
+    summary="Seasonal series of a saved zone",
+    description=(
+        "Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed "
+        "radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline "
+        "takes a few minutes to compute: until then, `computing` is true."
+    ),
+    response_model_exclude_none=True,
+    responses=problems(401, 403, 404, 422, 429),
+)
+def get_saved_zone_seasonal(zone_id: ZoneId, caller: CallerDep, services: ServicesDep) -> SavedZoneSeasonal:
+    return seasonal(services, owned(services, caller.account.id, zone_id))
 
 
 @router.patch("/v1/saved-zones/{zone_id}", summary="Rename a saved zone", responses=problems(401, 403, 404, 422, 429))

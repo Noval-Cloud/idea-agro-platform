@@ -14,6 +14,7 @@ import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
+from itertools import batched
 from typing import Any, cast
 
 import ee
@@ -56,6 +57,10 @@ SEASONAL = {Indicator.PPNA: ("ppna/ppna-16", 23), Indicator.APAR: ("apar/apar-16
 # Pixel size of each indicator's reductions, in meters.
 SCALE = {Indicator.RH: 1000, Indicator.COMPN: 250}
 COMPOSITE_SCALE = 1000
+# Saved zones are often a few parcels: they are read at the composites' own 250 m pixels.
+OUTLINE_SCALE = 250
+# Composites reduced at once over a saved zone.
+OUTLINE_CHUNK = 100
 ATTEMPTS = 4
 
 
@@ -175,6 +180,35 @@ class EarthEngine:
         outputs: dict[str, Period] = {band if len(chosen) > 1 else "mean": band_start(band) for band in chosen}
         image = ee.Image(ASSETS + SEASONAL[indicator][0]).select(chosen)
         return self._reduce(division, image, ee.Reducer.mean(), COMPOSITE_SCALE, outputs, 2)
+
+    def outline_values(
+        self, indicator: Indicator, outline: dict[str, Any], starts: list[date]
+    ) -> dict[date, float | None]:
+        """The mean of each composite in the outline; one too small to hold a pixel takes the pixel at its center."""
+        asset = ASSETS + SEASONAL[indicator][0]
+        bands = {band_start(band): band for band in self._band_names(asset)}
+        chosen = [bands[start] for start in starts]
+        region = ee.Geometry(outline)
+
+        def reduce(geometry: ee.Geometry) -> dict[str, Any]:
+            found: dict[str, Any] = {}
+            # Every composite at once exceeds Earth Engine's memory on large zones.
+            for chunk in batched(chosen, OUTLINE_CHUNK, strict=False):
+                # bestEffort coarsens the pixels of a zone too large to read at 250 m.
+                reduced = (
+                    ee.Image(asset)
+                    .select(list(chunk))
+                    .reduceRegion(
+                        reducer=ee.Reducer.mean(), geometry=geometry, scale=OUTLINE_SCALE, bestEffort=True, tileScale=4
+                    )
+                )
+                found |= cast(dict[str, Any], retry(f"outline {indicator} {chunk[0]}", reduced.getInfo))
+            return found
+
+        found = reduce(region)
+        if outline["type"] != "Point" and all(found.get(band) is None for band in chosen):
+            found = reduce(region.centroid(1))
+        return {band_start(band): None if found.get(band) is None else round(float(found[band]), 2) for band in chosen}
 
     def _year_image(self, indicator: Indicator, year: int) -> ee.Image:
         if indicator in SEASONAL:

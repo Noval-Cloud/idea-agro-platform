@@ -1,6 +1,7 @@
-"""Where the public files are read from and written to: the API's bucket, or a local folder."""
+"""Where the job's files are read from and written to: a bucket, or a local folder."""
 
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 from typing import Protocol
 
@@ -27,6 +28,12 @@ class Files(Protocol):
         """Rewrites the file from its current content, even when another run writes it meanwhile."""
         ...
 
+    def names(self, prefix: str) -> list[str]:
+        """The names of every file under `prefix`."""
+        ...
+
+    def delete(self, name: str) -> None: ...
+
 
 class LocalFiles:
     def __init__(self, root: Path) -> None:
@@ -46,6 +53,13 @@ class LocalFiles:
 
     def update(self, name: str, change: Callable[[bytes | None], bytes]) -> None:
         self.write(name, change(self.read(name)))
+
+    def names(self, prefix: str) -> list[str]:
+        found = (path.relative_to(self._root).as_posix() for path in self._root.rglob("*") if path.is_file())
+        return sorted(name for name in found if name.startswith(prefix))
+
+    def delete(self, name: str) -> None:
+        (self._root / name).unlink(missing_ok=True)
 
 
 # google-cloud-storage is only partly typed; this class is its only user.
@@ -81,6 +95,13 @@ class BucketFiles:
             except PreconditionFailed:
                 continue
         raise RuntimeError(f"{name} kept changing while it was updated")
+
+    def names(self, prefix: str) -> list[str]:
+        return [blob.name for blob in self._bucket.list_blobs(prefix=prefix)]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+
+    def delete(self, name: str) -> None:
+        with suppress(NotFound):
+            self._bucket.blob(name).delete()  # pyright: ignore[reportUnknownMemberType]
 
 
 def files_from(target: str) -> Files:

@@ -2,7 +2,7 @@
 
 Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery and publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)).
 
-`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps`.
+`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps saved`.
 
 ## Values
 
@@ -37,6 +37,15 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 - **Range:** a continuous map's gray spans the 2nd percentile of its lowest year to the 98th of its highest, kept fixed once in the catalog, so a time-lapse shows change rather than rescaled images.
 - **Thumbnails:** colored with the website's palettes (`apps/web/src/design/generated/map-theme.json`, copied into the image).
 - **Catalog:** the frame, and each indicator's kind, years, range and classes.
+
+## Saved zones
+
+`idea-agro-jobs saved` computes the seasonal series of the zones people save, for the API's `/v1/saved-zones/{id}/seasonal`.
+
+- **Where:** the API's private bucket (`SAVED_ZONES`). Next to each outline (`zones/<zone>/<version>.geojson`) goes `<version>.series.json`, each seasonal indicator's value by composite start. The job may write only files named that way.
+- **What:** the mean of the outline's 250 m pixels for each composite, 100 composites per request. bestEffort coarsens the pixels of very large zones. A zone too small to hold a pixel takes the pixel at its center, and a point takes its own.
+- **When:** the API starts the task whenever an outline is new, and the nightly run adds the composites every series lacks. A series whose outline is gone is deleted.
+- **One at a time:** an outline Earth Engine cannot read is logged as a warning and retried by the next run, without holding back the others.
 
 ## Earth Engine
 

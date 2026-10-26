@@ -750,6 +750,11 @@ export const en = {
       value: "Estimated value",
       seasonUnavailable: "The within-year curve will be available with the API.",
     },
+    computing: {
+      title: "Computing this zone's values",
+      body: "Every satellite composite since 2001 is being measured within its outline. It usually takes a few minutes, and this view updates by itself.",
+      slow: "It is still being computed. Open the zone again in a few minutes.",
+    },
     chartKeys: "Use the left and right arrows to move through the values; Home and End go to the first and the last.",
   },
   auth: {
