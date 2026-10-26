@@ -27,7 +27,8 @@ output "web_service" {
 }
 
 output "web_url" {
-  value = module.web.url
+  description = "The website's address: its own domain when set, else Cloud Run's"
+  value       = local.site_url
 }
 
 output "api_service" {
@@ -35,7 +36,8 @@ output "api_service" {
 }
 
 output "api_url" {
-  value = module.api.url
+  description = "The API's address: under the domain when set, else Cloud Run's"
+  value       = local.api_url
 }
 
 output "jobs_job" {

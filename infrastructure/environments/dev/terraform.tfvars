@@ -6,6 +6,9 @@ auth_local_origins = ["http://localhost:4321"]
 admin_emails       = ["yoel@noval.cloud"]
 alert_emails       = ["yoel@noval.cloud"]
 
+# Verified in Search Console, with the operator account as an owner.
+domain = "idea-agro.org"
+
 # From Noval-Cloud/org-setup's outputs.
 ci = {
   project          = "novalcloud-setup"
