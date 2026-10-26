@@ -107,9 +107,9 @@ export default function ProjectApp({
   const change: Change = async (run, messages = {}) => {
     setProblem(null);
     try {
-      const { status, apply } = await run(await api());
+      const { status, apply, quiet } = await run(await api());
       if (apply) setState((now) => (now.kind === "ready" ? { kind: "ready", project: apply(now.project) } : now));
-      else if (status >= 400) setProblem(messages[status] ?? "project.changeFailed");
+      else if (status >= 400 && !quiet) setProblem(messages[status] ?? "project.changeFailed");
       return status;
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
@@ -269,7 +269,7 @@ function IconAction({
   onClick?: () => void;
 }) {
   const className = cn(
-    "inline-flex size-9 items-center justify-center rounded-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink",
+    "inline-flex size-10 shrink-0 items-center justify-center rounded-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink",
     danger && "hover:text-danger",
   );
   return (
@@ -313,10 +313,14 @@ function Header({
   };
   const icon = { size: iconSize.md, "aria-hidden": true } as const;
 
-  return (
-    <header className="flex items-start gap-2 pt-6 pb-5 sm:gap-3">
-      <IconAction label={t("project.back")} href={projectsPath} icon={<ArrowLeft {...icon} />} />
-      {editing && onEdit ? (
+  const back = (
+    <IconAction label={t("project.back")} href={projectsPath} icon={<ArrowLeft size={iconSize.lg} aria-hidden />} />
+  );
+
+  if (editing && onEdit)
+    return (
+      <header className="flex items-start gap-2 pt-6 pb-5 sm:gap-3">
+        {back}
         <form
           className="grid min-w-0 grow gap-3"
           onSubmit={(event) => {
@@ -353,48 +357,53 @@ function Header({
             </Button>
           </div>
         </form>
-      ) : (
-        <>
-          <div className="grid min-w-0 grow gap-1.5 pt-0.5">
-            <h1 className="font-display text-3xl font-medium tracking-tight wrap-break-word text-ink">
-              {project.name}
-            </h1>
-            <p className="max-w-prose text-sm whitespace-pre-line text-ink-muted">
-              {project.description || t("project.noDescription")}
-            </p>
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
-              <span
-                className={cn(
-                  "rounded-pill border px-2 py-0.5 font-medium",
-                  owner ? "border-line text-ink-muted" : "border-transparent bg-action-soft text-ink",
-                )}
-              >
-                {t(`project.roles.${project.role}`)}
-              </span>
-              {!owner && project.owner_name && <span>{t("project.sharedBy", { name: project.owner_name })}</span>}
-              <time dateTime={project.updated_at} title={moment(project.updated_at)}>
-                {t("project.changed", { when: ago(project.updated_at) })}
-              </time>
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <IconAction label={t("project.onMap")} href={mapHref} icon={<MapIcon {...icon} />} />
-            {onEdit && (
-              <IconAction
-                id="project-edit"
-                label={t("project.edit")}
-                icon={<Pencil {...icon} />}
-                onClick={() => setEditing({ name: project.name, description: project.description })}
-              />
+      </header>
+    );
+
+  return (
+    <header className="grid gap-1.5 pt-6 pb-5">
+      {/* The arrow and the actions sit on the title's line; what follows lines up with the title's text. */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {back}
+        <h1 className="min-w-0 grow font-display text-3xl font-medium tracking-tight wrap-break-word text-ink">
+          {project.name}
+        </h1>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <IconAction label={t("project.onMap")} href={mapHref} icon={<MapIcon {...icon} />} />
+          {onEdit && (
+            <IconAction
+              id="project-edit"
+              label={t("project.edit")}
+              icon={<Pencil {...icon} />}
+              onClick={() => setEditing({ name: project.name, description: project.description })}
+            />
+          )}
+          {owner ? (
+            <IconAction label={t("project.delete")} icon={<Trash2 {...icon} />} danger onClick={onDelete} />
+          ) : (
+            <IconAction label={t("project.leave")} icon={<LogOut {...icon} />} danger onClick={onLeave} />
+          )}
+        </div>
+      </div>
+      <div className="grid gap-1.5 pl-12 sm:pl-13">
+        <p className="max-w-prose text-sm whitespace-pre-line text-ink-muted">
+          {project.description || t("project.noDescription")}
+        </p>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
+          <span
+            className={cn(
+              "rounded-pill border px-2 py-0.5 font-medium",
+              owner ? "border-line text-ink-muted" : "border-transparent bg-action-soft text-ink",
             )}
-            {owner ? (
-              <IconAction label={t("project.delete")} icon={<Trash2 {...icon} />} danger onClick={onDelete} />
-            ) : (
-              <IconAction label={t("project.leave")} icon={<LogOut {...icon} />} danger onClick={onLeave} />
-            )}
-          </div>
-        </>
-      )}
+          >
+            {t(`project.roles.${project.role}`)}
+          </span>
+          {!owner && project.owner_name && <span>{t("project.sharedBy", { name: project.owner_name })}</span>}
+          <time dateTime={project.updated_at} title={moment(project.updated_at)}>
+            {t("project.changed", { when: ago(project.updated_at) })}
+          </time>
+        </p>
+      </div>
     </header>
   );
 }

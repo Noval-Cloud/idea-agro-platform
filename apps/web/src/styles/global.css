@@ -35,6 +35,7 @@
   --color-surface: var(--ia-surface);
   --color-surface-sunken: var(--ia-surface-sunken);
   --color-surface-muted: var(--ia-surface-muted);
+  --color-surface-selected: var(--ia-surface-selected);
   --color-ink: var(--ia-ink);
   --color-ink-muted: var(--ia-ink-muted);
   --color-ink-subtle: var(--ia-ink-subtle);

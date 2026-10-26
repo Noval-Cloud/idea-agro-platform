@@ -16,7 +16,12 @@ export const api = () => Promise.all([import("@/lib/account"), import("@idea-agr
 export type Modules = Awaited<ReturnType<typeof api>>;
 
 /** A change's answer, and how it changes the project on screen. */
-export type Outcome = { status: number; apply?: (project: ProjectOut) => ProjectOut };
+export type Outcome = {
+  status: number;
+  apply?: (project: ProjectOut) => ProjectOut;
+  /** The caller shows a refusal itself, as a dialog does next to its fields. */
+  quiet?: boolean;
+};
 /** Runs a change; `messages` names the message to show for a refused status. */
 export type Change = (
   run: (modules: Modules) => Promise<Outcome>,

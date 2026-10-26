@@ -76,6 +76,8 @@ export const semanticColors = {
   "action-hover": { light: "indigo.700", dark: "indigo.100" },
   "action-ink": { light: "slate.0", dark: "indigo.950" },
   "action-soft": { light: "indigo.100", dark: "slate.800" },
+  /** The current item of a navigation list: a step away from the surface, without a border. */
+  "surface-selected": { light: "slate.100", dark: "slate.950" },
   selection: { light: "indigo.200", dark: "indigo.700" },
   link: { light: "indigo.600", dark: "indigo.300" },
   focus: { light: "pasture.500", dark: "pasture.300" },
