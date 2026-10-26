@@ -16,16 +16,13 @@ export const api = () => Promise.all([import("@/lib/account"), import("@idea-agr
 export type Modules = Awaited<ReturnType<typeof api>>;
 
 /** A change's answer, and how it changes the project on screen. */
-export type Outcome = {
-  status: number;
-  apply?: (project: ProjectOut) => ProjectOut;
-  /** The caller shows a refusal itself, as a dialog does next to its fields. */
-  quiet?: boolean;
-};
+export type Outcome = { status: number; apply?: (project: ProjectOut) => ProjectOut };
 /** Runs a change; `messages` names the message to show for a refused status. */
 export type Change = (
   run: (modules: Modules) => Promise<Outcome>,
   messages?: Partial<Record<number, ProjectKey>>,
+  /** The caller shows refusals and failures itself, as a dialog does next to its fields. */
+  quiet?: boolean,
 ) => Promise<number>;
 
 /** A key matching the API's item ids, to tell which zones the project already holds. */

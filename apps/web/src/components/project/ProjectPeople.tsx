@@ -7,6 +7,7 @@ import type { Question } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { RowMenu } from "@/components/lists/RowMenu";
 import { iconSize } from "@/design/tokens";
+import { readHint } from "@/lib/account-hint";
 import { cn } from "@/lib/utils";
 import type { ProjectTranslator } from "./i18n";
 import { field, type Change } from "./shared";
@@ -61,6 +62,7 @@ export function PeopleTab({
       returnFocus: () => document.getElementById(`member-${member.email}`),
     });
     if (!sure) return;
+    setNotice("");
     await change(async ([{ privately }, client]) => {
       // Emails go into the path: encoded, so none can reach another route.
       const gone = await privately((init) =>
@@ -78,27 +80,34 @@ export function PeopleTab({
   return (
     <div className="grid gap-6 pt-6">
       {owner && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-prose text-sm text-ink-muted">{t("project.members.lead")}</p>
-          <InviteDialog
-            t={t}
-            members={project.members}
-            onInvite={(to, as) =>
-              change(async ([{ privately }, client]) => {
-                const response = await privately((init) =>
-                  client.shareProject(project.id, { email: to, role: as }, init),
-                );
-                if (response.status !== 200) return { status: response.status, quiet: true };
-                setNotice(t("project.members.invited", { email: to }));
-                return { status: 200, apply: () => response.data };
-              })
-            }
-          />
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-prose text-sm text-ink-muted">{t("project.members.lead")}</p>
+            <InviteDialog
+              t={t}
+              members={project.members}
+              onInvite={(to, as) =>
+                change(
+                  async ([{ privately }, client]) => {
+                    const response = await privately((init) =>
+                      client.shareProject(project.id, { email: to, role: as }, init),
+                    );
+                    if (response.status !== 200) return { status: response.status };
+                    setNotice(t("project.members.invited", { email: to }));
+                    return { status: 200, apply: () => response.data };
+                  },
+                  {},
+                  true,
+                )
+              }
+            />
+          </div>
+          {/* Always there, so the confirmation is announced when it appears. */}
+          <p role="status" className="text-sm text-ink-muted">
+            {notice}
+          </p>
         </div>
       )}
-      <p role="status" className="text-sm text-ink-muted empty:hidden">
-        {notice}
-      </p>
 
       <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
         <Person
@@ -263,13 +272,16 @@ function InviteDialog({
   const address = email.trim().toLowerCase();
   const problem = !EMAIL.test(address)
     ? t("project.members.emailInvalid")
-    : members.some((m) => m.email === address)
-      ? t("project.members.emailTaken", { email: address })
-      : null;
+    : address === readHint()?.email?.toLowerCase()
+      ? t("project.members.emailOwn")
+      : members.some((m) => m.email === address)
+        ? t("project.members.emailTaken", { email: address })
+        : null;
 
+  /** Opens clean; while an invitation is on its way the dialog stays open, so its answer has a place. */
   const reset = (next: boolean) => {
+    if (!next && sending) return;
     setOpen(next);
-    if (next) return;
     setEmail("");
     setRole("viewer");
     setChecked(false);
@@ -283,7 +295,10 @@ function InviteDialog({
     setSending(true);
     const status = await onInvite(address, role);
     setSending(false);
-    if (status === 200) return reset(false);
+    if (status === 200) {
+      setOpen(false);
+      return;
+    }
     setRefused(status === 409 ? "full" : "failed");
   };
 
@@ -326,16 +341,15 @@ function InviteDialog({
                 value={email}
                 placeholder={t("project.members.emailPlaceholder")}
                 aria-invalid={checked && problem !== null}
-                aria-describedby={checked && problem ? `${ids}-error` : undefined}
+                aria-describedby={`${ids}-error`}
                 onChange={(event) => setEmail(event.currentTarget.value)}
                 className="h-10 text-sm"
                 autoFocus
               />
-              {checked && problem && (
-                <p id={`${ids}-error`} className="text-sm text-danger">
-                  {problem}
-                </p>
-              )}
+              {/* Always there, so a problem found on sending is announced even with focus in the field. */}
+              <p id={`${ids}-error`} aria-live="polite" className="text-sm text-danger">
+                {checked ? problem : null}
+              </p>
             </div>
 
             <fieldset className="grid gap-2">
@@ -343,7 +357,7 @@ function InviteDialog({
               {roles.map((r) => (
                 <label
                   key={r}
-                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-line p-3 transition-colors duration-(--ia-motion-fast) hover:border-ink-subtle has-checked:border-ink-subtle has-checked:bg-surface-selected has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
+                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-line p-3 transition-colors duration-(--ia-motion-fast) hover:border-ink-subtle has-checked:border-ink-subtle has-checked:bg-surface-selected has-focus-visible:outline-(length:--ia-focus-width) has-focus-visible:outline-offset-(--ia-focus-offset) has-focus-visible:outline-focus"
                 >
                   <input
                     type="radio"
@@ -351,30 +365,36 @@ function InviteDialog({
                     value={r}
                     checked={role === r}
                     onChange={() => setRole(r)}
-                    className="mt-0.5 size-4 shrink-0"
+                    aria-describedby={r === "collaborator" ? `${ids}-${r} ${ids}-warning` : `${ids}-${r}`}
+                    className="mt-0.5 size-4 shrink-0 focus-visible:outline-none"
                   />
                   <span className="grid gap-0.5">
                     <span className="text-sm font-medium text-ink">{t(`project.roles.${r}`)}</span>
-                    <span className="text-sm text-ink-muted">{t(`project.members.roleBodies.${r}`)}</span>
+                    <span id={`${ids}-${r}`} className="text-sm text-ink-muted">
+                      {t(`project.members.roleBodies.${r}`)}
+                    </span>
                   </span>
                 </label>
               ))}
             </fieldset>
 
             {role === "collaborator" && (
-              <p className="flex items-start gap-2 rounded-sm bg-action-soft p-3 text-sm text-ink">
+              <p
+                id={`${ids}-warning`}
+                className="flex items-start gap-2 rounded-sm bg-action-soft p-3 text-sm text-ink"
+              >
                 <TriangleAlert size={iconSize.sm} aria-hidden="true" className="mt-0.5 shrink-0" />
                 {t("project.members.confirmCollaborator.body")}
               </p>
             )}
 
-            <p role="alert" className="text-sm text-danger empty:hidden">
+            <p role="alert" className="text-sm text-danger">
               {refused ? t(`project.members.${refused}`) : ""}
             </p>
 
             <div className="flex justify-end gap-2">
               <Dialog.Close asChild>
-                <Button type="button" size="sm" variant="ghost">
+                <Button type="button" size="sm" variant="ghost" disabled={sending}>
                   {t("project.cancel")}
                 </Button>
               </Dialog.Close>

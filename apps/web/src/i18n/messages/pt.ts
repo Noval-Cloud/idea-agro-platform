@@ -844,6 +844,7 @@ export const pt = {
       lead: "Quem você convida vê o projeto, suas zonas e sua atividade; os colaboradores também o alteram.",
       inviteTitle: "Convidar uma pessoa",
       emailInvalid: "Escreva um e-mail válido, como nome@exemplo.org.",
+      emailOwn: "Esse é o seu e-mail: você já é o proprietário do projeto.",
       emailTaken: "{email} já está no projeto.",
       inviting: "Convidando…",
       invited:

@@ -845,6 +845,7 @@ export const en = {
       lead: "People you invite see the project, its areas and its activity; collaborators also change it.",
       inviteTitle: "Invite someone",
       emailInvalid: "Write a valid email, such as name@example.org.",
+      emailOwn: "That is your email: you already own the project.",
       emailTaken: "{email} is already in the project.",
       inviting: "Inviting…",
       invited: "You invited {email}. The project shows among their projects once they sign in with that email.",

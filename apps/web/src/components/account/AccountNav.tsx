@@ -44,9 +44,7 @@ export default function AccountNav({ locale, catalog, section, sectionPaths }: P
               aria-current={s === section ? "page" : undefined}
               className={cn(
                 "inline-flex h-9 items-center rounded-pill px-3 text-sm whitespace-nowrap transition-colors duration-(--ia-motion-fast) lg:flex lg:h-auto lg:rounded-sm lg:py-2",
-                s === section
-                  ? "bg-surface-selected font-medium text-ink"
-                  : "text-ink-muted hover:bg-surface-selected hover:text-ink",
+                s === section ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
               )}
             >
               {t(`account.sections.${s}`)}
