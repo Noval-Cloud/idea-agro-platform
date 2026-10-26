@@ -21,6 +21,7 @@ TITLES = {
     404: "Not Found",
     405: "Method Not Allowed",
     409: "Conflict",
+    410: "Gone",
     413: "Content Too Large",
     422: "Unprocessable Content",
     429: "Too Many Requests",
@@ -33,6 +34,7 @@ DESCRIPTIONS = {
     403: "The account may not do this.",
     404: "It does not exist, or it is not yours to see.",
     409: "It conflicts with what already exists.",
+    410: "It existed, but no longer can be used.",
     413: "It is larger than allowed.",
     422: "A parameter is not valid.",
     429: "Too many requests: wait the seconds in `Retry-After`.",
@@ -44,6 +46,15 @@ class RecentSignInRequired(HTTPException):
     """A sensitive action needs a fresh sign-in: the client asks the person to sign in again, then retries."""
 
     type = "urn:idea-agro:problem:recent-sign-in-required"
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(403, detail)
+
+
+class InvitationForAnotherEmail(HTTPException):
+    """The invitation is for another email than the caller's: they sign in with that one to accept it."""
+
+    type = "urn:idea-agro:problem:invitation-for-another-email"
 
     def __init__(self, detail: str) -> None:
         super().__init__(403, detail)

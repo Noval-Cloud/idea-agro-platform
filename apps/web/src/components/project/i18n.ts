@@ -19,6 +19,8 @@ export function createProjectTranslator(locale: Locale, catalog: ProjectCatalog)
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const time = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { timeStyle: "short" }).format(new Date(value));
+  const date = (value: string) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "long" }).format(new Date(value));
   const day = (value: Date) =>
     new Intl.DateTimeFormat(intlLocale[locale], { weekday: "long", day: "numeric", month: "long" }).format(value);
   const collator = new Intl.Collator(intlLocale[locale], { sensitivity: "base", numeric: true });
@@ -27,6 +29,7 @@ export function createProjectTranslator(locale: Locale, catalog: ProjectCatalog)
     number,
     moment,
     time,
+    date,
     day,
     degrees: degreesFormat(locale),
     ago: relativeTimeFormat(locale),

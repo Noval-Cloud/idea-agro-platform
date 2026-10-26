@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from auth_tokens import bearer, make_token
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
 from idea_agro_api.geometries import MemoryGeometries
+from idea_agro_api.mail import MemoryMailer
 from idea_agro_api.saved_zones import MemorySavedZones
 from idea_agro_api.services import Limits, Services, services_for_tests
 from idea_agro_api.zones import LocalFiles
@@ -37,7 +39,13 @@ def client(tmp_path: Path, verifier: OidcVerifier) -> TestClient:
     )
     (tmp_path / "divisions" / "seccionales").mkdir(parents=True)
     (tmp_path / "divisions" / "seccionales" / "1406.json").write_text("{}")
-    services = services_for_tests(files=LocalFiles(tmp_path), verifier=verifier, limits=Limits())
+    services = services_for_tests(
+        files=LocalFiles(tmp_path),
+        verifier=verifier,
+        limits=Limits(),
+        mailer=MemoryMailer(),
+        site_url="https://s.example",
+    )
     return TestClient(create_app(services))
 
 
@@ -58,30 +66,52 @@ def add(client: TestClient, id: str, item: dict[str, Any], headers: dict[str, st
     return client.post(f"/v1/projects/{id}/items", json=item, headers=headers)
 
 
+def latest_code(client: TestClient) -> dict[str, str]:
+    """The project and the code of the latest invitation emailed, as its link carries them."""
+    mailer = cast(MemoryMailer, cast(FastAPI, client.app).state.services.mailer)
+    link = mailer.sent[-1].text.split("https://")[1].split()[0]
+    page = parse_qs(urlsplit(link).fragment)
+    return {"project_id": page["project"][0], "code": page["code"][0]}
+
+
+def accept(client: TestClient, headers: dict[str, str], code: dict[str, str] | None = None) -> Any:
+    return client.post("/v1/invitations/accept", json=code or latest_code(client), headers=headers)
+
+
 def joined(client: TestClient, id: str, email: str, role: str, headers: dict[str, str]) -> None:
     share(client, id, email, role)
-    client.get("/v1/projects", headers=headers)
+    accept(client, headers)
 
 
-def test_an_invitation_is_accepted_when_the_invitee_opens_their_projects(client: TestClient) -> None:
+def test_an_invitation_is_accepted_through_its_link(client: TestClient) -> None:
     id = project(client)
 
     shared = share(client, id, "Bo@Example.org", "viewer").json()
     pending = client.get("/v1/projects", headers=ANA).json()
     before = client.get(f"/v1/projects/{id}", headers=BO)
+    unlisted = client.get("/v1/projects", headers=BO).json()
+    accepted = accept(client, BO)
     listed = client.get("/v1/projects", headers=BO).json()
     after = client.get(f"/v1/projects/{id}", headers=ANA).json()
 
-    assert shared["members"] == [
-        {"email": "bo@example.org", "name": None, "role": "viewer", "pending": True, "you": False}
-    ]
+    [member] = shared["members"]
+    assert (member["email"], member["pending"], member["invited_until"] is not None) == ("bo@example.org", True, True)
     # An invitation counts before it is accepted.
     assert [p["member_count"] for p in pending] == [1]
-    # Opening it directly accepts it too.
-    assert before.status_code == 200
+    # Signing in or opening the project does not accept it: only its link does.
+    assert before.status_code == 404
+    assert unlisted == []
+    assert accepted.status_code == 200
     assert [(p["id"], p["role"], p["owner_name"], p["member_count"]) for p in listed] == [(id, "viewer", "Ana", 1)]
     assert after["members"] == [
-        {"email": "bo@example.org", "name": "Bo", "role": "viewer", "pending": False, "you": False}
+        {
+            "email": "bo@example.org",
+            "name": "Bo",
+            "role": "viewer",
+            "pending": False,
+            "invited_until": None,
+            "you": False,
+        }
     ]
     assert client.get(f"/v1/projects/{id}", headers=BO).json()["members"][0]["you"] is True
 
@@ -92,7 +122,7 @@ def test_an_unverified_email_does_not_accept_an_invitation(client: TestClient) -
 
     unverified = bearer(make_token("bo", email_verified=False))
 
-    assert client.get("/v1/projects", headers=unverified).json() == []
+    assert accept(client, unverified).status_code == 403
     assert client.get(f"/v1/projects/{id}", headers=unverified).status_code == 404
 
 

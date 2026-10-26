@@ -256,7 +256,10 @@ class MemberOut(BaseModel):
     email: str
     name: str | None = Field(description="Their name, once they joined.")
     role: MemberRole
-    pending: bool = Field(description="Invited, and not yet joined: they join when they open their projects.")
+    pending: bool = Field(description="Invited, and not yet joined: they join with the link their email carries.")
+    invited_until: datetime | None = Field(
+        default=None, description="While pending: when the invitation's link stops working."
+    )
     you: bool = Field(description="Whether this member is you.")
 
 
@@ -273,6 +276,34 @@ class ProjectOut(BaseModel):
     others_can_edit: bool = Field(description=OTHERS_CAN_EDIT)
     created_at: datetime
     updated_at: datetime
+
+
+class InvitationAgain(BaseModel):
+    """How to send a pending invitation again."""
+
+    language: Literal["es", "en", "pt"] = Field(default="es", description="The language of the email.")
+
+
+class InvitationCode(BaseModel):
+    """The project and the code an invitation's link carries."""
+
+    project_id: UUID
+    code: str = Field(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class InvitationOut(BaseModel):
+    """What an invitation offers, for its page."""
+
+    project_id: str
+    project_name: str
+    inviter_name: str | None = Field(description="The project's owner, who invited.")
+    role: ProjectRole = Field(description="The role offered, or the caller's once they joined.")
+    email: str = Field(description="The email it is for: only an account with that email accepts it.")
+    invited_until: datetime | None
+    state: Literal["pending", "expired", "joined"] = Field(
+        description="`joined` when the caller is in the project already, as after accepting."
+    )
+    yours: bool = Field(description="Whether it is for the caller's verified email.")
 
 
 class SharedOut(ProjectOut):
