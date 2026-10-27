@@ -73,10 +73,26 @@ def test_an_indicator_to_recompute_is_computed_again_from_scratch(files: LocalFi
     store.add(Table.YEARS, Division.SECCIONALES, Indicator.RH, {"1": {2021: 99.0}})
     source = FakeSource(STARTS, [2023, 2024])
 
+    files.write("series/seccionales/1.json", b"{}")
+
     values.refresh(source, store, files, recompute=[Indicator.RH])
 
-    assert {(kind, i, tuple(p)) for kind, _, i, p in source.computed} == {("years", Indicator.RH, (2023, 2024))}
+    assert {(kind, i, tuple(p)) for kind, _, i, p in source.computed} == {
+        ("years", Indicator.RH, (2023, 2024)),
+        ("composites", Indicator.RH, tuple(STARTS)),
+    }
     assert read(files, "values/seccionales/rh.json")["years"] == [2023, 2024]
+    assert files.names("series/") == []
+
+
+def test_a_yearly_indicator_to_recompute_keeps_the_cached_series(files: LocalFiles) -> None:
+    store = MemoryStore()
+    values.refresh(FakeSource(STARTS, [2024]), store, files)
+    files.write("series/seccionales/1.json", b"{}")
+
+    values.refresh(FakeSource(STARTS, [2024]), store, files, recompute=[Indicator.IOSE])
+
+    assert files.names("series/") == ["series/seccionales/1.json"]
 
 
 def test_periods_are_computed_in_chunks(files: LocalFiles, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -121,4 +137,10 @@ def test_an_indicator_without_new_composites_is_reported(files: LocalFiles, capl
     values.refresh(FakeSource(STARTS, [2023]), store, files, today=date(2025, 3, 4))
 
     errors = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
-    assert errors == [f"{i}: no new composite for over 45 days; the latest starts 2025-01-17" for i in SEASONAL]
+    late = [i for i in SEASONAL if i != Indicator.RH]
+    assert errors == [f"{i}: no new composite for over 45 days; the latest starts 2025-01-17" for i in late]
+    # RH's rain arrives a month late, so it waits longer.
+    values.refresh(FakeSource(STARTS, [2023]), store, files, today=date(2025, 4, 18))
+    assert "rh: no new composite for over 90 days; the latest starts 2025-01-17" in [
+        r.getMessage() for r in caplog.records
+    ]

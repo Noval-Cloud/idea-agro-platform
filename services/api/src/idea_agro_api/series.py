@@ -72,7 +72,8 @@ class ZoneStore:
         if catalog is None:
             raise RuntimeError("The public data has no catalog.json")
         dates = cast(dict[str, list[str]], json.loads(catalog)["seasonal"])
-        return {indicator: [date.fromisoformat(d) for d in dates[indicator]] for indicator in SeasonalIndicator}
+        # An indicator the job has not published yet has no composites.
+        return {i: [date.fromisoformat(d) for d in dates.get(i, [])] for i in SeasonalIndicator}
 
     def exists(self, division: Division, zone: str) -> bool:
         return self._files.read(public_data.zone(division, zone)) is not None
@@ -83,8 +84,8 @@ class ZoneStore:
         name = public_data.series(division, zone)
         content = self._files.read(name)
         stored = cast(dict[str, list[float | None]], json.loads(content)) if content else None
-        # A file shorter than a calendar was written before the catalog's latest composites.
-        behind = stored is None or any(len(stored[i]) < len(calendar[i]) for i in SeasonalIndicator if i in stored)
+        # A file shorter than a calendar, or without one of its indicators, was written before the catalog had them.
+        behind = stored is None or any(len(stored.get(i, [])) < len(calendar[i]) for i in SeasonalIndicator)
         if behind and self._values:
             try:
                 composites = self._values.composites(division, zone)
@@ -95,13 +96,14 @@ class ZoneStore:
             else:
                 if not composites:
                     return None
-                stored = {i: [values.get(day) for day in calendar[i]] for i, values in composites.items()}
+                # Every indicator is kept, so a zone without data for one is not read again on each request.
+                stored = {i: [composites.get(i, {}).get(day) for day in calendar[i]] for i in SeasonalIndicator}
                 self._files.write(name, json.dumps(stored, separators=(",", ":")).encode())
         if stored is None:
             return None
         series: dict[SeasonalIndicator, Series] = {}
         for indicator in SeasonalIndicator:
-            if indicator in stored:
+            if any(value is not None for value in stored.get(indicator, [])):
                 dates = calendar[indicator]
                 values = stored[indicator][: len(dates)]
                 series[indicator] = (dates, values + [None] * (len(dates) - len(values)))

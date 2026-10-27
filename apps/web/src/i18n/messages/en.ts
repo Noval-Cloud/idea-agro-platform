@@ -148,7 +148,7 @@ export const en = {
           "The water left over from the balance between rain and evapotranspiration, which feeds streams and aquifers.",
         method: "A soil water balance using CHIRPS rainfall and satellite-based evapotranspiration.",
         unit: "mm per year",
-        cadence: "Yearly",
+        cadence: "Every 16 days",
         period: "Since 2003",
         resolution: "500 m",
         mapShows: "Yearly average 2003–2021",
@@ -715,6 +715,7 @@ export const en = {
       ppnaDay: "kg DM/ha per day",
       aparDay: "MJ/m² per day",
       etDay: "mm per day",
+      rhDay: "mm per day",
     },
     cob: {
       title: "Natural grassland within the area",

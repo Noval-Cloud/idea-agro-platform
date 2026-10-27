@@ -205,6 +205,7 @@ export const SeasonalIndicator = {
   ppna: 'ppna',
   apar: 'apar',
   et: 'et',
+  rh: 'rh',
 } as const;
 
 /**
@@ -1009,6 +1010,8 @@ export interface SavedZoneSeasonal {
   apar?: SeasonalSeries | null;
   /** Evapotranspiration, as a daily rate every 8 days. */
   et?: SeasonalSeries | null;
+  /** Water yield: the rain that leaves as runoff or drainage, in 16-day totals. */
+  rh?: SeasonalSeries | null;
 }
 
 /**
@@ -1141,6 +1144,8 @@ export interface ZoneSeasonal {
   apar?: SeasonalSeries | null;
   /** Evapotranspiration, as a daily rate every 8 days. */
   et?: SeasonalSeries | null;
+  /** Water yield: the rain that leaves as runoff or drainage, in 16-day totals. */
+  rh?: SeasonalSeries | null;
 }
 
 export type GetMapThumbnailParams = {
@@ -1988,7 +1993,7 @@ export const getGetZoneSeasonalUrl = (division: Division,
 }
 
 /**
- * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). The response can be cached for an hour.
+ * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.
  * @summary Seasonal series of a zone
  */
 export const getZoneSeasonal = async (division: Division,

@@ -41,7 +41,8 @@ export type Manifest = {
 export const basinGrades = [1, 2, 3, 4, 5] as const;
 export type BasinGrade = (typeof basinGrades)[number];
 export type DivisionId = "seccionales" | `cuencas-${BasinGrade}`;
-export type SeasonalId = "ppna" | "apar" | "et";
+export const seasonalIds = ["ppna", "apar", "et", "rh"] as const;
+export type SeasonalId = (typeof seasonalIds)[number];
 
 export type ZoneProperties = {
   id: string;
@@ -141,8 +142,9 @@ export const loadManifest = () =>
         ]),
       ) as Manifest["indicators"],
       padrones: catalog.padrones as Manifest["padrones"],
+      // An indicator the data job has not published yet has no composites.
       seasonal: Object.fromEntries(
-        Object.entries(catalog.seasonal).map(([id, days]) => [id, (days ?? []).map(band)]),
+        seasonalIds.map((id) => [id, (catalog.seasonal[id] ?? []).map(band)]),
       ) as Manifest["seasonal"],
       divisions: catalog.divisions,
       outline: catalog.outline,
@@ -175,8 +177,8 @@ export const loadZoneSeasonal = (division: DivisionId, id: string) =>
   cached(`seasonal:${division}:${id}`, async (): Promise<ZoneSeasonal> => {
     const response = await api.getZoneSeasonal(division, id);
     if (response.status !== 200) throw new Error(`${response.status} seasonal ${division}/${id}`);
-    const { ppna, apar, et } = response.data;
-    return { ppna: ppna?.values, apar: apar?.values, et: et?.values };
+    const { ppna, apar, et, rh } = response.data;
+    return { ppna: ppna?.values, apar: apar?.values, et: et?.values, rh: rh?.values };
   });
 export type ZoneMeta = { properties: ZoneProperties & { parent?: string }; geometry: PolygonGeometry; bbox: Bounds };
 export const loadZoneMeta = (division: DivisionId, id: string) =>

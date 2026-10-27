@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 from idea_agro_jobs import maps, outlines, saved, values
-from idea_agro_jobs.domain import SEASONAL, Indicator
+from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
 from idea_agro_jobs.sources import PublicFiles, Source
@@ -52,10 +52,9 @@ def main() -> None:
         "--recompute",
         action="append",
         type=Indicator,
-        # The seasonal ones are also cached per zone by the API and the saved zones, which this does not clear.
-        choices=[indicator for indicator in Indicator if indicator not in SEASONAL],
+        choices=list(Indicator),
         default=[],
-        help="for values and maps: compute this indicator again (repeatable), after its asset history is rewritten",
+        help="for values, maps and saved: compute this indicator again (repeatable), after its asset was rewritten",
     )
     parser.add_argument(
         "--outline",
@@ -91,7 +90,12 @@ def main() -> None:
                 recompute=arguments.recompute,
             )
         elif task == "saved":
-            saved.refresh(earth_engine(), files_from(os.environ["SAVED_ZONES"]), only=arguments.outline)
+            saved.refresh(
+                earth_engine(),
+                files_from(os.environ["SAVED_ZONES"]),
+                only=arguments.outline,
+                recompute=arguments.recompute,
+            )
 
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ class SeasonalIndicator(StrEnum):
     PPNA = "ppna"
     APAR = "apar"
     ET = "et"
+    RH = "rh"
 
 
 class Files(Protocol):

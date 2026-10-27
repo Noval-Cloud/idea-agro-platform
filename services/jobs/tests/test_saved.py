@@ -63,6 +63,15 @@ def test_a_series_gets_only_the_composites_it_lacks(files: LocalFiles) -> None:
     assert read(files, "zones/z1/v1-abc.series.json")["ppna"]["2025-02-02"] == 2.0
 
 
+def test_an_indicator_to_recompute_is_computed_again_for_each_outline(files: LocalFiles) -> None:
+    saved.refresh(FakeOutlines(STARTS), files)
+    source = FakeOutlines(STARTS)
+
+    saved.refresh(source, files, recompute=[Indicator.RH])
+
+    assert source.computed == [(Indicator.RH, STARTS)]
+
+
 def test_a_current_series_costs_nothing(files: LocalFiles) -> None:
     saved.refresh(FakeOutlines(STARTS), files)
     source = FakeOutlines(STARTS)

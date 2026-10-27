@@ -19,6 +19,7 @@ SEASONAL_UNITS: dict[SeasonalIndicator, tuple[str, int]] = {
     SeasonalIndicator.PPNA: ("kg DM/ha per 16 days", 16),
     SeasonalIndicator.APAR: ("MJ/m² per 16 days", 16),
     SeasonalIndicator.ET: ("mm per day", 8),
+    SeasonalIndicator.RH: ("mm per 16 days", 16),
 }
 
 CACHE_CONTROL = "public, max-age=3600"
@@ -77,7 +78,7 @@ def get_zone(division: DivisionParam, zone: ZoneParam, services: ServicesDep) ->
     summary="Seasonal series of a zone",
     description=(
         "Every composite of the satellite record for the zone, for each indicator with a seasonal series: "
-        "productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). "
+        "productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). "
         "The response can be cached for an hour."
     ),
     response_model_exclude_none=True,

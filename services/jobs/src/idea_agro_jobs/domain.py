@@ -29,7 +29,7 @@ class Indicator(StrEnum):
 
 
 # Indicators with a value per composite, per year, or a summary of one map.
-SEASONAL = (Indicator.PPNA, Indicator.APAR, Indicator.ET)
+SEASONAL = (Indicator.PPNA, Indicator.APAR, Indicator.ET, Indicator.RH)
 YEARLY = (Indicator.PPNA, Indicator.APAR, Indicator.ET, Indicator.RH, Indicator.IOSE, Indicator.COB)
 SUMMARIZED = (Indicator.COMPN, Indicator.DIVTFE, Indicator.CSUE, Indicator.AHPPN)
 

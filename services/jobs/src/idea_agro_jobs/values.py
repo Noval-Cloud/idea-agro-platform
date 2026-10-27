@@ -17,8 +17,12 @@ log = logging.getLogger(__name__)
 CATALOG = "catalog.json"
 # Periods computed at once: what one Earth Engine request handles for every zone of a division.
 CHUNK = 100
-# A seasonal indicator whose latest composite started longer ago than this has stopped arriving.
-STALE_AFTER = timedelta(days=45)
+# A seasonal indicator whose latest composite started longer ago than this has stopped arriving. RH's rain (CHIRPS)
+# arrives about a month late, and its script is run by hand.
+STALE_AFTER = {Indicator.RH: timedelta(days=90)}
+STALE_DEFAULT = timedelta(days=45)
+# The API's cache of each zone's seasonal series; a missing file is read again from BigQuery.
+SERIES_CACHE = "series/"
 
 
 def values_file(division: Division, indicator: Indicator) -> str:
@@ -72,18 +76,30 @@ def calendars(stored: dict[tuple[Division, Indicator], set[Period]]) -> dict[str
     return calendar
 
 
+def stale_after(indicator: str) -> timedelta:
+    return STALE_AFTER.get(Indicator(indicator), STALE_DEFAULT)
+
+
 def stale(calendar: dict[str, list[str]], today: date) -> list[str]:
-    """The seasonal indicators with no composite started within `STALE_AFTER` of `today`."""
-    return [i for i, starts in calendar.items() if not starts or today - date.fromisoformat(starts[-1]) > STALE_AFTER]
+    """The seasonal indicators with no composite started within `stale_after` of `today`."""
+    return [
+        i for i, starts in calendar.items() if not starts or today - date.fromisoformat(starts[-1]) > stale_after(i)
+    ]
 
 
 def refresh(
     source: Source, store: ValueStore, files: Files, today: date | None = None, recompute: Iterable[Indicator] = ()
 ) -> None:
     """Adds what is missing; an indicator to `recompute`, whose asset history was rewritten, loses its values first."""
+    recompute = list(recompute)
     for indicator in recompute:
         store.remove(indicator)
         log.info("%s: stored values removed, to compute again", indicator)
+    if any(indicator in SEASONAL for indicator in recompute):
+        cached = files.names(SERIES_CACHE)
+        for name in cached:
+            files.delete(name)
+        log.info("%d zone series dropped from the API's cache", len(cached))
     composites = store.stored(Table.COMPOSITES)
     years = store.stored(Table.YEARS)
     summaries = store.stored(Table.SUMMARIES)
@@ -123,4 +139,5 @@ def refresh(
     # An error alerts by email (the jobs README says how).
     for indicator in stale(calendar, today or date.today()):
         latest = calendar[indicator][-1] if calendar[indicator] else "none"
-        log.error("%s: no new composite for over %d days; the latest starts %s", indicator, STALE_AFTER.days, latest)
+        days = stale_after(indicator).days
+        log.error("%s: no new composite for over %d days; the latest starts %s", indicator, days, latest)
