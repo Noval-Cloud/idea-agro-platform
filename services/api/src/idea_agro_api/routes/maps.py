@@ -31,6 +31,25 @@ def get_map_thumbnail(
 
 
 @router.get(
+    "/v1/maps/{indicator}/preview",
+    summary="A picture of an indicator's latest map",
+    description=(
+        "The latest map, at the catalog's `lite_size`, in the website's colors for a light or a dark page, and "
+        "transparent where there is no value. Cacheable for a day."
+    ),
+    response_class=Response,
+    responses=IMAGE | problems(404, 422),
+)
+def get_map_preview(
+    indicator: IndicatorParam,
+    services: ServicesDep,
+    theme: Annotated[Theme, Query(description="For a light or a dark page.")] = Theme.LIGHT,
+) -> Response:
+    name = public_data.preview(indicator, theme)
+    return stored(services, name, "image/webp", f"{indicator} has no preview.", IMAGE_SECONDS)
+
+
+@router.get(
     "/v1/maps/{indicator}/{period}",
     summary="An indicator's map of a period",
     description=(

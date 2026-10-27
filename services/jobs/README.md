@@ -34,7 +34,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 ## Maps
 
-`idea-agro-jobs maps` draws each indicator's map of every year it does not have yet (or its only map), and the layer picker's thumbnails of the latest. With `--recompute <indicator>`, it draws all of that indicator's maps again, with a new range.
+`idea-agro-jobs maps` draws each indicator's map of every year it does not have yet (or its only map), and, from the latest, the layer picker's thumbnails and the previews the Indicators page shows (`maps/previews/`, colored for light and dark, transparent where there is no value). With `--recompute <indicator>`, it draws all of that indicator's maps again, with a new range.
 
 - **Images:** grayscale over the catalog's frame (Web Mercator, 1600 pixels wide, and 800 for the light copy), transparent where there is no value; the website colors them. Continuous maps are compressed WebP; classes and the no-data mask stay lossless.
 - **Range:** a continuous map's gray spans the 2nd percentile of its lowest year to the 98th of its highest, kept fixed once in the catalog, so a time-lapse shows change rather than rescaled images.

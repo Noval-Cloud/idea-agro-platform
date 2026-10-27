@@ -95,6 +95,7 @@ The API serves the public data from `ZONES_SOURCE`, a bucket (`gs://<project>-zo
 | `padrones/index.json`, `<department>.geojson` | The parcel numbers of each department, and its parcels                 |
 | `maps/<indicator>/[lite/]<period>.webp`       | An indicator's map of a year (or `static`), full or light              |
 | `maps/thumbnails/<indicator>-<theme>.webp`    | A small picture of each indicator's map                                |
+| `maps/previews/<indicator>-<theme>.webp`      | Each indicator's latest map, colored for a page                        |
 
 The data jobs (`services/jobs`) write it, and keep every zone's values in BigQuery. The series files are a cache of BigQuery that the API keeps itself:
 

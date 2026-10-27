@@ -23,6 +23,7 @@ import {
 import mapStats from "@/data/snapshot/map-stats.json";
 import landcover from "@/data/snapshot/landcover.json";
 import { familyBackground } from "@/design/family-classes";
+import { apiUrl, getGetMapPreviewUrl, setApiBaseUrl } from "@idea-agro/api-client";
 
 interface Props {
   locale: Locale;
@@ -43,6 +44,10 @@ const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
 
 const maps = import.meta.glob<{ default: ImageMetadata }>("/src/assets/maps/*.webp", { eager: true });
 const mapImage = (name: string) => maps[`/src/assets/maps/${name}.webp`]?.default;
+// Each indicator's latest map, as the data job colors it for a light or a dark page, at the catalog's `lite_size`.
+setApiBaseUrl(import.meta.env.PUBLIC_API_URL ?? "http://localhost:8080");
+const preview = (id: IndicatorId, theme: "light" | "dark") => apiUrl(getGetMapPreviewUrl(id, { theme }));
+const PREVIEW = { width: 800, height: 882 };
 
 const yearRange = (start: number) =>
   t("indicators.yearRange", { from: String(start), to: String(start + 1).slice(-2) });
@@ -157,8 +162,6 @@ const initial: IndicatorId = "ppna";
             const format = fixed(config.digits);
             const family = config.family;
             const ramp = Array.from({ length: 7 }, (_, i) => `var(--ia-viz-${family}-${i + 1})`).join(", ");
-            const light = mapImage(`${id}-light`);
-            const dark = mapImage(`${id}-dark`);
             const name = item(id, "longName");
             const summary = t("indicators.fields.chartFor", { name });
             return (
@@ -253,17 +256,23 @@ const initial: IndicatorId = "ppna";
                         })}
                       </div>
                     ) : (
-                      light &&
-                      dark && (
-                        <ThemedImage
-                          light={light}
-                          dark={dark}
-                          widths={[360, 480, 600, 720, 960]}
-                          sizes={`${minWidth("lg")} 30vw, ${minWidth("md")} 42vw, 85vw`}
+                      <picture>
+                        <source
+                          data-theme-dark
+                          media="(prefers-color-scheme: dark)"
+                          type="image/webp"
+                          srcset={preview(id, "dark")}
+                        />
+                        <img
+                          src={preview(id, "light")}
                           alt={t("indicators.mapAlt", { name })}
+                          width={PREVIEW.width}
+                          height={PREVIEW.height}
+                          loading="lazy"
+                          decoding="async"
                           class="h-auto w-full"
                         />
-                      )
+                      </picture>
                     )}
                     <figcaption class="mt-4">
                       {id === "cob" ? (

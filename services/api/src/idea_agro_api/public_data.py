@@ -69,6 +69,10 @@ def thumbnail(indicator: Indicator, theme: Theme) -> str:
     return f"maps/thumbnails/{indicator}-{theme}.webp"
 
 
+def preview(indicator: Indicator, theme: Theme) -> str:
+    return f"maps/previews/{indicator}-{theme}.webp"
+
+
 class PublicData:
     """Reads the public files, keeping the small ones that every page asks for in memory for a while."""
 

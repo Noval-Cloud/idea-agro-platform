@@ -1155,6 +1155,13 @@ export type GetMapThumbnailParams = {
 theme?: Theme;
 };
 
+export type GetMapPreviewParams = {
+/**
+ * For a light or a dark page.
+ */
+theme?: Theme;
+};
+
 export type GetMapParams = {
 /**
  * Full or light.
@@ -2221,6 +2228,147 @@ export function useGetMapThumbnail<TData = Awaited<ReturnType<typeof getMapThumb
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetMapThumbnailQueryOptions(indicator,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getMapPreviewResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getMapPreviewResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getMapPreviewResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getMapPreviewResponseSuccess = (getMapPreviewResponse200) & {
+  headers: Headers;
+};
+export type getMapPreviewResponseError = (getMapPreviewResponse404 | getMapPreviewResponse422) & {
+  headers: Headers;
+};
+
+export type getMapPreviewResponse = (getMapPreviewResponseSuccess | getMapPreviewResponseError)
+
+export const getGetMapPreviewUrl = (indicator: Indicator,
+    params?: GetMapPreviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/maps/${indicator}/preview?${stringifiedParams}` : `/v1/maps/${indicator}/preview`
+}
+
+/**
+ * The latest map, at the catalog's `lite_size`, in the website's colors for a light or a dark page, and transparent where there is no value. Cacheable for a day.
+ * @summary A picture of an indicator's latest map
+ */
+export const getMapPreview = async (indicator: Indicator,
+    params?: GetMapPreviewParams, options?: Parameters<typeof apiFetch>[1]): Promise<getMapPreviewResponse> => {
+
+  return apiFetch<getMapPreviewResponse>(getGetMapPreviewUrl(indicator,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMapPreviewQueryKey = (indicator: Indicator,
+    params?: GetMapPreviewParams,) => {
+    return [
+    `/v1/maps/${indicator}/preview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMapPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getMapPreview>>, TError = Problem>(indicator: Indicator,
+    params?: GetMapPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMapPreviewQueryKey(indicator,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMapPreview>>> = ({ signal }) => getMapPreview(indicator,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: indicator !== null && indicator !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMapPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getMapPreview>>>
+export type GetMapPreviewQueryError = Problem
+
+
+export function useGetMapPreview<TData = Awaited<ReturnType<typeof getMapPreview>>, TError = Problem>(
+ indicator: Indicator,
+    params: undefined |  GetMapPreviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMapPreview>>,
+          TError,
+          Awaited<ReturnType<typeof getMapPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMapPreview<TData = Awaited<ReturnType<typeof getMapPreview>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMapPreview>>,
+          TError,
+          Awaited<ReturnType<typeof getMapPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMapPreview<TData = Awaited<ReturnType<typeof getMapPreview>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A picture of an indicator's latest map
+ */
+
+export function useGetMapPreview<TData = Awaited<ReturnType<typeof getMapPreview>>, TError = Problem>(
+ indicator: Indicator,
+    params?: GetMapPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMapPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMapPreviewQueryOptions(indicator,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

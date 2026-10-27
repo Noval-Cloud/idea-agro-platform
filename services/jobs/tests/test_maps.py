@@ -84,6 +84,10 @@ def test_a_run_draws_every_map_once_with_its_light_copy_and_thumbnails(files: Lo
     assert size(files, "maps/ppna/lite/2024.webp") == (80, 88)
     assert size(files, "maps/csue/static.webp") == (160, 176)
     assert size(files, "maps/thumbnails/rh-dark.webp") == (160, 120)
+    # The preview keeps the light map's size, and no color where there is no value.
+    preview = Image.open(io.BytesIO(files.read("maps/previews/ppna-light.webp") or b""))
+    assert preview.size == (80, 88)
+    assert preview.getchannel("A").getpixel((79, 40)) == 0
     catalog = read(files, "catalog.json")
     assert catalog["seasonal"] == {"ppna": []}
     assert catalog["size"] == [160, 176]

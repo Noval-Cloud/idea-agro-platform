@@ -239,6 +239,21 @@ export const GetMapThumbnailResponse = zod.unknown()
 
 
 /**
+ * The latest map, at the catalog's `lite_size`, in the website's colors for a light or a dark page, and transparent where there is no value. Cacheable for a day.
+ * @summary A picture of an indicator's latest map
+ */
+export const GetMapPreviewParams = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
+})
+
+export const GetMapPreviewQueryParams = zod.object({
+  "theme": zod.enum(['light', 'dark']).optional().describe('For a light or a dark page.')
+})
+
+export const GetMapPreviewResponse = zod.unknown()
+
+
+/**
  * A grayscale image of the indicator over the catalog's `bounds`, in Web Mercator: gray levels stand for values between the indicator's `min` and `max`, and transparency for no data. `full` is the catalog's `size`, `lite` its `lite_size`. Cacheable for a day.
  * @summary An indicator's map of a period
  */
