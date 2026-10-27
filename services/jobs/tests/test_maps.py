@@ -109,6 +109,17 @@ def test_a_run_draws_only_new_years(files: LocalFiles) -> None:
     assert {year for _, year, _, _ in source.drawn} == {2024}
 
 
+def test_a_missing_preview_is_written_without_drawing_again(files: LocalFiles) -> None:
+    maps.refresh(FakeMaps([2023]), files, {"light": THEME, "dark": THEME})
+    files.delete("maps/previews/ppna-dark.webp")
+    source = FakeMaps([2023])
+
+    maps.refresh(source, files, {"light": THEME, "dark": THEME})
+
+    assert source.drawn == []
+    assert files.exists("maps/previews/ppna-dark.webp")
+
+
 def test_an_indicator_to_recompute_is_drawn_again_with_a_new_range(files: LocalFiles) -> None:
     maps.refresh(FakeMaps([2023]), files, {"light": THEME, "dark": THEME})
     source = FakeMaps([2023])
