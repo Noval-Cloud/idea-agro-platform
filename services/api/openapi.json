@@ -5541,10 +5541,11 @@
           "cuencas-2",
           "cuencas-3",
           "cuencas-4",
-          "cuencas-5"
+          "cuencas-5",
+          "uruguay"
         ],
         "title": "Division",
-        "description": "A predefined division of Uruguay into zones."
+        "description": "A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`."
       },
       "DivisionItem": {
         "properties": {

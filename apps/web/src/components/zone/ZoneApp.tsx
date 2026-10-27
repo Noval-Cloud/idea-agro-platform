@@ -20,7 +20,7 @@ import XYChart, { type ChartSeries } from "@/components/charts/react/XYChart";
 import { monthTicks } from "@/components/charts/month-ticks";
 import { niceTicks } from "@/components/charts/scale";
 import {
-  isDivision,
+  isZoneDivision,
   loadHistogramStats,
   loadManifest,
   loadPadrones,
@@ -87,7 +87,7 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
   const year = Number.isInteger(yearParam) && yearParam > 1900 ? yearParam : null;
   const d = params.get("d");
   const id = params.get("id");
-  if (d && id && isDivision(d)) return { target: { kind: "division", division: d, id }, indicator, year };
+  if (d && id && isZoneDivision(d)) return { target: { kind: "division", division: d, id }, indicator, year };
   const padron = params.get("padron")?.split(":");
   if (padron?.length === 2 && /^\d+$/.test(padron[1]))
     return { target: { kind: "padron", department: padron[0], padron: Number(padron[1]) }, indicator, year };
@@ -188,14 +188,21 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
         (meta) => {
           const p = meta.properties;
           const grade = target.division.startsWith("cuencas-") ? target.division.slice(-1) : null;
+          const country = target.division === "uruguay";
           done({
             target,
-            kind: grade ? t("explorer.zone.kinds.cuencas", { grade }) : t("explorer.zone.kinds.seccionales"),
-            title: grade
-              ? p.name || (grade === "5" ? t("explorer.zone.subbasin", { code: p.id }) : p.id)
-              : t("explorer.zone.seccional", { department: p.dept ?? "", number: p.section ?? "" }),
-            subtitle: grade ? (grade === "5" ? p.parent : undefined) : p.name,
-            department: grade ? undefined : p.dept,
+            kind: country
+              ? t("explorer.zone.kinds.country")
+              : grade
+                ? t("explorer.zone.kinds.cuencas", { grade })
+                : t("explorer.zone.kinds.seccionales"),
+            title: country
+              ? p.name || "Uruguay"
+              : grade
+                ? p.name || (grade === "5" ? t("explorer.zone.subbasin", { code: p.id }) : p.id)
+                : t("explorer.zone.seccional", { department: p.dept ?? "", number: p.section ?? "" }),
+            subtitle: country ? undefined : grade ? (grade === "5" ? p.parent : undefined) : p.name,
+            department: grade || country ? undefined : p.dept,
             areaKm2: p.areaKm2,
             geometry: meta.geometry,
           });

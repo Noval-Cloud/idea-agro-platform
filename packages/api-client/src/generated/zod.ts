@@ -94,7 +94,7 @@ export const getZoneIndexResponseBboxMax = 4;
 
 
 export const GetZoneIndexResponseItem = zod.object({
-  "division": zod.union([zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),zod.literal("department")]),
+  "division": zod.union([zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),zod.literal("department")]),
   "id": zod.string(),
   "label": zod.string(),
   "detail": zod.union([zod.string(),zod.null()]).optional(),
@@ -108,7 +108,7 @@ export const GetZoneIndexResponse = zod.array(GetZoneIndexResponseItem)
  * @summary A division's zones
  */
 export const GetDivisionZonesParams = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.')
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('The division.')
 })
 
 export const GetDivisionZonesResponse = zod.unknown()
@@ -119,7 +119,7 @@ export const GetDivisionZonesResponse = zod.unknown()
  * @summary An indicator's values in every zone of a division
  */
 export const GetDivisionValuesParams = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('The division.'),
   "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
 })
 
@@ -140,7 +140,7 @@ export const getZonePathZoneRegExp = new RegExp('^[0-9]{1,8}$');
 
 
 export const GetZoneParams = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('The division.'),
   "zone": zod.string().regex(getZonePathZoneRegExp).describe('The zone\'s id within its division.')
 })
 
@@ -190,12 +190,12 @@ export const getZoneSeasonalPathZoneRegExp = new RegExp('^[0-9]{1,8}$');
 
 
 export const GetZoneSeasonalParams = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('The division.'),
   "zone": zod.string().regex(getZoneSeasonalPathZoneRegExp).describe('The zone\'s id within its division.')
 })
 
 export const GetZoneSeasonalResponse = zod.object({
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('The division the zone belongs to.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('The division the zone belongs to.'),
   "zone": zod.string().describe('The zone\'s id within its division.'),
   "ppna": zod.union([zod.object({
   "unit": zod.string().describe('Unit of every value.'),
@@ -901,7 +901,7 @@ export const CreateProjectResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(createProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -963,7 +963,7 @@ export const GetProjectResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(getProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -1037,7 +1037,7 @@ export const ChangeProjectResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(changeProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -1092,7 +1092,7 @@ export const AddProjectItemBody = zod.union([zod.object({
   "zone_id": zod.uuid().describe('The saved zone\'s id.')
 }).describe('A zone of your library.'),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(addProjectItemBodyTwoZoneIdRegExp).describe('The zone\'s id in its division.')
 }).describe('A zone of a predefined division.'),zod.object({
   "kind": zod.literal("padron").meta({ title: 'Kind' }),
@@ -1130,7 +1130,7 @@ export const AddProjectItemResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(addProjectItemResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -1221,7 +1221,7 @@ export const ShareProjectResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(shareProjectResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -1296,7 +1296,7 @@ export const ResendInvitationResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(resendInvitationResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({
@@ -1604,7 +1604,7 @@ export const AcceptInvitationResponse = zod.object({
 }).describe('A zone of your library. Its outline is at `/v1/saved-zones/{id}/geometry`.'),zod.null()]).describe('The saved zone, or null if it was deleted meanwhile.')
 }),zod.object({
   "kind": zod.literal("division").meta({ title: 'Kind' }),
-  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5']).describe('A predefined division of Uruguay into zones.'),
+  "division": zod.enum(['seccionales', 'cuencas-1', 'cuencas-2', 'cuencas-3', 'cuencas-4', 'cuencas-5', 'uruguay']).describe('A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.'),
   "zone_id": zod.string().regex(acceptInvitationResponseItemsItemTwoZoneIdRegExp).describe('The zone\'s id in its division.'),
   "id": zod.string().describe('The item\'s id in the project, used to remove it.')
 }),zod.object({

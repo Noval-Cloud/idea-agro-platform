@@ -38,9 +38,11 @@ class PublicFiles:
         # One division's series at a time: the task asks for them division by division.
         self._series: tuple[Division, dict[str, dict[str, list[float | None]]]] | None = None
 
-    def _json(self, name: str) -> Any:
+    def _json(self, name: str, default: Any = None) -> Any:
         content = self._files.read(name)
         if content is None:
+            if default is not None:
+                return default
             raise FileNotFoundError(name)
         return json.loads(content)
 
@@ -57,7 +59,9 @@ class PublicFiles:
 
     def _division_series(self, division: Division) -> dict[str, dict[str, list[float | None]]]:
         if self._series is None or self._series[0] != division:
-            features = cast(list[dict[str, Any]], self._json(f"divisions/{division}.geojson")["features"])
+            # A division the prototype did not have has no files, and so no values.
+            empty: dict[str, list[Any]] = {"features": []}
+            features = cast(list[dict[str, Any]], self._json(f"divisions/{division}.geojson", empty)["features"])
             zones = [str(f["properties"]["id"]) for f in features]
 
             def read(zone: str) -> bytes | None:
@@ -77,7 +81,7 @@ class PublicFiles:
         }
 
     def _values(self, division: Division, indicator: Indicator) -> dict[str, Any]:
-        return cast(dict[str, Any], self._json(f"values/{division}/{indicator}.json"))
+        return cast(dict[str, Any], self._json(f"values/{division}/{indicator}.json", {"years": [], "values": {}}))
 
     def year_values(self, division: Division, indicator: Indicator, years: list[int]) -> ZoneValues:
         file = self._values(division, indicator)

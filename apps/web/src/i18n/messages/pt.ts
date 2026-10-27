@@ -596,6 +596,7 @@ export const pt = {
     zone: {
       kinds: {
         seccionales: "Seccional policial",
+        country: "País",
         cuencas: "Bacia de nível {grade}",
         padrones: "Padrón rural",
         saved: "Zona salva",

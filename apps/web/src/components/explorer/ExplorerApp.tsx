@@ -13,6 +13,7 @@ import RegionBar from "./RegionBar";
 import ZoneCard, { type ZoneSummary } from "./ZoneCard";
 import { IndicatorThumbnail, LayersMenu, MapButtons } from "./MapControls";
 import {
+  isDivision,
   loadManifest,
   loadPadrones,
   loadSeriesStats,
@@ -217,7 +218,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     if (!manifest || !divisionZones || prefetched.current) return;
     prefetched.current = true;
     if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
-    const others = (Object.keys(manifest.divisions) as DivisionId[]).filter((d) => d !== division);
+    const others = Object.keys(manifest.divisions).filter((d): d is DivisionId => isDivision(d) && d !== division);
     const next = () => {
       const other = others.shift();
       if (other) void loadZones(other).then(later, later);

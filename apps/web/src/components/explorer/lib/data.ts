@@ -40,7 +40,8 @@ export type Manifest = {
 /** Predefined divisions with precomputed indicators. */
 export const basinGrades = [1, 2, 3, 4, 5] as const;
 export type BasinGrade = (typeof basinGrades)[number];
-export type DivisionId = "seccionales" | `cuencas-${BasinGrade}`;
+/** `uruguay` is the whole country as one zone; it has a zone page, but no layer on the map. */
+export type DivisionId = "seccionales" | `cuencas-${BasinGrade}` | "uruguay";
 export const seasonalIds = ["ppna", "apar", "et", "rh"] as const;
 export type SeasonalId = (typeof seasonalIds)[number];
 
@@ -224,5 +225,9 @@ export const rasterUrl = (indicator: IndicatorId, year: number | null, lite = fa
 export const thumbnailUrl = (indicator: IndicatorId, theme: "light" | "dark") =>
   api.apiUrl(api.getGetMapThumbnailUrl(indicator, { theme }));
 
+/** A division drawn as regions on the map. */
 export const isDivision = (value: string): value is DivisionId =>
   value === "seccionales" || /^cuencas-[1-5]$/.test(value);
+
+/** A division whose zones have a zone page. */
+export const isZoneDivision = (value: string): value is DivisionId => isDivision(value) || value === "uruguay";

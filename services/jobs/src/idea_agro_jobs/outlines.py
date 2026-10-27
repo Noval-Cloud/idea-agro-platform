@@ -215,6 +215,8 @@ def shaped_zones(division: Division, features: list[Json], parents: dict[str, st
             properties["name"] = district_name(str(source.get("NOMBRE_1") or source.get("NOMBRE") or "")) or None
             properties["department"] = department_name(str(source["DEPARTAMEN"]))
             properties["section"] = int(source["SECCION"])
+        elif division == Division.URUGUAY:
+            properties["name"] = "Uruguay"
         else:
             properties["name"] = basin_name(str(source.get(asset.name) or "")) if asset.name else None
             properties["name"] = properties["name"] or None
@@ -323,7 +325,9 @@ def refresh(source: OutlineSource, files: Files, force: bool = False) -> None:
         if division == Division.CUENCAS_5:
             parents = {z["properties"]["id"]: z["properties"]["name"] or "" for z in zones[Division.CUENCAS_4]}
         zones[division] = shaped_zones(division, source.zones(division), parents)
-        index += index_entries(division, zones[division])
+        # The explorer has no kind of region for the whole country.
+        if division != Division.URUGUAY:
+            index += index_entries(division, zones[division])
         written.append((f"divisions/{division}.geojson", collection(zones[division])))
         for zone in zones[division]:
             detail = {"properties": zone["properties"], "geometry": zone["geometry"], "bbox": bbox(zone["geometry"])}

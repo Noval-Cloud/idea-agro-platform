@@ -46,6 +46,8 @@ class FakeOutlines:
             return [zone(square(-54, -34), codcuenca=4451.0, nombrec4="Ao. De La Coronilla", area_km2=300.0)]
         if division == Division.CUENCAS_5:
             return [zone(square(-54, -34, 0.05), codcuenca=44510.0, area_km2=115.24)]
+        if division == Division.URUGUAY:
+            return [zone(square(-56, -33, 1), id="1", area_km2=176215.0)]
         return [zone(square(-56, -33, 1), codcuenca=1.0, nombrec1="RIO URUGUAY", nombrec2="", area_km2=9.0)]
 
     def departments(self) -> list[str]:
@@ -135,6 +137,9 @@ def test_a_run_publishes_zones_index_parcels_and_the_catalog(files: LocalFiles) 
         e for e in index if e["division"] == "cuencas-5"
     ).items()
     assert [e["id"] for e in index if e["division"] == "department"] == ["rocha", "salto"]
+    # The whole country is a zone of its own, which the explorer's search does not offer.
+    assert read(files, "divisions/uruguay/1.json")["properties"] == {"id": "1", "name": "Uruguay", "area_km2": 176215.0}
+    assert not [e for e in index if e["division"] == "uruguay"]
     parcels = read(files, "padrones/tacuarembo.geojson")["features"]
     assert [p["properties"] for p in parcels] == [{"padron": 50049, "area_ha": 551.3}]
     assert parcels[0]["geometry"]["coordinates"][0][0] == [-54.12346, -33.5]
@@ -142,6 +147,7 @@ def test_a_run_publishes_zones_index_parcels_and_the_catalog(files: LocalFiles) 
     catalog = read(files, "catalog.json")
     assert catalog["seasonal"] == {"ppna": []}
     assert catalog["divisions"]["cuencas-5"] == 1
+    assert catalog["divisions"]["uruguay"] == 1
     assert catalog["padrones"]["tacuarembo"] == {
         "name": "Tacuarembó",
         "count": 1,

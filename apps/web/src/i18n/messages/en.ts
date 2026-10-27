@@ -598,6 +598,7 @@ export const en = {
     zone: {
       kinds: {
         seccionales: "Police district",
+        country: "Country",
         cuencas: "Grade {grade} basin",
         padrones: "Rural parcel",
         saved: "Saved area",

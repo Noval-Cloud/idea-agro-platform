@@ -9,7 +9,7 @@ from google.cloud import storage  # pyright: ignore[reportMissingTypeStubs]
 
 
 class Division(StrEnum):
-    """A predefined division of Uruguay into zones."""
+    """A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`."""
 
     SECCIONALES = "seccionales"
     CUENCAS_1 = "cuencas-1"
@@ -17,6 +17,7 @@ class Division(StrEnum):
     CUENCAS_3 = "cuencas-3"
     CUENCAS_4 = "cuencas-4"
     CUENCAS_5 = "cuencas-5"
+    URUGUAY = "uruguay"
 
 
 class Department(StrEnum):

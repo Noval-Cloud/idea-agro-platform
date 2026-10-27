@@ -40,8 +40,11 @@ class DivisionAsset:
     name: str | None
     # How far, in meters, the map's outlines may stray from the zones'.
     max_error: int
+    # The id of the one zone an undivided asset makes.
+    whole: str | None = None
 
 
+COUNTRY = "general/limite_oficial_rou_km2"
 DIVISIONS = {
     Division.SECCIONALES: DivisionAsset("Seccionales_Policiales", "CODIGOSECC", None, 60),
     Division.CUENCAS_1: DivisionAsset("cuencas/Cuencas_G1", "codcuenca", "nombrec1", 250),
@@ -49,9 +52,9 @@ DIVISIONS = {
     Division.CUENCAS_3: DivisionAsset("cuencas/Cuencas_G3", "codcuenca", "nombrec3", 100),
     Division.CUENCAS_4: DivisionAsset("cuencas/Cuencas_G4", "codcuenca", "nombrec4", 80),
     Division.CUENCAS_5: DivisionAsset("cuencas/Cuencas_G5", "codcuenca", None, 60),
+    Division.URUGUAY: DivisionAsset(COUNTRY, "id", None, 250, whole="1"),
 }
 PARCELS = "padrones/padrones_ajustado"
-COUNTRY = "general/limite_oficial_rou_km2"
 # The images with a band per composite, and their composites per year.
 COMPOSITED = {
     Indicator.PPNA: ("ppna/ppna-16", 23),
@@ -146,9 +149,16 @@ class EarthEngine:
             self._bands[asset] = cast(list[str], retry(f"bands of {asset}", image.bandNames().getInfo))
         return self._bands[asset]
 
+    @staticmethod
+    def _features(found: DivisionAsset) -> ee.FeatureCollection:
+        features = ee.FeatureCollection(ASSETS + found.asset)
+        if found.whole is None:
+            return features
+        return ee.FeatureCollection([ee.Feature(features.union(100).first()).set(found.id, found.whole)])
+
     def _zones(self, division: Division) -> tuple[ee.FeatureCollection, str]:
         found = DIVISIONS[division]
-        return ee.FeatureCollection(ASSETS + found.asset).select([found.id]), found.id
+        return self._features(found).select([found.id]), found.id
 
     def _reduce(
         self,
@@ -296,7 +306,7 @@ class EarthEngine:
             area = feature.geometry().area(100).divide(1e6)
             return ee.Feature(feature.simplify(found.max_error).set("area_km2", area))
 
-        return self._pages(str(division), ee.FeatureCollection(ASSETS + found.asset).map(simplified), 400)
+        return self._pages(str(division), self._features(found).map(simplified), 400)
 
     def departments(self) -> list[str]:
         """The departments the parcels are filed by, as the asset names them."""
