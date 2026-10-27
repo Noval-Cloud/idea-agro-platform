@@ -463,7 +463,7 @@ export const es = {
       ppna: "Total del año productivo {year}",
       apar: "Total del año productivo {year}",
       et: "Total del año productivo {year}",
-      rh: "Rendimiento del año {year}",
+      rh: "Total del año productivo {year}",
       iose: "Año productivo {year}",
       cob: "Pastizal natural en {year}",
       compn: "Dónde está cada comunidad de pastizal",

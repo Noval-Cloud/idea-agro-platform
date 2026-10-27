@@ -105,6 +105,17 @@ def test_a_run_draws_only_new_years(files: LocalFiles) -> None:
     assert {year for _, year, _, _ in source.drawn} == {2024}
 
 
+def test_an_indicator_to_recompute_is_drawn_again_with_a_new_range(files: LocalFiles) -> None:
+    maps.refresh(FakeMaps([2023]), files, {"light": THEME, "dark": THEME})
+    source = FakeMaps([2023])
+
+    maps.refresh(source, files, {"light": THEME, "dark": THEME}, recompute=[Indicator.PPNA])
+
+    assert source.drawn == [(Indicator.PPNA, 2023, 1.2346, 9.8765)]
+    assert source.ranged == [Indicator.PPNA]
+    assert read(files, "catalog.json")["indicators"]["ppna"]["min"] == 1.2346
+
+
 def test_thumbnails_color_grays_as_the_website_does() -> None:
     ramp = [(0, 0, 0), (128, 128, 128), (255, 255, 255)]
     land, neutral = (1, 1, 1), (2, 2, 2)

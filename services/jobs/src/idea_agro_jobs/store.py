@@ -25,6 +25,10 @@ class ValueStore(Protocol):
 
     def read(self, table: Table, division: Division, indicator: Indicator) -> ZoneValues: ...
 
+    def remove(self, indicator: Indicator) -> None:
+        """Deletes every value of the indicator, in every table."""
+        ...
+
 
 def _cell(period: Period) -> str | int:
     return period.isoformat() if isinstance(period, date) else period
@@ -98,6 +102,10 @@ class BigQueryStore:
         for row in rows:
             values.setdefault(row["zone"], {})[row["period"]] = row["value"]
         return values
+
+    def remove(self, indicator: Indicator) -> None:
+        for table in Table:
+            self._query(f"DELETE FROM `{self._dataset}.{table}` WHERE indicator = @indicator", indicator=indicator)
 
 
 def store_from(target: str) -> ValueStore:

@@ -471,7 +471,7 @@ export const en = {
       ppna: "Total of the productive year {year}",
       apar: "Total of the productive year {year}",
       et: "Total of the productive year {year}",
-      rh: "Yield in {year}",
+      rh: "Total of the productive year {year}",
       iose: "Productive year {year}",
       cob: "Natural grassland in {year}",
       compn: "Where each grassland community grows",

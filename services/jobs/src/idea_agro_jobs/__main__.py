@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 
 from idea_agro_jobs import maps, outlines, saved, values
+from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
 from idea_agro_jobs.sources import PublicFiles, Source
@@ -48,6 +49,14 @@ def main() -> None:
     )
     parser.add_argument("--force", action="store_true", help="publish the outlines even if no asset changed")
     parser.add_argument(
+        "--recompute",
+        action="append",
+        type=Indicator,
+        choices=list(Indicator),
+        default=[],
+        help="for values and maps: compute this indicator again (repeatable), after its asset history is rewritten",
+    )
+    parser.add_argument(
         "--outline",
         action="append",
         help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
@@ -72,9 +81,14 @@ def main() -> None:
             outlines.refresh(earth_engine(), files, force=arguments.force)
         elif task == "values":
             source: Source = earth_engine() if arguments.source == "earth-engine" else PublicFiles(files)
-            values.refresh(source, store_from(os.environ["VALUES_STORE"]), files)
+            values.refresh(source, store_from(os.environ["VALUES_STORE"]), files, recompute=arguments.recompute)
         elif task == "maps":
-            maps.refresh(earth_engine(), files, maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))))
+            maps.refresh(
+                earth_engine(),
+                files,
+                maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))),
+                recompute=arguments.recompute,
+            )
         elif task == "saved":
             saved.refresh(earth_engine(), files_from(os.environ["SAVED_ZONES"]), only=arguments.outline)
 

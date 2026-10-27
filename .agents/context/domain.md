@@ -8,18 +8,18 @@ The reference document is INIA _Serie Técnica_ 266 (2023), _Indicadores de dese
 
 ## Indicators
 
-| Id       | Name                                                    | Short  | Unit                        | Cadence                                       | Period             |
-| :------- | :------------------------------------------------------ | :----- | :-------------------------- | :-------------------------------------------- | :----------------- |
-| `apar`   | Absorbed radiation                                      | APAR   | MJ/m² per year              | Every 16 days                                 | Since 2001         |
-| `ppna`   | Grass productivity (aboveground net primary production) | ANPP   | kg DM/ha per year           | Every 16 days                                 | Since 2001         |
-| `et`     | Evapotranspiration                                      | ET     | mm per year                 | Every 8 days                                  | Since 2001         |
-| `rh`     | Water yield                                             | RH     | mm per year                 | Under review: the yearly series stops in 2021 | 2003–2021          |
-| `cob`    | Land cover                                              | COB    | Hectares per cover type     | Yearly                                        | 1985–2021          |
-| `compn`  | Grassland communities                                   | ComPN  | Hectares per community      | Fixed reference map                           | —                  |
-| `iose`   | Ecosystem service supply index                          | ESPI   | Index from 0 to 1           | Yearly (productive year)                      | 2000–01 to 2021–22 |
-| `divtfe` | Functional diversity                                    | DivTFE | Shannon index (bits)        | Per period                                    | 2017–2019          |
-| `csue`   | Soil conservation                                       | CSUE   | t/ha per year               | Per period                                    | 2017–2019          |
-| `ahppn`  | Human appropriation of net primary production           | HANPP  | % of potential productivity | Per period                                    | 2017–2019          |
+| Id       | Name                                                    | Short  | Unit                        | Cadence                  | Period             |
+| :------- | :------------------------------------------------------ | :----- | :-------------------------- | :----------------------- | :----------------- |
+| `apar`   | Absorbed radiation                                      | APAR   | MJ/m² per year              | Every 16 days            | Since 2001         |
+| `ppna`   | Grass productivity (aboveground net primary production) | ANPP   | kg DM/ha per year           | Every 16 days            | Since 2001         |
+| `et`     | Evapotranspiration                                      | ET     | mm per year                 | Every 8 days             | Since 2001         |
+| `rh`     | Water yield                                             | RH     | mm per year                 | Every 16 days            | Since 2003         |
+| `cob`    | Land cover                                              | COB    | Hectares per cover type     | Yearly                   | 1985–2021          |
+| `compn`  | Grassland communities                                   | ComPN  | Hectares per community      | Fixed reference map      | —                  |
+| `iose`   | Ecosystem service supply index                          | ESPI   | Index from 0 to 1           | Yearly (productive year) | 2000–01 to 2021–22 |
+| `divtfe` | Functional diversity                                    | DivTFE | Shannon index (bits)        | Per period               | 2017–2019          |
+| `csue`   | Soil conservation                                       | CSUE   | t/ha per year               | Per period               | 2017–2019          |
+| `ahppn`  | Human appropriation of net primary production           | HANPP  | % of potential productivity | Per period               | 2017–2019          |
 
 What each one measures:
 

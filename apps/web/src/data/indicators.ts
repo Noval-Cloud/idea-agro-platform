@@ -53,7 +53,7 @@ export const indicators: Record<IndicatorId, Indicator> = {
     references: ["lezama2019", "baeza2010"],
     digits: 0,
   },
-  /** The RH annual asset stores the mean monthly yield; the platform reports it ×12 as mm per year. */
+  /** The landing's snapshot holds RH's former annual asset, the mean monthly yield: ×12 gives mm per year. */
   rh: {
     family: "water",
     group: "environment",
@@ -61,7 +61,7 @@ export const indicators: Record<IndicatorId, Indicator> = {
     references: ["gallego2023"],
     legendFactor: 12,
     digits: 0,
-    yearStyle: "calendar",
+    yearStyle: "productive",
   },
   et: {
     family: "water",

@@ -77,7 +77,13 @@ def stale(calendar: dict[str, list[str]], today: date) -> list[str]:
     return [i for i, starts in calendar.items() if not starts or today - date.fromisoformat(starts[-1]) > STALE_AFTER]
 
 
-def refresh(source: Source, store: ValueStore, files: Files, today: date | None = None) -> None:
+def refresh(
+    source: Source, store: ValueStore, files: Files, today: date | None = None, recompute: Iterable[Indicator] = ()
+) -> None:
+    """Adds what is missing; an indicator to `recompute`, whose asset history was rewritten, loses its values first."""
+    for indicator in recompute:
+        store.remove(indicator)
+        log.info("%s: stored values removed, to compute again", indicator)
     composites = store.stored(Table.COMPOSITES)
     years = store.stored(Table.YEARS)
     summaries = store.stored(Table.SUMMARIES)

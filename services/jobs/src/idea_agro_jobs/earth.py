@@ -2,8 +2,8 @@
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """Earth Engine as a source of the zones' values, computed from the indicator assets as they are.
 
-Each seasonal indicator is one image with a band per composite, named `b<year>-<day of the year>`; the others are
-one image with a band per year, or a single map.
+PPNA, APAR, ET and RH are each one image with a band per composite, named `b<year>-<day of the year>`, and their
+yearly values are the sum over each productive year; the others are one image with a band per year, or a single map.
 """
 
 import logging
@@ -52,8 +52,14 @@ DIVISIONS = {
 }
 PARCELS = "padrones/padrones_ajustado"
 COUNTRY = "general/limite_oficial_rou_km2"
-# The seasonal images and their composites per year.
-SEASONAL = {Indicator.PPNA: ("ppna/ppna-16", 23), Indicator.APAR: ("apar/apar-16", 23), Indicator.ET: ("et/et-8", 46)}
+# The images with a band per composite, and their composites per year.
+COMPOSITED = {
+    Indicator.PPNA: ("ppna/ppna-16", 23),
+    Indicator.APAR: ("apar/apar-16", 23),
+    Indicator.ET: ("et/et-8", 46),
+    Indicator.RH: ("rh/rh-16", 23),
+}
+IOSE = "iose/iose_Historica"
 # Pixel size of each indicator's reductions, in meters.
 SCALE = {Indicator.RH: 1000, Indicator.COMPN: 250}
 COMPOSITE_SCALE = 1000
@@ -161,33 +167,29 @@ class EarthEngine:
         return zone_values(cast(list[dict[str, Any]], result["features"]), id_property, outputs, digits)
 
     def composites(self, indicator: Indicator) -> list[date]:
-        return sorted(band_start(band) for band in self._band_names(ASSETS + SEASONAL[indicator][0]))
+        return sorted(band_start(band) for band in self._band_names(ASSETS + COMPOSITED[indicator][0]))
 
     def years(self, indicator: Indicator) -> list[int]:
-        if indicator in SEASONAL:
-            asset, per_year = SEASONAL[indicator]
+        if indicator in COMPOSITED:
+            asset, per_year = COMPOSITED[indicator]
             return list(complete_years(self._band_names(ASSETS + asset), per_year))
         if indicator == Indicator.COB:
             return band_years(self._band_names(MAPBIOMAS), "classification_")
-        return band_years(self._band_names(ASSETS + self._yearly_asset(indicator)), "b")
-
-    @staticmethod
-    def _yearly_asset(indicator: Indicator) -> str:
-        return {Indicator.RH: "rh/rh_PromedioAnual", Indicator.IOSE: "iose/iose_Historica"}[indicator]
+        return band_years(self._band_names(ASSETS + IOSE), "b")
 
     def composite_values(self, division: Division, indicator: Indicator, starts: list[date]) -> ZoneValues:
-        bands = {band_start(band): band for band in self._band_names(ASSETS + SEASONAL[indicator][0])}
+        bands = {band_start(band): band for band in self._band_names(ASSETS + COMPOSITED[indicator][0])}
         chosen = [bands[start] for start in starts]
         # A reduction of a single band names its output after the reducer.
         outputs: dict[str, Period] = {band if len(chosen) > 1 else "mean": band_start(band) for band in chosen}
-        image = ee.Image(ASSETS + SEASONAL[indicator][0]).select(chosen)
+        image = ee.Image(ASSETS + COMPOSITED[indicator][0]).select(chosen)
         return self._reduce(division, image, ee.Reducer.mean(), COMPOSITE_SCALE, outputs, 2)
 
     def outline_values(
         self, indicator: Indicator, outline: dict[str, Any], starts: list[date]
     ) -> dict[date, float | None]:
         """The mean of each composite in the outline; one too small to hold a pixel takes the pixel at its center."""
-        asset = ASSETS + SEASONAL[indicator][0]
+        asset = ASSETS + COMPOSITED[indicator][0]
         bands = {band_start(band): band for band in self._band_names(asset)}
         chosen = [bands[start] for start in starts]
         region = ee.Geometry(outline)
@@ -221,16 +223,14 @@ class EarthEngine:
         return {band_start(band): None if found.get(band) is None else round(float(found[band]), 2) for band in chosen}
 
     def _year_image(self, indicator: Indicator, year: int) -> ee.Image:
-        if indicator in SEASONAL:
-            asset, per_year = SEASONAL[indicator]
+        if indicator in COMPOSITED:
+            asset, per_year = COMPOSITED[indicator]
             bands = complete_years(self._band_names(ASSETS + asset), per_year)[year]
             total = ee.Image(ASSETS + asset).select(bands).reduce(ee.Reducer.sum())
             # Evapotranspiration is a daily rate over each 8-day composite.
             return total.multiply(8) if indicator == Indicator.ET else total
-        if indicator == Indicator.RH:
-            return ee.Image(ASSETS + "rh/rh_PromedioAnual").select(f"b{year}").multiply(12)
         if indicator == Indicator.IOSE:
-            return ee.Image(ASSETS + "iose/iose_Historica").select(f"b{year}")
+            return ee.Image(ASSETS + IOSE).select(f"b{year}")
         # Grassland cover: the share of the zone's mapped land that is natural grassland.
         classes = ee.Image(MAPBIOMAS).select(f"classification_{year}")
         return classes.eq(12).unmask(0).updateMask(classes.gt(0))

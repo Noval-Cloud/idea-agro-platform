@@ -22,6 +22,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
+- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. It works the same for `maps`: `make jobs-run ENV=dev ARGS="values maps --recompute rh"`.
 
 ## Outlines
 
@@ -33,7 +34,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 ## Maps
 
-`idea-agro-jobs maps` draws each indicator's map of every year it does not have yet (or its only map), and the layer picker's thumbnails of the latest.
+`idea-agro-jobs maps` draws each indicator's map of every year it does not have yet (or its only map), and the layer picker's thumbnails of the latest. With `--recompute <indicator>`, it draws all of that indicator's maps again, with a new range.
 
 - **Images:** grayscale over the catalog's frame (Web Mercator, 1600 pixels wide, and 800 for the light copy), transparent where there is no value; the website colors them. Continuous maps are compressed WebP; classes and the no-data mask stay lossless.
 - **Range:** a continuous map's gray spans the 2nd percentile of its lowest year to the 98th of its highest, kept fixed once in the catalog, so a time-lapse shows change rather than rescaled images.
@@ -57,7 +58,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 | :------------ | :--------------------------------------------------------------------------------------- | :---------------------------------------- |
 | ppna, apar    | `ppna/ppna-16`, `apar/apar-16`                                                           | `b<year>-<day>`, one per 16-day composite |
 | et            | `et/et-8`                                                                                | `b<year>-<day>`, one per 8-day composite  |
-| rh            | `rh/rh_PromedioAnual`                                                                    | `b<year>`                                 |
+| rh            | `rh/rh-16`                                                                               | `b<year>-<day>`, one per 16-day composite |
 | iose          | `iose/iose_Historica`                                                                    | `b<year>`                                 |
 | cob           | `projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1` | `classification_<year>`, class 12         |
 | compn         | `users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal`            | one map of classes 1 to 5                 |
@@ -67,7 +68,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 | The parcels   | `padrones/padrones_ajustado` (`PADRON`, `area_ha`, `NOMDEPTO`)                           | outlines                                  |
 | The country   | `general/limite_oficial_rou_km2`                                                         | the outline the maps are clipped to       |
 
-- **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite; for the others, a year is a band.
+- **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band. rh is read only by year.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).
 - **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Viewer and Service Usage Consumer, and read access to the assets above. Without them a run stops at Earth Engine's error and changes nothing.
 

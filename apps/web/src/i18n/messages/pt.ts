@@ -469,7 +469,7 @@ export const pt = {
       ppna: "Total do ano produtivo {year}",
       apar: "Total do ano produtivo {year}",
       et: "Total do ano produtivo {year}",
-      rh: "Rendimento do ano {year}",
+      rh: "Total do ano produtivo {year}",
       iose: "Ano produtivo {year}",
       cob: "Campo nativo em {year}",
       compn: "Onde está cada comunidade campestre",
