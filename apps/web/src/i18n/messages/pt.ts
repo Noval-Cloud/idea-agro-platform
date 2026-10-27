@@ -147,7 +147,7 @@ export const pt = {
         measures: "A água que sobra do balanço entre chuva e evapotranspiração e que alimenta arroios e aquíferos.",
         method: "Balanço hídrico do solo com a chuva do CHIRPS e a evapotranspiração estimada por satélite.",
         unit: "mm por ano",
-        cadence: "Anual",
+        cadence: "A cada 16 dias",
         period: "Desde 2003",
         resolution: "500 m",
         mapShows: "Média anual 2003–2021",
@@ -713,6 +713,7 @@ export const pt = {
       ppnaDay: "kg MS/ha por dia",
       aparDay: "MJ/m² por dia",
       etDay: "mm por dia",
+      rhDay: "mm por dia",
     },
     cob: {
       title: "Campo nativo dentro da zona",

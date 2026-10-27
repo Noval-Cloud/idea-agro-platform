@@ -50,7 +50,7 @@ class PublicFiles:
         return self._catalog
 
     def composites(self, indicator: Indicator) -> list[date]:
-        return [date.fromisoformat(d) for d in self._read_catalog()["seasonal"][indicator]]
+        return [date.fromisoformat(d) for d in self._read_catalog()["seasonal"].get(indicator, [])]
 
     def years(self, indicator: Indicator) -> list[int]:
         return list(self._read_catalog()["indicators"][indicator]["years"] or [])

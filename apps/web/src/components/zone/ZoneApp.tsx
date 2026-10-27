@@ -29,6 +29,7 @@ import {
   loadZoneMeta,
   loadZoneSeasonal,
   rasterUrl,
+  seasonalIds,
   type DivisionId,
   type Manifest,
   type ZoneGeometry,
@@ -134,10 +135,9 @@ function useData<T>(load: (() => Promise<T>) | null, deps: unknown[]): T | null 
   return value;
 }
 
-const seasonalIds: SeasonalId[] = ["ppna", "apar", "et"];
-const isSeasonal = (id: IndicatorId): id is SeasonalId => (seasonalIds as string[]).includes(id);
-/** 16-day totals (PPNA, APAR) become daily rates; ET composites already are mm per day. */
-const perDay: Record<SeasonalId, number> = { ppna: 16, apar: 16, et: 1 };
+const isSeasonal = (id: IndicatorId): id is SeasonalId => (seasonalIds as readonly string[]).includes(id);
+/** 16-day totals (PPNA, APAR, RH) become daily rates; ET composites already are mm per day. */
+const perDay: Record<SeasonalId, number> = { ppna: 16, apar: 16, et: 1, rh: 16 };
 /** Indicators whose yearly value is a total over the year (drawn as bars); the rest are levels (lines). */
 const totals: IndicatorId[] = ["ppna", "apar", "et", "rh"];
 const familyColor = (id: IndicatorId) => `var(--ia-family-${indicators[id].family})`;
@@ -561,7 +561,7 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             year={year}
             onYear={onYear}
           />
-        ) : target.kind === "saved" && isSeasonal(indicator) ? (
+        ) : target.kind === "saved" && isSeasonal(indicator) && manifest.seasonal[indicator].length ? (
           <SavedSeasonView
             key={indicator}
             manifest={manifest}
@@ -677,7 +677,8 @@ function IndicatorView(props: ViewProps) {
   const { indicator } = props;
   const [view, setView] = useState<"season" | "history">("season");
   const { t } = useI18n();
-  if (isSeasonal(indicator))
+  // An indicator whose composites the data job has not published yet shows only its history.
+  if (isSeasonal(indicator) && props.manifest.seasonal[indicator].length)
     return (
       <>
         <Segmented
@@ -734,7 +735,10 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
   const i18n = useI18n();
   const { t } = i18n;
   const bands = manifest.seasonal[indicator];
-  const per = bands.filter((b) => b.startsWith("b2002-")).length;
+  // Composites per year: as many as the fullest calendar year has.
+  const perYear = new Map<string, number>();
+  for (const b of bands) perYear.set(b.slice(1, 5), (perYear.get(b.slice(1, 5)) ?? 0) + 1);
+  const per = Math.max(0, ...perYear.values());
   const step = per === 23 ? 16 : 8;
   const middle = Math.ceil(per / 2);
   const doys = Array.from({ length: per }, (_, i) => 1 + i * step);
@@ -1270,8 +1274,8 @@ function useSavedSeasonal(zone: Zone): SavedSeasonal {
       );
       if (!live) return;
       if (response.status === 200 && !response.data.computing) {
-        const { ppna, apar, et } = response.data;
-        return setValue({ ppna: ppna?.values, apar: apar?.values, et: et?.values });
+        const { ppna, apar, et, rh } = response.data;
+        return setValue({ ppna: ppna?.values, apar: apar?.values, et: et?.values, rh: rh?.values });
       }
       // A refusal for load or a passing failure is asked again, like a series still being computed.
       if (response.status !== 200 && response.status !== 429 && response.status < 500) return setValue(null);

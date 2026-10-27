@@ -8,6 +8,7 @@ the current outlines' series lack, and deletes the series whose outline is gone.
 import json
 import logging
 import re
+from collections.abc import Iterable
 from datetime import date
 from typing import Any, Protocol, cast
 
@@ -47,17 +48,25 @@ def current(outlines: list[str]) -> list[str]:
     return [outline for outline, match in versions.items() if int(match[2]) == latest[match[1]]]
 
 
-def refresh(source: OutlineSource, files: Files, only: list[str] | None = None) -> None:
-    """Every zone's current outline, or `only` those outlines (the ones the API just wrote)."""
+def refresh(
+    source: OutlineSource, files: Files, only: list[str] | None = None, recompute: Iterable[Indicator] = ()
+) -> None:
+    """Every zone's current outline, or `only` those outlines (the ones the API just wrote).
+
+    An indicator to `recompute`, whose asset history was rewritten, is computed again for each outline.
+    """
+    redone = set(recompute)
     names = files.names(PREFIX)
     outlines = [name for name in names if name.endswith(OUTLINE)]
-    chosen = [outline for outline in outlines if outline in only] if only else current(outlines)
+    # A recomputed indicator reaches earlier versions too, which a restore brings back as they are.
+    chosen = [outline for outline in outlines if outline in only] if only else outlines if redone else current(outlines)
     available = {indicator: source.composites(indicator) for indicator in SEASONAL}
     updated = 0
     for outline in chosen:
         name = series_name(outline)
         content = files.read(name)
         series = cast(Series, json.loads(content)) if content else {}
+        series = {indicator: values for indicator, values in series.items() if indicator not in redone}
         missing = {
             indicator: [start for start in available[indicator] if start.isoformat() not in series.get(indicator, {})]
             for indicator in SEASONAL

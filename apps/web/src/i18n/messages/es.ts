@@ -146,7 +146,7 @@ export const es = {
         measures: "El agua que sobra del balance entre lluvia y evapotranspiración y que alimenta arroyos y acuíferos.",
         method: "Balance hídrico del suelo con la lluvia de CHIRPS y la evapotranspiración estimada por satélite.",
         unit: "mm por año",
-        cadence: "Anual",
+        cadence: "Cada 16 días",
         period: "Desde 2003",
         resolution: "500 m",
         mapShows: "Promedio anual 2003–2021",
@@ -707,6 +707,7 @@ export const es = {
       ppnaDay: "kg MS/ha por día",
       aparDay: "MJ/m² por día",
       etDay: "mm por día",
+      rhDay: "mm por día",
     },
     cob: {
       title: "Pastizal natural dentro de la zona",

@@ -10,11 +10,11 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Tables:** the dataset `zone_values` holds one row per zone, indicator and period:
 
-  | Table        | Period      | Indicators                                         |
-  | :----------- | :---------- | :------------------------------------------------- |
-  | `composites` | `start`     | The seasonal ones (ppna, apar, et), per composite  |
-  | `years`      | `year`      | Those with a value per year                        |
-  | `summaries`  | `statistic` | Those measured once: mean, p25 and p75, or classes |
+  | Table        | Period      | Indicators                                            |
+  | :----------- | :---------- | :---------------------------------------------------- |
+  | `composites` | `start`     | The seasonal ones (ppna, apar, et, rh), per composite |
+  | `years`      | `year`      | Those with a value per year                           |
+  | `summaries`  | `statistic` | Those measured once: mean, p25 and p75, or classes    |
 
   The job is their only writer. A run loads the new rows and merges them, so running it again replaces rows instead of repeating them.
 
@@ -22,7 +22,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
-- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. It is not offered for ppna, apar and et, whose composites the API and the saved zones also keep per zone. It works the same for `maps`: `make jobs-run ENV=dev ARGS="values maps --recompute rh"`.
+- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. For a seasonal one it also drops the API's cached zone series (`series/`), which the API then reads again from BigQuery. `maps` and `saved` take it too: `make jobs-run ENV=dev ARGS="values maps saved --recompute rh"`. It reads Earth Engine, so it is refused with `--source public-files`.
 
 ## Outlines
 
@@ -47,7 +47,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Where:** the API's private bucket (`SAVED_ZONES`). Next to each outline (`zones/<zone>/v<version>-<id>.geojson`) goes the same name ending in `.series.json`: each seasonal indicator's value by composite start. The job may read only under `zones/`, and write only the series there.
 - **What:** the mean of the outline's 250 m pixels for each composite, 100 composites per request; past about 625 km², Earth Engine reads coarser pixels. A zone that holds no pixel takes the one at its center, and a point takes its own.
-- **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along.
+- **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along. `--recompute <indicator>` computes that indicator again for every version, so a restore does not bring back its replaced values.
 - **Failures:** an outline Earth Engine cannot read is logged as an error, which alerts. The others go on, and the next run tries it again.
 
 ## Earth Engine
@@ -68,7 +68,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 | The parcels   | `padrones/padrones_ajustado` (`PADRON`, `area_ha`, `NOMDEPTO`)                           | outlines                                  |
 | The country   | `general/limite_oficial_rou_km2`                                                         | the outline the maps are clipped to       |
 
-- **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band. rh is read only by year.
+- **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).
 - **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Writer, since each map is drawn as a thumbnail created in that project (no asset is written), and Service Usage Consumer, plus read access to the assets above. Without them a run stops at Earth Engine's error and changes nothing.
 
@@ -81,7 +81,7 @@ Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own argumen
 Any error the job or its schedule logs is emailed to `alert_emails` (Terraform), at most once an hour. In Cloud Run the job logs JSON lines, so each entry keeps its severity.
 
 - **A failed run:** the error is in the run's logs. Once the cause is fixed, `make jobs-run` adds whatever the failed run missed.
-- **Data stopped arriving:** a run logs `<indicator>: no new composite for over 45 days` when the latest composite of ppna, apar or et started longer ago than `STALE_AFTER` (`values.py`). The indicators' scripts update those assets outside this repository, so ask whoever runs them.
+- **Data stopped arriving:** a run logs `<indicator>: no new composite for over <days> days` when the latest composite of a seasonal indicator started longer ago than `STALE_AFTER` (`values.py`): 45 days, and 90 for rh, whose rain (CHIRPS) arrives about a month late and whose script is run by hand. The indicators' scripts update those assets outside this repository, so ask whoever runs them.
 - **Not covered:** a schedule that is paused or deleted logs nothing, so it alerts nobody.
 
 ## Running it

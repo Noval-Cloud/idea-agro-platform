@@ -292,7 +292,7 @@
           "Zones"
         ],
         "summary": "Seasonal series of a zone",
-        "description": "Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). The response can be cached for an hour.",
+        "description": "Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.",
         "operationId": "get_zone_seasonal",
         "parameters": [
           {
@@ -7353,6 +7353,17 @@
               }
             ],
             "description": "Evapotranspiration, as a daily rate every 8 days."
+          },
+          "rh": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Water yield: the rain that leaves as runoff or drainage, in 16-day totals."
           }
         },
         "type": "object",
@@ -7386,7 +7397,8 @@
         "enum": [
           "ppna",
           "apar",
-          "et"
+          "et",
+          "rh"
         ],
         "title": "SeasonalIndicator",
         "description": "An indicator with a seasonal series per zone."
@@ -7936,6 +7948,17 @@
               }
             ],
             "description": "Evapotranspiration, as a daily rate every 8 days."
+          },
+          "rh": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonalSeries"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Water yield: the rain that leaves as runoff or drainage, in 16-day totals."
           }
         },
         "type": "object",

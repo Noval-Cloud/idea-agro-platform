@@ -13,7 +13,7 @@ The reference document is INIA _Serie Técnica_ 266 (2023), _Indicadores de dese
 | `apar`   | Absorbed radiation                                      | APAR   | MJ/m² per year              | Every 16 days            | Since 2001         |
 | `ppna`   | Grass productivity (aboveground net primary production) | ANPP   | kg DM/ha per year           | Every 16 days            | Since 2001         |
 | `et`     | Evapotranspiration                                      | ET     | mm per year                 | Every 8 days             | Since 2001         |
-| `rh`     | Water yield                                             | RH     | mm per year                 | Yearly (productive year) | Since 2003         |
+| `rh`     | Water yield                                             | RH     | mm per year                 | Every 16 days            | Since 2003         |
 | `cob`    | Land cover                                              | COB    | Hectares per cover type     | Yearly                   | 1985–2021          |
 | `compn`  | Grassland communities                                   | ComPN  | Hectares per community      | Fixed reference map      | —                  |
 | `iose`   | Ecosystem service supply index                          | ESPI   | Index from 0 to 1           | Yearly (productive year) | 2000–01 to 2021–22 |

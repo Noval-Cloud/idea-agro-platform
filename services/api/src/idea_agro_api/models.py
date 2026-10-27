@@ -53,6 +53,9 @@ class SavedZoneSeasonal(BaseModel):
         default=None, description="Absorbed photosynthetically active radiation, in 16-day totals."
     )
     et: SeasonalSeries | None = Field(default=None, description="Evapotranspiration, as a daily rate every 8 days.")
+    rh: SeasonalSeries | None = Field(
+        default=None, description="Water yield: the rain that leaves as runoff or drainage, in 16-day totals."
+    )
 
 
 class ZoneSeasonal(BaseModel):
@@ -67,6 +70,9 @@ class ZoneSeasonal(BaseModel):
         default=None, description="Absorbed photosynthetically active radiation, in 16-day totals."
     )
     et: SeasonalSeries | None = Field(default=None, description="Evapotranspiration, as a daily rate every 8 days.")
+    rh: SeasonalSeries | None = Field(
+        default=None, description="Water yield: the rain that leaves as runoff or drainage, in 16-day totals."
+    )
 
 
 class Problem(BaseModel):

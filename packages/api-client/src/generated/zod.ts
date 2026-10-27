@@ -183,7 +183,7 @@ export const GetZoneResponse = zod.object({
 
 
 /**
- * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`). The response can be cached for an hour.
+ * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.
  * @summary Seasonal series of a zone
  */
 export const getZoneSeasonalPathZoneRegExp = new RegExp('^[0-9]{1,8}$');
@@ -214,7 +214,13 @@ export const GetZoneSeasonalResponse = zod.object({
   "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
   "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
   "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
-}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.'),
+  "rh": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Water yield: the rain that leaves as runoff or drainage, in 16-day totals.')
 }).describe('The seasonal series of a zone. An indicator without data in the zone is left out.')
 
 
@@ -676,7 +682,13 @@ export const GetSavedZoneSeasonalResponse = zod.object({
   "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
   "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
   "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
-}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.'),
+  "rh": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Water yield: the rain that leaves as runoff or drainage, in 16-day totals.')
 }).describe('The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out.')
 
 
@@ -1508,7 +1520,13 @@ export const GetProjectZoneSeasonalResponse = zod.object({
   "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
   "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
   "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
-}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Evapotranspiration, as a daily rate every 8 days.'),
+  "rh": zod.union([zod.object({
+  "unit": zod.string().describe('Unit of every value.'),
+  "cadence_days": zod.int().describe('Days between the start of two consecutive composites.'),
+  "dates": zod.array(zod.iso.date()).describe('First day of each composite, oldest first.'),
+  "values": zod.array(zod.union([zod.number(),zod.null()])).describe('The zone\'s mean for each date, in the same order as `dates`; null where there is no data.')
+}).describe('One indicator\'s seasonal series in a zone: the zone\'s mean for each composite of the satellite record.'),zod.null()]).optional().describe('Water yield: the rain that leaves as runoff or drainage, in 16-day totals.')
 }).describe('The seasonal series of a saved zone, computed for its current outline. An indicator without data is left out.')
 
 

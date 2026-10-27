@@ -55,7 +55,32 @@ def test_a_missing_or_behind_file_is_built_from_bigquery_and_saved(files: LocalF
     series = ZoneStore(files, values).seasonal(Division.SECCIONALES, "1406")
 
     assert series == {SeasonalIndicator.PPNA: (DAYS, [None, 7.5])}
-    assert stored(files) == {"ppna": [None, 7.5]}
+    assert stored(files) == {"ppna": [None, 7.5], "apar": [], "et": [], "rh": []}
+
+
+def test_a_file_without_an_indicator_of_the_calendar_gains_it(files: LocalFiles) -> None:
+    catalog = {"seasonal": {"ppna": [d.isoformat() for d in DAYS], "rh": [DAYS[0].isoformat()]}}
+    files.write("catalog.json", json.dumps(catalog).encode())
+    files.write(NAME, json.dumps({"ppna": [1.0, 2.0]}).encode())
+    values = FakeValues({SeasonalIndicator.PPNA: {DAYS[0]: 1.0, DAYS[1]: 2.0}, SeasonalIndicator.RH: {DAYS[0]: 9.0}})
+
+    series = ZoneStore(files, values).seasonal(Division.SECCIONALES, "1406")
+
+    assert series == {SeasonalIndicator.PPNA: (DAYS, [1.0, 2.0]), SeasonalIndicator.RH: ([DAYS[0]], [9.0])}
+    assert values.asked == 1
+
+
+def test_an_indicator_without_data_in_the_zone_is_left_out_and_not_asked_again(files: LocalFiles) -> None:
+    values = FakeValues({SeasonalIndicator.PPNA: {DAYS[0]: 1.0, DAYS[1]: 2.0}})
+    store = ZoneStore(files, values)
+    files.write(
+        "catalog.json",
+        json.dumps({"seasonal": {"ppna": [d.isoformat() for d in DAYS], "rh": [DAYS[0].isoformat()]}}).encode(),
+    )
+
+    assert store.seasonal(Division.SECCIONALES, "1406") == {SeasonalIndicator.PPNA: (DAYS, [1.0, 2.0])}
+    store.seasonal(Division.SECCIONALES, "1406")
+    assert values.asked == 1
 
 
 def test_a_zone_bigquery_does_not_know_does_not_exist(files: LocalFiles) -> None:
