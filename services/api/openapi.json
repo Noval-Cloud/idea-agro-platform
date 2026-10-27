@@ -415,6 +415,67 @@
         }
       }
     },
+    "/v1/maps/{indicator}/preview": {
+      "get": {
+        "tags": [
+          "Maps"
+        ],
+        "summary": "A picture of an indicator's latest map",
+        "description": "The latest map, at the catalog's `lite_size`, in the website's colors for a light or a dark page, and transparent where there is no value. Cacheable for a day.",
+        "operationId": "get_map_preview",
+        "parameters": [
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          },
+          {
+            "name": "theme",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Theme",
+              "description": "For a light or a dark page.",
+              "default": "light"
+            },
+            "description": "For a light or a dark page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A WebP image.",
+            "content": {
+              "image/webp": {}
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/maps/{indicator}/{period}": {
       "get": {
         "tags": [

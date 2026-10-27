@@ -18,7 +18,12 @@ FILES: dict[str, Any] = {
     "padrones/index.json": {"rocha": [1, 2, 3]},
     "padrones/rocha.geojson": {"type": "FeatureCollection", "features": []},
 }
-IMAGES = ["maps/ppna/2024.webp", "maps/ppna/lite/2024.webp", "maps/thumbnails/ppna-dark.webp"]
+IMAGES = [
+    "maps/ppna/2024.webp",
+    "maps/ppna/lite/2024.webp",
+    "maps/thumbnails/ppna-dark.webp",
+    "maps/previews/ppna-dark.webp",
+]
 
 
 @pytest.fixture
@@ -64,6 +69,7 @@ def test_public_data_is_served_as_stored(client: TestClient, path: str, name: st
         ("/v1/maps/ppna/2024", "maps/ppna/2024.webp"),
         ("/v1/maps/ppna/2024?size=lite", "maps/ppna/lite/2024.webp"),
         ("/v1/maps/ppna/thumbnail?theme=dark", "maps/thumbnails/ppna-dark.webp"),
+        ("/v1/maps/ppna/preview?theme=dark", "maps/previews/ppna-dark.webp"),
     ],
 )
 def test_map_images_are_served_for_a_day(client: TestClient, path: str, name: str) -> None:

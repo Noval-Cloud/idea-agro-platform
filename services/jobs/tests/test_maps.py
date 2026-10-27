@@ -84,6 +84,10 @@ def test_a_run_draws_every_map_once_with_its_light_copy_and_thumbnails(files: Lo
     assert size(files, "maps/ppna/lite/2024.webp") == (80, 88)
     assert size(files, "maps/csue/static.webp") == (160, 176)
     assert size(files, "maps/thumbnails/rh-dark.webp") == (160, 120)
+    # The preview keeps the light map's size, and no color where there is no value.
+    preview = Image.open(io.BytesIO(files.read("maps/previews/ppna-light.webp") or b""))
+    assert preview.size == (80, 88)
+    assert preview.getchannel("A").getpixel((79, 40)) == 0
     catalog = read(files, "catalog.json")
     assert catalog["seasonal"] == {"ppna": []}
     assert catalog["size"] == [160, 176]
@@ -103,6 +107,17 @@ def test_a_run_draws_only_new_years(files: LocalFiles) -> None:
     maps.refresh(source, files, {"light": THEME, "dark": THEME})
 
     assert {year for _, year, _, _ in source.drawn} == {2024}
+
+
+def test_a_missing_preview_is_written_without_drawing_again(files: LocalFiles) -> None:
+    maps.refresh(FakeMaps([2023]), files, {"light": THEME, "dark": THEME})
+    files.delete("maps/previews/ppna-dark.webp")
+    source = FakeMaps([2023])
+
+    maps.refresh(source, files, {"light": THEME, "dark": THEME})
+
+    assert source.drawn == []
+    assert files.exists("maps/previews/ppna-dark.webp")
 
 
 def test_an_indicator_to_recompute_is_drawn_again_with_a_new_range(files: LocalFiles) -> None:

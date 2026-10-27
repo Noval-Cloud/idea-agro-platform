@@ -1,4 +1,4 @@
-"""The maps task: each indicator's map images, full and light, and the layer picker's thumbnails.
+"""The maps task: each indicator's map images, full and light, the layer picker's thumbnails and the pages' previews.
 
 The images are grayscale over the frame: the website colors them with its palettes, so one file serves light and dark.
 """
@@ -70,6 +70,10 @@ def thumbnail_name(indicator: Indicator, theme: str) -> str:
     return f"maps/thumbnails/{indicator}-{theme}.webp"
 
 
+def preview_name(indicator: Indicator, theme: str) -> str:
+    return f"maps/previews/{indicator}-{theme}.webp"
+
+
 def webp(image: Image.Image, lossless: bool, quality: int) -> bytes:
     buffer = io.BytesIO()
     if lossless:
@@ -105,16 +109,30 @@ def colors(map_kind: Kind, ramp: list[Color], land: Color, neutral: Color) -> It
             yield ramp[half_up((0.35 + found * 0.12) * last)] if found > 0 else land
 
 
-def thumbnail(lite: bytes, indicator: Indicator, theme: Theme) -> bytes:
+def colored(lite: bytes, indicator: Indicator, theme: Theme, framed: bool) -> Image.Image:
+    """The map in the website's colors; `framed` fills where there is no value with the land's color."""
     image = Image.open(io.BytesIO(lite)).convert("RGBA")
     ramp = [rgb(c) for c in cast(list[str], theme["luts"][FAMILIES[indicator]])]
     land, neutral = rgb(theme["chrome"]["land"]), rgb(theme["chrome"]["line-strong"])
     palette = [channel for color in colors(kind(indicator), ramp, land, neutral) for channel in color]
     gray = image.getchannel("R")
     gray.putpalette(palette)
-    colored = Image.new("RGB", image.size, land)
-    colored.paste(gray.convert("RGB"), mask=image.getchannel("A").point([255 if a >= 128 else 0 for a in range(256)]))
-    return webp(ImageOps.fit(colored, THUMBNAIL, Image.Resampling.LANCZOS), False, 80)
+    result = Image.new("RGBA", image.size, (*land, 255) if framed else (0, 0, 0, 0))
+    result.paste(gray.convert("RGB"), mask=image.getchannel("A").point([255 if a >= 128 else 0 for a in range(256)]))
+    return result
+
+
+def thumbnail(lite: bytes, indicator: Indicator, theme: Theme) -> bytes:
+    return webp(
+        ImageOps.fit(colored(lite, indicator, theme, True).convert("RGB"), THUMBNAIL, Image.Resampling.LANCZOS),
+        False,
+        80,
+    )
+
+
+def preview(lite: bytes, indicator: Indicator, theme: Theme) -> bytes:
+    """The latest light map as a picture for pages: in the website's colors, transparent where there is no value."""
+    return webp(colored(lite, indicator, theme, False), False, 80)
 
 
 def refresh(source: MapSource, files: Files, themes: dict[str, Theme], recompute: Iterable[Indicator] = ()) -> None:
@@ -154,11 +172,13 @@ def refresh(source: MapSource, files: Files, themes: dict[str, Theme], recompute
             log.info("maps %s %s: drawn", indicator, period or "static")
 
         latest = periods[-1]
-        if latest in drawn or not all(files.exists(thumbnail_name(indicator, t)) for t in themes):
+        pictures = [name(indicator, t) for name in (thumbnail_name, preview_name) for t in themes]
+        if latest in drawn or not all(files.exists(picture) for picture in pictures):
             lite = files.read(map_name(indicator, latest, lite=True))
             if lite is not None:
                 for name, theme in themes.items():
                     files.write(thumbnail_name(indicator, name), thumbnail(lite, indicator, theme))
+                    files.write(preview_name(indicator, name), preview(lite, indicator, theme))
         indicators[indicator] = entry
 
     sections = {
