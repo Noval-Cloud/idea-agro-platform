@@ -44,6 +44,10 @@ class PublicFiles:
             raise FileNotFoundError(name)
         return json.loads(content)
 
+    def _has(self, division: Division) -> bool:
+        """Whether the public files hold the division: the prototype had no `uruguay`."""
+        return self._files.exists(f"divisions/{division}.geojson")
+
     def _read_catalog(self) -> dict[str, Any]:
         if self._catalog is None:
             self._catalog = cast(dict[str, Any], self._json("catalog.json"))
@@ -69,6 +73,8 @@ class PublicFiles:
         return self._series[1]
 
     def composite_values(self, division: Division, indicator: Indicator, starts: list[date]) -> ZoneValues:
+        if not self._has(division):
+            return {}
         position = {start: i for i, start in enumerate(self.composites(indicator))}
         return {
             zone: {start: series[indicator][position[start]] for start in starts}
@@ -80,6 +86,8 @@ class PublicFiles:
         return cast(dict[str, Any], self._json(f"values/{division}/{indicator}.json"))
 
     def year_values(self, division: Division, indicator: Indicator, years: list[int]) -> ZoneValues:
+        if not self._has(division):
+            return {}
         file = self._values(division, indicator)
         position = {year: i for i, year in enumerate(file["years"])}
         values: ZoneValues = {}
@@ -89,6 +97,8 @@ class PublicFiles:
 
     def summary(self, division: Division, indicator: Indicator) -> ZoneValues:
         values: ZoneValues = {}
+        if not self._has(division):
+            return values
         zones = cast(dict[str, dict[str, float | None] | None], self._values(division, indicator)["values"])
         for zone, statistics in zones.items():
             if statistics:

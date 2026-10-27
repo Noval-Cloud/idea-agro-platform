@@ -76,9 +76,9 @@ export const en = {
       resolution: "Resolution",
       mapShows: "The map shows",
       reference: "References",
-      distributionSummary: "Half of the territory is below {median}. The central 80% runs from {low} to {high}.",
+      distributionSummary: "The country's mean is {mean}. The central half of the land runs from {low} to {high}.",
       chartFor: "Chart of {name}",
-      median: "National median",
+      mean: "National mean",
     },
     items: {
       apar: {
@@ -107,7 +107,7 @@ export const en = {
         cadence: "Yearly",
         period: "1985–2021",
         resolution: "30 m",
-        mapShows: "Natural grassland in 2021",
+        mapShows: "Natural grassland in {year}",
         chartTitle: "Natural grassland, as a share of the country",
         chartUnit: "% of the country",
       },
@@ -151,7 +151,7 @@ export const en = {
         cadence: "Every 16 days",
         period: "Since 2003",
         resolution: "500 m",
-        mapShows: "Yearly average 2003–2021",
+        mapShows: "Total for the {from}–{to} growing year",
         chartTitle: "Water yield of each year",
         chartUnit: "mm per year",
       },
@@ -180,7 +180,7 @@ export const en = {
         cadence: "Yearly",
         period: "2000–01 to 2021–22",
         resolution: "231 m",
-        mapShows: "Productive year 2021–22",
+        mapShows: "Productive year {from}–{to}",
         chartTitle: "Country-wide average index",
         chartUnit: "Index from 0 to 1",
       },
@@ -598,6 +598,7 @@ export const en = {
     zone: {
       kinds: {
         seccionales: "Police district",
+        country: "Country",
         cuencas: "Grade {grade} basin",
         padrones: "Rural parcel",
         saved: "Saved area",
@@ -729,6 +730,7 @@ export const en = {
     },
     range: {
       title: "{indicator}: this area against the other {count}",
+      titleAlone: "{indicator} in this area",
       zone: "This area",
       others: "Other areas (10th to 90th percentile)",
       median: "Median",

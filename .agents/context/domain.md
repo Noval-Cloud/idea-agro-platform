@@ -48,8 +48,9 @@ A zone is any area whose indicator values are shown or computed.
 | Basin (_cuenca_), grades 1 to 5        | Hydrographic basins; grade 1 is the largest and grade 5 the finest | 6 / 47 / 296 / 917 / 1,426 |
 | Rural parcel (_padrón_)                | Cadastral parcel, identified by department and number              | 102,873                    |
 | User zone                              | A polygon a user uploads (KML, GeoJSON, zipped Shapefile) or draws | —                          |
+| Uruguay                                | The whole country, as a single zone                                | 1                          |
 
-Police districts and basins are the **divisions**. Divisions and padrones are **predefined zones**: their geometries live as Earth Engine assets and cannot be edited.
+Police districts, basins and the whole country (`uruguay`, with a zone page but no layer on the map) are the **divisions**. Divisions and padrones are **predefined zones**: their geometries live as Earth Engine assets and cannot be edited.
 
 A **project** groups the zones a user works with. It is private by default. A zone in a project is either a reference to a predefined zone or a geometry of its own. Whatever is drawn outside a chosen project goes to the user's default project.
 

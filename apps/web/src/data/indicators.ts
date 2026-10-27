@@ -13,8 +13,6 @@ export type Indicator = {
   group: IndicatorGroup;
   chart: IndicatorChart;
   references: ReferenceId[];
-  /** Legend unit factor applied to the raster values. */
-  legendFactor?: number;
   /** Decimals shown in legends and figures. */
   digits: number;
   /** How the years of its series are named: July–June productive years or calendar years. */
@@ -53,13 +51,11 @@ export const indicators: Record<IndicatorId, Indicator> = {
     references: ["lezama2019", "baeza2010"],
     digits: 0,
   },
-  /** The landing's snapshot holds RH's former annual asset, the mean monthly yield: ×12 gives mm per year. */
   rh: {
     family: "water",
     group: "environment",
     chart: "annualBars",
     references: ["gallego2023"],
-    legendFactor: 12,
     digits: 0,
     yearStyle: "productive",
   },

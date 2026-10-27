@@ -54,19 +54,19 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 `earth.py` computes what the prototype computed (`apps/web/scripts/prototype-data/extract.mjs`). It reads the assets as they are, selecting only the bands it needs:
 
-| Indicator     | Asset (under `projects/pastizalesrou/assets/` unless the path is complete)               | Bands                                     |
-| :------------ | :--------------------------------------------------------------------------------------- | :---------------------------------------- |
-| ppna, apar    | `ppna/ppna-16`, `apar/apar-16`                                                           | `b<year>-<day>`, one per 16-day composite |
-| et            | `et/et-8`                                                                                | `b<year>-<day>`, one per 8-day composite  |
-| rh            | `rh/rh-16`                                                                               | `b<year>-<day>`, one per 16-day composite |
-| iose          | `iose/iose_Historica`                                                                    | `b<year>`                                 |
-| cob           | `projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1` | `classification_<year>`, class 12         |
-| compn         | `users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal`            | one map of classes 1 to 5                 |
-| divtfe        | `EFT/TFE_17-19`                                                                          | one map of functional types               |
-| csue, ahppn   | `Soil/RUSLE_agricola_17-19`, `AHPPN/AHPPN_17-19_sin0`                                    | one map                                   |
-| The divisions | `Seccionales_Policiales` (id `CODIGOSECC`), `cuencas/Cuencas_G1` to `G5` (`codcuenca`)   | outlines                                  |
-| The parcels   | `padrones/padrones_ajustado` (`PADRON`, `area_ha`, `NOMDEPTO`)                           | outlines                                  |
-| The country   | `general/limite_oficial_rou_km2`                                                         | the outline the maps are clipped to       |
+| Indicator     | Asset (under `projects/pastizalesrou/assets/` unless the path is complete)               | Bands                                                                         |
+| :------------ | :--------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
+| ppna, apar    | `ppna/ppna-16`, `apar/apar-16`                                                           | `b<year>-<day>`, one per 16-day composite                                     |
+| et            | `et/et-8`                                                                                | `b<year>-<day>`, one per 8-day composite                                      |
+| rh            | `rh/rh-16`                                                                               | `b<year>-<day>`, one per 16-day composite                                     |
+| iose          | `iose/iose_Historica`                                                                    | `b<year>`                                                                     |
+| cob           | `projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1` | `classification_<year>`, class 12                                             |
+| compn         | `users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal`            | one map of classes 1 to 5                                                     |
+| divtfe        | `EFT/TFE_17-19`                                                                          | one map of functional types                                                   |
+| csue, ahppn   | `Soil/RUSLE_agricola_17-19`, `AHPPN/AHPPN_17-19_sin0`                                    | one map                                                                       |
+| The divisions | `Seccionales_Policiales` (id `CODIGOSECC`), `cuencas/Cuencas_G1` to `G5` (`codcuenca`)   | outlines                                                                      |
+| The parcels   | `padrones/padrones_ajustado` (`PADRON`, `area_ha`, `NOMDEPTO`)                           | outlines                                                                      |
+| The country   | `general/limite_oficial_rou_km2`                                                         | the outline the maps are clipped to, and the division `uruguay`, one zone `1` |
 
 - **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).

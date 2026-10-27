@@ -5,8 +5,10 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type Dispatch,
   type KeyboardEvent,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import type { Department } from "@idea-agro/api-client";
 import { ArrowLeft, Download, LoaderCircle } from "lucide-react";
@@ -21,6 +23,7 @@ import { monthTicks } from "@/components/charts/month-ticks";
 import { niceTicks } from "@/components/charts/scale";
 import {
   isDivision,
+  isZoneDivision,
   loadHistogramStats,
   loadManifest,
   loadPadrones,
@@ -37,6 +40,7 @@ import {
   type SeasonalId,
 } from "@/components/explorer/lib/data";
 import { areaKm2 } from "@/components/explorer/lib/geo";
+import { compare, readYears, slots, writeYears, type Compared } from "./years";
 import {
   createAppTranslator,
   I18nContext,
@@ -79,20 +83,32 @@ type Zone = {
   access?: { own: boolean; editable: boolean };
 };
 
-function readTarget(search: string): { target: Target | null; indicator: IndicatorId; year: number | null } {
+function readTarget(search: string): {
+  target: Target | null;
+  indicator: IndicatorId;
+  year: number | null;
+  compared: Compared[];
+  map: number | null;
+} {
   const params = new URLSearchParams(search);
   const ind = params.get("ind") as IndicatorId | null;
   const indicator = ind && indicatorIds.includes(ind) ? ind : "ppna";
-  const yearParam = Number(params.get("year"));
-  const year = Number.isInteger(yearParam) && yearParam > 1900 ? yearParam : null;
+  const { main: year, compared, map } = readYears(params);
   const d = params.get("d");
   const id = params.get("id");
-  if (d && id && isDivision(d)) return { target: { kind: "division", division: d, id }, indicator, year };
+  if (d && id && isZoneDivision(d))
+    return { target: { kind: "division", division: d, id }, indicator, year, compared, map };
   const padron = params.get("padron")?.split(":");
   if (padron?.length === 2 && /^\d+$/.test(padron[1]))
-    return { target: { kind: "padron", department: padron[0], padron: Number(padron[1]) }, indicator, year };
+    return {
+      target: { kind: "padron", department: padron[0], padron: Number(padron[1]) },
+      indicator,
+      year,
+      compared,
+      map,
+    };
   const custom = params.get("custom");
-  if (custom) return { target: { kind: "custom", key: custom }, indicator, year };
+  if (custom) return { target: { kind: "custom", key: custom }, indicator, year, compared, map };
   const saved = params.get("saved");
   // Ids are UUIDs; anything else would end up in an API path.
   const project = params.get("project");
@@ -101,8 +117,10 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
       target: { kind: "saved", id: saved, ...(project && UUID.test(project) ? { project } : {}) },
       indicator,
       year,
+      compared,
+      map,
     };
-  return { target: null, indicator, year };
+  return { target: null, indicator, year, compared, map };
 }
 
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -163,6 +181,8 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
   const [indicator, setIndicator] = useState<IndicatorId>("ppna");
   const [year, setYear] = useState<number | null>(null);
+  const [compared, setCompared] = useState<Compared[]>([]);
+  const [mapYear, setMapYear] = useState<number | null>(null);
   const [zone, setZone] = useState<Zone | null | undefined>(undefined);
   const [signedOut, setSignedOut] = useState(false);
   const manifest = useData(() => loadManifest(), []);
@@ -172,6 +192,8 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
     setTarget(read.target);
     setIndicator(read.indicator);
     setYear(read.year);
+    setCompared(read.compared);
+    setMapYear(read.map);
   }, []);
 
   useEffect(() => {
@@ -188,14 +210,21 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
         (meta) => {
           const p = meta.properties;
           const grade = target.division.startsWith("cuencas-") ? target.division.slice(-1) : null;
+          const country = target.division === "uruguay";
           done({
             target,
-            kind: grade ? t("explorer.zone.kinds.cuencas", { grade }) : t("explorer.zone.kinds.seccionales"),
-            title: grade
-              ? p.name || (grade === "5" ? t("explorer.zone.subbasin", { code: p.id }) : p.id)
-              : t("explorer.zone.seccional", { department: p.dept ?? "", number: p.section ?? "" }),
-            subtitle: grade ? (grade === "5" ? p.parent : undefined) : p.name,
-            department: grade ? undefined : p.dept,
+            kind: country
+              ? t("explorer.zone.kinds.country")
+              : grade
+                ? t("explorer.zone.kinds.cuencas", { grade })
+                : t("explorer.zone.kinds.seccionales"),
+            title: country
+              ? (p.name ?? p.id)
+              : grade
+                ? p.name || (grade === "5" ? t("explorer.zone.subbasin", { code: p.id }) : p.id)
+                : t("explorer.zone.seccional", { department: p.dept ?? "", number: p.section ?? "" }),
+            subtitle: country ? undefined : grade ? (grade === "5" ? p.parent : undefined) : p.name,
+            department: grade || country ? undefined : p.dept,
             areaKm2: p.areaKm2,
             geometry: meta.geometry,
           });
@@ -284,16 +313,17 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
     if (target === undefined) return;
     const params = new URLSearchParams(location.search);
     params.set("ind", indicator);
-    if (year === null) params.delete("year");
-    else params.set("year", String(year));
+    writeYears(params, { main: year, compared, map: mapYear });
     history.replaceState(history.state, "", `${location.pathname}?${params}`);
-  }, [indicator, year, target]);
+  }, [indicator, year, compared, mapYear, target]);
 
   const mapHref = (() => {
     if (!target) return explorePath;
     const params = new URLSearchParams({ ind: indicator });
-    if (year !== null) params.set("year", String(year));
-    if (target.kind === "division") {
+    // The map returns to the year it was showing; else the main one.
+    const shown = mapYear ?? year;
+    if (shown !== null) params.set("year", String(shown));
+    if (target.kind === "division" && isDivision(target.division)) {
       params.set("zone", `${target.division}:${target.id}`);
       if (target.division.startsWith("cuencas-")) {
         params.set("reg", "cuencas");
@@ -386,14 +416,17 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                       {t("zone.outline.edit")}
                     </a>
                   )}
-                  {zone.target.kind !== "custom" && (zone.target.kind !== "saved" || zone.access?.own) && (
-                    <AddToProject
-                      t={t}
-                      item={projectItem(zone.target)}
-                      projectsPath={projectsPath}
-                      signInPath={signInPath}
-                    />
-                  )}
+                  {zone.target.kind !== "custom" &&
+                    (zone.target.kind !== "saved" || zone.access?.own) &&
+                    // The whole country has no layer on the map, where projects show their zones.
+                    (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
+                      <AddToProject
+                        t={t}
+                        item={projectItem(zone.target)}
+                        projectsPath={projectsPath}
+                        signInPath={signInPath}
+                      />
+                    )}
                 </div>
                 {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
                 <a
@@ -427,7 +460,15 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
             </aside>
             <div className="min-w-0 lg:col-span-9 lg:col-start-4">
               {manifest ? (
-                <IndicatorPanel manifest={manifest} zone={zone} indicator={indicator} year={year} onYear={setYear} />
+                <IndicatorPanel
+                  manifest={manifest}
+                  zone={zone}
+                  indicator={indicator}
+                  year={year}
+                  onYear={setYear}
+                  compared={compared}
+                  onCompared={setCompared}
+                />
               ) : (
                 // Same footprint as the panel while the manifest loads.
                 <div className="min-h-120" />
@@ -535,15 +576,22 @@ function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIn
   );
 }
 
-interface PanelProps {
+/** The productive-year view's years, kept by the page so they stay when the indicator changes. */
+interface YearProps {
+  /** The main year; null is the current one. */
+  year: number | null;
+  onYear: (year: number | null) => void;
+  compared: Compared[];
+  onCompared: Dispatch<SetStateAction<Compared[]>>;
+}
+
+interface PanelProps extends YearProps {
   manifest: Manifest;
   zone: Zone;
   indicator: IndicatorId;
-  year: number | null;
-  onYear: (year: number | null) => void;
 }
 
-function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps) {
+function IndicatorPanel({ manifest, zone, indicator, year, onYear, compared, onCompared }: PanelProps) {
   const target = zone.target;
   // Loaded here, outside the views each indicator remounts, so switching indicators does not ask again.
   const saved = useSavedSeasonal(zone);
@@ -560,6 +608,8 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             indicator={indicator}
             year={year}
             onYear={onYear}
+            compared={compared}
+            onCompared={onCompared}
           />
         ) : target.kind === "saved" && isSeasonal(indicator) && manifest.seasonal[indicator].length ? (
           <SavedSeasonView
@@ -569,6 +619,8 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             indicator={indicator}
             year={year}
             onYear={onYear}
+            compared={compared}
+            onCompared={onCompared}
             series={saved}
           />
         ) : (
@@ -630,14 +682,12 @@ function About({ indicator }: { indicator: IndicatorId }) {
   );
 }
 
-interface ViewProps {
+interface ViewProps extends YearProps {
   manifest: Manifest;
   division: DivisionId;
   id: string;
   title: string;
   indicator: IndicatorId;
-  year: number | null;
-  onYear: (year: number | null) => void;
 }
 
 /** A two-way switch built on native radios (arrow keys, one tab stop). */
@@ -719,19 +769,17 @@ function DivisionSeasonView(props: ViewProps & { indicator: SeasonalId }) {
   return <SeasonView {...props} series={series} file={`${division}-${id}`} />;
 }
 
-interface SeasonProps {
+interface SeasonProps extends YearProps {
   manifest: Manifest;
   title: string;
   indicator: SeasonalId;
-  year: number | null;
-  onYear: (year: number | null) => void;
   /** Aligned with `manifest.seasonal`; `undefined` while loading, `null` on failure. */
   series: ZoneSeasonal | null | undefined;
   /** Names the downloaded CSV. */
   file: string;
 }
 
-function SeasonView({ manifest, title, indicator, year, onYear, series, file }: SeasonProps) {
+function SeasonView({ manifest, title, indicator, year, onYear, compared, onCompared, series, file }: SeasonProps) {
   const i18n = useI18n();
   const { t } = i18n;
   const bands = manifest.seasonal[indicator];
@@ -763,8 +811,6 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [series, indicator, bands]);
 
-  // Up to two more years beside the chosen one; each keeps its colour while shown.
-  const [compared, setCompared] = useState<{ year: number; slot: 1 | 2 }[]>([]);
   const [showMean, setShowMean] = useState(true);
   const [showRange, setShowRange] = useState(true);
 
@@ -773,6 +819,7 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
   const latest = all[all.length - 1];
   // A year starts in July: years without July (the first one) are left out; the latest may be in progress.
   const years = all.filter((y) => byYear.get(y)?.[0] !== null || y === latest);
+  // The current year unless another one was chosen.
   const chosen = year !== null && years.includes(year) ? year : (latest ?? null);
 
   if (series === undefined) return <p className="text-sm text-ink-muted">{t("zone.loading")}</p>;
@@ -801,7 +848,8 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
   const monthName = new Intl.DateTimeFormat(intl, { month: "short", timeZone: "UTC" });
   const format = (v: number) => i18n.number(v, 1);
   const family = indicators[indicator].family as keyof typeof compareFamilies;
-  const others = compared.filter((c) => c.year !== chosen && byYear.has(c.year));
+  const drawn = (y: number) => y !== chosen && years.includes(y);
+  const others = compared.filter((c) => drawn(c.year));
   const compareColor = (slot: 1 | 2) => `var(--ia-viz-compare-${compareFamilies[family]}-${slot})`;
   const chartSeries: ChartSeries[] = [
     ...(showMean
@@ -852,17 +900,13 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
         chosenColor={familyColor(indicator)}
         onChoose={(y) => {
           // The chosen year is never also a compared one.
-          setCompared((now) => now.filter((c) => c.year !== y));
-          onYear(y);
+          onCompared((now) => now.filter((c) => c.year !== y));
+          onYear(y === latest ? null : y);
         }}
         compared={others.map((c) => ({ year: c.year, color: compareColor(c.slot) }))}
-        limit={2}
-        onCompare={(y) =>
-          setCompared((now) =>
-            [...now, { year: y, slot: now.some((c) => c.slot === 1) ? (2 as const) : (1 as const) }].slice(0, 2),
-          )
-        }
-        onUncompare={(y) => setCompared((now) => now.filter((c) => c.year !== y))}
+        limit={slots.length}
+        onCompare={(y) => onCompared((now) => compare(now, y, drawn))}
+        onUncompare={(y) => onCompared((now) => now.filter((c) => c.year !== y))}
         mean={showMean}
         onMean={setShowMean}
         range={showRange}
@@ -1128,6 +1172,8 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
     .map((v) => v?.mean)
     .filter((v): v is number => v !== null && v !== undefined)
     .sort((a, b) => a - b);
+  // A division of one zone (the whole country) has no other zones to compare with.
+  const alone = all.length < 2;
   const q = (p: number) => all[Math.min(all.length - 1, Math.max(0, Math.round(p * (all.length - 1))))];
   // A few extreme zones would flatten everyone else: the axis spans the 2nd to 98th percentile,
   // stretched to include this zone.
@@ -1147,14 +1193,20 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
     [t("zone.range.value"), value],
     [`${t("zone.range.spread")} (${i18n.percent(0.25)})`, spread?.[0] ?? null],
     [`${t("zone.range.spread")} (${i18n.percent(0.75)})`, spread?.[1] ?? null],
-    [`${t("zone.range.others")} (${i18n.percent(0.1)})`, q(0.1)],
-    [t("zone.range.median"), q(0.5)],
-    [`${t("zone.range.others")} (${i18n.percent(0.9)})`, q(0.9)],
+    ...(alone
+      ? []
+      : ([
+          [`${t("zone.range.others")} (${i18n.percent(0.1)})`, q(0.1)],
+          [t("zone.range.median"), q(0.5)],
+          [`${t("zone.range.others")} (${i18n.percent(0.9)})`, q(0.9)],
+        ] as [string, number][])),
   ];
   return (
     <>
       <h2 className="text-base font-semibold text-ink">
-        {t("zone.range.title", { indicator: name, count: i18n.number(count - 1) })}
+        {alone
+          ? t("zone.range.titleAlone", { indicator: name })
+          : t("zone.range.title", { indicator: name, count: i18n.number(count - 1) })}
       </h2>
       <p className="mb-10 text-sm text-ink-muted">{unit}</p>
       <figure>
@@ -1164,11 +1216,18 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
           aria-label={`${t("zone.range.value")}: ${format(value)} ${unit}`}
         >
           <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-ink-subtle" />
-          <div
-            className="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill bg-surface-muted"
-            style={{ left: `${x(q(0.1))}%`, width: `${x(q(0.9)) - x(q(0.1))}%` }}
-          />
-          <div className="absolute top-1/2 h-4 w-px -translate-y-1/2 bg-ink-subtle" style={{ left: `${x(q(0.5))}%` }} />
+          {!alone && (
+            <>
+              <div
+                className="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill bg-surface-muted"
+                style={{ left: `${x(q(0.1))}%`, width: `${x(q(0.9)) - x(q(0.1))}%` }}
+              />
+              <div
+                className="absolute top-1/2 h-4 w-px -translate-y-1/2 bg-ink-subtle"
+                style={{ left: `${x(q(0.5))}%` }}
+              />
+            </>
+          )}
           {spread && (
             <div
               className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-pill"
@@ -1199,14 +1258,18 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
           ))}
         </div>
         <figcaption className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-ink-muted">
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-6 rounded-pill bg-surface-muted" aria-hidden="true" />
-            {t("zone.range.others")}
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="h-4 w-px bg-ink-subtle" aria-hidden="true" />
-            {t("zone.range.median")}
-          </span>
+          {!alone && (
+            <>
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-6 rounded-pill bg-surface-muted" aria-hidden="true" />
+                {t("zone.range.others")}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-px bg-ink-subtle" aria-hidden="true" />
+                {t("zone.range.median")}
+              </span>
+            </>
+          )}
           {spread && (
             <span className="flex items-center gap-2">
               <span
@@ -1299,6 +1362,8 @@ function SavedSeasonView({
   indicator,
   year,
   onYear,
+  compared,
+  onCompared,
   series,
 }: PanelProps & { indicator: SeasonalId; series: SavedSeasonal }) {
   const { t } = useI18n();
@@ -1336,6 +1401,8 @@ function SavedSeasonView({
           indicator={indicator}
           year={year}
           onYear={onYear}
+          compared={compared}
+          onCompared={onCompared}
           series={series}
           file={zone.title}
         />
