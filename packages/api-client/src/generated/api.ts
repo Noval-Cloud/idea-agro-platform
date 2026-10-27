@@ -209,7 +209,7 @@ export const SeasonalIndicator = {
 } as const;
 
 /**
- * A predefined division of Uruguay into zones.
+ * A predefined division of Uruguay into zones; `uruguay` is the whole country as one zone, `1`.
  */
 export type Division = typeof Division[keyof typeof Division];
 
@@ -221,6 +221,7 @@ export const Division = {
   'cuencas-3': 'cuencas-3',
   'cuencas-4': 'cuencas-4',
   'cuencas-5': 'cuencas-5',
+  uruguay: 'uruguay',
 } as const;
 
 /**

@@ -598,6 +598,7 @@ export const en = {
     zone: {
       kinds: {
         seccionales: "Police district",
+        country: "Country",
         cuencas: "Grade {grade} basin",
         padrones: "Rural parcel",
         saved: "Saved area",
@@ -729,6 +730,7 @@ export const en = {
     },
     range: {
       title: "{indicator}: this area against the other {count}",
+      titleAlone: "{indicator} in this area",
       zone: "This area",
       others: "Other areas (10th to 90th percentile)",
       median: "Median",

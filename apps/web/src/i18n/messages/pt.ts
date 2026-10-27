@@ -596,6 +596,7 @@ export const pt = {
     zone: {
       kinds: {
         seccionales: "Seccional policial",
+        country: "País",
         cuencas: "Bacia de nível {grade}",
         padrones: "Padrón rural",
         saved: "Zona salva",
@@ -727,6 +728,7 @@ export const pt = {
     },
     range: {
       title: "{indicator}: esta zona em relação às outras {count}",
+      titleAlone: "{indicator} nesta zona",
       zone: "Esta zona",
       others: "Outras zonas (de 10 a 90%)",
       median: "Mediana",

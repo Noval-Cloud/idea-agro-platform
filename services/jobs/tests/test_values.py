@@ -125,6 +125,15 @@ def test_the_catalog_lists_only_composites_every_division_has(files: LocalFiles)
     assert values.calendars(store.stored(Table.COMPOSITES))["ppna"] == ["2025-01-01"]
 
 
+def test_a_division_without_composites_yet_does_not_empty_the_catalog(files: LocalFiles) -> None:
+    store = MemoryStore()
+    for division in Division:
+        if division != Division.URUGUAY:
+            store.add(Table.COMPOSITES, division, Indicator.PPNA, {"1": {STARTS[0]: 1.0}})
+
+    assert values.calendars(store.stored(Table.COMPOSITES))["ppna"] == ["2025-01-01"]
+
+
 def test_summaries_are_published_once(files: LocalFiles) -> None:
     store = MemoryStore()
     values.refresh(FakeSource([], []), store, files)
