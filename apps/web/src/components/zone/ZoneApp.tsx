@@ -5,8 +5,10 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type Dispatch,
   type KeyboardEvent,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import type { Department } from "@idea-agro/api-client";
 import { ArrowLeft, Download, LoaderCircle } from "lucide-react";
@@ -79,20 +81,41 @@ type Zone = {
   access?: { own: boolean; editable: boolean };
 };
 
-function readTarget(search: string): { target: Target | null; indicator: IndicatorId; year: number | null } {
+/** How many years a zone's productive-year view compares with its main one. */
+const COMPARED = 2;
+type Slot = 1 | 2;
+/** A year compared in the productive-year view; its slot keeps its colour while it is shown. */
+interface Compared {
+  year: number;
+  slot: Slot;
+}
+
+function readTarget(search: string): {
+  target: Target | null;
+  indicator: IndicatorId;
+  year: number | null;
+  compared: Compared[];
+} {
   const params = new URLSearchParams(search);
   const ind = params.get("ind") as IndicatorId | null;
   const indicator = ind && indicatorIds.includes(ind) ? ind : "ppna";
-  const yearParam = Number(params.get("year"));
-  const year = Number.isInteger(yearParam) && yearParam > 1900 ? yearParam : null;
+  // `main` is a year drawn instead of the current one; `year`, the years compared with it, the explorer's first.
+  const mainParam = Number(params.get("main"));
+  const year = Number.isInteger(mainParam) && mainParam > 1900 ? mainParam : null;
+  const compared = (params.get("year") ?? "")
+    .split(",")
+    .map(Number)
+    .filter((y) => Number.isInteger(y) && y > 1900 && y !== year)
+    .slice(0, COMPARED)
+    .map((y, i) => ({ year: y, slot: (i + 1) as Slot }));
   const d = params.get("d");
   const id = params.get("id");
-  if (d && id && isDivision(d)) return { target: { kind: "division", division: d, id }, indicator, year };
+  if (d && id && isDivision(d)) return { target: { kind: "division", division: d, id }, indicator, year, compared };
   const padron = params.get("padron")?.split(":");
   if (padron?.length === 2 && /^\d+$/.test(padron[1]))
-    return { target: { kind: "padron", department: padron[0], padron: Number(padron[1]) }, indicator, year };
+    return { target: { kind: "padron", department: padron[0], padron: Number(padron[1]) }, indicator, year, compared };
   const custom = params.get("custom");
-  if (custom) return { target: { kind: "custom", key: custom }, indicator, year };
+  if (custom) return { target: { kind: "custom", key: custom }, indicator, year, compared };
   const saved = params.get("saved");
   // Ids are UUIDs; anything else would end up in an API path.
   const project = params.get("project");
@@ -101,8 +124,9 @@ function readTarget(search: string): { target: Target | null; indicator: Indicat
       target: { kind: "saved", id: saved, ...(project && UUID.test(project) ? { project } : {}) },
       indicator,
       year,
+      compared,
     };
-  return { target: null, indicator, year };
+  return { target: null, indicator, year, compared };
 }
 
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -163,6 +187,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
   const [indicator, setIndicator] = useState<IndicatorId>("ppna");
   const [year, setYear] = useState<number | null>(null);
+  const [compared, setCompared] = useState<Compared[]>([]);
   const [zone, setZone] = useState<Zone | null | undefined>(undefined);
   const [signedOut, setSignedOut] = useState(false);
   const manifest = useData(() => loadManifest(), []);
@@ -172,6 +197,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
     setTarget(read.target);
     setIndicator(read.indicator);
     setYear(read.year);
+    setCompared(read.compared);
   }, []);
 
   useEffect(() => {
@@ -284,15 +310,20 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
     if (target === undefined) return;
     const params = new URLSearchParams(location.search);
     params.set("ind", indicator);
-    if (year === null) params.delete("year");
-    else params.set("year", String(year));
+    if (year === null) params.delete("main");
+    else params.set("main", String(year));
+    const years = bySlot(compared).map((c) => c.year);
+    if (years.length) params.set("year", years.join(","));
+    else params.delete("year");
     history.replaceState(history.state, "", `${location.pathname}?${params}`);
-  }, [indicator, year, target]);
+  }, [indicator, year, compared, target]);
 
   const mapHref = (() => {
     if (!target) return explorePath;
     const params = new URLSearchParams({ ind: indicator });
-    if (year !== null) params.set("year", String(year));
+    // The map shows the year compared first, which is the one the explorer sent; else the main one.
+    const mapYear = bySlot(compared)[0]?.year ?? year;
+    if (mapYear !== null) params.set("year", String(mapYear));
     if (target.kind === "division") {
       params.set("zone", `${target.division}:${target.id}`);
       if (target.division.startsWith("cuencas-")) {
@@ -427,7 +458,15 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
             </aside>
             <div className="min-w-0 lg:col-span-9 lg:col-start-4">
               {manifest ? (
-                <IndicatorPanel manifest={manifest} zone={zone} indicator={indicator} year={year} onYear={setYear} />
+                <IndicatorPanel
+                  manifest={manifest}
+                  zone={zone}
+                  indicator={indicator}
+                  year={year}
+                  onYear={setYear}
+                  compared={compared}
+                  onCompared={setCompared}
+                />
               ) : (
                 // Same footprint as the panel while the manifest loads.
                 <div className="min-h-120" />
@@ -535,15 +574,24 @@ function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIn
   );
 }
 
-interface PanelProps {
+/** The productive-year view's years, kept by the page so they stay when the indicator changes. */
+interface YearProps {
+  /** The main year; null is the current one. */
+  year: number | null;
+  onYear: (year: number | null) => void;
+  compared: Compared[];
+  onCompared: Dispatch<SetStateAction<Compared[]>>;
+}
+
+interface PanelProps extends YearProps {
   manifest: Manifest;
   zone: Zone;
   indicator: IndicatorId;
-  year: number | null;
-  onYear: (year: number | null) => void;
 }
 
-function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps) {
+const bySlot = (compared: Compared[]) => [...compared].sort((a, b) => a.slot - b.slot);
+
+function IndicatorPanel({ manifest, zone, indicator, year, onYear, compared, onCompared }: PanelProps) {
   const target = zone.target;
   // Loaded here, outside the views each indicator remounts, so switching indicators does not ask again.
   const saved = useSavedSeasonal(zone);
@@ -560,6 +608,8 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             indicator={indicator}
             year={year}
             onYear={onYear}
+            compared={compared}
+            onCompared={onCompared}
           />
         ) : target.kind === "saved" && isSeasonal(indicator) && manifest.seasonal[indicator].length ? (
           <SavedSeasonView
@@ -569,6 +619,8 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             indicator={indicator}
             year={year}
             onYear={onYear}
+            compared={compared}
+            onCompared={onCompared}
             series={saved}
           />
         ) : (
@@ -630,14 +682,12 @@ function About({ indicator }: { indicator: IndicatorId }) {
   );
 }
 
-interface ViewProps {
+interface ViewProps extends YearProps {
   manifest: Manifest;
   division: DivisionId;
   id: string;
   title: string;
   indicator: IndicatorId;
-  year: number | null;
-  onYear: (year: number | null) => void;
 }
 
 /** A two-way switch built on native radios (arrow keys, one tab stop). */
@@ -719,19 +769,17 @@ function DivisionSeasonView(props: ViewProps & { indicator: SeasonalId }) {
   return <SeasonView {...props} series={series} file={`${division}-${id}`} />;
 }
 
-interface SeasonProps {
+interface SeasonProps extends YearProps {
   manifest: Manifest;
   title: string;
   indicator: SeasonalId;
-  year: number | null;
-  onYear: (year: number | null) => void;
   /** Aligned with `manifest.seasonal`; `undefined` while loading, `null` on failure. */
   series: ZoneSeasonal | null | undefined;
   /** Names the downloaded CSV. */
   file: string;
 }
 
-function SeasonView({ manifest, title, indicator, year, onYear, series, file }: SeasonProps) {
+function SeasonView({ manifest, title, indicator, year, onYear, compared, onCompared, series, file }: SeasonProps) {
   const i18n = useI18n();
   const { t } = i18n;
   const bands = manifest.seasonal[indicator];
@@ -763,8 +811,6 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [series, indicator, bands]);
 
-  // Up to two more years beside the chosen one; each keeps its colour while shown.
-  const [compared, setCompared] = useState<{ year: number; slot: 1 | 2 }[]>([]);
   const [showMean, setShowMean] = useState(true);
   const [showRange, setShowRange] = useState(true);
 
@@ -773,6 +819,7 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
   const latest = all[all.length - 1];
   // A year starts in July: years without July (the first one) are left out; the latest may be in progress.
   const years = all.filter((y) => byYear.get(y)?.[0] !== null || y === latest);
+  // The current year unless another one was chosen.
   const chosen = year !== null && years.includes(year) ? year : (latest ?? null);
 
   if (series === undefined) return <p className="text-sm text-ink-muted">{t("zone.loading")}</p>;
@@ -852,17 +899,17 @@ function SeasonView({ manifest, title, indicator, year, onYear, series, file }: 
         chosenColor={familyColor(indicator)}
         onChoose={(y) => {
           // The chosen year is never also a compared one.
-          setCompared((now) => now.filter((c) => c.year !== y));
-          onYear(y);
+          onCompared((now) => now.filter((c) => c.year !== y));
+          onYear(y === latest ? null : y);
         }}
         compared={others.map((c) => ({ year: c.year, color: compareColor(c.slot) }))}
-        limit={2}
+        limit={COMPARED}
         onCompare={(y) =>
-          setCompared((now) =>
-            [...now, { year: y, slot: now.some((c) => c.slot === 1) ? (2 as const) : (1 as const) }].slice(0, 2),
+          onCompared((now) =>
+            [...now, { year: y, slot: now.some((c) => c.slot === 1) ? (2 as const) : (1 as const) }].slice(0, COMPARED),
           )
         }
-        onUncompare={(y) => setCompared((now) => now.filter((c) => c.year !== y))}
+        onUncompare={(y) => onCompared((now) => now.filter((c) => c.year !== y))}
         mean={showMean}
         onMean={setShowMean}
         range={showRange}
@@ -1299,6 +1346,8 @@ function SavedSeasonView({
   indicator,
   year,
   onYear,
+  compared,
+  onCompared,
   series,
 }: PanelProps & { indicator: SeasonalId; series: SavedSeasonal }) {
   const { t } = useI18n();
@@ -1336,6 +1385,8 @@ function SavedSeasonView({
           indicator={indicator}
           year={year}
           onYear={onYear}
+          compared={compared}
+          onCompared={onCompared}
           series={series}
           file={zone.title}
         />
