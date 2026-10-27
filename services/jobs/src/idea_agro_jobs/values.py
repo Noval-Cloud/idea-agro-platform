@@ -71,7 +71,9 @@ def calendars(stored: dict[tuple[Division, Indicator], set[Period]]) -> dict[str
     """The composites every division has, for each seasonal indicator."""
     calendar: dict[str, list[str]] = {}
     for indicator in SEASONAL:
-        shared = set[Period].intersection(*(stored.get((division, indicator), set()) for division in Division))
+        # A division without any of the indicator's composites yet (a new one) does not hold the others back.
+        held = [found for division in Division if (found := stored.get((division, indicator)))]
+        shared = set[Period].intersection(*held) if held else set[Period]()
         calendar[indicator.value] = [start.isoformat() for start in sorted(cast(Iterable[date], shared))]
     return calendar
 

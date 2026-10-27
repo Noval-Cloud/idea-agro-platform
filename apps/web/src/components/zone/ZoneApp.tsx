@@ -20,6 +20,7 @@ import XYChart, { type ChartSeries } from "@/components/charts/react/XYChart";
 import { monthTicks } from "@/components/charts/month-ticks";
 import { niceTicks } from "@/components/charts/scale";
 import {
+  isDivision,
   isZoneDivision,
   loadHistogramStats,
   loadManifest,
@@ -197,7 +198,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                 ? t("explorer.zone.kinds.cuencas", { grade })
                 : t("explorer.zone.kinds.seccionales"),
             title: country
-              ? p.name || "Uruguay"
+              ? (p.name ?? p.id)
               : grade
                 ? p.name || (grade === "5" ? t("explorer.zone.subbasin", { code: p.id }) : p.id)
                 : t("explorer.zone.seccional", { department: p.dept ?? "", number: p.section ?? "" }),
@@ -300,7 +301,7 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
     if (!target) return explorePath;
     const params = new URLSearchParams({ ind: indicator });
     if (year !== null) params.set("year", String(year));
-    if (target.kind === "division") {
+    if (target.kind === "division" && isDivision(target.division)) {
       params.set("zone", `${target.division}:${target.id}`);
       if (target.division.startsWith("cuencas-")) {
         params.set("reg", "cuencas");
@@ -393,14 +394,17 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
                       {t("zone.outline.edit")}
                     </a>
                   )}
-                  {zone.target.kind !== "custom" && (zone.target.kind !== "saved" || zone.access?.own) && (
-                    <AddToProject
-                      t={t}
-                      item={projectItem(zone.target)}
-                      projectsPath={projectsPath}
-                      signInPath={signInPath}
-                    />
-                  )}
+                  {zone.target.kind !== "custom" &&
+                    (zone.target.kind !== "saved" || zone.access?.own) &&
+                    // The whole country has no layer on the map, where projects show their zones.
+                    (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
+                      <AddToProject
+                        t={t}
+                        item={projectItem(zone.target)}
+                        projectsPath={projectsPath}
+                        signInPath={signInPath}
+                      />
+                    )}
                 </div>
                 {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
                 <a
@@ -1135,6 +1139,8 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
     .map((v) => v?.mean)
     .filter((v): v is number => v !== null && v !== undefined)
     .sort((a, b) => a - b);
+  // A division of one zone (the whole country) has no other zones to compare with.
+  const alone = all.length < 2;
   const q = (p: number) => all[Math.min(all.length - 1, Math.max(0, Math.round(p * (all.length - 1))))];
   // A few extreme zones would flatten everyone else: the axis spans the 2nd to 98th percentile,
   // stretched to include this zone.
@@ -1154,14 +1160,20 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
     [t("zone.range.value"), value],
     [`${t("zone.range.spread")} (${i18n.percent(0.25)})`, spread?.[0] ?? null],
     [`${t("zone.range.spread")} (${i18n.percent(0.75)})`, spread?.[1] ?? null],
-    [`${t("zone.range.others")} (${i18n.percent(0.1)})`, q(0.1)],
-    [t("zone.range.median"), q(0.5)],
-    [`${t("zone.range.others")} (${i18n.percent(0.9)})`, q(0.9)],
+    ...(alone
+      ? []
+      : ([
+          [`${t("zone.range.others")} (${i18n.percent(0.1)})`, q(0.1)],
+          [t("zone.range.median"), q(0.5)],
+          [`${t("zone.range.others")} (${i18n.percent(0.9)})`, q(0.9)],
+        ] as [string, number][])),
   ];
   return (
     <>
       <h2 className="text-base font-semibold text-ink">
-        {t("zone.range.title", { indicator: name, count: i18n.number(count - 1) })}
+        {alone
+          ? t("zone.range.titleAlone", { indicator: name })
+          : t("zone.range.title", { indicator: name, count: i18n.number(count - 1) })}
       </h2>
       <p className="mb-10 text-sm text-ink-muted">{unit}</p>
       <figure>
@@ -1171,11 +1183,18 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
           aria-label={`${t("zone.range.value")}: ${format(value)} ${unit}`}
         >
           <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-ink-subtle" />
-          <div
-            className="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill bg-surface-muted"
-            style={{ left: `${x(q(0.1))}%`, width: `${x(q(0.9)) - x(q(0.1))}%` }}
-          />
-          <div className="absolute top-1/2 h-4 w-px -translate-y-1/2 bg-ink-subtle" style={{ left: `${x(q(0.5))}%` }} />
+          {!alone && (
+            <>
+              <div
+                className="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill bg-surface-muted"
+                style={{ left: `${x(q(0.1))}%`, width: `${x(q(0.9)) - x(q(0.1))}%` }}
+              />
+              <div
+                className="absolute top-1/2 h-4 w-px -translate-y-1/2 bg-ink-subtle"
+                style={{ left: `${x(q(0.5))}%` }}
+              />
+            </>
+          )}
           {spread && (
             <div
               className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-pill"
@@ -1206,14 +1225,18 @@ function RangeView({ division, id, title, indicator, manifest }: ViewProps) {
           ))}
         </div>
         <figcaption className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-ink-muted">
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-6 rounded-pill bg-surface-muted" aria-hidden="true" />
-            {t("zone.range.others")}
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="h-4 w-px bg-ink-subtle" aria-hidden="true" />
-            {t("zone.range.median")}
-          </span>
+          {!alone && (
+            <>
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-6 rounded-pill bg-surface-muted" aria-hidden="true" />
+                {t("zone.range.others")}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-px bg-ink-subtle" aria-hidden="true" />
+                {t("zone.range.median")}
+              </span>
+            </>
+          )}
           {spread && (
             <span className="flex items-center gap-2">
               <span

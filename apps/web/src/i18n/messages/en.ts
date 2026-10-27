@@ -730,6 +730,7 @@ export const en = {
     },
     range: {
       title: "{indicator}: this area against the other {count}",
+      titleAlone: "{indicator} in this area",
       zone: "This area",
       others: "Other areas (10th to 90th percentile)",
       median: "Median",
