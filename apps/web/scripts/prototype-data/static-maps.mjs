@@ -96,4 +96,3 @@ for (const [id, ind] of Object.entries(manifest.indicators)) {
       : (g, t) => lut(family, t)[Math.round((g / 255) * (lut(family, t).length - 1))];
   await render(raster, paint, id);
 }
-
