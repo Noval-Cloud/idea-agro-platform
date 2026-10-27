@@ -4,9 +4,8 @@ import Pause from "@lucide/astro/icons/pause";
 import Play from "@lucide/astro/icons/play";
 import { iconSize } from "@/design/tokens";
 import { createTranslator, localizePath, type Locale } from "@/i18n";
-import landcover from "@/data/snapshot/landcover.json";
 import { sectionals } from "@/data/geo";
-import { ppnaAnnual } from "@/data/series";
+import { grasslandShare, ppnaAnnual } from "@/data/series";
 import Grassland from "./art/Grassland.astro";
 import Field from "./art/Field.astro";
 import Science from "./art/Science.astro";
@@ -26,18 +25,14 @@ const { t } = i18n;
 const path = (p: string) => localizePath(p, locale);
 
 // Natural grassland share of the mapped country, first and last year of MapBiomas Pampa.
-const share = (entry: (typeof landcover.byYear)[number]) => {
-  const km2 = entry.km2 as Record<string, number>;
-  return km2["12"] / Object.values(km2).reduce((a, b) => a + b, 0);
-};
-const first = landcover.byYear[0];
-const last = landcover.byYear[landcover.byYear.length - 1];
+const first = grasslandShare[0];
+const last = grasslandShare[grasslandShare.length - 1];
 
 const scenes = [
   {
     key: "grassland",
     Art: Grassland,
-    values: { now: i18n.percent(share(last)), before: i18n.percent(share(first)) },
+    values: { now: i18n.percent(last.value), before: i18n.percent(first.value) },
     source: t("journey.scenes.grassland.source", { year: last.year }),
     links: [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link") }],
   },

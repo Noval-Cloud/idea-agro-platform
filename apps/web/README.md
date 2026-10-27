@@ -29,7 +29,7 @@ Format, lint and the checks of the whole repository run from the root with `make
 src/
   design/tokens.ts       every visual value; `pnpm tokens` renders it to CSS
   i18n/                  translator and per-locale catalogs
-  data/                  indicator registry, references, series and the GEE snapshot of the landing
+  data/                  indicator registry, references, and the country's series the landing and Indicators pages draw
   components/            site chrome, the landing's story, the explorer and zone islands, ui primitives
   pages/                 one file per route, with its /en/ and /pt/ versions
 scripts/prototype-data/  extraction of the explorer's data from Earth Engine
@@ -53,7 +53,9 @@ Every page carries a Content Security Policy.
 
 ## Data
 
-The explorer and the zone page read everything through the API, with its generated client. `src/components/explorer/lib/data.ts` turns the API's answers into the website's types. Locally, the site calls `PUBLIC_API_URL`, `http://localhost:8080` by default, where `make api-dev` serves the data (see `services/api/README.md`).
+The explorer and the zone page read everything through the API, with its generated client, in the browser. `src/components/explorer/lib/data.ts` turns the API's answers into the website's types. Locally, the site calls `PUBLIC_API_URL`, `http://localhost:8080` by default, where `make api-dev` serves the data (see `services/api/README.md`).
+
+The home and Indicators pages draw the country's series when the site is built. `src/data/series.ts` reads the API's `uruguay` zone when `PUBLIC_API_URL` is an `https` address, and fails the build if it cannot. Without one (checks, local builds) it reads `src/data/national.json`, a copy of the same answers that `node scripts/national.ts` refreshes.
 
 The prototype's data, extracted once from Earth Engine by `scripts/prototype-data/`, lives in `.cache/prototype-data/explorer/`, which git ignores. `make public-data` turns it into what the API serves, until the data jobs regenerate it from Earth Engine.
 

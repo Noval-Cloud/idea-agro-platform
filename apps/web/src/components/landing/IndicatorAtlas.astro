@@ -19,9 +19,11 @@ import {
   rhAnnual,
   seasonalLayout,
   firstYearStart,
+  grasslandShare,
+  communityShares as communities,
+  mapRange,
+  nationalSummary,
 } from "@/data/series";
-import mapStats from "@/data/snapshot/map-stats.json";
-import landcover from "@/data/snapshot/landcover.json";
 import { familyBackground } from "@/design/family-classes";
 
 interface Props {
@@ -50,22 +52,14 @@ const fixed = (digits: number) => (value: number) =>
   i18n.number(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const whole = (value: number) => i18n.number(value, { maximumFractionDigits: 0 });
 
-const mapYears = { from: String(mapStats.productiveYear), to: String(mapStats.productiveYear + 1).slice(-2) };
-const stats = mapStats.stats as Record<string, { p2: number; p10: number; p50: number; p90: number; p98: number }>;
+/** The latest year an indicator's map shows, as the captions name it. */
+const mapYears = (id: IndicatorId) => {
+  const latest = mapRange(id).years?.at(-1);
+  return latest === undefined
+    ? {}
+    : { from: String(latest), to: String(latest + 1).slice(-2), year: String(latest) };
+};
 
-// Land cover: natural grassland (MapBiomas class 12) as a share of the country, per year.
-const grasslandShare = landcover.byYear.map((d) => {
-  const km2 = d.km2 as Record<string, number>;
-  const total = Object.values(km2).reduce((sum, v) => sum + v, 0);
-  return { year: d.year, value: (km2["12"] ?? 0) / total };
-});
-
-// Grassland communities mapped in the raster (class value → catalog key), largest first.
-const communityKm2 = landcover.communitiesKm2 as Record<string, number>;
-const communityTotal = Object.values(communityKm2).reduce((sum, v) => sum + v, 0);
-const communities = Object.entries(communityKm2)
-  .map(([cls, km2]) => ({ cls, share: km2 / communityTotal }))
-  .sort((a, b) => b.share - a.share);
 const communityName = (cls: string) => t("communities.label", { order: t(`communities.${cls}.order` as MessageKey) });
 
 const seasonDates = seasonalLayout.map((p) => compositeDate(lastCompleteYearStart + p.yearOffset, p.doy));
@@ -152,8 +146,8 @@ const initial: IndicatorId = "ppna";
         {
           indicatorIds.map((id) => {
             const config = indicators[id];
-            const stat = stats[id];
-            const factor = config.legendFactor ?? 1;
+            const range = mapRange(id);
+            const spread = config.chart === "range" ? nationalSummary(id as "divtfe" | "csue" | "ahppn") : null;
             const format = fixed(config.digits);
             const family = config.family;
             const ramp = Array.from({ length: 7 }, (_, i) => `var(--ia-viz-${family}-${i + 1})`).join(", ");
@@ -277,7 +271,7 @@ const initial: IndicatorId = "ppna";
                             {t("landcover.otherUses")}
                           </span>
                         </p>
-                      ) : id === "compn" ? null : stat ? (
+                      ) : id === "compn" ? null : range.min !== undefined && range.max !== undefined ? (
                         <>
                           <div
                             class="h-2.5 rounded-xs"
@@ -285,15 +279,15 @@ const initial: IndicatorId = "ppna";
                             aria-hidden="true"
                           />
                           <div class="mt-1.5 flex justify-between text-2xs text-ink-subtle">
-                            <span>{format(stat.p2 * factor)}</span>
+                            <span>{format(range.min)}</span>
                             <span>{item(id, "unit")}</span>
-                            <span>{format(stat.p98 * factor)}</span>
+                            <span>{format(range.max)}</span>
                           </div>
                         </>
                       ) : null}
                       <p class="mt-2 text-xs text-ink-muted">
                         <span class="text-ink-subtle">{t("indicators.fields.mapShows")}: </span>
-                        {t(`indicators.items.${id}.mapShows` as MessageKey, mapYears)}
+                        {t(`indicators.items.${id}.mapShows` as MessageKey, mapYears(id))}
                       </p>
                     </figcaption>
                   </figure>
@@ -312,13 +306,8 @@ const initial: IndicatorId = "ppna";
                         tableLabel={t("a11y.tableView")}
                         xHeader={t("indicators.yearHeader")}
                         valueHeader={item(id, "chartUnit")}
-                        bars={(id === "ppna"
-                          ? ppnaAnnual
-                          : id === "et"
-                            ? etAnnual
-                            : rhAnnual.map((d) => ({ start: d.year, value: d.value }))
-                        ).map((d) => ({
-                          label: id === "rh" ? String(d.start) : yearRange(d.start),
+                        bars={(id === "ppna" ? ppnaAnnual : id === "et" ? etAnnual : rhAnnual).map((d) => ({
+                          label: yearRange(d.start),
                           value: d.value,
                         }))}
                         labelEvery={6}
@@ -385,32 +374,37 @@ const initial: IndicatorId = "ppna";
                         xHeader={t("indicators.yearHeader")}
                       />
                     )}
-                    {config.chart === "range" && stat && (
-                      <>
-                        <RangeStrip
-                          family={family}
-                          p2={stat.p2 * factor}
-                          p10={stat.p10 * factor}
-                          p50={stat.p50 * factor}
-                          p90={stat.p90 * factor}
-                          p98={stat.p98 * factor}
-                          format={format}
-                          medianLabel={t("indicators.fields.median")}
-                          summary={t("indicators.fields.distributionSummary", {
-                            median: format(stat.p50 * factor),
-                            low: format(stat.p10 * factor),
-                            high: format(stat.p90 * factor),
-                          })}
-                        />
-                        <p class="mt-4 text-xs text-ink-muted">
-                          {t("indicators.fields.distributionSummary", {
-                            median: format(stat.p50 * factor),
-                            low: format(stat.p10 * factor),
-                            high: format(stat.p90 * factor),
-                          })}
-                        </p>
-                      </>
-                    )}
+                    {config.chart === "range" &&
+                      spread?.mean != null &&
+                      spread.p25 != null &&
+                      spread.p75 != null &&
+                      range.min !== undefined &&
+                      range.max !== undefined && (
+                        <>
+                          <RangeStrip
+                            family={family}
+                            low={Math.min(range.min, spread.p25)}
+                            from={spread.p25}
+                            middle={spread.mean}
+                            to={spread.p75}
+                            high={Math.max(range.max, spread.p75)}
+                            format={format}
+                            middleLabel={t("indicators.fields.mean")}
+                            summary={t("indicators.fields.distributionSummary", {
+                              mean: format(spread.mean),
+                              low: format(spread.p25),
+                              high: format(spread.p75),
+                            })}
+                          />
+                          <p class="mt-4 text-xs text-ink-muted">
+                            {t("indicators.fields.distributionSummary", {
+                              mean: format(spread.mean),
+                              low: format(spread.p25),
+                              high: format(spread.p75),
+                            })}
+                          </p>
+                        </>
+                      )}
                     {config.chart === "communities" && (
                       <>
                         <ul class="grid gap-3">
