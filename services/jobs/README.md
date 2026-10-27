@@ -22,7 +22,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
-- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. It works the same for `maps`: `make jobs-run ENV=dev ARGS="values maps --recompute rh"`.
+- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. It is not offered for ppna, apar and et, whose composites the API and the saved zones also keep per zone. It works the same for `maps`: `make jobs-run ENV=dev ARGS="values maps --recompute rh"`.
 
 ## Outlines
 

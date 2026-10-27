@@ -175,7 +175,9 @@ class EarthEngine:
             return list(complete_years(self._band_names(ASSETS + asset), per_year))
         if indicator == Indicator.COB:
             return band_years(self._band_names(MAPBIOMAS), "classification_")
-        return band_years(self._band_names(ASSETS + IOSE), "b")
+        if indicator == Indicator.IOSE:
+            return band_years(self._band_names(ASSETS + IOSE), "b")
+        raise ValueError(f"{indicator} has no yearly values")
 
     def composite_values(self, division: Division, indicator: Indicator, starts: list[date]) -> ZoneValues:
         bands = {band_start(band): band for band in self._band_names(ASSETS + COMPOSITED[indicator][0])}
