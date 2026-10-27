@@ -2,7 +2,7 @@
 // so every page shows the same values on the same color scale.
 // Usage: node scripts/prototype-data/static-maps.mjs <web repo>
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 import { resolve } from "node:path";
 
