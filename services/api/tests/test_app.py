@@ -15,11 +15,12 @@ def client(tmp_path: Path) -> TestClient:
         "ppna": ["2001-01-01", "2001-01-17"],
         "apar": ["2001-01-01", "2001-01-17"],
         "et": ["2001-01-01", "2001-01-09"],
+        "rh": ["2001-01-01", "2001-01-17"],
     }
     (tmp_path / "catalog.json").write_text(json.dumps({"seasonal": seasonal}))
     zones = tmp_path / "series" / "seccionales"
     zones.mkdir(parents=True)
-    (zones / "1806.json").write_text(json.dumps({"ppna": [330.3, None], "et": [1.2, 1.4]}))
+    (zones / "1806.json").write_text(json.dumps({"ppna": [330.3, None], "et": [1.2, 1.4], "rh": [None, 4.2]}))
     return TestClient(create_app(services_for_tests(ZoneStore(LocalFiles(tmp_path)))))
 
 
@@ -42,6 +43,12 @@ def test_seasonal_series_carry_their_unit_dates_and_values(client: TestClient) -
             "values": [330.3, None],
         },
         "et": {"unit": "mm per day", "cadence_days": 8, "dates": ["2001-01-01", "2001-01-09"], "values": [1.2, 1.4]},
+        "rh": {
+            "unit": "mm per 16 days",
+            "cadence_days": 16,
+            "dates": ["2001-01-01", "2001-01-17"],
+            "values": [None, 4.2],
+        },
     }
 
 

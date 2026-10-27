@@ -58,7 +58,8 @@ def refresh(
     redone = set(recompute)
     names = files.names(PREFIX)
     outlines = [name for name in names if name.endswith(OUTLINE)]
-    chosen = [outline for outline in outlines if outline in only] if only else current(outlines)
+    # A recomputed indicator reaches earlier versions too, which a restore brings back as they are.
+    chosen = [outline for outline in outlines if outline in only] if only else outlines if redone else current(outlines)
     available = {indicator: source.composites(indicator) for indicator in SEASONAL}
     updated = 0
     for outline in chosen:

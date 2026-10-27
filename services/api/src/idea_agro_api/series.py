@@ -103,8 +103,8 @@ class ZoneStore:
             return None
         series: dict[SeasonalIndicator, Series] = {}
         for indicator in SeasonalIndicator:
-            if any(value is not None for value in stored.get(indicator, [])):
-                dates = calendar[indicator]
-                values = stored[indicator][: len(dates)]
+            dates = calendar[indicator]
+            values = stored.get(indicator, [])[: len(dates)]
+            if any(value is not None for value in values):
                 series[indicator] = (dates, values + [None] * (len(dates) - len(values)))
         return series

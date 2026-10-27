@@ -72,6 +72,16 @@ def test_an_indicator_to_recompute_is_computed_again_for_each_outline(files: Loc
     assert source.computed == [(Indicator.RH, STARTS)]
 
 
+def test_a_recomputed_indicator_reaches_earlier_versions(files: LocalFiles) -> None:
+    files.write("zones/z1/v2-def.geojson", json.dumps(POLYGON).encode())
+    saved.refresh(FakeOutlines(STARTS), files, only=[OUTLINE])
+    source = FakeOutlines(STARTS)
+
+    saved.refresh(source, files, recompute=[Indicator.RH])
+
+    assert len([c for c in source.computed if c[0] == Indicator.RH]) == 2
+
+
 def test_a_current_series_costs_nothing(files: LocalFiles) -> None:
     saved.refresh(FakeOutlines(STARTS), files)
     source = FakeOutlines(STARTS)

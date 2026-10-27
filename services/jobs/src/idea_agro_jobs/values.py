@@ -95,11 +95,6 @@ def refresh(
     for indicator in recompute:
         store.remove(indicator)
         log.info("%s: stored values removed, to compute again", indicator)
-    if any(indicator in SEASONAL for indicator in recompute):
-        cached = files.names(SERIES_CACHE)
-        for name in cached:
-            files.delete(name)
-        log.info("%d zone series dropped from the API's cache", len(cached))
     composites = store.stored(Table.COMPOSITES)
     years = store.stored(Table.YEARS)
     summaries = store.stored(Table.SUMMARIES)
@@ -136,6 +131,12 @@ def refresh(
 
     files.update(CATALOG, with_calendar)
     log.info("catalog: %s", {indicator: len(dates) for indicator, dates in calendar.items()})
+    # Only now: a zone visited during the run could have cached the indicator half computed.
+    if any(indicator in SEASONAL for indicator in recompute):
+        cached = files.names(SERIES_CACHE)
+        for name in cached:
+            files.delete(name)
+        log.info("%d zone series dropped from the API's cache", len(cached))
     # An error alerts by email (the jobs README says how).
     for indicator in stale(calendar, today or date.today()):
         latest = calendar[indicator][-1] if calendar[indicator] else "none"

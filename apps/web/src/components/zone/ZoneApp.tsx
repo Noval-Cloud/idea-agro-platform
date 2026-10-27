@@ -561,7 +561,7 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear }: PanelProps)
             year={year}
             onYear={onYear}
           />
-        ) : target.kind === "saved" && isSeasonal(indicator) ? (
+        ) : target.kind === "saved" && isSeasonal(indicator) && manifest.seasonal[indicator].length ? (
           <SavedSeasonView
             key={indicator}
             manifest={manifest}
@@ -677,7 +677,8 @@ function IndicatorView(props: ViewProps) {
   const { indicator } = props;
   const [view, setView] = useState<"season" | "history">("season");
   const { t } = useI18n();
-  if (isSeasonal(indicator))
+  // An indicator whose composites the data job has not published yet shows only its history.
+  if (isSeasonal(indicator) && props.manifest.seasonal[indicator].length)
     return (
       <>
         <Segmented

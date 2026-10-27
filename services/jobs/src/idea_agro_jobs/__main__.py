@@ -62,6 +62,8 @@ def main() -> None:
         help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
     )
     arguments = parser.parse_args()
+    if arguments.recompute and arguments.source == "public-files":
+        parser.error("--recompute computes from Earth Engine, not from the public files")
 
     handler = logging.StreamHandler()
     # Cloud Run sets CLOUD_RUN_JOB; a local run keeps plain lines.

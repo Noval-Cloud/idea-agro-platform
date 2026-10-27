@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from fakes import FakeSource, MemoryStore
 from idea_agro_jobs import values
-from idea_agro_jobs.domain import SEASONAL, SUMMARIZED, YEARLY, Division, Indicator, Table
+from idea_agro_jobs.domain import SEASONAL, SUMMARIZED, YEARLY, Division, Indicator, Table, ZoneValues
 from idea_agro_jobs.files import LocalFiles
 
 STARTS = [date(2025, 1, 1), date(2025, 1, 17)]
@@ -74,6 +74,14 @@ def test_an_indicator_to_recompute_is_computed_again_from_scratch(files: LocalFi
     source = FakeSource(STARTS, [2023, 2024])
 
     files.write("series/seccionales/1.json", b"{}")
+    compute = source.composite_values
+
+    def visited(division: Division, indicator: Indicator, starts: list[date]) -> ZoneValues:
+        # A zone page opened during the run caches what BigQuery has so far.
+        files.write("series/seccionales/2.json", b"{}")
+        return compute(division, indicator, starts)
+
+    source.composite_values = visited
 
     values.refresh(source, store, files, recompute=[Indicator.RH])
 
