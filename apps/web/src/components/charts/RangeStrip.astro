@@ -2,21 +2,21 @@
 import type { DataFamily } from "@/design/tokens";
 import { linear } from "./scale";
 
-/** Where most of the country sits on an indicator: the central 80 % band and the median. */
+/** Where most of the country sits on an indicator: a band from `from` to `to` and a marked middle, on its range. */
 interface Props {
   family: DataFamily;
-  p2: number;
-  p10: number;
-  p50: number;
-  p90: number;
-  p98: number;
+  low: number;
+  from: number;
+  middle: number;
+  to: number;
+  high: number;
   format: (value: number) => string;
-  medianLabel: string;
+  middleLabel: string;
   summary: string;
 }
 
-const { family, p2, p10, p50, p90, p98, format, medianLabel, summary } = Astro.props;
-const x = linear([p2, p98], [0, 100]);
+const { family, low, from, middle, to, high, format, middleLabel, summary } = Astro.props;
+const x = linear([low, high], [0, 100]);
 const color = `var(--ia-family-${family})`;
 const band = `var(--ia-viz-${family}-3)`;
 ---
@@ -25,12 +25,12 @@ const band = `var(--ia-viz-${family}-3)`;
   <figcaption class="sr-only">{summary}</figcaption>
   <div class="relative mx-2 h-10" aria-hidden="true">
     <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-line-strong"></div>
-    <div class="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill" style={`left: ${x(p10)}%; width: ${x(p90) - x(p10)}%; background-color: ${band}`}></div>
-    <span class="chart-dot top-1/2" style={`left: ${x(p50)}%`}></span>
-    <span class="absolute bottom-full -translate-x-1/2 pb-1 text-xs whitespace-nowrap text-ink" style={`left: ${x(p50)}%`}>
-      {medianLabel} {format(p50)}
+    <div class="absolute top-1/2 h-3 -translate-y-1/2 rounded-pill" style={`left: ${x(from)}%; width: ${x(to) - x(from)}%; background-color: ${band}`}></div>
+    <span class="chart-dot top-1/2" style={`left: ${x(middle)}%`}></span>
+    <span class="absolute bottom-full -translate-x-1/2 pb-1 text-xs whitespace-nowrap text-ink" style={`left: ${x(middle)}%`}>
+      {middleLabel} {format(middle)}
     </span>
-    <span class="absolute top-full -translate-x-1/2 pt-1 text-2xs text-ink-subtle" style={`left: ${x(p10)}%`}>{format(p10)}</span>
-    <span class="absolute top-full -translate-x-1/2 pt-1 text-2xs text-ink-subtle" style={`left: ${x(p90)}%`}>{format(p90)}</span>
+    <span class="absolute top-full -translate-x-1/2 pt-1 text-2xs text-ink-subtle" style={`left: ${x(from)}%`}>{format(from)}</span>
+    <span class="absolute top-full -translate-x-1/2 pt-1 text-2xs text-ink-subtle" style={`left: ${x(to)}%`}>{format(to)}</span>
   </div>
 </figure>

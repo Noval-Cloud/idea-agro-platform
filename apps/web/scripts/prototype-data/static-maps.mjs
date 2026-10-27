@@ -2,7 +2,7 @@
 // so every page shows the same values on the same color scale.
 // Usage: node scripts/prototype-data/static-maps.mjs <web repo>
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 import { resolve } from "node:path";
 
@@ -96,16 +96,3 @@ for (const [id, ind] of Object.entries(manifest.indicators)) {
       : (g, t) => lut(family, t)[Math.round((g / 255) * (lut(family, t).length - 1))];
   await render(raster, paint, id);
 }
-
-// The atlas legends read the same fixed scale as the explorer (RH is stored per month there: ×12 in the legend).
-const statsFile = `${WEB}/src/data/snapshot/map-stats.json`;
-const stats = readJson(statsFile);
-for (const [id, s] of Object.entries(stats.stats)) {
-  const ind = manifest.indicators[id];
-  if (ind?.min === undefined) continue;
-  const factor = id === "rh" ? 12 : 1;
-  s.p2 = +(ind.min / factor).toFixed(4);
-  s.p98 = +(ind.max / factor).toFixed(4);
-}
-writeFileSync(statsFile, JSON.stringify(stats) + "\n");
-console.log("map stats");
