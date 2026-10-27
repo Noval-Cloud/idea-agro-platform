@@ -6,7 +6,7 @@ The images are grayscale over the frame: the website colors them with its palett
 import io
 import json
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
@@ -117,7 +117,9 @@ def thumbnail(lite: bytes, indicator: Indicator, theme: Theme) -> bytes:
     return webp(ImageOps.fit(colored, THUMBNAIL, Image.Resampling.LANCZOS), False, 80)
 
 
-def refresh(source: MapSource, files: Files, themes: dict[str, Theme]) -> None:
+def refresh(source: MapSource, files: Files, themes: dict[str, Theme], recompute: Iterable[Indicator] = ()) -> None:
+    """Draws the maps missing; an indicator to `recompute`, whose asset history was rewritten, is drawn again."""
+    redrawn = set(recompute)
     content = files.read(CATALOG)
     known = cast(dict[str, dict[str, Any]], json.loads(content).get("indicators", {}) if content else {})
     indicators: dict[str, dict[str, Any]] = {}
@@ -130,7 +132,7 @@ def refresh(source: MapSource, files: Files, themes: dict[str, Theme]) -> None:
         low, high = 0.0, 1.0
         if map_kind == "continuous":
             # The range stays fixed once known, so a time-lapse shows change instead of rescaled images.
-            before = known.get(indicator, {})
+            before = {} if indicator in redrawn else known.get(indicator, {})
             if before.get("min") is None or before.get("max") is None:
                 found = source.value_range(indicator, periods)
                 before = {"min": round(found[0], 4), "max": round(found[1], 4)}
@@ -142,7 +144,7 @@ def refresh(source: MapSource, files: Files, themes: dict[str, Theme]) -> None:
 
         drawn: list[int | None] = []
         for period in periods:
-            if files.exists(map_name(indicator, period, lite=False)):
+            if indicator not in redrawn and files.exists(map_name(indicator, period, lite=False)):
                 continue
             png = source.picture(indicator, period, low, high, WIDTH, height(WIDTH))
             full, lite = full_and_lite(png, map_kind)

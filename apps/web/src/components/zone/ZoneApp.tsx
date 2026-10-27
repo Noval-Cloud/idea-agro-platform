@@ -1004,7 +1004,6 @@ function HistoryView({ division, id, title, indicator }: ViewProps) {
         <h2 className="text-base font-semibold text-ink">{heading}</h2>
         <p className="text-sm text-ink-muted">{unit}</p>
       </div>
-      {indicator === "rh" && <p className="mb-4 text-xs text-ink-subtle">{t("zone.rhNote")}</p>}
       <YearlyChart indicator={indicator} years={stats.years} values={values} title={heading} caption={title} />
       <CsvButton
         onClick={() =>

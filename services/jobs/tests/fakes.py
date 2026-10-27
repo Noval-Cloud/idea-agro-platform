@@ -25,6 +25,9 @@ class MemoryStore:
     def read(self, table: Table, division: Division, indicator: Indicator) -> ZoneValues:
         return self.rows.get((table, division, indicator), {})
 
+    def remove(self, indicator: Indicator) -> None:
+        self.rows = {key: values for key, values in self.rows.items() if key[2] != indicator}
+
 
 class FakeSource:
     """Every zone's value is the period's position, so tests can tell which periods were computed."""

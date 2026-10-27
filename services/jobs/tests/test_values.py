@@ -67,6 +67,18 @@ def test_a_run_with_nothing_new_changes_nothing(files: LocalFiles) -> None:
     assert source.computed == []
 
 
+def test_an_indicator_to_recompute_is_computed_again_from_scratch(files: LocalFiles) -> None:
+    store = MemoryStore()
+    values.refresh(FakeSource(STARTS, [2023, 2024]), store, files)
+    store.add(Table.YEARS, Division.SECCIONALES, Indicator.RH, {"1": {2021: 99.0}})
+    source = FakeSource(STARTS, [2023, 2024])
+
+    values.refresh(source, store, files, recompute=[Indicator.RH])
+
+    assert {(kind, i, tuple(p)) for kind, _, i, p in source.computed} == {("years", Indicator.RH, (2023, 2024))}
+    assert read(files, "values/seccionales/rh.json")["years"] == [2023, 2024]
+
+
 def test_periods_are_computed_in_chunks(files: LocalFiles, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(values, "CHUNK", 1)
     source = FakeSource(STARTS, [])
