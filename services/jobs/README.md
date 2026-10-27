@@ -70,7 +70,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band. rh is read only by year.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).
-- **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Viewer and Service Usage Consumer, and read access to the assets above. Without them a run stops at Earth Engine's error and changes nothing.
+- **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Writer, since each map is drawn as a thumbnail created in that project (no asset is written), and Service Usage Consumer, plus read access to the assets above. Without them a run stops at Earth Engine's error and changes nothing.
 
 ## Schedule
 
