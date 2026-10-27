@@ -22,7 +22,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Source:** the values come from a `Source` (`sources.py`): Earth Engine by default, or `--source public-files` for the values the public files hold, which come from the prototype.
 - **Published:** each division's `values/<division>/<indicator>.json` whose rows changed, and the catalog's seasonal calendars. A composite reaches the catalog only once every division has it, so a zone page never asks for a composite its zone lacks.
-- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. For a seasonal one it also drops the API's cached zone series (`series/`), which the API then reads again from BigQuery. `maps` and `saved` take it too: `make jobs-run ENV=dev ARGS="values maps saved --recompute rh"`.
+- **Rewritten history:** a run only adds what is missing, so values already stored stay as they were. When an indicator's script rewrites periods its asset already had, `--recompute <indicator>` (repeatable) deletes the indicator's rows from the three tables and computes them again. For a seasonal one it also drops the API's cached zone series (`series/`), which the API then reads again from BigQuery. `maps` and `saved` take it too: `make jobs-run ENV=dev ARGS="values maps saved --recompute rh"`. It reads Earth Engine, so it is refused with `--source public-files`.
 
 ## Outlines
 
@@ -47,7 +47,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Where:** the API's private bucket (`SAVED_ZONES`). Next to each outline (`zones/<zone>/v<version>-<id>.geojson`) goes the same name ending in `.series.json`: each seasonal indicator's value by composite start. The job may read only under `zones/`, and write only the series there.
 - **What:** the mean of the outline's 250 m pixels for each composite, 100 composites per request; past about 625 km², Earth Engine reads coarser pixels. A zone that holds no pixel takes the one at its center, and a point takes its own.
-- **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. `--recompute <indicator>` computes that indicator again for each of them. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along.
+- **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along. `--recompute <indicator>` computes that indicator again for every version, so a restore does not bring back its replaced values.
 - **Failures:** an outline Earth Engine cannot read is logged as an error, which alerts. The others go on, and the next run tries it again.
 
 ## Earth Engine
