@@ -128,8 +128,6 @@ export const nationalSummary = (id: "divtfe" | "csue" | "ahppn") =>
 
 /** A map's range: the 2nd and 98th percentiles of its years. */
 export const mapRange = (id: keyof National["maps"]) => national.maps[id];
-/** The year the maps show: the latest complete growing year. */
-export const mapYear = (national.maps.ppna.years ?? []).at(-1) ?? lastCompleteYearStart;
 
 export const ppnaStats = (() => {
   const lastTotal = sum(ppnaSeasonal.lastYear);

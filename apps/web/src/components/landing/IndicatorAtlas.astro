@@ -53,7 +53,7 @@ const fixed = (digits: number) => (value: number) =>
 const whole = (value: number) => i18n.number(value, { maximumFractionDigits: 0 });
 
 /** The latest year an indicator's map shows, as the captions name it. */
-const mapYears = (id: IndicatorId) => {
+const mapYears = (id: IndicatorId): Record<string, string> => {
   const latest = mapRange(id).years?.at(-1);
   return latest === undefined
     ? {}

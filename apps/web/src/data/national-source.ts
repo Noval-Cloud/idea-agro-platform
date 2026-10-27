@@ -27,7 +27,8 @@ type Json = Record<string, unknown>;
 
 export async function fetchNational(base: string): Promise<National> {
   const get = async (path: string): Promise<Json> => {
-    const response = await fetch(new URL(path, base));
+    // A deploy build that waits on an API that does not answer would hang until Cloud Build gives up.
+    const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(30_000) });
     if (!response.ok) throw new Error(`${response.status} ${path}`);
     return (await response.json()) as Json;
   };
