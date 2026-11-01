@@ -27,8 +27,10 @@ export function initAccountMenu() {
     const picture = menu.querySelector<HTMLImageElement>("[data-account-picture]")!;
     picture.hidden = !account.picture;
     if (account.picture) picture.src = account.picture;
+    // `data-role` lists the roles that see an item, any of them.
     for (const item of menu.querySelectorAll<HTMLElement>("[data-role]")) {
-      item.hidden = !account.roles.includes(item.dataset.role as SignedIn["roles"][number]);
+      const roles = (item.dataset.role ?? "").split(" ") as SignedIn["roles"];
+      item.hidden = !roles.some((role) => account.roles.includes(role));
     }
   };
 

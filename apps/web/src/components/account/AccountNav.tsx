@@ -12,8 +12,11 @@ type Props = {
   sectionPaths: Record<AccountSection, string>;
 };
 
-/** The role a section needs, when it needs one. */
-export const sectionRoles: Partial<Record<AccountSection, Me["roles"][number]>> = { content: "editor", admin: "admin" };
+/** The roles that open a section, when it needs one. */
+export const sectionRoles: Partial<Record<AccountSection, Me["roles"][number][]>> = {
+  content: ["editor", "admin"],
+  admin: ["admin"],
+};
 
 /**
  * The account's navigation, on every page of the account: a column beside the content on wide screens, a row
@@ -30,8 +33,8 @@ export default function AccountNav({ locale, catalog, section, sectionPaths }: P
     return () => removeEventListener("account-change", update);
   }, []);
   const visible = accountSections.filter((s) => {
-    const role = sectionRoles[s];
-    return !role || roles.includes(role);
+    const needed = sectionRoles[s];
+    return !needed || needed.some((role) => roles.includes(role));
   });
 
   return (
