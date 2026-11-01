@@ -1741,6 +1741,457 @@ export const DeletePlatformInvitationResponse = zod.void()
 
 
 /**
+ * Every text editors published, by key and language; the website shows them instead of its defaults when it is built. Cacheable for a minute.
+ * @summary The site's published texts
+ */
+export const getPublishedTextsResponseTextsOneMax = 8000;
+
+export const getPublishedTextsResponseTextsTwoOneMax = 2000;
+
+export const getPublishedTextsResponseTextsTwoOtherMax = 2000;
+
+
+
+export const GetPublishedTextsResponse = zod.object({
+  "texts": zod.record(zod.string(), zod.record(zod.string(), zod.union([zod.string().max(getPublishedTextsResponseTextsOneMax),zod.object({
+  "one": zod.string().max(getPublishedTextsResponseTextsTwoOneMax),
+  "other": zod.string().max(getPublishedTextsResponseTextsTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')]))).describe('By key (`zone.season.title`), the edited languages; a language left out shows its default.')
+}).describe('The editors\' published texts, which the website shows instead of its defaults.')
+
+
+/**
+ * Texts whose key or words, in any language, hold the query; exact words first. For editors.
+ * @summary Find the site's texts
+ */
+export const searchTextsQueryQMax = 200;
+
+
+
+export const SearchTextsQueryParams = zod.object({
+  "q": zod.string().min(1).max(searchTextsQueryQMax).describe('Words the text says, or part of its key.')
+})
+
+export const searchTextsResponseCurrentOneMax = 8000;
+
+export const searchTextsResponseCurrentTwoOneMax = 2000;
+
+export const searchTextsResponseCurrentTwoOtherMax = 2000;
+
+
+
+export const SearchTextsResponseItem = zod.object({
+  "key": zod.string(),
+  "format": zod.enum(['plain', 'markdown', 'plural']),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(searchTextsResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(searchTextsResponseCurrentTwoOneMax),
+  "other": zod.string().max(searchTextsResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "edited": zod.boolean().describe('Whether a language shows an edit instead of its default.'),
+  "draft": zod.boolean().describe('Whether a draft waits.')
+}).describe('A text a search found.')
+export const SearchTextsResponse = zod.array(SearchTextsResponseItem)
+
+
+/**
+ * Its default, what is published and any draft. For editors.
+ * @summary A text of the site
+ */
+export const getTextPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const GetTextParams = zod.object({
+  "key": zod.string().regex(getTextPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const getTextResponseDefaultOneMax = 8000;
+
+export const getTextResponseDefaultTwoOneMax = 2000;
+
+export const getTextResponseDefaultTwoOtherMax = 2000;
+
+export const getTextResponseCurrentOneMax = 8000;
+
+export const getTextResponseCurrentTwoOneMax = 2000;
+
+export const getTextResponseCurrentTwoOtherMax = 2000;
+
+export const getTextResponsePublishedOneMax = 8000;
+
+export const getTextResponsePublishedTwoOneMax = 2000;
+
+export const getTextResponsePublishedTwoOtherMax = 2000;
+
+export const getTextResponseDraftOneOneMax = 8000;
+
+export const getTextResponseDraftOneTwoOneMax = 2000;
+
+export const getTextResponseDraftOneTwoOtherMax = 2000;
+
+
+
+export const GetTextResponse = zod.object({
+  "key": zod.string().describe('Where the text belongs, as a dotted path.'),
+  "format": zod.enum(['plain', 'markdown', 'plural']).describe('`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.'),
+  "default": zod.record(zod.string(), zod.union([zod.string().max(getTextResponseDefaultOneMax),zod.object({
+  "one": zod.string().max(getTextResponseDefaultTwoOneMax),
+  "other": zod.string().max(getTextResponseDefaultTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The code\'s text in each language.'),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(getTextResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(getTextResponseCurrentTwoOneMax),
+  "other": zod.string().max(getTextResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "published": zod.record(zod.string(), zod.union([zod.string().max(getTextResponsePublishedOneMax),zod.object({
+  "one": zod.string().max(getTextResponsePublishedTwoOneMax),
+  "other": zod.string().max(getTextResponsePublishedTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The published edits, only the edited languages.'),
+  "draft": zod.union([zod.record(zod.string(), zod.union([zod.string().max(getTextResponseDraftOneOneMax),zod.object({
+  "one": zod.string().max(getTextResponseDraftOneTwoOneMax),
+  "other": zod.string().max(getTextResponseDraftOneTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])),zod.null()]).describe('Languages saved without publishing; null if none.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When an edit was last published.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who published it.'),
+  "draft_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the draft was last saved.'),
+  "draft_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who saved it.')
+}).describe('One of the website\'s texts, as an editor works on it.')
+
+
+/**
+ * Saves the given languages: published at once, which drops the text's draft, or kept as a draft. A text must keep its default's placeholders, and a plural one both forms. The site shows a published text once rebuilt.
+ * @summary Change a text of the site
+ */
+export const putTextPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const PutTextParams = zod.object({
+  "key": zod.string().regex(putTextPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const putTextBodyTextsOneMax = 8000;
+
+export const putTextBodyTextsTwoOneMax = 2000;
+
+export const putTextBodyTextsTwoOtherMax = 2000;
+
+export const putTextBodyPublishDefault = true;
+
+export const PutTextBody = zod.object({
+  "texts": zod.record(zod.string(), zod.union([zod.string().max(putTextBodyTextsOneMax),zod.object({
+  "one": zod.string().max(putTextBodyTextsTwoOneMax),
+  "other": zod.string().max(putTextBodyTextsTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The new text of each language changed.'),
+  "publish": zod.boolean().default(putTextBodyPublishDefault).describe('Publish at once; false keeps it as a draft for later.')
+}).describe('Texts an editor saves, for one or more languages.')
+
+export const putTextResponseDefaultOneMax = 8000;
+
+export const putTextResponseDefaultTwoOneMax = 2000;
+
+export const putTextResponseDefaultTwoOtherMax = 2000;
+
+export const putTextResponseCurrentOneMax = 8000;
+
+export const putTextResponseCurrentTwoOneMax = 2000;
+
+export const putTextResponseCurrentTwoOtherMax = 2000;
+
+export const putTextResponsePublishedOneMax = 8000;
+
+export const putTextResponsePublishedTwoOneMax = 2000;
+
+export const putTextResponsePublishedTwoOtherMax = 2000;
+
+export const putTextResponseDraftOneOneMax = 8000;
+
+export const putTextResponseDraftOneTwoOneMax = 2000;
+
+export const putTextResponseDraftOneTwoOtherMax = 2000;
+
+
+
+export const PutTextResponse = zod.object({
+  "key": zod.string().describe('Where the text belongs, as a dotted path.'),
+  "format": zod.enum(['plain', 'markdown', 'plural']).describe('`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.'),
+  "default": zod.record(zod.string(), zod.union([zod.string().max(putTextResponseDefaultOneMax),zod.object({
+  "one": zod.string().max(putTextResponseDefaultTwoOneMax),
+  "other": zod.string().max(putTextResponseDefaultTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The code\'s text in each language.'),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(putTextResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(putTextResponseCurrentTwoOneMax),
+  "other": zod.string().max(putTextResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "published": zod.record(zod.string(), zod.union([zod.string().max(putTextResponsePublishedOneMax),zod.object({
+  "one": zod.string().max(putTextResponsePublishedTwoOneMax),
+  "other": zod.string().max(putTextResponsePublishedTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The published edits, only the edited languages.'),
+  "draft": zod.union([zod.record(zod.string(), zod.union([zod.string().max(putTextResponseDraftOneOneMax),zod.object({
+  "one": zod.string().max(putTextResponseDraftOneTwoOneMax),
+  "other": zod.string().max(putTextResponseDraftOneTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])),zod.null()]).describe('Languages saved without publishing; null if none.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When an edit was last published.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who published it.'),
+  "draft_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the draft was last saved.'),
+  "draft_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who saved it.')
+}).describe('One of the website\'s texts, as an editor works on it.')
+
+
+/**
+ * @summary Publish a text's draft
+ */
+export const publishTextPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const PublishTextParams = zod.object({
+  "key": zod.string().regex(publishTextPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const publishTextResponseDefaultOneMax = 8000;
+
+export const publishTextResponseDefaultTwoOneMax = 2000;
+
+export const publishTextResponseDefaultTwoOtherMax = 2000;
+
+export const publishTextResponseCurrentOneMax = 8000;
+
+export const publishTextResponseCurrentTwoOneMax = 2000;
+
+export const publishTextResponseCurrentTwoOtherMax = 2000;
+
+export const publishTextResponsePublishedOneMax = 8000;
+
+export const publishTextResponsePublishedTwoOneMax = 2000;
+
+export const publishTextResponsePublishedTwoOtherMax = 2000;
+
+export const publishTextResponseDraftOneOneMax = 8000;
+
+export const publishTextResponseDraftOneTwoOneMax = 2000;
+
+export const publishTextResponseDraftOneTwoOtherMax = 2000;
+
+
+
+export const PublishTextResponse = zod.object({
+  "key": zod.string().describe('Where the text belongs, as a dotted path.'),
+  "format": zod.enum(['plain', 'markdown', 'plural']).describe('`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.'),
+  "default": zod.record(zod.string(), zod.union([zod.string().max(publishTextResponseDefaultOneMax),zod.object({
+  "one": zod.string().max(publishTextResponseDefaultTwoOneMax),
+  "other": zod.string().max(publishTextResponseDefaultTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The code\'s text in each language.'),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(publishTextResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(publishTextResponseCurrentTwoOneMax),
+  "other": zod.string().max(publishTextResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "published": zod.record(zod.string(), zod.union([zod.string().max(publishTextResponsePublishedOneMax),zod.object({
+  "one": zod.string().max(publishTextResponsePublishedTwoOneMax),
+  "other": zod.string().max(publishTextResponsePublishedTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The published edits, only the edited languages.'),
+  "draft": zod.union([zod.record(zod.string(), zod.union([zod.string().max(publishTextResponseDraftOneOneMax),zod.object({
+  "one": zod.string().max(publishTextResponseDraftOneTwoOneMax),
+  "other": zod.string().max(publishTextResponseDraftOneTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])),zod.null()]).describe('Languages saved without publishing; null if none.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When an edit was last published.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who published it.'),
+  "draft_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the draft was last saved.'),
+  "draft_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who saved it.')
+}).describe('One of the website\'s texts, as an editor works on it.')
+
+
+/**
+ * @summary Discard a text's draft
+ */
+export const discardDraftPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const DiscardDraftParams = zod.object({
+  "key": zod.string().regex(discardDraftPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const discardDraftResponseDefaultOneMax = 8000;
+
+export const discardDraftResponseDefaultTwoOneMax = 2000;
+
+export const discardDraftResponseDefaultTwoOtherMax = 2000;
+
+export const discardDraftResponseCurrentOneMax = 8000;
+
+export const discardDraftResponseCurrentTwoOneMax = 2000;
+
+export const discardDraftResponseCurrentTwoOtherMax = 2000;
+
+export const discardDraftResponsePublishedOneMax = 8000;
+
+export const discardDraftResponsePublishedTwoOneMax = 2000;
+
+export const discardDraftResponsePublishedTwoOtherMax = 2000;
+
+export const discardDraftResponseDraftOneOneMax = 8000;
+
+export const discardDraftResponseDraftOneTwoOneMax = 2000;
+
+export const discardDraftResponseDraftOneTwoOtherMax = 2000;
+
+
+
+export const DiscardDraftResponse = zod.object({
+  "key": zod.string().describe('Where the text belongs, as a dotted path.'),
+  "format": zod.enum(['plain', 'markdown', 'plural']).describe('`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.'),
+  "default": zod.record(zod.string(), zod.union([zod.string().max(discardDraftResponseDefaultOneMax),zod.object({
+  "one": zod.string().max(discardDraftResponseDefaultTwoOneMax),
+  "other": zod.string().max(discardDraftResponseDefaultTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The code\'s text in each language.'),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(discardDraftResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(discardDraftResponseCurrentTwoOneMax),
+  "other": zod.string().max(discardDraftResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "published": zod.record(zod.string(), zod.union([zod.string().max(discardDraftResponsePublishedOneMax),zod.object({
+  "one": zod.string().max(discardDraftResponsePublishedTwoOneMax),
+  "other": zod.string().max(discardDraftResponsePublishedTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The published edits, only the edited languages.'),
+  "draft": zod.union([zod.record(zod.string(), zod.union([zod.string().max(discardDraftResponseDraftOneOneMax),zod.object({
+  "one": zod.string().max(discardDraftResponseDraftOneTwoOneMax),
+  "other": zod.string().max(discardDraftResponseDraftOneTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])),zod.null()]).describe('Languages saved without publishing; null if none.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When an edit was last published.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who published it.'),
+  "draft_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the draft was last saved.'),
+  "draft_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who saved it.')
+}).describe('One of the website\'s texts, as an editor works on it.')
+
+
+/**
+ * Newest first: each publish, draft and return to the defaults.
+ * @summary A text's changes
+ */
+export const listVersionsPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const ListVersionsParams = zod.object({
+  "key": zod.string().regex(listVersionsPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const listVersionsResponseTextsOneMax = 8000;
+
+export const listVersionsResponseTextsTwoOneMax = 2000;
+
+export const listVersionsResponseTextsTwoOtherMax = 2000;
+
+
+
+export const ListVersionsResponseItem = zod.object({
+  "id": zod.string(),
+  "state": zod.enum(['published', 'draft', 'default']).describe('`published` and `default` changed what the site shows; `draft` only the draft.'),
+  "texts": zod.record(zod.string(), zod.union([zod.string().max(listVersionsResponseTextsOneMax),zod.object({
+  "one": zod.string().max(listVersionsResponseTextsTwoOneMax),
+  "other": zod.string().max(listVersionsResponseTextsTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the change left: the published edits or the draft.'),
+  "at": zod.iso.datetime({"offset":true}),
+  "by": zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+})
+}).describe('A change to a text.')
+export const ListVersionsResponse = zod.array(ListVersionsResponseItem)
+
+
+/**
+ * Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.
+ * @summary Bring back a text's earlier version, or its defaults
+ */
+export const restoreTextPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');
+
+
+export const RestoreTextParams = zod.object({
+  "key": zod.string().regex(restoreTextPathKeyRegExp).describe('The text\'s key.')
+})
+
+export const RestoreTextBody = zod.object({
+  "version": zod.union([zod.string(),zod.null()]).optional().describe('A version\'s id, to publish what it left; null goes back to the defaults.')
+}).describe('What a text goes back to.')
+
+export const restoreTextResponseDefaultOneMax = 8000;
+
+export const restoreTextResponseDefaultTwoOneMax = 2000;
+
+export const restoreTextResponseDefaultTwoOtherMax = 2000;
+
+export const restoreTextResponseCurrentOneMax = 8000;
+
+export const restoreTextResponseCurrentTwoOneMax = 2000;
+
+export const restoreTextResponseCurrentTwoOtherMax = 2000;
+
+export const restoreTextResponsePublishedOneMax = 8000;
+
+export const restoreTextResponsePublishedTwoOneMax = 2000;
+
+export const restoreTextResponsePublishedTwoOtherMax = 2000;
+
+export const restoreTextResponseDraftOneOneMax = 8000;
+
+export const restoreTextResponseDraftOneTwoOneMax = 2000;
+
+export const restoreTextResponseDraftOneTwoOtherMax = 2000;
+
+
+
+export const RestoreTextResponse = zod.object({
+  "key": zod.string().describe('Where the text belongs, as a dotted path.'),
+  "format": zod.enum(['plain', 'markdown', 'plural']).describe('`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.'),
+  "default": zod.record(zod.string(), zod.union([zod.string().max(restoreTextResponseDefaultOneMax),zod.object({
+  "one": zod.string().max(restoreTextResponseDefaultTwoOneMax),
+  "other": zod.string().max(restoreTextResponseDefaultTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The code\'s text in each language.'),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(restoreTextResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(restoreTextResponseCurrentTwoOneMax),
+  "other": zod.string().max(restoreTextResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "published": zod.record(zod.string(), zod.union([zod.string().max(restoreTextResponsePublishedOneMax),zod.object({
+  "one": zod.string().max(restoreTextResponsePublishedTwoOneMax),
+  "other": zod.string().max(restoreTextResponsePublishedTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('The published edits, only the edited languages.'),
+  "draft": zod.union([zod.record(zod.string(), zod.union([zod.string().max(restoreTextResponseDraftOneOneMax),zod.object({
+  "one": zod.string().max(restoreTextResponseDraftOneTwoOneMax),
+  "other": zod.string().max(restoreTextResponseDraftOneTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])),zod.null()]).describe('Languages saved without publishing; null if none.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When an edit was last published.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who published it.'),
+  "draft_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the draft was last saved.'),
+  "draft_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who saved it.')
+}).describe('One of the website\'s texts, as an editor works on it.')
+
+
+/**
  * For admins: the newest accounts, or those whose email or name starts with the search.
  * @summary Accounts
  */
@@ -1844,7 +2295,7 @@ export const SendAccountRecoveryResponse = zod.void()
 export const ListAuditResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),
   "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
-  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent']),
+  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored']),
   "target": zod.string().describe('The account acted on.'),
   "target_email": zod.string().describe('Its email at the time.'),
   "detail": zod.string().describe('The roles given, for a role change; `provider_failed` when the sign-in provider did not take it.')

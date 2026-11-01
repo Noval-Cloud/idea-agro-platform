@@ -10,6 +10,7 @@ const generated = [
   "apps/web/public/favicon.svg",
   "packages/api-client/src/generated/**",
   "services/api/openapi.json",
+  "services/api/src/idea_agro_api/site_texts.json",
 ];
 
 export default defineConfig({

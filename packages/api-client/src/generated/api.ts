@@ -125,6 +125,10 @@ export const AuditAction = {
   disabled: 'disabled',
   enabled: 'enabled',
   recovery_sent: 'recovery_sent',
+  text_published: 'text_published',
+  text_drafted: 'text_drafted',
+  text_draft_discarded: 'text_draft_discarded',
+  text_restored: 'text_restored',
 } as const;
 
 /**
@@ -742,6 +746,16 @@ export interface PlatformInvitationSent {
 }
 
 /**
+ * A text that depends on a count: `one` for one, `other` for any other number.
+ */
+export interface PluralText {
+  /** @maxLength 2000 */
+  one: string;
+  /** @maxLength 2000 */
+  other: string;
+}
+
+/**
  * For invalid requests, each parameter that failed validation and why.
  */
 export type ProblemErrors = { [key: string]: unknown }[] | null;
@@ -905,6 +919,21 @@ export interface ProjectSummary {
   updated_at: string;
 }
 
+export type TextValue = string | PluralText;
+
+/**
+ * By key (`zone.season.title`), the edited languages; a language left out shows its default.
+ */
+export type PublishedTextsTexts = {[key: string]: Partial<Record<'es' | 'en' | 'pt', TextValue>>};
+
+/**
+ * The editors' published texts, which the website shows instead of its defaults.
+ */
+export interface PublishedTexts {
+  /** By key (`zone.season.title`), the edited languages; a language left out shows its default. */
+  texts: PublishedTextsTexts;
+}
+
 export type RolesChangeRolesItem = typeof RolesChangeRolesItem[keyof typeof RolesChangeRolesItem];
 
 
@@ -1061,6 +1090,117 @@ export interface SharedOut {
   invitation_sent: boolean | null;
 }
 
+export type SiteTextMatchFormat = typeof SiteTextMatchFormat[keyof typeof SiteTextMatchFormat];
+
+
+export const SiteTextMatchFormat = {
+  plain: 'plain',
+  markdown: 'markdown',
+  plural: 'plural',
+} as const;
+
+/**
+ * A text a search found.
+ */
+export interface SiteTextMatch {
+  key: string;
+  format: SiteTextMatchFormat;
+  /** What the site shows in each language once rebuilt. */
+  current: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  /** Whether a language shows an edit instead of its default. */
+  edited: boolean;
+  /** Whether a draft waits. */
+  draft: boolean;
+}
+
+/**
+ * `markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms.
+ */
+export type SiteTextOutFormat = typeof SiteTextOutFormat[keyof typeof SiteTextOutFormat];
+
+
+export const SiteTextOutFormat = {
+  plain: 'plain',
+  markdown: 'markdown',
+  plural: 'plural',
+} as const;
+
+export interface TextAuthor {
+  /** The editor's account id. */
+  id: string;
+  /** Their name at the time. */
+  name: string;
+}
+
+/**
+ * One of the website's texts, as an editor works on it.
+ */
+export interface SiteTextOut {
+  /** Where the text belongs, as a dotted path. */
+  key: string;
+  /** `markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms. */
+  format: SiteTextOutFormat;
+  /** The code's text in each language. */
+  default: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  /** What the site shows in each language once rebuilt. */
+  current: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  /** The published edits, only the edited languages. */
+  published: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  /** Languages saved without publishing; null if none. */
+  draft: Partial<Record<'es' | 'en' | 'pt', TextValue>> | null;
+  /** When an edit was last published. */
+  updated_at: string | null;
+  /** Who published it. */
+  updated_by: TextAuthor | null;
+  /** When the draft was last saved. */
+  draft_at: string | null;
+  /** Who saved it. */
+  draft_by: TextAuthor | null;
+}
+
+/**
+ * Texts an editor saves, for one or more languages.
+ */
+export interface TextChange {
+  /** The new text of each language changed. */
+  texts: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  /** Publish at once; false keeps it as a draft for later. */
+  publish?: boolean;
+}
+
+/**
+ * What a text goes back to.
+ */
+export interface TextRestore {
+  /** A version's id, to publish what it left; null goes back to the defaults. */
+  version?: string | null;
+}
+
+/**
+ * `published` and `default` changed what the site shows; `draft` only the draft.
+ */
+export type TextVersionOutState = typeof TextVersionOutState[keyof typeof TextVersionOutState];
+
+
+export const TextVersionOutState = {
+  published: 'published',
+  draft: 'draft',
+  default: 'default',
+} as const;
+
+/**
+ * A change to a text.
+ */
+export interface TextVersionOut {
+  id: string;
+  /** `published` and `default` changed what the site shows; `draft` only the draft. */
+  state: TextVersionOutState;
+  /** What the change left: the published edits or the draft. */
+  texts: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
+  at: string;
+  by: TextAuthor;
+}
+
 export type Theme = typeof Theme[keyof typeof Theme];
 
 
@@ -1185,6 +1325,15 @@ since?: string | null;
  * @maximum 100
  */
 limit?: number;
+};
+
+export type SearchTextsParams = {
+/**
+ * Words the text says, or part of its key.
+ * @minLength 1
+ * @maxLength 200
+ */
+q: string;
 };
 
 export type ListAccountsParams = {
@@ -8362,6 +8511,1004 @@ export const useDeletePlatformInvitation = <TError = Problem,
         TContext
       > => {
       return useMutation(getDeletePlatformInvitationMutationOptions(options), queryClient);
+    }
+
+export type getPublishedTextsResponse200 = {
+  data: PublishedTexts
+  status: 200
+}
+
+export type getPublishedTextsResponseSuccess = (getPublishedTextsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getPublishedTextsResponse = (getPublishedTextsResponseSuccess)
+
+export const getGetPublishedTextsUrl = () => {
+
+
+
+
+  return `/v1/texts`
+}
+
+/**
+ * Every text editors published, by key and language; the website shows them instead of its defaults when it is built. Cacheable for a minute.
+ * @summary The site's published texts
+ */
+export const getPublishedTexts = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getPublishedTextsResponse> => {
+
+  return apiFetch<getPublishedTextsResponse>(getGetPublishedTextsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublishedTextsQueryKey = () => {
+    return [
+    `/v1/texts`
+    ] as const;
+    }
+
+
+export const getGetPublishedTextsQueryOptions = <TData = Awaited<ReturnType<typeof getPublishedTexts>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublishedTextsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublishedTexts>>> = ({ signal }) => getPublishedTexts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPublishedTextsQueryResult = NonNullable<Awaited<ReturnType<typeof getPublishedTexts>>>
+export type GetPublishedTextsQueryError = unknown
+
+
+export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublishedTexts>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPublishedTexts>>,
+          TError,
+          Awaited<ReturnType<typeof getPublishedTexts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublishedTexts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPublishedTexts>>,
+          TError,
+          Awaited<ReturnType<typeof getPublishedTexts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublishedTexts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The site's published texts
+ */
+
+export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublishedTexts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPublishedTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPublishedTextsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type searchTextsResponse200 = {
+  data: SiteTextMatch[]
+  status: 200
+}
+
+export type searchTextsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type searchTextsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type searchTextsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type searchTextsResponseSuccess = (searchTextsResponse200) & {
+  headers: Headers;
+};
+export type searchTextsResponseError = (searchTextsResponse401 | searchTextsResponse403 | searchTextsResponse422) & {
+  headers: Headers;
+};
+
+export type searchTextsResponse = (searchTextsResponseSuccess | searchTextsResponseError)
+
+export const getSearchTextsUrl = (params: SearchTextsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/texts/search?${stringifiedParams}` : `/v1/texts/search`
+}
+
+/**
+ * Texts whose key or words, in any language, hold the query; exact words first. For editors.
+ * @summary Find the site's texts
+ */
+export const searchTexts = async (params: SearchTextsParams, options?: Parameters<typeof apiFetch>[1]): Promise<searchTextsResponse> => {
+
+  return apiFetch<searchTextsResponse>(getSearchTextsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchTextsQueryKey = (params?: SearchTextsParams,) => {
+    return [
+    `/v1/texts/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchTextsQueryOptions = <TData = Awaited<ReturnType<typeof searchTexts>>, TError = Problem>(params: SearchTextsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchTextsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchTexts>>> = ({ signal }) => searchTexts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SearchTextsQueryResult = NonNullable<Awaited<ReturnType<typeof searchTexts>>>
+export type SearchTextsQueryError = Problem
+
+
+export function useSearchTexts<TData = Awaited<ReturnType<typeof searchTexts>>, TError = Problem>(
+ params: SearchTextsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchTexts>>,
+          TError,
+          Awaited<ReturnType<typeof searchTexts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchTexts<TData = Awaited<ReturnType<typeof searchTexts>>, TError = Problem>(
+ params: SearchTextsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchTexts>>,
+          TError,
+          Awaited<ReturnType<typeof searchTexts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchTexts<TData = Awaited<ReturnType<typeof searchTexts>>, TError = Problem>(
+ params: SearchTextsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Find the site's texts
+ */
+
+export function useSearchTexts<TData = Awaited<ReturnType<typeof searchTexts>>, TError = Problem>(
+ params: SearchTextsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchTexts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSearchTextsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getTextResponse200 = {
+  data: SiteTextOut
+  status: 200
+}
+
+export type getTextResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getTextResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getTextResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getTextResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getTextResponseSuccess = (getTextResponse200) & {
+  headers: Headers;
+};
+export type getTextResponseError = (getTextResponse401 | getTextResponse403 | getTextResponse404 | getTextResponse422) & {
+  headers: Headers;
+};
+
+export type getTextResponse = (getTextResponseSuccess | getTextResponseError)
+
+export const getGetTextUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}`
+}
+
+/**
+ * Its default, what is published and any draft. For editors.
+ * @summary A text of the site
+ */
+export const getText = async (key: string, options?: Parameters<typeof apiFetch>[1]): Promise<getTextResponse> => {
+
+  return apiFetch<getTextResponse>(getGetTextUrl(key),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTextQueryKey = (key: string,) => {
+    return [
+    `/v1/texts/${key}`
+    ] as const;
+    }
+
+
+export const getGetTextQueryOptions = <TData = Awaited<ReturnType<typeof getText>>, TError = Problem>(key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTextQueryKey(key);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getText>>> = ({ signal }) => getText(key, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: key !== null && key !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTextQueryResult = NonNullable<Awaited<ReturnType<typeof getText>>>
+export type GetTextQueryError = Problem
+
+
+export function useGetText<TData = Awaited<ReturnType<typeof getText>>, TError = Problem>(
+ key: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getText>>,
+          TError,
+          Awaited<ReturnType<typeof getText>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetText<TData = Awaited<ReturnType<typeof getText>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getText>>,
+          TError,
+          Awaited<ReturnType<typeof getText>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetText<TData = Awaited<ReturnType<typeof getText>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A text of the site
+ */
+
+export function useGetText<TData = Awaited<ReturnType<typeof getText>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getText>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTextQueryOptions(key,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type putTextResponse200 = {
+  data: SiteTextOut
+  status: 200
+}
+
+export type putTextResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type putTextResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type putTextResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type putTextResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type putTextResponseSuccess = (putTextResponse200) & {
+  headers: Headers;
+};
+export type putTextResponseError = (putTextResponse401 | putTextResponse403 | putTextResponse404 | putTextResponse422) & {
+  headers: Headers;
+};
+
+export type putTextResponse = (putTextResponseSuccess | putTextResponseError)
+
+export const getPutTextUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}`
+}
+
+/**
+ * Saves the given languages: published at once, which drops the text's draft, or kept as a draft. A text must keep its default's placeholders, and a plural one both forms. The site shows a published text once rebuilt.
+ * @summary Change a text of the site
+ */
+export const putText = async (key: string,
+    textChange: TextChange, options?: Parameters<typeof apiFetch>[1]): Promise<putTextResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<putTextResponse>(getPutTextUrl(key),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(textChange)
+  }
+);}
+
+
+
+
+
+export const getPutTextMutationKey = () => ['putText'] as const;
+
+export const getPutTextMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putText>>, TError,PutTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putText>>, TError,PutTextMutationVariables, TContext> => {
+
+const mutationKey = getPutTextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putText>>, PutTextMutationVariables> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  putText(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutTextMutationResult = NonNullable<Awaited<ReturnType<typeof putText>>>
+    export type PutTextMutationBody = TextChange
+    export type PutTextMutationError = Problem
+    export type PutTextMutationVariables = {key: string;data: TextChange}
+
+    /**
+ * @summary Change a text of the site
+ */
+export const usePutText = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putText>>, TError,PutTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putText>>,
+        TError,
+        PutTextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPutTextMutationOptions(options), queryClient);
+    }
+
+export type publishTextResponse200 = {
+  data: SiteTextOut
+  status: 200
+}
+
+export type publishTextResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type publishTextResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type publishTextResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type publishTextResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type publishTextResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type publishTextResponseSuccess = (publishTextResponse200) & {
+  headers: Headers;
+};
+export type publishTextResponseError = (publishTextResponse401 | publishTextResponse403 | publishTextResponse404 | publishTextResponse409 | publishTextResponse422) & {
+  headers: Headers;
+};
+
+export type publishTextResponse = (publishTextResponseSuccess | publishTextResponseError)
+
+export const getPublishTextUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}/publish`
+}
+
+/**
+ * @summary Publish a text's draft
+ */
+export const publishText = async (key: string, options?: Parameters<typeof apiFetch>[1]): Promise<publishTextResponse> => {
+
+  return apiFetch<publishTextResponse>(getPublishTextUrl(key),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublishTextMutationKey = () => ['publishText'] as const;
+
+export const getPublishTextMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishText>>, TError,PublishTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishText>>, TError,PublishTextMutationVariables, TContext> => {
+
+const mutationKey = getPublishTextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishText>>, PublishTextMutationVariables> = (props) => {
+          const {key} = props ?? {};
+
+          return  publishText(key,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishTextMutationResult = NonNullable<Awaited<ReturnType<typeof publishText>>>
+
+    export type PublishTextMutationError = Problem
+    export type PublishTextMutationVariables = {key: string}
+
+    /**
+ * @summary Publish a text's draft
+ */
+export const usePublishText = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishText>>, TError,PublishTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publishText>>,
+        TError,
+        PublishTextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPublishTextMutationOptions(options), queryClient);
+    }
+
+export type discardDraftResponse200 = {
+  data: SiteTextOut
+  status: 200
+}
+
+export type discardDraftResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type discardDraftResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type discardDraftResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type discardDraftResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type discardDraftResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type discardDraftResponseSuccess = (discardDraftResponse200) & {
+  headers: Headers;
+};
+export type discardDraftResponseError = (discardDraftResponse401 | discardDraftResponse403 | discardDraftResponse404 | discardDraftResponse409 | discardDraftResponse422) & {
+  headers: Headers;
+};
+
+export type discardDraftResponse = (discardDraftResponseSuccess | discardDraftResponseError)
+
+export const getDiscardDraftUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}/draft`
+}
+
+/**
+ * @summary Discard a text's draft
+ */
+export const discardDraft = async (key: string, options?: Parameters<typeof apiFetch>[1]): Promise<discardDraftResponse> => {
+
+  return apiFetch<discardDraftResponse>(getDiscardDraftUrl(key),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDiscardDraftMutationKey = () => ['discardDraft'] as const;
+
+export const getDiscardDraftMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardDraft>>, TError,DiscardDraftMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof discardDraft>>, TError,DiscardDraftMutationVariables, TContext> => {
+
+const mutationKey = getDiscardDraftMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof discardDraft>>, DiscardDraftMutationVariables> = (props) => {
+          const {key} = props ?? {};
+
+          return  discardDraft(key,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DiscardDraftMutationResult = NonNullable<Awaited<ReturnType<typeof discardDraft>>>
+
+    export type DiscardDraftMutationError = Problem
+    export type DiscardDraftMutationVariables = {key: string}
+
+    /**
+ * @summary Discard a text's draft
+ */
+export const useDiscardDraft = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardDraft>>, TError,DiscardDraftMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof discardDraft>>,
+        TError,
+        DiscardDraftMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDiscardDraftMutationOptions(options), queryClient);
+    }
+
+export type listVersionsResponse200 = {
+  data: TextVersionOut[]
+  status: 200
+}
+
+export type listVersionsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listVersionsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listVersionsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type listVersionsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type listVersionsResponseSuccess = (listVersionsResponse200) & {
+  headers: Headers;
+};
+export type listVersionsResponseError = (listVersionsResponse401 | listVersionsResponse403 | listVersionsResponse404 | listVersionsResponse422) & {
+  headers: Headers;
+};
+
+export type listVersionsResponse = (listVersionsResponseSuccess | listVersionsResponseError)
+
+export const getListVersionsUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}/versions`
+}
+
+/**
+ * Newest first: each publish, draft and return to the defaults.
+ * @summary A text's changes
+ */
+export const listVersions = async (key: string, options?: Parameters<typeof apiFetch>[1]): Promise<listVersionsResponse> => {
+
+  return apiFetch<listVersionsResponse>(getListVersionsUrl(key),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVersionsQueryKey = (key: string,) => {
+    return [
+    `/v1/texts/${key}/versions`
+    ] as const;
+    }
+
+
+export const getListVersionsQueryOptions = <TData = Awaited<ReturnType<typeof listVersions>>, TError = Problem>(key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVersionsQueryKey(key);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVersions>>> = ({ signal }) => listVersions(key, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: key !== null && key !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof listVersions>>>
+export type ListVersionsQueryError = Problem
+
+
+export function useListVersions<TData = Awaited<ReturnType<typeof listVersions>>, TError = Problem>(
+ key: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVersions<TData = Awaited<ReturnType<typeof listVersions>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVersions<TData = Awaited<ReturnType<typeof listVersions>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A text's changes
+ */
+
+export function useListVersions<TData = Awaited<ReturnType<typeof listVersions>>, TError = Problem>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListVersionsQueryOptions(key,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type restoreTextResponse200 = {
+  data: SiteTextOut
+  status: 200
+}
+
+export type restoreTextResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type restoreTextResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type restoreTextResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type restoreTextResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type restoreTextResponseSuccess = (restoreTextResponse200) & {
+  headers: Headers;
+};
+export type restoreTextResponseError = (restoreTextResponse401 | restoreTextResponse403 | restoreTextResponse404 | restoreTextResponse422) & {
+  headers: Headers;
+};
+
+export type restoreTextResponse = (restoreTextResponseSuccess | restoreTextResponseError)
+
+export const getRestoreTextUrl = (key: string,) => {
+
+
+
+
+  return `/v1/texts/${key}/restore`
+}
+
+/**
+ * Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.
+ * @summary Bring back a text's earlier version, or its defaults
+ */
+export const restoreText = async (key: string,
+    textRestore: TextRestore, options?: Parameters<typeof apiFetch>[1]): Promise<restoreTextResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<restoreTextResponse>(getRestoreTextUrl(key),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(textRestore)
+  }
+);}
+
+
+
+
+
+export const getRestoreTextMutationKey = () => ['restoreText'] as const;
+
+export const getRestoreTextMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreText>>, TError,RestoreTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreText>>, TError,RestoreTextMutationVariables, TContext> => {
+
+const mutationKey = getRestoreTextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreText>>, RestoreTextMutationVariables> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  restoreText(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreTextMutationResult = NonNullable<Awaited<ReturnType<typeof restoreText>>>
+    export type RestoreTextMutationBody = TextRestore
+    export type RestoreTextMutationError = Problem
+    export type RestoreTextMutationVariables = {key: string;data: TextRestore}
+
+    /**
+ * @summary Bring back a text's earlier version, or its defaults
+ */
+export const useRestoreText = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreText>>, TError,RestoreTextMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restoreText>>,
+        TError,
+        RestoreTextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestoreTextMutationOptions(options), queryClient);
     }
 
 export type listAccountsResponse200 = {

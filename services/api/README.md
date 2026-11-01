@@ -58,6 +58,14 @@ A signed-in person invites an email to the platform under `/v1/me/invitations` (
 - **Against spam:** only a verified email invites. Every email, first or again, counts against `PLATFORM_INVITATIONS_PER_DAY` (10) a day. Deleting an invitation only hides it, so it cannot refill that budget. At most `PLATFORM_INVITATIONS_PENDING` (50) are pending at once, and resending waits `INVITATION_RESEND_MINUTES` (10) and renews the term.
 - **The email** is the `platform-invitation` kind (see Emails). It shows the inviter's name, cleaned and cut short, and their verified address.
 
+## The site's texts
+
+Editors change every text the website shows under `/v1/texts/{key}`, and anyone reads the published ones at `/v1/texts`, which the website reads when it is built.
+
+- **Which texts exist:** `site_texts.json` holds each key's format (`plain`, `markdown` or `plural`) and its default in every language. `make generate` exports it from the website's catalogs, and `make contract` fails when it is behind them. A new text is a code change.
+- **What is stored:** the `site_texts` collection keeps, per key, the published edits and any draft. Only languages that differ from their default are kept, so a default the code changes still shows. `site_text_versions` keeps every change, and the audit log records it.
+- **Rules:** editors (or admins) publish directly, or save a draft that any of them publishes or discards. An edit keeps its default's placeholders, and a plural one both forms. A version can be brought back, or a text returned to its defaults.
+
 ## Emails
 
 Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.

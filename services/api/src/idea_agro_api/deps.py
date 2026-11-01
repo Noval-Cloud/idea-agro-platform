@@ -115,3 +115,12 @@ def admin(signed_in: CallerDep) -> Caller:
 
 
 AdminDep = Annotated[Caller, Depends(admin)]
+
+
+def editor(signed_in: CallerDep) -> Caller:
+    if not signed_in.account.roles & {Role.EDITOR, Role.ADMIN}:
+        raise HTTPException(403, "Only editors can do this.")
+    return signed_in
+
+
+EditorDep = Annotated[Caller, Depends(editor)]

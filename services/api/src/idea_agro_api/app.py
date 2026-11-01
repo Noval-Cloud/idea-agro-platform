@@ -24,6 +24,7 @@ from idea_agro_api.routes import (
     projects,
     saved_zones,
     service,
+    texts,
     zones,
 )
 from idea_agro_api.security import BodyLimit, security_headers
@@ -113,6 +114,7 @@ def create_app(services: Services) -> FastAPI:
         projects,
         invitations,
         platform_invitations,
+        texts,
         admin,
     ):
         app.include_router(module.router)

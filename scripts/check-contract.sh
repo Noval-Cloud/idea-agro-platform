@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-# Fails when the API's OpenAPI document or the client generated from it is out of date.
+# Fails when the API's OpenAPI document, the client generated from it, or the site's texts the API reads are out of date.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+texts=services/api/src/idea_agro_api/site_texts.json
+before="$(shasum "$texts")"
+node apps/web/scripts/export-texts.ts >/dev/null
+if [ "$(shasum "$texts")" != "$before" ]; then
+  echo "$texts is out of date: run make generate" >&2
+  exit 1
+fi
 
 if ! uv run python -m idea_agro_api.openapi | diff -u services/api/openapi.json -; then
   echo "services/api/openapi.json is out of date: run make generate" >&2

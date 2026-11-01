@@ -197,6 +197,34 @@
 }
 
 @layer components {
+  /* A text editors write in Markdown: paragraphs, emphasis, links and lists, in the surrounding type. */
+  .rich-text {
+    & > * + * {
+      margin-block-start: 0.75em;
+    }
+    & strong {
+      font-weight: 600;
+      color: var(--ia-ink);
+    }
+    & a {
+      color: var(--ia-link);
+      text-underline-offset: var(--ia-link-underline-offset);
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    & ul,
+    & ol {
+      padding-inline-start: 1.25em;
+    }
+    & ul {
+      list-style: disc;
+    }
+    & ol {
+      list-style: decimal;
+    }
+  }
+
   /* Menus, popovers and tooltips grow from where they open; closing is instant. */
   .ia-pop[data-state="open"],
   .ia-pop[data-state="delayed-open"] {

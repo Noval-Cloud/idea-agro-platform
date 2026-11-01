@@ -32,6 +32,7 @@ from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zo
 from idea_agro_api.security import RateLimit
 from idea_agro_api.series import ZoneStore, values_from
 from idea_agro_api.shapes import Departments
+from idea_agro_api.site_texts import MemorySiteTexts, SiteTextStore, site_texts_from
 from idea_agro_api.zone_jobs import NoZoneJobs, ZoneJobs, zone_jobs_from
 from idea_agro_api.zones import Files, LocalFiles, files_from
 
@@ -118,6 +119,8 @@ class Services:
     documents: DocumentStore = field(default_factory=MemoryDocuments)
     document_files: DocumentFiles = field(default_factory=MemoryDocumentFiles)
     platform_invitations: PlatformInvitationStore = field(default_factory=MemoryPlatformInvitations)
+    # The site's texts editors change, and every change.
+    site_texts: SiteTextStore = field(default_factory=MemorySiteTexts)
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -158,6 +161,7 @@ class Services:
             geometries=geometries_from(outlines),
             documents=documents_from(records),
             platform_invitations=platform_invitations_from(records),
+            site_texts=site_texts_from(records),
             document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,

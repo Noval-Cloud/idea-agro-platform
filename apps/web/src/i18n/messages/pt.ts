@@ -1186,6 +1186,10 @@ export const pt = {
         disabled: "{actor} desativou a conta de {target}",
         enabled: "{actor} ativou a conta de {target}",
         recovery_sent: "{actor} enviou um link de recuperação para {target}",
+        text_published: "{actor} publicou o texto {target} ({detail})",
+        text_drafted: "{actor} salvou um rascunho do texto {target} ({detail})",
+        text_draft_discarded: "{actor} descartou o rascunho do texto {target}",
+        text_restored: "{actor} restaurou o texto {target}",
       },
     },
     sessions: {

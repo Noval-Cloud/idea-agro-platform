@@ -1187,6 +1187,10 @@ export const en = {
         disabled: "{actor} disabled the account of {target}",
         enabled: "{actor} enabled the account of {target}",
         recovery_sent: "{actor} sent a recovery link to {target}",
+        text_published: "{actor} published the text {target} ({detail})",
+        text_drafted: "{actor} saved a draft of the text {target} ({detail})",
+        text_draft_discarded: "{actor} discarded the draft of the text {target}",
+        text_restored: "{actor} restored the text {target}",
       },
     },
     sessions: {
