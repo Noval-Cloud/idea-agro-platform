@@ -54,6 +54,14 @@ def defined(key: str) -> str:
     return key
 
 
+def valid(key: str, texts: Texts) -> Texts:
+    """Texts saved earlier, checked again: the code's default may have changed its placeholders since."""
+    try:
+        return checked(key, dict(texts))
+    except InvalidText as error:
+        raise HTTPException(422, str(error)) from None
+
+
 def stored(services: Services, key: str) -> SiteText:
     return services.site_texts.get(key) or SiteText(key=key, published={}, draft=None)
 
@@ -88,7 +96,7 @@ def keep(services: Services, caller: Caller, text: SiteText, state: VersionState
     """Stores the text, its version and the audit entry."""
     at = datetime.now(UTC)
     services.site_texts.put(text)
-    left = (text.draft or {}) if state == "draft" else text.published
+    left = (text.draft or {}) if state in ("draft", "discarded") else text.published
     services.site_texts.add_version(TextVersion(new_version_id(), text.key, left, state, at, author(caller)))
     actor = caller.account
     services.audit.record(AuditEntry(at, actor.id, actor.display_name, action, text.key, "", ", ".join(sorted(left))))
@@ -229,7 +237,7 @@ def publish_text(key: Key, caller: EditorDep, services: ServicesDep) -> SiteText
     text = stored(services, defined(key))
     if text.draft is None:
         raise HTTPException(409, "The text has no draft to publish.")
-    published = saved(text, text.draft, True, datetime.now(UTC), author(caller))
+    published = saved(text, valid(key, text.draft), True, datetime.now(UTC), author(caller))
     return keep(services, caller, published, "published", AuditAction.TEXT_PUBLISHED)
 
 
@@ -243,7 +251,7 @@ def discard_draft(key: Key, caller: EditorDep, services: ServicesDep) -> SiteTex
     if text.draft is None:
         raise HTTPException(409, "The text has no draft to discard.")
     cleared = SiteText(text.key, text.published, None, text.updated_at, text.updated_by)
-    return keep(services, caller, cleared, "draft", AuditAction.TEXT_DRAFT_DISCARDED)
+    return keep(services, caller, cleared, "discarded", AuditAction.TEXT_DRAFT_DISCARDED)
 
 
 @router.get(
@@ -264,8 +272,11 @@ def list_versions(key: Key, caller: EditorDep, services: ServicesDep) -> list[Te
 @router.post(
     "/v1/texts/{key}/restore",
     summary="Bring back a text's earlier version, or its defaults",
-    description="Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.",
-    responses=problems(401, 403, 404, 422),
+    description=(
+        "Publishes what a published version left, or goes back to the code's defaults; a draft stays as it is. A "
+        "draft's version does not come back: it was never what the site showed."
+    ),
+    responses=problems(401, 403, 404, 409, 422),
 )
 def restore_text(key: Key, restore: TextRestore, caller: EditorDep, services: ServicesDep) -> SiteTextOut:
     text = stored(services, defined(key))
@@ -275,7 +286,9 @@ def restore_text(key: Key, restore: TextRestore, caller: EditorDep, services: Se
         version = next((v for v in services.site_texts.versions(key) if v.id == restore.version), None)
         if version is None:
             raise HTTPException(404, "The text has no such version.")
-        texts = version.texts
+        if version.state in ("draft", "discarded"):
+            raise HTTPException(409, "Only a published version, or the defaults, comes back.")
+        texts = valid(key, version.texts)
     back = SiteText(
         key, edited(key, texts), text.draft, datetime.now(UTC), author(caller), text.draft_at, text.draft_by
     )

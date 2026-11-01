@@ -200,10 +200,10 @@
   /* A text editors write in Markdown: paragraphs, emphasis, links and lists, in the surrounding type. */
   .rich-text {
     & > * + * {
-      margin-block-start: 0.75em;
+      margin-block-start: calc(var(--spacing) * 3);
     }
     & strong {
-      font-weight: 600;
+      font-weight: var(--font-weight-semibold);
       color: var(--ia-ink);
     }
     & a {
@@ -215,7 +215,7 @@
     }
     & ul,
     & ol {
-      padding-inline-start: 1.25em;
+      padding-inline-start: calc(var(--spacing) * 5);
     }
     & ul {
       list-style: disc;

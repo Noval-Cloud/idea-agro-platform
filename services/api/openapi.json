@@ -5420,7 +5420,7 @@
           "Texts"
         ],
         "summary": "Bring back a text's earlier version, or its defaults",
-        "description": "Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.",
+        "description": "Publishes what a published version left, or goes back to the code's defaults; a draft stays as it is. A draft's version does not come back: it was never what the site showed.",
         "operationId": "restore_text",
         "security": [
           {
@@ -5487,6 +5487,16 @@
           },
           "404": {
             "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8846,10 +8856,11 @@
             "enum": [
               "published",
               "draft",
+              "discarded",
               "default"
             ],
             "title": "State",
-            "description": "`published` and `default` changed what the site shows; `draft` only the draft."
+            "description": "`published` and `default` changed what the site shows; `draft` and `discarded` only the draft."
           },
           "texts": {
             "additionalProperties": {

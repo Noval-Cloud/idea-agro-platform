@@ -59,6 +59,8 @@ def checked(key: str, texts: dict[str, Any]) -> Texts:
             forms = cast(dict[str, Any], text)
             pairs = [(cast(dict[str, str], default)[form], forms[form]) for form in PLURAL_FORMS]
         else:
+            if not isinstance(text, str):
+                raise InvalidText(f"The {locale} text must be plain text, not plural forms.")
             pairs = [(cast(str, default), text)]
         for expected, given in pairs:
             if not isinstance(given, str) or not given.strip():
@@ -93,7 +95,7 @@ class SiteText:
     draft_by: Author | None = None
 
 
-VersionState = Literal["published", "draft", "default"]
+VersionState = Literal["published", "draft", "discarded", "default"]
 
 
 @dataclass(frozen=True)
