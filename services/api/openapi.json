@@ -4680,6 +4680,658 @@
         }
       }
     },
+    "/v1/texts": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "The site's published texts",
+        "description": "Every text editors published, by key and language; the website shows them instead of its defaults when it is built. Cacheable for a minute.",
+        "operationId": "get_published_texts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedTexts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/search": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Find the site's texts",
+        "description": "Texts whose key or words, in any language, hold the query; exact words first. For editors.",
+        "operationId": "search_texts",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Words the text says, or part of its key.",
+              "title": "Q"
+            },
+            "description": "Words the text says, or part of its key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SiteTextMatch"
+                  },
+                  "title": "Response Search Texts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/{key}": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "A text of the site",
+        "description": "Its default, what is published and any draft. For editors.",
+        "operationId": "get_text",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Change a text of the site",
+        "description": "Saves the given languages: published at once, which drops the text's draft, or kept as a draft. A text must keep its default's placeholders, and a plural one both forms. The site shows a published text once rebuilt.",
+        "operationId": "put_text",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/{key}/publish": {
+      "post": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Publish a text's draft",
+        "operationId": "publish_text",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/{key}/draft": {
+      "delete": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Discard a text's draft",
+        "operationId": "discard_draft",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/{key}/versions": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "A text's changes",
+        "description": "Newest first: each publish, draft and return to the defaults.",
+        "operationId": "list_versions",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TextVersionOut"
+                  },
+                  "title": "Response List Versions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/{key}/restore": {
+      "post": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Bring back a text's earlier version, or its defaults",
+        "description": "Publishes what a published version left, or goes back to the code's defaults; a draft stays as it is. A draft's version does not come back: it was never what the site showed.",
+        "operationId": "restore_text",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,200}$",
+              "description": "The text's key.",
+              "examples": [
+                "zone.season.title"
+              ],
+              "title": "Key"
+            },
+            "description": "The text's key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextRestore"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/accounts": {
       "get": {
         "tags": [
@@ -5409,7 +6061,11 @@
           "sessions_revoked",
           "disabled",
           "enabled",
-          "recovery_sent"
+          "recovery_sent",
+          "text_published",
+          "text_drafted",
+          "text_draft_discarded",
+          "text_restored"
         ],
         "title": "AuditAction"
       },
@@ -6698,6 +7354,27 @@
         "title": "PlatformInvitationSent",
         "description": "An invitation just emailed."
       },
+      "PluralText": {
+        "properties": {
+          "one": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "One"
+          },
+          "other": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Other"
+          }
+        },
+        "type": "object",
+        "required": [
+          "one",
+          "other"
+        ],
+        "title": "PluralText",
+        "description": "A text that depends on a count: `one` for one, `other` for any other number."
+      },
       "Point": {
         "properties": {
           "type": {
@@ -7072,6 +7749,34 @@
         ],
         "title": "ProjectSummary",
         "description": "One of your projects, or one shared with you, without its zones."
+      },
+      "PublishedTexts": {
+        "properties": {
+          "texts": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/TextValue"
+              },
+              "propertyNames": {
+                "enum": [
+                  "es",
+                  "en",
+                  "pt"
+                ]
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Texts",
+            "description": "By key (`zone.season.title`), the edited languages; a language left out shows its default."
+          }
+        },
+        "type": "object",
+        "required": [
+          "texts"
+        ],
+        "title": "PublishedTexts",
+        "description": "The editors' published texts, which the website shows instead of its defaults."
       },
       "RolesChange": {
         "properties": {
@@ -7632,6 +8337,344 @@
         ],
         "title": "SharedOut",
         "description": "The project once shared, and whether the person invited was told by email."
+      },
+      "SiteTextMatch": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "plain",
+              "markdown",
+              "plural"
+            ],
+            "title": "Format"
+          },
+          "current": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "title": "Current",
+            "description": "What the site shows in each language once rebuilt."
+          },
+          "edited": {
+            "type": "boolean",
+            "title": "Edited",
+            "description": "Whether a language shows an edit instead of its default."
+          },
+          "draft": {
+            "type": "boolean",
+            "title": "Draft",
+            "description": "Whether a draft waits."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "format",
+          "current",
+          "edited",
+          "draft"
+        ],
+        "title": "SiteTextMatch",
+        "description": "A text a search found."
+      },
+      "SiteTextOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Where the text belongs, as a dotted path.",
+            "examples": [
+              "zone.season.title"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "plain",
+              "markdown",
+              "plural"
+            ],
+            "title": "Format",
+            "description": "`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms."
+          },
+          "default": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "title": "Default",
+            "description": "The code's text in each language."
+          },
+          "current": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "title": "Current",
+            "description": "What the site shows in each language once rebuilt."
+          },
+          "published": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "title": "Published",
+            "description": "The published edits, only the edited languages."
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/TextValue"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "es",
+                    "en",
+                    "pt"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft",
+            "description": "Languages saved without publishing; null if none."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "When an edit was last published."
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who published it."
+          },
+          "draft_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft At",
+            "description": "When the draft was last saved."
+          },
+          "draft_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who saved it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "format",
+          "default",
+          "current",
+          "published",
+          "draft",
+          "updated_at",
+          "updated_by",
+          "draft_at",
+          "draft_by"
+        ],
+        "title": "SiteTextOut",
+        "description": "One of the website's texts, as an editor works on it."
+      },
+      "TextAuthor": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The editor's account id."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Their name at the time."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TextAuthor"
+      },
+      "TextChange": {
+        "properties": {
+          "texts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Texts",
+            "description": "The new text of each language changed."
+          },
+          "publish": {
+            "type": "boolean",
+            "title": "Publish",
+            "description": "Publish at once; false keeps it as a draft for later.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "texts"
+        ],
+        "title": "TextChange",
+        "description": "Texts an editor saves, for one or more languages."
+      },
+      "TextRestore": {
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "A version's id, to publish what it left; null goes back to the defaults."
+          }
+        },
+        "type": "object",
+        "title": "TextRestore",
+        "description": "What a text goes back to."
+      },
+      "TextValue": {
+        "anyOf": [
+          {
+            "type": "string",
+            "maxLength": 8000
+          },
+          {
+            "$ref": "#/components/schemas/PluralText"
+          }
+        ]
+      },
+      "TextVersionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "published",
+              "draft",
+              "discarded",
+              "default"
+            ],
+            "title": "State",
+            "description": "`published` and `default` changed what the site shows; `draft` and `discarded` only the draft."
+          },
+          "texts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TextValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "es",
+                "en",
+                "pt"
+              ]
+            },
+            "type": "object",
+            "title": "Texts",
+            "description": "What the change left: the published edits or the draft."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "by": {
+            "$ref": "#/components/schemas/TextAuthor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "state",
+          "texts",
+          "at",
+          "by"
+        ],
+        "title": "TextVersionOut",
+        "description": "A change to a text."
       },
       "Theme": {
         "type": "string",

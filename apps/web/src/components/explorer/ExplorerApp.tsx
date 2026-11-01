@@ -31,6 +31,7 @@ import { getFrame, useFrame } from "./lib/frames";
 import { readZoneFile } from "./lib/files";
 import { anchorOf, areaKm2, bboxOf, unionBounds } from "./lib/geo";
 import { createAppTranslator, I18nContext, type AppCatalog, type AppKey } from "./lib/i18n";
+import { markdown } from "@/i18n/markdown";
 import { sampleGray, zonalMean } from "./lib/raster";
 import type { SearchResult } from "./lib/search";
 import {
@@ -886,7 +887,10 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
           {pickers("list", "panel")}
           {indicatorId && (
             <div className="border-t border-line pt-4 text-sm">
-              <p className="text-ink-muted">{t(`indicators.items.${indicatorId}.measures` as AppKey)}</p>
+              <div
+                className="rich-text text-ink-muted"
+                dangerouslySetInnerHTML={{ __html: markdown(t(`indicators.items.${indicatorId}.measures` as AppKey)) }}
+              />
               <a
                 href={`${indicatorsPath}#indicator-${indicatorId}`}
                 className="mt-2 inline-block text-link underline-offset-(--ia-link-underline-offset) hover:underline"

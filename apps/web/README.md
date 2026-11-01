@@ -35,6 +35,10 @@ src/
 scripts/prototype-data/  extraction of the explorer's data from Earth Engine
 ```
 
+## Texts
+
+Every text lives in the catalogs of `src/i18n/messages`, which define which texts exist and their defaults. Editors' published versions, read from the API's `/v1/texts` when a deploy is built (`src/i18n/edits.ts`), replace them; a build without an API shows the defaults. The texts that allow Markdown are listed in `src/i18n/texts.ts`, and components render them with `md()` (or `markdown()` in islands), never as plain text. After a change to the catalogs, `make generate` exports them for the API.
+
 ## Sign-in
 
 `src/lib/account.ts` is the only module that knows the sign-in provider (Firebase Authentication).

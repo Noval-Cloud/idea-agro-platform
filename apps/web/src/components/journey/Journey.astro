@@ -62,7 +62,7 @@ const scenes = [
 }[];
 
 type SceneKey = (typeof scenes)[number]["key"];
-const sceneText = (key: SceneKey, field: "name" | "title" | "text", values?: Record<string, string>) =>
+const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<string, string>) =>
   t(`journey.scenes.${key}.${field}`, values);
 ---
 
@@ -115,9 +115,10 @@ const sceneText = (key: SceneKey, field: "name" | "title" | "text", values?: Rec
               <h2 class="mt-2 font-display text-3xl font-medium tracking-tight text-ink">
                 {sceneText(scene.key, "title", "values" in scene ? scene.values : undefined)}
               </h2>
-              <p class="mt-4 max-w-measure text-base text-ink-muted">
-                {sceneText(scene.key, "text", "values" in scene ? scene.values : undefined)}
-              </p>
+              <div
+                class="rich-text mt-4 max-w-measure text-base text-ink-muted"
+                set:html={i18n.md(`journey.scenes.${scene.key}.text`, "values" in scene ? scene.values : undefined)}
+              />
               {"source" in scene && <p class="mt-2 text-2xs text-ink-subtle">{scene.source}</p>}
               {"links" in scene && (
                 <ul class="mt-5 grid gap-2">

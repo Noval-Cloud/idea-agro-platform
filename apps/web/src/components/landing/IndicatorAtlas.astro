@@ -177,11 +177,17 @@ const initial: IndicatorId = "ppna";
                   <dl class="mt-6 grid gap-5 text-sm">
                     <div>
                       <dt class="font-medium text-ink">{t("indicators.fields.measures")}</dt>
-                      <dd class="mt-1 max-w-measure text-ink-muted">{item(id, "measures")}</dd>
+                      <dd
+                        class="rich-text mt-1 max-w-measure text-ink-muted"
+                        set:html={i18n.md(`indicators.items.${id}.measures`)}
+                      />
                     </div>
                     <div>
                       <dt class="font-medium text-ink">{t("indicators.fields.method")}</dt>
-                      <dd class="mt-1 max-w-measure text-ink-muted">{item(id, "method")}</dd>
+                      <dd
+                        class="rich-text mt-1 max-w-measure text-ink-muted"
+                        set:html={i18n.md(`indicators.items.${id}.method`)}
+                      />
                     </div>
                   </dl>
                   <a

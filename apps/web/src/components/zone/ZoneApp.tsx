@@ -40,6 +40,7 @@ import {
   type SeasonalId,
 } from "@/components/explorer/lib/data";
 import { areaKm2 } from "@/components/explorer/lib/geo";
+import { markdown } from "@/i18n/markdown";
 import { compare, readYears, slots, writeYears, type Compared } from "./years";
 import {
   createAppTranslator,
@@ -641,9 +642,15 @@ function About({ indicator }: { indicator: IndicatorId }) {
       <div>
         <h2 className="font-display text-2xl font-medium tracking-snug text-ink">{field("longName")}</h2>
         <h3 className="mt-5 font-medium text-ink">{t("indicators.fields.measures")}</h3>
-        <p className="mt-1 max-w-measure text-ink-muted">{field("measures")}</p>
+        <div
+          className="rich-text mt-1 max-w-measure text-ink-muted"
+          dangerouslySetInnerHTML={{ __html: markdown(field("measures")) }}
+        />
         <h3 className="mt-4 font-medium text-ink">{t("indicators.fields.method")}</h3>
-        <p className="mt-1 max-w-measure text-ink-muted">{field("method")}</p>
+        <div
+          className="rich-text mt-1 max-w-measure text-ink-muted"
+          dangerouslySetInnerHTML={{ __html: markdown(field("method")) }}
+        />
       </div>
       <div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3">

@@ -564,3 +564,83 @@ class PadronCollection(BaseModel):
 
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[PadronFeature]
+
+
+TextLocale = Literal["es", "en", "pt"]
+
+
+class PluralText(BaseModel):
+    """A text that depends on a count: `one` for one, `other` for any other number."""
+
+    one: str = Field(max_length=2000)
+    other: str = Field(max_length=2000)
+
+
+type TextValue = Annotated[str, StringConstraints(max_length=8000)] | PluralText
+
+
+class PublishedTexts(BaseModel):
+    """The editors' published texts, which the website shows instead of its defaults."""
+
+    texts: dict[str, dict[TextLocale, TextValue]] = Field(
+        description="By key (`zone.season.title`), the edited languages; a language left out shows its default."
+    )
+
+
+class TextAuthor(BaseModel):
+    id: str = Field(description="The editor's account id.")
+    name: str = Field(description="Their name at the time.")
+
+
+class SiteTextOut(BaseModel):
+    """One of the website's texts, as an editor works on it."""
+
+    key: str = Field(description="Where the text belongs, as a dotted path.", examples=["zone.season.title"])
+    format: Literal["plain", "markdown", "plural"] = Field(
+        description="`markdown` texts allow paragraphs, bold, italics, links and lists; `plural` ones have two forms."
+    )
+    default: dict[TextLocale, TextValue] = Field(description="The code's text in each language.")
+    current: dict[TextLocale, TextValue] = Field(description="What the site shows in each language once rebuilt.")
+    published: dict[TextLocale, TextValue] = Field(description="The published edits, only the edited languages.")
+    draft: dict[TextLocale, TextValue] | None = Field(description="Languages saved without publishing; null if none.")
+    updated_at: datetime | None = Field(description="When an edit was last published.")
+    updated_by: TextAuthor | None = Field(description="Who published it.")
+    draft_at: datetime | None = Field(description="When the draft was last saved.")
+    draft_by: TextAuthor | None = Field(description="Who saved it.")
+
+
+class SiteTextMatch(BaseModel):
+    """A text a search found."""
+
+    key: str
+    format: Literal["plain", "markdown", "plural"]
+    current: dict[TextLocale, TextValue] = Field(description="What the site shows in each language once rebuilt.")
+    edited: bool = Field(description="Whether a language shows an edit instead of its default.")
+    draft: bool = Field(description="Whether a draft waits.")
+
+
+class TextChange(BaseModel):
+    """Texts an editor saves, for one or more languages."""
+
+    texts: dict[TextLocale, TextValue] = Field(min_length=1, description="The new text of each language changed.")
+    publish: bool = Field(default=True, description="Publish at once; false keeps it as a draft for later.")
+
+
+class TextRestore(BaseModel):
+    """What a text goes back to."""
+
+    version: str | None = Field(
+        default=None, description="A version's id, to publish what it left; null goes back to the defaults."
+    )
+
+
+class TextVersionOut(BaseModel):
+    """A change to a text."""
+
+    id: str
+    state: Literal["published", "draft", "discarded", "default"] = Field(
+        description="`published` and `default` changed what the site shows; `draft` and `discarded` only the draft."
+    )
+    texts: dict[TextLocale, TextValue] = Field(description="What the change left: the published edits or the draft.")
+    at: datetime
+    by: TextAuthor

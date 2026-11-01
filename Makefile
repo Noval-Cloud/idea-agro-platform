@@ -42,7 +42,8 @@ test: ## Run every test suite
 build: ## Build every app
 	pnpm -r --if-present build
 
-generate: ## Write the API's OpenAPI document and the client generated from it
+generate: ## Write the API's OpenAPI document, the client generated from it, and the site's texts for the API
+	node apps/web/scripts/export-texts.ts
 	uv run python -m idea_agro_api.openapi > services/api/openapi.json
 	pnpm --filter @idea-agro/api-client generate
 
