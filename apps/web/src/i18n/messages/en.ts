@@ -1163,6 +1163,8 @@ export const en = {
       pickSection: "Pick a section of the site",
       pickText: "Pick a text from the list to edit it.",
       nothing: "No text matches.",
+      listFailed: "We could not load the list. Try again.",
+      saveFailed: "We could not save the change. Check the text and try again.",
       failed: "We could not load the text. Try again.",
       edited: "Edited",
       draft: "Draft",

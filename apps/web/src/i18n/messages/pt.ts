@@ -1162,6 +1162,8 @@ export const pt = {
       pickSection: "Escolha uma seção do site",
       pickText: "Escolha um texto da lista para editá-lo.",
       nothing: "Nenhum texto corresponde.",
+      listFailed: "Não conseguimos carregar a lista. Tente de novo.",
+      saveFailed: "Não conseguimos salvar a alteração. Revise o texto e tente de novo.",
       failed: "Não conseguimos carregar o texto. Tente de novo.",
       edited: "Editado",
       draft: "Rascunho",

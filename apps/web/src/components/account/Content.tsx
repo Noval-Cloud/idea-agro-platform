@@ -58,17 +58,20 @@ export default function Content({ translator }: { translator: AccountTranslator 
   const [query, setQuery] = useState("");
   const [sections, setSections] = useState<TextSection[] | null>(null);
   const [section, setSection] = useState<string | null>(null);
-  const [list, setList] = useState<SiteTextMatch[] | null>(null);
+  // null: nothing asked yet; "loading" and "failed" while and when a list does not arrive.
+  const [list, setList] = useState<SiteTextMatch[] | null | "loading" | "failed">(null);
   const [selected, setSelected] = useState<string | null>(null);
   // Grows after every change, so the lists show what changed.
   const [changed, setChanged] = useState(0);
 
   useEffect(() => {
     let live = true;
-    const load = (call: Run) =>
+    const load = (call: Run) => {
+      setList("loading");
       void run<SiteTextMatch[]>(call)
         .then((found) => live && setList(found))
-        .catch(() => live && setList([]));
+        .catch(() => live && setList("failed"));
+    };
     const timer = setTimeout(() => {
       if (view === "search") {
         if (query.trim()) load((client, init) => client.searchTexts({ q: query.trim() }, init));
@@ -107,14 +110,16 @@ export default function Content({ translator }: { translator: AccountTranslator 
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="grid content-start gap-3">
-          <div role="tablist" aria-label={t("account.content.title")} className="flex gap-1">
+          <div role="group" aria-label={t("account.content.title")} className="flex gap-1">
             {views.map((v) => (
               <button
                 key={v}
                 type="button"
-                role="tab"
-                aria-selected={view === v}
-                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                onClick={() => {
+                  setList(null);
+                  setView(v);
+                }}
                 className={cn(
                   "h-9 rounded-pill px-3 text-sm transition-colors duration-(--ia-motion-fast)",
                   view === v ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
@@ -150,33 +155,44 @@ export default function Content({ translator }: { translator: AccountTranslator 
               ))}
             </select>
           )}
-          <ul className={cn(card, "grid max-h-[32rem] divide-y divide-line overflow-y-auto")}>
-            {list === null && (
+          <ul
+            className={cn(card, "grid max-h-128 divide-y divide-line overflow-y-auto")}
+            aria-busy={list === "loading"}
+          >
+            {typeof list === "string" || list === null || list.length === 0 ? (
               <li className="p-4 text-sm text-ink-muted">
-                {view === "search" ? t("account.content.searchHint") : t("account.content.pickSection")}
+                {list === "loading"
+                  ? t("account.loading")
+                  : list === "failed"
+                    ? t("account.content.listFailed")
+                    : list === null
+                      ? view === "search"
+                        ? t("account.content.searchHint")
+                        : t("account.content.pickSection")
+                      : t("account.content.nothing")}
               </li>
-            )}
-            {list?.length === 0 && <li className="p-4 text-sm text-ink-muted">{t("account.content.nothing")}</li>}
-            {list?.map((match) => (
-              <li key={match.key}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(match.key)}
-                  aria-current={selected === match.key ? "true" : undefined}
-                  className={cn(
-                    "grid w-full gap-1 p-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
-                    selected === match.key && "bg-surface-selected",
-                  )}
-                >
-                  <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
-                  <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
-                    <code className="break-all">{match.key}</code>
-                    {match.edited && <Badge>{t("account.content.edited")}</Badge>}
-                    {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
-                  </span>
-                </button>
-              </li>
-            ))}
+            ) : null}
+            {Array.isArray(list) &&
+              list.map((match) => (
+                <li key={match.key}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(match.key)}
+                    aria-current={selected === match.key ? "true" : undefined}
+                    className={cn(
+                      "grid w-full gap-1 p-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
+                      selected === match.key && "bg-surface-selected",
+                    )}
+                  >
+                    <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
+                    <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                      <code className="break-all">{match.key}</code>
+                      {match.edited && <Badge>{t("account.content.edited")}</Badge>}
+                      {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
+                    </span>
+                  </button>
+                </li>
+              ))}
           </ul>
         </div>
         <div className="min-w-0">
@@ -201,7 +217,7 @@ function Badge({ children, tone = "edited" }: { children: string; tone?: "edited
     <span
       className={cn(
         "rounded-pill px-2 py-0.5 text-2xs font-medium",
-        tone === "draft" ? "bg-warning-soft text-ink" : "bg-action-soft text-ink",
+        tone === "draft" ? "bg-family-soil/20 text-ink" : "bg-action-soft text-ink",
       )}
     >
       {children}
@@ -214,14 +230,11 @@ type Run = (
   init: RequestInit,
 ) => Promise<{ status: number; data: unknown }>;
 
-/** One private call; an answer other than 200 is an error, with the API's words when it gives them. */
+/** One private call; an answer other than 200 is an error. */
 async function run<T>(call: Run): Promise<T> {
   const [{ privately }, client] = await api();
   const response = await privately((init) => call(client, init));
-  if (response.status !== 200) {
-    const detail = (response.data as { detail?: string } | null)?.detail;
-    throw new Error(detail ?? String(response.status));
-  }
+  if (response.status !== 200) throw new Error(String(response.status));
   return response.data as T;
 }
 
@@ -245,10 +258,12 @@ function Editor({
   const [versions, setVersions] = useState<TextVersionOut[] | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // A waiting draft is where the editor goes on from: the form starts from it, else from what the site shows.
+  const base = (found: SiteTextOut) =>
+    Object.fromEntries(languages.map((l) => [l, found.draft?.[l] ?? found.current[l]])) as Values;
   const show = (found: SiteTextOut) => {
     setText(found);
-    // A waiting draft is where the editor goes on from.
-    setValues(Object.fromEntries(languages.map((l) => [l, found.draft?.[l] ?? found.current[l]])) as Values);
+    setValues(base(found));
   };
 
   useEffect(() => {
@@ -263,31 +278,42 @@ function Editor({
   const problems = Object.fromEntries(
     languages.map((l) => [l, problem(values[l], text.default[l] as TextValue)]),
   ) as Record<Language, ReturnType<typeof problem>>;
-  const changes = Object.fromEntries(
-    languages.filter((l) => !same(values[l], text.current[l])).map((l) => [l, values[l]]),
-  ) as Partial<Values>;
+  const differing = (from: Partial<Values>) =>
+    Object.fromEntries(
+      languages.filter((l) => !same(values[l], from[l])).map((l) => [l, values[l]]),
+    ) as Partial<Values>;
+  // What the site would change, and what the editor changed since opening the text (or its draft).
+  const toPublish = differing(text.current as Partial<Values>);
+  const edited = differing(base(text));
   const valid = languages.every((l) => !problems[l]);
-  const dirty = Object.keys(changes).length > 0;
+  const untouched = Object.keys(edited).length === 0;
+  // An untouched draft is published as it is; otherwise the form is what gets published.
+  const canPublish = valid && (untouched && text.draft ? true : Object.keys(toPublish).length > 0);
 
   const act = async (call: Run, done: AccountKey) => {
     setBusy(true);
     setNotice(null);
     try {
       show(await run<SiteTextOut>(call));
-      setVersions(null);
+      // An open history shows the change just made.
+      if (versions !== null) loadVersions();
       setNotice({ tone: "done", text: t(done) });
       onChanged();
-    } catch (error) {
-      setNotice({ tone: "failed", text: error instanceof Error ? error.message : t("account.content.failed") });
+    } catch {
+      setNotice({ tone: "failed", text: t("account.content.saveFailed") });
     } finally {
       setBusy(false);
     }
   };
-  const save = (publish: boolean) =>
-    act(
-      (client, init) => client.putText(textKey, { texts: changes, publish }, init),
-      publish ? "account.content.published" : "account.content.drafted",
-    );
+  const publish = () =>
+    untouched && text.draft
+      ? act((client, init) => client.publishText(textKey, init), "account.content.published")
+      : act(
+          (client, init) => client.putText(textKey, { texts: toPublish, publish: true }, init),
+          "account.content.published",
+        );
+  const saveDraft = () =>
+    act((client, init) => client.putText(textKey, { texts: edited, publish: false }, init), "account.content.drafted");
   const loadVersions = () =>
     void run<TextVersionOut[]>((client, init) => client.listVersions(textKey, init))
       .then(setVersions)
@@ -334,6 +360,7 @@ function Editor({
                       id={form === "one" ? id : undefined}
                       value={value[form]}
                       aria-invalid={issue ? true : undefined}
+                      aria-describedby={`${id}-help`}
                       onChange={(event) => set({ ...value, [form]: event.target.value })}
                     />
                   </label>
@@ -361,11 +388,13 @@ function Editor({
               )}
             </div>
             {text.format === "markdown" && (
-              <div
-                className="rich-text rounded-sm bg-surface-muted p-3 text-sm text-ink-muted"
-                aria-label={t("account.content.preview")}
-                dangerouslySetInnerHTML={{ __html: markdown(preview(value)) }}
-              />
+              <div className="grid gap-1">
+                <p className="text-xs text-ink-subtle">{t("account.content.preview")}</p>
+                <div
+                  className="rich-text rounded-sm bg-surface-muted p-3 text-sm text-ink-muted"
+                  dangerouslySetInnerHTML={{ __html: markdown(preview(value)) }}
+                />
+              </div>
             )}
           </div>
         );
@@ -374,17 +403,10 @@ function Editor({
       {text.format === "markdown" && <p className="text-xs text-ink-subtle">{t("account.content.markdownHelp")}</p>}
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          disabled={busy || !valid || (!dirty && !text.draft)}
-          onClick={() =>
-            void (dirty
-              ? save(true)
-              : act((client, init) => client.publishText(textKey, init), "account.content.published"))
-          }
-        >
+        <Button disabled={busy || !canPublish} onClick={() => void publish()}>
           {t("account.content.publish")}
         </Button>
-        <Button variant="outline" disabled={busy || !valid || !dirty} onClick={() => void save(false)}>
+        <Button variant="outline" disabled={busy || !valid || untouched} onClick={() => void saveDraft()}>
           {t("account.content.saveDraft")}
         </Button>
         {text.draft && (
@@ -402,11 +424,9 @@ function Editor({
           </Button>
         )}
       </div>
-      {notice && (
-        <p role="status" className={cn("text-sm", notice.tone === "failed" ? "text-danger" : "text-ink-muted")}>
-          {notice.text}
-        </p>
-      )}
+      <p role="status" className={cn("min-h-5 text-sm", notice?.tone === "failed" ? "text-danger" : "text-ink-muted")}>
+        {notice?.text}
+      </p>
 
       <details
         className="text-sm"

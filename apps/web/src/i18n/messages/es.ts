@@ -1163,6 +1163,8 @@ export const es = {
       pickSection: "Elegí una sección del sitio",
       pickText: "Elegí un texto de la lista para editarlo.",
       nothing: "No hay textos que coincidan.",
+      listFailed: "No pudimos cargar la lista. Probá de nuevo.",
+      saveFailed: "No pudimos guardar el cambio. Revisá el texto y probá de nuevo.",
       failed: "No pudimos cargar el texto. Probá de nuevo.",
       edited: "Editado",
       draft: "Borrador",
