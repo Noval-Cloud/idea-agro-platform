@@ -17,6 +17,7 @@ from idea_agro_api.models import (
     TextAuthor,
     TextChange,
     TextRestore,
+    TextSection,
     TextVersionOut,
 )
 from idea_agro_api.services import Services
@@ -42,7 +43,7 @@ Key = Annotated[
     str,
     PathParam(pattern=r"^[A-Za-z0-9_.-]{1,200}$", description="The text's key.", examples=["zone.season.title"]),
 ]
-SEARCHED = 50
+SEARCHED = 100
 # The site reads them when it is built; a minute keeps a rebuild from serving what an editor just replaced.
 CACHE_CONTROL = "public, max-age=60"
 
@@ -109,6 +110,69 @@ def get_published_texts(services: ServicesDep, response: Response) -> PublishedT
     return PublishedTexts.model_validate({"texts": texts})
 
 
+def match(key: str, text: SiteText | None) -> SiteTextMatch:
+    return SiteTextMatch.model_validate(
+        {
+            "key": key,
+            "format": definitions()[key].format,
+            "current": current(key, text),
+            "edited": bool(text and text.published),
+            "draft": bool(text and text.draft is not None),
+        }
+    )
+
+
+@router.get(
+    "/v1/texts/sections",
+    summary="The parts of the site's texts",
+    description="Each first part of the keys, with how many texts it has, are edited and have a draft. For editors.",
+    responses=problems(401, 403),
+)
+def list_sections(caller: EditorDep, services: ServicesDep) -> list[TextSection]:
+    texts = {text.key: text for text in services.site_texts.all()}
+    sections: dict[str, dict[str, int]] = {}
+    for key in definitions():
+        counts = sections.setdefault(key.split(".")[0], {"count": 0, "edited": 0, "drafts": 0})
+        text = texts.get(key)
+        counts["count"] += 1
+        counts["edited"] += bool(text and text.published)
+        counts["drafts"] += bool(text and text.draft is not None)
+    return [TextSection(name=name, **counts) for name, counts in sorted(sections.items())]
+
+
+@router.get(
+    "/v1/texts/sections/{section}",
+    summary="The texts of a part of the site",
+    responses=problems(401, 403, 404, 422),
+)
+def list_section(
+    section: Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{1,100}$", description="The keys' first part.")],
+    caller: EditorDep,
+    services: ServicesDep,
+) -> list[SiteTextMatch]:
+    keys = [key for key in definitions() if key.split(".")[0] == section]
+    if not keys:
+        raise HTTPException(404, "The site has no such part.")
+    texts = {text.key: text for text in services.site_texts.all()}
+    return [match(key, texts.get(key)) for key in keys]
+
+
+@router.get(
+    "/v1/texts/changes",
+    summary="The texts editors changed",
+    description="Every text with a published edit or a draft, most recently changed first. For editors.",
+    responses=problems(401, 403),
+)
+def list_changes(caller: EditorDep, services: ServicesDep) -> list[SiteTextMatch]:
+    known = definitions()
+    texts = [text for text in services.site_texts.all() if text.key in known]
+    latest = {
+        text.key: max((at for at in (text.updated_at, text.draft_at) if at), default=datetime.min.replace(tzinfo=UTC))
+        for text in texts
+    }
+    return [match(text.key, text) for text in sorted(texts, key=lambda t: latest[t.key], reverse=True)]
+
+
 @router.get(
     "/v1/texts/search",
     summary="Find the site's texts",
@@ -121,21 +185,7 @@ def search_texts(
     q: Annotated[str, Query(min_length=1, max_length=200, description="Words the text says, or part of its key.")],
 ) -> list[SiteTextMatch]:
     texts = {text.key: text for text in services.site_texts.all()}
-    matches: list[SiteTextMatch] = []
-    for key in search(services.site_texts, q, SEARCHED):
-        text = texts.get(key)
-        matches.append(
-            SiteTextMatch.model_validate(
-                {
-                    "key": key,
-                    "format": definitions()[key].format,
-                    "current": current(key, text),
-                    "edited": bool(text and text.published),
-                    "draft": bool(text and text.draft is not None),
-                }
-            )
-        )
-    return matches
+    return [match(key, texts.get(key)) for key in search(services.site_texts, q, SEARCHED)]
 
 
 @router.get(
