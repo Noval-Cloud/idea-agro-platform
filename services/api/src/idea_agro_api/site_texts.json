@@ -297,6 +297,14 @@
       "pt": "Português"
     }
   },
+  "account.content.listFailed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos cargar la lista. Probá de nuevo.",
+      "en": "We could not load the list. Try again.",
+      "pt": "Não conseguimos carregar a lista. Tente de novo."
+    }
+  },
   "account.content.markdownHelp": {
     "format": "plain",
     "default": {
@@ -415,6 +423,14 @@
       "es": "Guardar como borrador",
       "en": "Save as draft",
       "pt": "Salvar como rascunho"
+    }
+  },
+  "account.content.saveFailed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos guardar el cambio. Revisá el texto y probá de nuevo.",
+      "en": "We could not save the change. Check the text and try again.",
+      "pt": "Não conseguimos salvar a alteração. Revise o texto e tente de novo."
     }
   },
   "account.content.searchHint": {
