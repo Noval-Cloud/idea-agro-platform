@@ -638,8 +638,8 @@ class TextVersionOut(BaseModel):
     """A change to a text."""
 
     id: str
-    state: Literal["published", "draft", "default"] = Field(
-        description="`published` and `default` changed what the site shows; `draft` only the draft."
+    state: Literal["published", "draft", "discarded", "default"] = Field(
+        description="`published` and `default` changed what the site shows; `draft` and `discarded` only the draft."
     )
     texts: dict[TextLocale, TextValue] = Field(description="What the change left: the published edits or the draft.")
     at: datetime

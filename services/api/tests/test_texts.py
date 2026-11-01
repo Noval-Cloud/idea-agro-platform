@@ -140,3 +140,23 @@ def test_every_change_is_audited(client: TestClient, services: Services) -> None
 
     assert ("text_drafted", KEY) in actions
     assert ("text_published", KEY) in actions
+
+
+def test_only_published_versions_come_back(client: TestClient) -> None:
+    put(client, es="{indicator} en {year}")
+    put(client, publish=False, en="{indicator} in {year}")
+    client.delete(f"/v1/texts/{KEY}/draft", headers=ANA)
+    versions = client.get(f"/v1/texts/{KEY}/versions", headers=ANA).json()
+    assert [v["state"] for v in versions] == ["discarded", "draft", "published"]
+
+    for version in versions[:2]:
+        response = client.post(f"/v1/texts/{KEY}/restore", headers=ANA, json={"version": version["id"]})
+        assert response.status_code == 409
+    assert client.get(f"/v1/texts/{KEY}", headers=ANA).json()["published"] == {"es": "{indicator} en {year}"}
+
+
+def test_a_plain_text_refuses_plural_forms(client: TestClient) -> None:
+    response = client.put(f"/v1/texts/{KEY}", headers=ANA, json={"texts": {"es": {"one": "a", "other": "b"}}})
+
+    assert response.status_code == 422
+    assert "plain text" in response.json()["detail"]

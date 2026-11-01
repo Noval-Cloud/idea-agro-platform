@@ -11,19 +11,24 @@ const escape = (text: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-// Links may go to the web, to a page of the site or to a part of the page; nothing else (no `javascript:`).
-const safeHref = (href: string) => /^(https?:\/\/|\/(?!\/)|#)/.test(href);
+// Links may go to the web, to a page of the site or to a part of the page; nothing else (no `javascript:`, and no
+// `//` or `/\`, which browsers read as another site).
+const safeHref = (href: string) => /^(https?:\/\/|\/(?![/\\])|#)/.test(href);
+
+const emphasis = (text: string) =>
+  text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
 
 function inline(text: string): string {
-  return escape(text)
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label: string, href: string) => {
-      const target = href.replace(/&amp;/g, "&");
-      if (!safeHref(target)) return match;
-      const external = /^https?:\/\//.test(target) ? ' rel="noopener" target="_blank"' : "";
-      return `<a href="${escape(target)}"${external}>${label}</a>`;
-    })
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
+  // Links are set aside first, so an asterisk in an address never turns into emphasis.
+  const links: string[] = [];
+  const rest = escape(text).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label: string, href: string) => {
+    const target = href.replace(/&amp;/g, "&");
+    if (!safeHref(target)) return match;
+    const external = /^https?:\/\//.test(target) ? ' rel="noopener" target="_blank"' : "";
+    links.push(`<a href="${escape(target)}"${external}>${emphasis(label)}</a>`);
+    return `\uE000${links.length - 1}\uE000`;
+  });
+  return emphasis(rest).replace(/\uE000(\d+)\uE000/g, (_, index: string) => links[Number(index)]);
 }
 
 /** The HTML of a Markdown text, safe to put in a page. */

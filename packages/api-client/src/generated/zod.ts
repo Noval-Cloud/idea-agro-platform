@@ -2104,7 +2104,7 @@ export const listVersionsResponseTextsTwoOtherMax = 2000;
 
 export const ListVersionsResponseItem = zod.object({
   "id": zod.string(),
-  "state": zod.enum(['published', 'draft', 'default']).describe('`published` and `default` changed what the site shows; `draft` only the draft.'),
+  "state": zod.enum(['published', 'draft', 'discarded', 'default']).describe('`published` and `default` changed what the site shows; `draft` and `discarded` only the draft.'),
   "texts": zod.record(zod.string(), zod.union([zod.string().max(listVersionsResponseTextsOneMax),zod.object({
   "one": zod.string().max(listVersionsResponseTextsTwoOneMax),
   "other": zod.string().max(listVersionsResponseTextsTwoOtherMax)
@@ -2119,7 +2119,7 @@ export const ListVersionsResponse = zod.array(ListVersionsResponseItem)
 
 
 /**
- * Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.
+ * Publishes what a published version left, or goes back to the code's defaults; a draft stays as it is. A draft's version does not come back: it was never what the site showed.
  * @summary Bring back a text's earlier version, or its defaults
  */
 export const restoreTextPathKeyRegExp = new RegExp('^[A-Za-z0-9_.-]{1,200}$');

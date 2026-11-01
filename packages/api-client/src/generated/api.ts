@@ -1177,7 +1177,7 @@ export interface TextRestore {
 }
 
 /**
- * `published` and `default` changed what the site shows; `draft` only the draft.
+ * `published` and `default` changed what the site shows; `draft` and `discarded` only the draft.
  */
 export type TextVersionOutState = typeof TextVersionOutState[keyof typeof TextVersionOutState];
 
@@ -1185,6 +1185,7 @@ export type TextVersionOutState = typeof TextVersionOutState[keyof typeof TextVe
 export const TextVersionOutState = {
   published: 'published',
   draft: 'draft',
+  discarded: 'discarded',
   default: 'default',
 } as const;
 
@@ -1193,7 +1194,7 @@ export const TextVersionOutState = {
  */
 export interface TextVersionOut {
   id: string;
-  /** `published` and `default` changed what the site shows; `draft` only the draft. */
+  /** `published` and `default` changed what the site shows; `draft` and `discarded` only the draft. */
   state: TextVersionOutState;
   /** What the change left: the published edits or the draft. */
   texts: Partial<Record<'es' | 'en' | 'pt', TextValue>>;
@@ -9407,6 +9408,11 @@ export type restoreTextResponse404 = {
   status: 404
 }
 
+export type restoreTextResponse409 = {
+  data: Problem
+  status: 409
+}
+
 export type restoreTextResponse422 = {
   data: Problem
   status: 422
@@ -9415,7 +9421,7 @@ export type restoreTextResponse422 = {
 export type restoreTextResponseSuccess = (restoreTextResponse200) & {
   headers: Headers;
 };
-export type restoreTextResponseError = (restoreTextResponse401 | restoreTextResponse403 | restoreTextResponse404 | restoreTextResponse422) & {
+export type restoreTextResponseError = (restoreTextResponse401 | restoreTextResponse403 | restoreTextResponse404 | restoreTextResponse409 | restoreTextResponse422) & {
   headers: Headers;
 };
 
@@ -9430,7 +9436,7 @@ export const getRestoreTextUrl = (key: string,) => {
 }
 
 /**
- * Publishes what a version left, or goes back to the code's defaults; a draft stays as it is.
+ * Publishes what a published version left, or goes back to the code's defaults; a draft stays as it is. A draft's version does not come back: it was never what the site showed.
  * @summary Bring back a text's earlier version, or its defaults
  */
 export const restoreText = async (key: string,

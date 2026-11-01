@@ -238,12 +238,15 @@ export default function Users({ t, moment, signInPath, me }: Props) {
                 {t(`account.users.actions.${entry.action}`, {
                   actor: entry.actor_name,
                   target: entry.target_email || entry.target,
+                  // Only a change of roles lists roles; a text's change lists its languages.
                   detail:
-                    entry.detail
-                      .split(",")
-                      .filter(Boolean)
-                      .map((role) => t(`account.roles.${role as "editor" | "admin"}`))
-                      .join(", ") || t("account.users.noRoles"),
+                    entry.action === "roles_changed"
+                      ? entry.detail
+                          .split(",")
+                          .filter(Boolean)
+                          .map((role) => t(`account.roles.${role as "editor" | "admin"}`))
+                          .join(", ") || t("account.users.noRoles")
+                      : entry.detail,
                 })}
               </p>
               <time dateTime={entry.at} className="text-xs text-ink-subtle">

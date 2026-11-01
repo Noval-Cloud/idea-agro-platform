@@ -18,6 +18,14 @@ describe("markdown", () => {
     expect(markdown("[x](javascript:alert(1))")).toBe("<p>[x](javascript:alert(1))</p>");
   });
 
+  it("keeps addresses whole and refuses ones that lead to another site", () => {
+    expect(markdown("[a](https://x.org/*b*)")).toBe(
+      '<p><a href="https://x.org/*b*" rel="noopener" target="_blank">a</a></p>',
+    );
+    expect(markdown("[a](/\\evil.example)")).toBe("<p>[a](/\\evil.example)</p>");
+    expect(markdown("[a](//evil.example)")).toBe("<p>[a](//evil.example)</p>");
+  });
+
   it("links to pages of the site without a new tab", () => {
     expect(markdown("[mapa](/explore/)")).toBe('<p><a href="/explore/">mapa</a></p>');
   });

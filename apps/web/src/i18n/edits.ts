@@ -9,6 +9,8 @@ import type { Edits, Text } from "./texts";
 async function fetchEdits(base: string): Promise<Record<Locale, Edits>> {
   // A deploy build that waits on an API that does not answer would hang until Cloud Build gives up.
   const response = await fetch(new URL("/v1/texts", base), { signal: AbortSignal.timeout(30_000) });
+  // An API older than the texts has none to give: a deploy that starts the website first still builds.
+  if (response.status === 404) return { es: {}, en: {}, pt: {} };
   if (!response.ok) throw new Error(`${response.status} /v1/texts`);
   const { texts } = (await response.json()) as { texts: Record<string, Partial<Record<Locale, Text>>> };
   const edits = Object.fromEntries(locales.map((locale) => [locale, {} as Edits])) as Record<Locale, Edits>;
