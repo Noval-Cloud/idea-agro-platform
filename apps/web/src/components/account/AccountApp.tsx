@@ -10,6 +10,7 @@ import SavedZones from "./SavedZones";
 import Invitations from "./Invitations";
 import Projects from "./Projects";
 import Users from "./Users";
+import Content from "./Content";
 
 type Props = {
   locale: Locale;
@@ -60,9 +61,9 @@ export default function AccountApp({
       .then(({ loadMe }) => loadMe())
       .then((me) => {
         if (!me) return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.hash)}`);
-        const role = sectionRoles[section];
+        const needed = sectionRoles[section];
         // A section outside the person's roles leads to their profile.
-        if (role && !me.roles.includes(role)) return location.replace(sectionPaths.profile);
+        if (needed && !needed.some((role) => me.roles.includes(role))) return location.replace(sectionPaths.profile);
         setState({ kind: "ready", me });
       })
       .catch(() => setState({ kind: "failed" }));
@@ -106,15 +107,7 @@ export default function AccountApp({
   if (section === "projects")
     return <Projects translator={translator} projectPath={projectPath} mapPath={mapPath} signInPath={signInPath} />;
   if (section === "invitations") return <Invitations translator={translator} locale={locale} signInPath={signInPath} />;
-  if (section === "content")
-    return (
-      <section id="content" aria-labelledby="content-title" className="grid max-w-3xl gap-2 pt-8">
-        <h2 id="content-title" className="text-lg font-medium text-ink">
-          {t("account.content.title")}
-        </h2>
-        <p className="max-w-prose text-sm text-ink-muted">{t("account.content.body")}</p>
-      </section>
-    );
+  if (section === "content") return <Content translator={translator} />;
   if (section === "admin")
     return (
       <div className="max-w-(--ia-layout-page) pt-8">

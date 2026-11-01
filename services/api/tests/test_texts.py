@@ -156,6 +156,7 @@ def test_texts_are_listed_by_section_and_changes(client: TestClient) -> None:
     assert [m["key"] for m in changes] == ["nav.groups.structure", KEY]
     assert client.get("/v1/texts/sections/nothing", headers=ANA).status_code == 404
 
+
 def test_only_published_versions_come_back(client: TestClient) -> None:
     put(client, es="{indicator} en {year}")
     put(client, publish=False, en="{indicator} in {year}")

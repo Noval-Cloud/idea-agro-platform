@@ -114,9 +114,563 @@
   "account.content.body": {
     "format": "plain",
     "default": {
-      "es": "Acá vas a cargar publicaciones y artículos, y pedir que se actualicen los datos satelitales. El asistente de contenido está en preparación.",
-      "en": "Here you will upload publications and articles, and ask for the satellite data to be updated. The content assistant is on its way.",
-      "pt": "Aqui você vai enviar publicações e artigos, e pedir a atualização dos dados de satélite. O assistente de conteúdo está em preparação."
+      "es": "Todos los textos del sitio, en sus tres idiomas. Buscá un texto por lo que dice, editalo y publicalo, o guardalo como borrador para que otro editor lo revise. El sitio muestra lo publicado cuando se actualiza.",
+      "en": "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
+      "pt": "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado."
+    }
+  },
+  "account.content.cancel": {
+    "format": "plain",
+    "default": {
+      "es": "Cancelar",
+      "en": "Cancel",
+      "pt": "Cancelar"
+    }
+  },
+  "account.content.default": {
+    "format": "plain",
+    "default": {
+      "es": "Por defecto",
+      "en": "Default",
+      "pt": "Padrão"
+    }
+  },
+  "account.content.discardDraft": {
+    "format": "plain",
+    "default": {
+      "es": "Descartar el borrador",
+      "en": "Discard the draft",
+      "pt": "Descartar o rascunho"
+    }
+  },
+  "account.content.discarded": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador descartado.",
+      "en": "Draft discarded.",
+      "pt": "Rascunho descartado."
+    }
+  },
+  "account.content.draft": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador",
+      "en": "Draft",
+      "pt": "Rascunho"
+    }
+  },
+  "account.content.draftBy": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador de {name} del {at}",
+      "en": "Draft by {name} from {at}",
+      "pt": "Rascunho de {name} de {at}"
+    }
+  },
+  "account.content.draftCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} borrador",
+        "other": "{count} borradores"
+      },
+      "en": {
+        "one": "{count} draft",
+        "other": "{count} drafts"
+      },
+      "pt": {
+        "one": "{count} rascunho",
+        "other": "{count} rascunhos"
+      }
+    }
+  },
+  "account.content.drafted": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador guardado.",
+      "en": "Draft saved.",
+      "pt": "Rascunho salvo."
+    }
+  },
+  "account.content.edited": {
+    "format": "plain",
+    "default": {
+      "es": "Editado",
+      "en": "Edited",
+      "pt": "Editado"
+    }
+  },
+  "account.content.editedCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} editado",
+        "other": "{count} editados"
+      },
+      "en": {
+        "one": "{count} edited",
+        "other": "{count} edited"
+      },
+      "pt": {
+        "one": "{count} editado",
+        "other": "{count} editados"
+      }
+    }
+  },
+  "account.content.failed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos cargar el texto. Probá de nuevo.",
+      "en": "We could not load the text. Try again.",
+      "pt": "Não conseguimos carregar o texto. Tente de novo."
+    }
+  },
+  "account.content.formats.markdown": {
+    "format": "plain",
+    "default": {
+      "es": "Markdown",
+      "en": "Markdown",
+      "pt": "Markdown"
+    }
+  },
+  "account.content.formats.plain": {
+    "format": "plain",
+    "default": {
+      "es": "Texto",
+      "en": "Text",
+      "pt": "Texto"
+    }
+  },
+  "account.content.formats.plural": {
+    "format": "plain",
+    "default": {
+      "es": "Singular y plural",
+      "en": "Singular and plural",
+      "pt": "Singular e plural"
+    }
+  },
+  "account.content.forms.plural": {
+    "format": "plain",
+    "default": {
+      "es": "Para varios",
+      "en": "For several",
+      "pt": "Para vários"
+    }
+  },
+  "account.content.forms.singular": {
+    "format": "plain",
+    "default": {
+      "es": "Para uno",
+      "en": "For one",
+      "pt": "Para um"
+    }
+  },
+  "account.content.history": {
+    "format": "plain",
+    "default": {
+      "es": "Historial",
+      "en": "History",
+      "pt": "Histórico"
+    }
+  },
+  "account.content.languages.en": {
+    "format": "plain",
+    "default": {
+      "es": "Inglés",
+      "en": "English",
+      "pt": "Inglês"
+    }
+  },
+  "account.content.languages.es": {
+    "format": "plain",
+    "default": {
+      "es": "Español",
+      "en": "Spanish",
+      "pt": "Espanhol"
+    }
+  },
+  "account.content.languages.pt": {
+    "format": "plain",
+    "default": {
+      "es": "Portugués",
+      "en": "Portuguese",
+      "pt": "Português"
+    }
+  },
+  "account.content.markdownHelp": {
+    "format": "plain",
+    "default": {
+      "es": "Podés usar **negrita**, *cursiva*, [links](https://…) y listas con «- ». Dejá una línea en blanco entre párrafos.",
+      "en": "You can use **bold**, *italics*, [links](https://…) and lists with \"- \". Leave a blank line between paragraphs.",
+      "pt": "Você pode usar **negrito**, *itálico*, [links](https://…) e listas com \"- \". Deixe uma linha em branco entre parágrafos."
+    }
+  },
+  "account.content.noHistory": {
+    "format": "plain",
+    "default": {
+      "es": "Este texto todavía no tiene cambios.",
+      "en": "This text has no changes yet.",
+      "pt": "Este texto ainda não tem alterações."
+    }
+  },
+  "account.content.nothing": {
+    "format": "plain",
+    "default": {
+      "es": "No hay textos que coincidan.",
+      "en": "No text matches.",
+      "pt": "Nenhum texto corresponde."
+    }
+  },
+  "account.content.pickSection": {
+    "format": "plain",
+    "default": {
+      "es": "Elegí una sección del sitio",
+      "en": "Pick a section of the site",
+      "pt": "Escolha uma seção do site"
+    }
+  },
+  "account.content.pickText": {
+    "format": "plain",
+    "default": {
+      "es": "Elegí un texto de la lista para editarlo.",
+      "en": "Pick a text from the list to edit it.",
+      "pt": "Escolha um texto da lista para editá-lo."
+    }
+  },
+  "account.content.preview": {
+    "format": "plain",
+    "default": {
+      "es": "Vista previa",
+      "en": "Preview",
+      "pt": "Pré-visualização"
+    }
+  },
+  "account.content.problems.empty": {
+    "format": "plain",
+    "default": {
+      "es": "No puede quedar vacío.",
+      "en": "It cannot be empty.",
+      "pt": "Não pode ficar vazio."
+    }
+  },
+  "account.content.problems.extra": {
+    "format": "plain",
+    "default": {
+      "es": "{names} no corresponde a este texto.",
+      "en": "{names} does not belong to this text.",
+      "pt": "{names} não pertence a este texto."
+    }
+  },
+  "account.content.problems.missing": {
+    "format": "plain",
+    "default": {
+      "es": "Falta {names}: el sitio completa ahí un valor.",
+      "en": "{names} is missing: the site fills in a value there.",
+      "pt": "Falta {names}: o site completa um valor aí."
+    }
+  },
+  "account.content.publish": {
+    "format": "plain",
+    "default": {
+      "es": "Publicar",
+      "en": "Publish",
+      "pt": "Publicar"
+    }
+  },
+  "account.content.published": {
+    "format": "plain",
+    "default": {
+      "es": "Publicado. El sitio lo va a mostrar en su próxima actualización.",
+      "en": "Published. The site will show it when it next updates.",
+      "pt": "Publicado. O site vai mostrá-lo na próxima atualização."
+    }
+  },
+  "account.content.publishedBy": {
+    "format": "plain",
+    "default": {
+      "es": "Publicado por {name} el {at}",
+      "en": "Published by {name} on {at}",
+      "pt": "Publicado por {name} em {at}"
+    }
+  },
+  "account.content.restore": {
+    "format": "plain",
+    "default": {
+      "es": "Recuperar esta versión",
+      "en": "Bring this version back",
+      "pt": "Recuperar esta versão"
+    }
+  },
+  "account.content.restored": {
+    "format": "plain",
+    "default": {
+      "es": "Listo. El sitio lo va a mostrar en su próxima actualización.",
+      "en": "Done. The site will show it when it next updates.",
+      "pt": "Pronto. O site vai mostrá-lo na próxima atualização."
+    }
+  },
+  "account.content.saveDraft": {
+    "format": "plain",
+    "default": {
+      "es": "Guardar como borrador",
+      "en": "Save as draft",
+      "pt": "Salvar como rascunho"
+    }
+  },
+  "account.content.searchHint": {
+    "format": "plain",
+    "default": {
+      "es": "Escribí una palabra que aparezca en el texto, en cualquier idioma.",
+      "en": "Type a word the text contains, in any language.",
+      "pt": "Digite uma palavra do texto, em qualquer idioma."
+    }
+  },
+  "account.content.searchPlaceholder": {
+    "format": "plain",
+    "default": {
+      "es": "Buscá por lo que dice el texto o por su clave",
+      "en": "Search by what the text says or by its key",
+      "pt": "Busque pelo que o texto diz ou pela sua chave"
+    }
+  },
+  "account.content.sections.a11y": {
+    "format": "plain",
+    "default": {
+      "es": "Accesibilidad",
+      "en": "Accessibility",
+      "pt": "Acessibilidade"
+    }
+  },
+  "account.content.sections.account": {
+    "format": "plain",
+    "default": {
+      "es": "Cuenta",
+      "en": "Account",
+      "pt": "Conta"
+    }
+  },
+  "account.content.sections.auth": {
+    "format": "plain",
+    "default": {
+      "es": "Ingreso",
+      "en": "Sign-in",
+      "pt": "Entrada"
+    }
+  },
+  "account.content.sections.communities": {
+    "format": "plain",
+    "default": {
+      "es": "Comunidades de pastizal",
+      "en": "Grassland communities",
+      "pt": "Comunidades campestres"
+    }
+  },
+  "account.content.sections.entry": {
+    "format": "plain",
+    "default": {
+      "es": "Inicio: accesos",
+      "en": "Home: entry points",
+      "pt": "Início: acessos"
+    }
+  },
+  "account.content.sections.explorer": {
+    "format": "plain",
+    "default": {
+      "es": "Mapa",
+      "en": "Map",
+      "pt": "Mapa"
+    }
+  },
+  "account.content.sections.footer": {
+    "format": "plain",
+    "default": {
+      "es": "Pie de página",
+      "en": "Footer",
+      "pt": "Rodapé"
+    }
+  },
+  "account.content.sections.indicators": {
+    "format": "plain",
+    "default": {
+      "es": "Indicadores",
+      "en": "Indicators",
+      "pt": "Indicadores"
+    }
+  },
+  "account.content.sections.indicatorsPage": {
+    "format": "plain",
+    "default": {
+      "es": "Página de indicadores",
+      "en": "Indicators page",
+      "pt": "Página de indicadores"
+    }
+  },
+  "account.content.sections.invitation": {
+    "format": "plain",
+    "default": {
+      "es": "Invitaciones",
+      "en": "Invitations",
+      "pt": "Convites"
+    }
+  },
+  "account.content.sections.journey": {
+    "format": "plain",
+    "default": {
+      "es": "Inicio: capítulos",
+      "en": "Home: chapters",
+      "pt": "Início: capítulos"
+    }
+  },
+  "account.content.sections.landcover": {
+    "format": "plain",
+    "default": {
+      "es": "Coberturas del suelo",
+      "en": "Land cover",
+      "pt": "Cobertura do solo"
+    }
+  },
+  "account.content.sections.languages": {
+    "format": "plain",
+    "default": {
+      "es": "Idiomas",
+      "en": "Languages",
+      "pt": "Idiomas"
+    }
+  },
+  "account.content.sections.lists": {
+    "format": "plain",
+    "default": {
+      "es": "Listas",
+      "en": "Lists",
+      "pt": "Listas"
+    }
+  },
+  "account.content.sections.meta": {
+    "format": "plain",
+    "default": {
+      "es": "Títulos y descripciones",
+      "en": "Titles and descriptions",
+      "pt": "Títulos e descrições"
+    }
+  },
+  "account.content.sections.nav": {
+    "format": "plain",
+    "default": {
+      "es": "Menú",
+      "en": "Menu",
+      "pt": "Menu"
+    }
+  },
+  "account.content.sections.notFound": {
+    "format": "plain",
+    "default": {
+      "es": "Página no encontrada",
+      "en": "Page not found",
+      "pt": "Página não encontrada"
+    }
+  },
+  "account.content.sections.open": {
+    "format": "plain",
+    "default": {
+      "es": "Datos abiertos",
+      "en": "Open data",
+      "pt": "Dados abertos"
+    }
+  },
+  "account.content.sections.outline": {
+    "format": "plain",
+    "default": {
+      "es": "Edición de contornos",
+      "en": "Outline editing",
+      "pt": "Edição de contornos"
+    }
+  },
+  "account.content.sections.partners": {
+    "format": "plain",
+    "default": {
+      "es": "Instituciones",
+      "en": "Institutions",
+      "pt": "Instituições"
+    }
+  },
+  "account.content.sections.project": {
+    "format": "plain",
+    "default": {
+      "es": "Proyectos",
+      "en": "Projects",
+      "pt": "Projetos"
+    }
+  },
+  "account.content.sections.resources": {
+    "format": "plain",
+    "default": {
+      "es": "Recursos",
+      "en": "Resources",
+      "pt": "Recursos"
+    }
+  },
+  "account.content.sections.science": {
+    "format": "plain",
+    "default": {
+      "es": "Ciencia",
+      "en": "Science",
+      "pt": "Ciência"
+    }
+  },
+  "account.content.sections.seasonChart": {
+    "format": "plain",
+    "default": {
+      "es": "Gráfico del año",
+      "en": "Year chart",
+      "pt": "Gráfico do ano"
+    }
+  },
+  "account.content.sections.zone": {
+    "format": "plain",
+    "default": {
+      "es": "Página de zona",
+      "en": "Zone page",
+      "pt": "Página da zona"
+    }
+  },
+  "account.content.sections.zones": {
+    "format": "plain",
+    "default": {
+      "es": "Zonas",
+      "en": "Zones",
+      "pt": "Zonas"
+    }
+  },
+  "account.content.states.default": {
+    "format": "plain",
+    "default": {
+      "es": "Volvió al texto por defecto",
+      "en": "Back to the default text",
+      "pt": "Voltou ao texto padrão"
+    }
+  },
+  "account.content.states.discarded": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador descartado",
+      "en": "Draft discarded",
+      "pt": "Rascunho descartado"
+    }
+  },
+  "account.content.states.draft": {
+    "format": "plain",
+    "default": {
+      "es": "Borrador",
+      "en": "Draft",
+      "pt": "Rascunho"
+    }
+  },
+  "account.content.states.published": {
+    "format": "plain",
+    "default": {
+      "es": "Publicado",
+      "en": "Published",
+      "pt": "Publicado"
     }
   },
   "account.content.title": {
@@ -125,6 +679,62 @@
       "es": "Contenido",
       "en": "Content",
       "pt": "Conteúdo"
+    }
+  },
+  "account.content.toDefault": {
+    "format": "plain",
+    "default": {
+      "es": "Volver al texto por defecto",
+      "en": "Go back to the default text",
+      "pt": "Voltar ao texto padrão"
+    }
+  },
+  "account.content.toDefaultBody": {
+    "format": "plain",
+    "default": {
+      "es": "El sitio va a mostrar el texto original en los tres idiomas. El cambio queda en el historial y se puede recuperar.",
+      "en": "The site will show the original text in all three languages. The change stays in the history and can be brought back.",
+      "pt": "O site vai mostrar o texto original nos três idiomas. A alteração fica no histórico e pode ser recuperada."
+    }
+  },
+  "account.content.toDefaultTitle": {
+    "format": "plain",
+    "default": {
+      "es": "¿Volver al texto por defecto?",
+      "en": "Go back to the default text?",
+      "pt": "Voltar ao texto padrão?"
+    }
+  },
+  "account.content.unchanged": {
+    "format": "plain",
+    "default": {
+      "es": "Muestra el texto por defecto",
+      "en": "Shows the default text",
+      "pt": "Mostra o texto padrão"
+    }
+  },
+  "account.content.views.changes": {
+    "format": "plain",
+    "default": {
+      "es": "Cambios",
+      "en": "Changes",
+      "pt": "Alterações"
+    }
+  },
+  "account.content.views.search": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar",
+      "en": "Search",
+      "pt": "Buscar"
+    }
+  },
+  "account.content.views.sections": {
+    "format": "plain",
+    "default": {
+      "es": "Por sección",
+      "en": "By section",
+      "pt": "Por seção"
     }
   },
   "account.failed": {

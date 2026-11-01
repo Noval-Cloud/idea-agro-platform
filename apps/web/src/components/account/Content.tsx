@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import type { PluralText, SiteTextMatch, SiteTextOut, TextSection, TextValue, TextVersionOut } from "@idea-agro/api-client";
+import type {
+  PluralText,
+  SiteTextMatch,
+  SiteTextOut,
+  TextSection,
+  TextValue,
+  TextVersionOut,
+} from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -25,7 +32,10 @@ const preview = (value: TextValue | undefined) => (value === undefined ? "" : is
 
 /** What is wrong with a text against its default: empty, or placeholders added or missing. */
 function problem(value: TextValue, fallback: TextValue): { kind: "empty" | "missing" | "extra"; names: string } | null {
-  const pairs = isPlural(value) && isPlural(fallback) ? [value.one, value.other].map((v, i) => [v, words(fallback)[i]]) : [[preview(value), preview(fallback)]];
+  const pairs =
+    isPlural(value) && isPlural(fallback)
+      ? [value.one, value.other].map((v, i) => [v, words(fallback)[i]])
+      : [[preview(value), preview(fallback)]];
   for (const [given, expected] of pairs) {
     if (!given.trim()) return { kind: "empty", names: "" };
     const have = placeholders(given);
@@ -55,8 +65,8 @@ export default function Content({ translator }: { translator: AccountTranslator 
 
   useEffect(() => {
     let live = true;
-    const load = (call: Parameters<typeof run>[0]) =>
-      void run(call)
+    const load = (call: Run) =>
+      void run<SiteTextMatch[]>(call)
         .then((found) => live && setList(found))
         .catch(() => live && setList([]));
     const timer = setTimeout(() => {
@@ -199,13 +209,13 @@ function Badge({ children, tone = "edited" }: { children: string; tone?: "edited
   );
 }
 
-type Run<T> = (
+type Run = (
   client: Awaited<ReturnType<typeof api>>[1],
   init: RequestInit,
 ) => Promise<{ status: number; data: unknown }>;
 
 /** One private call; an answer other than 200 is an error, with the API's words when it gives them. */
-async function run<T = SiteTextMatch[]>(call: Run<T>): Promise<T> {
+async function run<T>(call: Run): Promise<T> {
   const [{ privately }, client] = await api();
   const response = await privately((init) => call(client, init));
   if (response.status !== 200) {
@@ -259,7 +269,7 @@ function Editor({
   const valid = languages.every((l) => !problems[l]);
   const dirty = Object.keys(changes).length > 0;
 
-  const act = async (call: Run<SiteTextOut>, done: AccountKey) => {
+  const act = async (call: Run, done: AccountKey) => {
     setBusy(true);
     setNotice(null);
     try {
@@ -319,7 +329,7 @@ function Editor({
               <div className="grid gap-2 sm:grid-cols-2">
                 {(["one", "other"] as const).map((form) => (
                   <label key={form} className="grid gap-1 text-xs text-ink-muted">
-                    {t(`account.content.plural.${form}`)}
+                    {t(form === "one" ? "account.content.forms.singular" : "account.content.forms.plural")}
                     <Input
                       id={form === "one" ? id : undefined}
                       value={value[form]}
@@ -342,9 +352,7 @@ function Editor({
             )}
             <div id={`${id}-help`} className="grid gap-1 text-xs">
               {issue && (
-                <p className="text-danger">
-                  {t(`account.content.problems.${issue.kind}`, { names: issue.names })}
-                </p>
+                <p className="text-danger">{t(`account.content.problems.${issue.kind}`, { names: issue.names })}</p>
               )}
               {!same(value, fallback) && (
                 <p className="text-ink-subtle">
@@ -366,7 +374,14 @@ function Editor({
       {text.format === "markdown" && <p className="text-xs text-ink-subtle">{t("account.content.markdownHelp")}</p>}
 
       <div className="flex flex-wrap gap-2">
-        <Button disabled={busy || !valid || (!dirty && !text.draft)} onClick={() => void (dirty ? save(true) : act((client, init) => client.publishText(textKey, init), "account.content.published"))}>
+        <Button
+          disabled={busy || !valid || (!dirty && !text.draft)}
+          onClick={() =>
+            void (dirty
+              ? save(true)
+              : act((client, init) => client.publishText(textKey, init), "account.content.published"))
+          }
+        >
           {t("account.content.publish")}
         </Button>
         <Button variant="outline" disabled={busy || !valid || !dirty} onClick={() => void save(false)}>
@@ -443,10 +458,7 @@ function Editor({
         cancel={t("account.content.cancel")}
         onConfirm={() => {
           setConfirming(false);
-          void act(
-            (client, init) => client.restoreText(textKey, { version: null }, init),
-            "account.content.restored",
-          );
+          void act((client, init) => client.restoreText(textKey, { version: null }, init), "account.content.restored");
         }}
         onCancel={() => setConfirming(false)}
       />
