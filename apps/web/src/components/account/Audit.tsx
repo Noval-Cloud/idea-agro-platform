@@ -95,11 +95,12 @@ export default function Audit({ translator, signInPath }: Props) {
       void Promise.all([import("@/lib/account"), import("@idea-agro/api-client")])
         .then(([{ privately }, client]) => privately((init) => client.listAccounts({ q: text }, init)))
         .then((response) => {
-          if (!live || response.status !== 200) return;
+          if (!live) return;
+          if (response.status !== 200) return setFound([]);
           for (const a of response.data) seen.current.set(a.id, a.name || a.email || t("account.users.system"));
           setFound(response.data);
         })
-        .catch(() => undefined);
+        .catch(() => live && setFound([]));
     }, 250);
     return () => {
       live = false;
