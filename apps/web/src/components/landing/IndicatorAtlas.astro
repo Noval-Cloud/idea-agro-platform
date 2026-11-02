@@ -220,7 +220,7 @@ const initial: IndicatorId = "ppna";
                                 rel="noopener"
                                 target="_blank"
                               >
-                                {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
+                                {r.url ? t("science.link") : t("science.doi", { doi: r.doi ?? "" })}
                                 <span class="sr-only"> {t("a11y.externalLink")}</span>
                               </a>
                             )}

@@ -1,10 +1,13 @@
 """The scientific articles behind the indicators: published for anyone, kept by editors."""
 
+import re
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import UTC, datetime
+from email.utils import format_datetime
 from typing import Annotated
 
-from fastapi import APIRouter, File, Response, UploadFile
+from fastapi import APIRouter, File, Request, Response, UploadFile
 from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
@@ -24,6 +27,22 @@ IndicatorParam = Annotated[Indicator, PathParam(description="The indicator.")]
 # The site reads them when it is built; a minute keeps a rebuild from serving what an editor just replaced.
 CACHE_CONTROL = "public, max-age=60"
 PDF: dict[int | str, dict[str, object]] = {200: {"description": "The PDF.", "content": {"application/pdf": {}}}}
+# Articles are read at their link or DOI, so their PDFs go: these routes answer until the sunset, then are removed.
+PDF_DEPRECATED = datetime(2026, 11, 2, tzinfo=UTC)
+PDF_SUNSET = datetime(2026, 12, 2, tzinfo=UTC)
+PDF_GONE = f"Deprecated: articles are read at their link or DOI. Removed on {PDF_SUNSET:%Y-%m-%d}."
+# oasdiff refuses to see a route removed before this date.
+PDF_SUNSET_EXTRA: dict[str, object] = {"x-sunset": f"{PDF_SUNSET:%Y-%m-%d}"}
+PDF_PATH = re.compile(r"^/v1/articles/[^/]+/pdf$")
+
+
+async def announce_pdf_sunset(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Every answer of the PDF routes, errors too, announces their end (RFC 9745 and RFC 8594)."""
+    response = await call_next(request)
+    if PDF_PATH.match(request.url.path):
+        response.headers["Deprecation"] = f"@{int(PDF_DEPRECATED.timestamp())}"
+        response.headers["Sunset"] = format_datetime(PDF_SUNSET, usegmt=True)
+    return response
 
 
 def public(article: Article) -> ArticlePublic:
@@ -164,6 +183,9 @@ def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesD
 @router.get(
     "/v1/articles/{article_id}/pdf",
     summary="An article's PDF",
+    description=PDF_GONE,
+    deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     response_class=Response,
     responses=PDF | problems(404, 422),
 )
@@ -182,7 +204,9 @@ def get_article_pdf(article_id: ArticleId, services: ServicesDep) -> Response:
 @router.put(
     "/v1/articles/{article_id}/pdf",
     summary="Attach an article's PDF",
-    description="Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+    description=f"{PDF_GONE} Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+    deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     responses=problems(401, 403, 404, 413, 415, 422),
 )
 def put_article_pdf(
@@ -210,6 +234,9 @@ def put_article_pdf(
 @router.delete(
     "/v1/articles/{article_id}/pdf",
     summary="Remove an article's PDF",
+    description=PDF_GONE,
+    deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     responses=problems(401, 403, 404, 422),
 )
 def delete_article_pdf(article_id: ArticleId, caller: EditorDep, services: ServicesDep) -> ArticleOut:

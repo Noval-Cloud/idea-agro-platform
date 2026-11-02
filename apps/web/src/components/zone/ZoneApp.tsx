@@ -703,7 +703,7 @@ function About({ indicator }: { indicator: IndicatorId }) {
                     target="_blank"
                     className="text-link underline-offset-(--ia-link-underline-offset) hover:underline"
                   >
-                    {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
+                    {r.url ? t("science.link") : t("science.doi", { doi: r.doi ?? "" })}
                     <span className="sr-only"> {t("a11y.externalLink")}</span>
                   </a>
                 </>

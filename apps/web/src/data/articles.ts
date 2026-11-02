@@ -17,7 +17,6 @@ export type Article = {
   source: string;
   doi?: string | null;
   url?: string | null;
-  pdf: boolean;
   framework: boolean;
 };
 export type Published = { articles: Article[]; citations: Record<string, string[]> };
@@ -51,8 +50,5 @@ export const citedBy = (article: string): IndicatorId[] =>
     .map(([indicator]) => indicator as IndicatorId);
 
 export const doiUrl = (doi: string) => `https://doi.org/${doi}`;
-/** Where an article is read: its DOI, its link, or its PDF. */
-export const articleUrl = (article: Article) =>
-  article.doi
-    ? doiUrl(article.doi)
-    : (article.url ?? (article.pdf ? `${api ?? ""}/v1/articles/${article.id}/pdf` : undefined));
+/** Where an article is read: its link, else its DOI. */
+export const articleUrl = (article: Article) => article.url ?? (article.doi ? doiUrl(article.doi) : undefined);
