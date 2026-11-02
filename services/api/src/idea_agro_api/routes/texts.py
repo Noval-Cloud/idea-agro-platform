@@ -12,6 +12,7 @@ from idea_agro_api.deps import Caller, EditorDep, ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.models import (
     PublishedTexts,
+    SiteRebuildOut,
     SiteTextMatch,
     SiteTextOut,
     TextAuthor,
@@ -20,6 +21,7 @@ from idea_agro_api.models import (
     TextVersionOut,
 )
 from idea_agro_api.services import Services
+from idea_agro_api.site_rebuild import RebuildUnavailable
 from idea_agro_api.site_texts import (
     Author,
     InvalidText,
@@ -43,6 +45,8 @@ Key = Annotated[
     PathParam(pattern=r"^[A-Za-z0-9_.-]{1,200}$", description="The text's key.", examples=["zone.season.title"]),
 ]
 SEARCHED = 50
+# Minutes without a publish after which the data job asks for the website's build (its `site` task's `QUIET`).
+QUIET_MINUTES = 5
 # The site reads them when it is built; a minute keeps a rebuild from serving what an editor just replaced.
 CACHE_CONTROL = "public, max-age=60"
 
@@ -95,6 +99,8 @@ def keep(services: Services, caller: Caller, text: SiteText, state: VersionState
     """Stores the text, its version and the audit entry."""
     at = datetime.now(UTC)
     services.site_texts.put(text)
+    if state in ("published", "default"):
+        services.site_rebuild.published(at)
     left = (text.draft or {}) if state in ("draft", "discarded") else text.published
     services.site_texts.add_version(TextVersion(new_version_id(), text.key, left, state, at, author(caller)))
     actor = caller.account
@@ -115,6 +121,38 @@ def get_published_texts(services: ServicesDep, response: Response) -> PublishedT
     known = definitions()
     texts = {text.key: text.published for text in services.site_texts.all() if text.published and text.key in known}
     return PublishedTexts.model_validate({"texts": texts})
+
+
+def rebuild_out(services: Services) -> SiteRebuildOut:
+    found = services.site_rebuild.read()
+    return SiteRebuildOut(published_at=found.published_at, started_at=found.started_at, quiet_minutes=QUIET_MINUTES)
+
+
+@router.get(
+    "/v1/texts/rebuild",
+    summary="Whether the site shows the published texts",
+    description=(
+        "When a text was last published and when the website's latest build was asked for. The build is asked for "
+        "by itself once no text has been published for `quiet_minutes`. For editors."
+    ),
+    responses=problems(401, 403),
+)
+def get_rebuild(caller: EditorDep, services: ServicesDep) -> SiteRebuildOut:
+    return rebuild_out(services)
+
+
+@router.post(
+    "/v1/texts/rebuild",
+    summary="Update the site now",
+    description="Asks for the website's build at once, with every text published so far. For editors.",
+    responses=problems(401, 403, 503),
+)
+def start_rebuild(caller: EditorDep, services: ServicesDep) -> SiteRebuildOut:
+    try:
+        services.site_rebuild.start(datetime.now(UTC))
+    except RebuildUnavailable as error:
+        raise HTTPException(503, str(error)) from None
+    return rebuild_out(services)
 
 
 @router.get(

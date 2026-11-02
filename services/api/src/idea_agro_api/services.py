@@ -32,6 +32,7 @@ from idea_agro_api.saved_zones import MemorySavedZones, SavedZoneStore, saved_zo
 from idea_agro_api.security import RateLimit
 from idea_agro_api.series import ZoneStore, values_from
 from idea_agro_api.shapes import Departments
+from idea_agro_api.site_rebuild import MemorySiteRebuild, SiteRebuild, site_rebuild_from
 from idea_agro_api.site_texts import MemorySiteTexts, SiteTextStore, site_texts_from
 from idea_agro_api.zone_jobs import NoZoneJobs, ZoneJobs, zone_jobs_from
 from idea_agro_api.zones import Files, LocalFiles, files_from
@@ -121,6 +122,8 @@ class Services:
     platform_invitations: PlatformInvitationStore = field(default_factory=MemoryPlatformInvitations)
     # The site's texts editors change, and every change.
     site_texts: SiteTextStore = field(default_factory=MemorySiteTexts)
+    # When the website rebuilds with the published texts.
+    site_rebuild: SiteRebuild = field(default_factory=MemorySiteRebuild)
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -162,6 +165,7 @@ class Services:
             documents=documents_from(records),
             platform_invitations=platform_invitations_from(records),
             site_texts=site_texts_from(records),
+            site_rebuild=site_rebuild_from(records, env.get("WEB_REBUILD_TOPIC", "")),
             document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,
