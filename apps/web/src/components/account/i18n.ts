@@ -22,6 +22,13 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const time = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { timeStyle: "short" }).format(new Date(value));
+  // A calendar day as a date input holds it (`2026-10-01`), in local time.
+  const day = (value: string) => {
+    const [year, monthOf, dayOf] = value.split("-").map(Number);
+    return new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium" }).format(
+      new Date(year, monthOf - 1, dayOf),
+    );
+  };
   const month = (value: Date) =>
     new Intl.DateTimeFormat(intlLocale[locale], { month: "long", year: "numeric" }).format(value);
   const collator = new Intl.Collator(intlLocale[locale], { sensitivity: "base", numeric: true });
@@ -29,6 +36,7 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
   return {
     ...translator,
     date,
+    day,
     moment,
     time,
     month,
