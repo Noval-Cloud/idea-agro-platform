@@ -7405,14 +7405,6 @@
       "pt": "Nada corresponde"
     }
   },
-  "lists.order.by": {
-    "format": "plain",
-    "default": {
-      "es": "Ordenar por",
-      "en": "Sort by",
-      "pt": "Ordenar por"
-    }
-  },
   "lists.order.date.asc": {
     "format": "plain",
     "default": {
@@ -7427,14 +7419,6 @@
       "es": "Primero lo más reciente",
       "en": "Newest first",
       "pt": "Mais recentes primeiro"
-    }
-  },
-  "lists.order.label": {
-    "format": "plain",
-    "default": {
-      "es": "Orden",
-      "en": "Order",
-      "pt": "Ordem"
     }
   },
   "lists.order.number.asc": {

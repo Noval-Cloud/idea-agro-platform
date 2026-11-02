@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Check } from "lucide-react";
 import { DropdownMenu as Menu } from "radix-ui";
 import { cn } from "@/lib/utils";
 
@@ -51,30 +50,14 @@ export function DropdownMenuSeparator({ className, ...props }: React.ComponentPr
 
 export const DropdownMenuRadioGroup = Menu.RadioGroup;
 
-/** One of a group's choices, ticked when it is the one in use. */
-export function DropdownMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof Menu.RadioItem>) {
+/** One of a group's choices; the one in use reads stronger. */
+export function DropdownMenuRadioItem({ className, ...props }: React.ComponentProps<typeof Menu.RadioItem>) {
   return (
     <Menu.RadioItem
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-sm outline-none select-none data-highlighted:bg-action-soft [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-subtle",
+        "group flex h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-sm text-ink-muted outline-none select-none data-highlighted:bg-action-soft data-[state=checked]:font-medium data-[state=checked]:text-ink [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-subtle",
         className,
       )}
-      {...props}
-    >
-      <span className="grid size-4 place-items-center">
-        <Menu.ItemIndicator>
-          <Check aria-hidden="true" />
-        </Menu.ItemIndicator>
-      </span>
-      {children}
-    </Menu.RadioItem>
-  );
-}
-
-export function DropdownMenuLabel({ className, ...props }: React.ComponentProps<typeof Menu.Label>) {
-  return (
-    <Menu.Label
-      className={cn("px-2.5 pt-2 pb-1 text-2xs font-medium tracking-wide text-ink-subtle uppercase", className)}
       {...props}
     />
   );

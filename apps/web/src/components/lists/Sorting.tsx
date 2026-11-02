@@ -1,11 +1,9 @@
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { iconSize } from "@/design/tokens";
@@ -36,7 +34,10 @@ export type SortOption<K extends string> = { key: K; label: string; kind: SortKi
 /** Text starts from A, dates from the newest, numbers from the largest. */
 export const naturallyDescending = (kind: SortKind) => kind !== "text";
 
-/** The sort as a menu: the key and its direction, in every view; a table's headers sort too. */
+/**
+ * The sort as a menu, in every view: each key on its row with the arrow of its direction. Choosing another key sorts
+ * by it in its usual direction; choosing the current one turns it around. A table's headers sort too.
+ */
 export function SortMenu<K extends string>({
   t,
   sort,
@@ -49,45 +50,43 @@ export function SortMenu<K extends string>({
   onSort: (sort: Sort<K>) => void;
 }) {
   const current = options.find((o) => o.key === sort.key) ?? options[0];
-  const direction = (descending: boolean) => t(`lists.order.${current.kind}.${descending ? "desc" : "asc"}`);
+  // The arrow shows the direction; readers hear it in words.
+  const direction = (kind: SortKind, descending: boolean) => t(`lists.order.${kind}.${descending ? "desc" : "asc"}`);
+  const Arrow = sort.descending ? ArrowDown : ArrowUp;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={`${t("lists.sort")}: ${current.label}, ${direction(sort.descending)}`}
-        className="inline-flex h-9 items-center gap-2 rounded-sm px-2.5 text-sm text-ink-muted hover:bg-action-soft hover:text-ink data-[state=open]:bg-action-soft"
+        aria-label={`${t("lists.sort")}: ${current.label}, ${direction(current.kind, sort.descending)}`}
+        className="inline-flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-sm text-ink-muted hover:bg-action-soft hover:text-ink data-[state=open]:bg-action-soft"
       >
-        <ArrowUpDown size={iconSize.sm} aria-hidden="true" />
-        <span className="hidden sm:inline">
-          {current.label} · {direction(sort.descending)}
-        </span>
+        {current.label}
+        <Arrow size={iconSize.sm} aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-56">
-        <DropdownMenuLabel>{t("lists.order.by")}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={current.key}
-          onValueChange={(key) => {
-            const option = options.find((o) => o.key === key);
-            if (option) onSort({ key: option.key, descending: naturallyDescending(option.kind) });
-          }}
-        >
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.key} value={option.key}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>{t("lists.order.label")}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={sort.descending ? "desc" : "asc"}
-          onValueChange={(value) => onSort({ key: current.key, descending: value === "desc" })}
-        >
-          {/* Each kind's usual direction comes first. */}
-          {(naturallyDescending(current.kind) ? [true, false] : [false, true]).map((descending) => (
-            <DropdownMenuRadioItem key={String(descending)} value={descending ? "desc" : "asc"}>
-              {direction(descending)}
-            </DropdownMenuRadioItem>
-          ))}
+      <DropdownMenuContent className="min-w-48">
+        <DropdownMenuRadioGroup value={current.key}>
+          {options.map((option) => {
+            const active = option.key === current.key;
+            const descending = active ? sort.descending : naturallyDescending(option.kind);
+            const Shown = descending ? ArrowDown : ArrowUp;
+            return (
+              <DropdownMenuRadioItem
+                key={option.key}
+                value={option.key}
+                aria-label={`${option.label}, ${direction(option.kind, descending)}`}
+                onSelect={(event) => {
+                  // The menu stays open while the arrow turns, so the change shows where it was made.
+                  if (active) event.preventDefault();
+                  onSort({ key: option.key, descending: active ? !sort.descending : descending });
+                }}
+              >
+                <span className="grow">{option.label}</span>
+                <Shown
+                  aria-hidden="true"
+                  className={active ? "text-ink!" : "opacity-0 group-data-highlighted:opacity-100"}
+                />
+              </DropdownMenuRadioItem>
+            );
+          })}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
