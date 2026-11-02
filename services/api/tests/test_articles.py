@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 from idea_agro_api.accounts import Role
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
-from idea_agro_api.documents import MemoryDocumentFiles
 from idea_agro_api.services import Services, services_for_tests
 
 ANA = bearer(make_token("ana"))
@@ -21,7 +20,7 @@ PAPER = {
 
 @pytest.fixture
 def services(verifier: OidcVerifier) -> Services:
-    return services_for_tests(verifier=verifier, document_files=MemoryDocumentFiles())
+    return services_for_tests(verifier=verifier)
 
 
 @pytest.fixture

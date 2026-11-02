@@ -1,5 +1,5 @@
-# Breaking changes made on purpose while nobody outside uses the API (services/api/README.md, "Versions").
-# Each line is the method, the path and oasdiff's message; it only matters to the pull request that makes the change.
+# Breaking changes agreed on before the API's first release to prd (services/api/README.md, "Versions").
+# Each line is the method, the path and oasdiff's message. Only the pull request under review needs them; the next one empties the file.
 DELETE /v1/articles/{article_id}/pdf api path removed before the sunset date `2026-12-02`
 GET /v1/articles removed the required property `articles/items/pdf` from the response with the `200` status
 GET /v1/articles/{article_id} removed the required property `pdf` from the response with the `200` status

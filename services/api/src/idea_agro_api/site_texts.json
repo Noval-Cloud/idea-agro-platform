@@ -353,14 +353,6 @@
       "pt": "só cliente"
     }
   },
-  "account.audit.pdf": {
-    "format": "plain",
-    "default": {
-      "es": "Su PDF",
-      "en": "Its PDF",
-      "pt": "Seu PDF"
-    }
-  },
   "account.audit.periods.month": {
     "format": "plain",
     "default": {
