@@ -94,9 +94,7 @@ class Limits:
 
     def body_bytes(self, path: str) -> int:
         """The largest request body a route takes: a document, an import, or else one outline."""
-        if (path.startswith("/v1/saved-zones/") and path.endswith("/documents")) or (
-            path.startswith("/v1/articles/") and path.endswith("/pdf")
-        ):
+        if path.startswith("/v1/saved-zones/") and path.endswith("/documents"):
             # The form around the file takes a little more than the file.
             return self.document_bytes + 64_000
         return self.import_bytes if path == "/v1/saved-zones/import" else self.geometry_bytes

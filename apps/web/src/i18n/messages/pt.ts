@@ -1493,7 +1493,6 @@ export const pt = {
         one: "{count} artigo",
         other: "{count} artigos",
       },
-      pdf: "Seu PDF",
       citeOne: "{surname} {year}",
       citeSeveral: "{surname} et al. {year}",
     },

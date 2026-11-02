@@ -110,7 +110,6 @@ export default function Audit({ translator, signInPath }: Props) {
       );
     if (entry.action === "articles_seeded")
       return t("account.audit.articleCount", { count: Number(entry.detail) || 0 });
-    if (entry.action === "article_saved" && entry.detail === "pdf") return t("account.audit.pdf");
     if (entry.action === "citations_changed") return list(parts.map((id) => articles.get(id) ?? id));
     return list(parts);
   };

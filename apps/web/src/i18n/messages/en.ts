@@ -1494,7 +1494,6 @@ export const en = {
         one: "{count} article",
         other: "{count} articles",
       },
-      pdf: "Its PDF",
       citeOne: "{surname} {year}",
       citeSeveral: "{surname} et al. {year}",
     },

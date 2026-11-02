@@ -1,17 +1,14 @@
 """The scientific articles behind the indicators: published for anyone, kept by editors."""
 
-import re
-from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import UTC, datetime
-from email.utils import format_datetime
 from typing import Annotated
 
-from fastapi import APIRouter, File, Request, Response, UploadFile
+from fastapi import APIRouter, Response
 from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
-from idea_agro_api.articles import Article, new_article_id, pdf_name, seed
+from idea_agro_api.articles import Article, new_article_id, seed
 from idea_agro_api.audit import AuditAction, AuditEntry
 from idea_agro_api.deps import Caller, EditorDep, ServicesDep
 from idea_agro_api.errors import problems
@@ -26,23 +23,6 @@ ArticleId = Annotated[str, PathParam(pattern=r"^[a-z0-9]{1,60}$", description="T
 IndicatorParam = Annotated[Indicator, PathParam(description="The indicator.")]
 # The site reads them when it is built; a minute keeps a rebuild from serving what an editor just replaced.
 CACHE_CONTROL = "public, max-age=60"
-PDF: dict[int | str, dict[str, object]] = {200: {"description": "The PDF.", "content": {"application/pdf": {}}}}
-# Articles are read at their link or DOI, so their PDFs go: these routes answer until the sunset, then are removed.
-PDF_DEPRECATED = datetime(2026, 11, 2, tzinfo=UTC)
-PDF_SUNSET = datetime(2026, 12, 2, tzinfo=UTC)
-PDF_GONE = f"Deprecated: articles are read at their link or DOI. Removed on {PDF_SUNSET:%Y-%m-%d}."
-# oasdiff refuses to see a route removed before this date.
-PDF_SUNSET_EXTRA: dict[str, object] = {"x-sunset": f"{PDF_SUNSET:%Y-%m-%d}"}
-PDF_PATH = re.compile(r"^/v1/articles/[^/]+/pdf$")
-
-
-async def announce_pdf_sunset(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
-    """Every answer of the PDF routes, errors too, announces their end (RFC 9745 and RFC 8594)."""
-    response = await call_next(request)
-    if PDF_PATH.match(request.url.path):
-        response.headers["Deprecation"] = f"@{int(PDF_DEPRECATED.timestamp())}"
-        response.headers["Sunset"] = format_datetime(PDF_SUNSET, usegmt=True)
-    return response
 
 
 def public(article: Article) -> ArticlePublic:
@@ -55,7 +35,6 @@ def public(article: Article) -> ArticlePublic:
         source=article.source,
         doi=article.doi,
         url=article.url,
-        pdf=article.pdf,
         framework=article.framework,
     )
 
@@ -165,87 +144,17 @@ def put_article(article_id: ArticleId, article: ArticleIn, caller: EditorDep, se
     "/v1/articles/{article_id}",
     status_code=204,
     summary="Remove an article",
-    description="Also from every indicator that cites it, with its PDF. For editors.",
+    description="Also from every indicator that cites it. For editors.",
     responses=problems(401, 403, 404, 422),
 )
 def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesDep) -> Response:
-    article = found(services, article_id)
+    found(services, article_id)
     for indicator, ids in services.articles.citations().items():
         if article_id in ids:
             services.articles.cite(indicator, [i for i in ids if i != article_id])
     services.articles.delete(article_id)
-    if article.pdf:
-        services.document_files.delete(pdf_name(article_id))
     changed(services, caller, AuditAction.ARTICLE_DELETED, article_id)
     return Response(status_code=204)
-
-
-@router.get(
-    "/v1/articles/{article_id}/pdf",
-    summary="An article's PDF",
-    description=PDF_GONE,
-    deprecated=True,
-    openapi_extra=PDF_SUNSET_EXTRA,
-    response_class=Response,
-    responses=PDF | problems(404, 422),
-)
-def get_article_pdf(article_id: ArticleId, services: ServicesDep) -> Response:
-    article = found(services, article_id)
-    content = services.document_files.get(pdf_name(article_id)) if article.pdf else None
-    if content is None:
-        raise HTTPException(404, "The article has no PDF.")
-    return Response(
-        content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{article_id}.pdf"', "Cache-Control": CACHE_CONTROL},
-    )
-
-
-@router.put(
-    "/v1/articles/{article_id}/pdf",
-    summary="Attach an article's PDF",
-    description=f"{PDF_GONE} Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
-    deprecated=True,
-    openapi_extra=PDF_SUNSET_EXTRA,
-    responses=problems(401, 403, 404, 413, 415, 422),
-)
-def put_article_pdf(
-    article_id: ArticleId,
-    file: Annotated[UploadFile, File(description="The PDF.")],
-    caller: EditorDep,
-    services: ServicesDep,
-) -> ArticleOut:
-    article = found(services, article_id)
-    limit = services.limits.document_bytes
-    content = file.file.read(limit + 1)
-    if len(content) > limit:
-        raise HTTPException(413, f"A PDF takes at most {limit} bytes.")
-    if not content.startswith(b"%PDF"):
-        raise HTTPException(415, "Attach a PDF.")
-    # The bucket only writes a file that is not there yet, so a PDF it replaces goes first.
-    services.document_files.delete(pdf_name(article_id))
-    services.document_files.put(pdf_name(article_id), content, "application/pdf")
-    updated = replace(article, pdf=True, updated_at=datetime.now(UTC), updated_by=author(caller))
-    services.articles.put(updated)
-    changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
-    return out(updated)
-
-
-@router.delete(
-    "/v1/articles/{article_id}/pdf",
-    summary="Remove an article's PDF",
-    description=PDF_GONE,
-    deprecated=True,
-    openapi_extra=PDF_SUNSET_EXTRA,
-    responses=problems(401, 403, 404, 422),
-)
-def delete_article_pdf(article_id: ArticleId, caller: EditorDep, services: ServicesDep) -> ArticleOut:
-    article = found(services, article_id)
-    services.document_files.delete(pdf_name(article_id))
-    updated = replace(article, pdf=False, updated_at=datetime.now(UTC), updated_by=author(caller))
-    services.articles.put(updated)
-    changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
-    return out(updated)
 
 
 @router.put(

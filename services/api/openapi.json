@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.15.0"
+    "version": "1.16.0"
   },
   "paths": {
     "/health": {
@@ -5937,7 +5937,7 @@
           "Articles"
         ],
         "summary": "Remove an article",
-        "description": "Also from every indicator that cites it, with its PDF. For editors.",
+        "description": "Also from every indicator that cites it. For editors.",
         "operationId": "delete_article",
         "security": [
           {
@@ -6003,252 +6003,6 @@
             }
           }
         }
-      }
-    },
-    "/v1/articles/{article_id}/pdf": {
-      "get": {
-        "tags": [
-          "Articles"
-        ],
-        "summary": "An article's PDF",
-        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.",
-        "operationId": "get_article_pdf",
-        "deprecated": true,
-        "parameters": [
-          {
-            "name": "article_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9]{1,60}$",
-              "description": "The article's id.",
-              "title": "Article Id"
-            },
-            "description": "The article's id."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The PDF.",
-            "content": {
-              "application/pdf": {}
-            }
-          },
-          "404": {
-            "description": "It does not exist, or it is not yours to see.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A parameter is not valid.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-sunset": "2026-12-02"
-      },
-      "put": {
-        "tags": [
-          "Articles"
-        ],
-        "summary": "Attach an article's PDF",
-        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02. Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
-        "operationId": "put_article_pdf",
-        "deprecated": true,
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "article_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9]{1,60}$",
-              "description": "The article's id.",
-              "title": "Article Id"
-            },
-            "description": "The article's id."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_put_article_pdf"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArticleOut"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No valid token: sign in again.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The account may not do this.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "It does not exist, or it is not yours to see.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "It is larger than allowed.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "That kind of file is not accepted.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A parameter is not valid.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-sunset": "2026-12-02"
-      },
-      "delete": {
-        "tags": [
-          "Articles"
-        ],
-        "summary": "Remove an article's PDF",
-        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.",
-        "operationId": "delete_article_pdf",
-        "deprecated": true,
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "article_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z0-9]{1,60}$",
-              "description": "The article's id.",
-              "title": "Article Id"
-            },
-            "description": "The article's id."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArticleOut"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No valid token: sign in again.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The account may not do this.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "It does not exist, or it is not yours to see.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A parameter is not valid.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-sunset": "2026-12-02"
       }
     },
     "/v1/indicators/{indicator}/articles": {
@@ -7218,12 +6972,6 @@
               "paruelo2016"
             ]
           },
-          "pdf": {
-            "type": "boolean",
-            "title": "Pdf",
-            "description": "Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.",
-            "deprecated": true
-          },
           "updated_at": {
             "anyOf": [
               {
@@ -7257,7 +7005,6 @@
           "lang",
           "source",
           "id",
-          "pdf",
           "updated_at",
           "updated_by"
         ],
@@ -7344,12 +7091,6 @@
             "examples": [
               "paruelo2016"
             ]
-          },
-          "pdf": {
-            "type": "boolean",
-            "title": "Pdf",
-            "description": "Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -7359,8 +7100,7 @@
           "title",
           "lang",
           "source",
-          "id",
-          "pdf"
+          "id"
         ],
         "title": "ArticlePublic",
         "description": "An article as the site shows it."
@@ -7442,21 +7182,6 @@
           "file"
         ],
         "title": "Body_attach_saved_zone_document"
-      },
-      "Body_put_article_pdf": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "description": "The PDF."
-          }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "Body_put_article_pdf"
       },
       "Catalog": {
         "properties": {

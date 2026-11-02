@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.15.0
+ * OpenAPI spec version: 1.16.0
  */
 import {
   useMutation,
@@ -193,11 +193,6 @@ export interface ArticleOut {
   /** The reference framework the indicators follow. */
   framework?: boolean;
   id: string;
-  /**
-     * Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.
-     * @deprecated
-     */
-  pdf: boolean;
   /** When it last changed. */
   updated_at: string | null;
   /** Who changed it. */
@@ -239,11 +234,6 @@ export interface ArticlePublic {
   /** The reference framework the indicators follow. */
   framework?: boolean;
   id: string;
-  /**
-     * Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.
-     * @deprecated
-     */
-  pdf: boolean;
 }
 
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
@@ -284,11 +274,6 @@ export interface AuditOut {
 
 export interface BodyAttachSavedZoneDocument {
   /** The document. */
-  file: Blob | File;
-}
-
-export interface BodyPutArticlePdf {
-  /** The PDF. */
   file: Blob | File;
 }
 
@@ -10952,7 +10937,7 @@ export const getDeleteArticleUrl = (articleId: string,) => {
 }
 
 /**
- * Also from every indicator that cites it, with its PDF. For editors.
+ * Also from every indicator that cites it. For editors.
  * @summary Remove an article
  */
 export const deleteArticle = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteArticleResponse> => {
@@ -11016,369 +11001,6 @@ export const useDeleteArticle = <TError = Problem,
         TContext
       > => {
       return useMutation(getDeleteArticleMutationOptions(options), queryClient);
-    }
-
-export type getArticlePdfResponse200 = {
-  data: Blob
-  status: 200
-}
-
-export type getArticlePdfResponse404 = {
-  data: Problem
-  status: 404
-}
-
-export type getArticlePdfResponse422 = {
-  data: Problem
-  status: 422
-}
-
-export type getArticlePdfResponseSuccess = (getArticlePdfResponse200) & {
-  headers: Headers;
-};
-export type getArticlePdfResponseError = (getArticlePdfResponse404 | getArticlePdfResponse422) & {
-  headers: Headers;
-};
-
-export type getArticlePdfResponse = (getArticlePdfResponseSuccess | getArticlePdfResponseError)
-
-export const getGetArticlePdfUrl = (articleId: string,) => {
-
-
-
-
-  return `/v1/articles/${articleId}/pdf`
-}
-
-/**
- * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
- * @deprecated
- * @summary An article's PDF
- */
-export const getArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getArticlePdfResponse> => {
-
-  return apiFetch<getArticlePdfResponse>(getGetArticlePdfUrl(articleId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetArticlePdfQueryKey = (articleId: string,) => {
-    return [
-    `/v1/articles/${articleId}/pdf`
-    ] as const;
-    }
-
-
-export const getGetArticlePdfQueryOptions = <TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetArticlePdfQueryKey(articleId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArticlePdf>>> = ({ signal }) => getArticlePdf(articleId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: articleId !== null && articleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetArticlePdfQueryResult = NonNullable<Awaited<ReturnType<typeof getArticlePdf>>>
-export type GetArticlePdfQueryError = Problem
-
-
-export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
- articleId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getArticlePdf>>,
-          TError,
-          Awaited<ReturnType<typeof getArticlePdf>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
- articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getArticlePdf>>,
-          TError,
-          Awaited<ReturnType<typeof getArticlePdf>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
- articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @deprecated
- * @summary An article's PDF
- */
-
-export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
- articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetArticlePdfQueryOptions(articleId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export type putArticlePdfResponse200 = {
-  data: ArticleOut
-  status: 200
-}
-
-export type putArticlePdfResponse401 = {
-  data: Problem
-  status: 401
-}
-
-export type putArticlePdfResponse403 = {
-  data: Problem
-  status: 403
-}
-
-export type putArticlePdfResponse404 = {
-  data: Problem
-  status: 404
-}
-
-export type putArticlePdfResponse413 = {
-  data: Problem
-  status: 413
-}
-
-export type putArticlePdfResponse415 = {
-  data: Problem
-  status: 415
-}
-
-export type putArticlePdfResponse422 = {
-  data: Problem
-  status: 422
-}
-
-export type putArticlePdfResponseSuccess = (putArticlePdfResponse200) & {
-  headers: Headers;
-};
-export type putArticlePdfResponseError = (putArticlePdfResponse401 | putArticlePdfResponse403 | putArticlePdfResponse404 | putArticlePdfResponse413 | putArticlePdfResponse415 | putArticlePdfResponse422) & {
-  headers: Headers;
-};
-
-export type putArticlePdfResponse = (putArticlePdfResponseSuccess | putArticlePdfResponseError)
-
-export const getPutArticlePdfUrl = (articleId: string,) => {
-
-
-
-
-  return `/v1/articles/${articleId}/pdf`
-}
-
-/**
- * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02. Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
- * @deprecated
- * @summary Attach an article's PDF
- */
-export const putArticlePdf = async (articleId: string,
-    bodyPutArticlePdf: BodyPutArticlePdf, options?: Parameters<typeof apiFetch>[1]): Promise<putArticlePdfResponse> => {
-    const formData = new FormData();
-formData.append(`file`, bodyPutArticlePdf.file);
-
-  return apiFetch<putArticlePdfResponse>(getPutArticlePdfUrl(articleId),
-  {
-    ...options,
-    method: 'PUT'
-    ,
-    body: formData
-  }
-);}
-
-
-
-
-
-export const getPutArticlePdfMutationKey = () => ['putArticlePdf'] as const;
-
-export const getPutArticlePdfMutationOptions = <TError = Problem,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext> => {
-
-const mutationKey = getPutArticlePdfMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putArticlePdf>>, PutArticlePdfMutationVariables> = (props) => {
-          const {articleId,data} = props ?? {};
-
-          return  putArticlePdf(articleId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PutArticlePdfMutationResult = NonNullable<Awaited<ReturnType<typeof putArticlePdf>>>
-    export type PutArticlePdfMutationBody = BodyPutArticlePdf
-    export type PutArticlePdfMutationError = Problem
-    export type PutArticlePdfMutationVariables = {articleId: string;data: BodyPutArticlePdf}
-
-    /**
- * @deprecated
- * @summary Attach an article's PDF
- */
-export const usePutArticlePdf = <TError = Problem,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof putArticlePdf>>,
-        TError,
-        PutArticlePdfMutationVariables,
-        TContext
-      > => {
-      return useMutation(getPutArticlePdfMutationOptions(options), queryClient);
-    }
-
-export type deleteArticlePdfResponse200 = {
-  data: ArticleOut
-  status: 200
-}
-
-export type deleteArticlePdfResponse401 = {
-  data: Problem
-  status: 401
-}
-
-export type deleteArticlePdfResponse403 = {
-  data: Problem
-  status: 403
-}
-
-export type deleteArticlePdfResponse404 = {
-  data: Problem
-  status: 404
-}
-
-export type deleteArticlePdfResponse422 = {
-  data: Problem
-  status: 422
-}
-
-export type deleteArticlePdfResponseSuccess = (deleteArticlePdfResponse200) & {
-  headers: Headers;
-};
-export type deleteArticlePdfResponseError = (deleteArticlePdfResponse401 | deleteArticlePdfResponse403 | deleteArticlePdfResponse404 | deleteArticlePdfResponse422) & {
-  headers: Headers;
-};
-
-export type deleteArticlePdfResponse = (deleteArticlePdfResponseSuccess | deleteArticlePdfResponseError)
-
-export const getDeleteArticlePdfUrl = (articleId: string,) => {
-
-
-
-
-  return `/v1/articles/${articleId}/pdf`
-}
-
-/**
- * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
- * @deprecated
- * @summary Remove an article's PDF
- */
-export const deleteArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteArticlePdfResponse> => {
-
-  return apiFetch<deleteArticlePdfResponse>(getDeleteArticlePdfUrl(articleId),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-
-export const getDeleteArticlePdfMutationKey = () => ['deleteArticlePdf'] as const;
-
-export const getDeleteArticlePdfMutationOptions = <TError = Problem,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext> => {
-
-const mutationKey = getDeleteArticlePdfMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArticlePdf>>, DeleteArticlePdfMutationVariables> = (props) => {
-          const {articleId} = props ?? {};
-
-          return  deleteArticlePdf(articleId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteArticlePdfMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArticlePdf>>>
-
-    export type DeleteArticlePdfMutationError = Problem
-    export type DeleteArticlePdfMutationVariables = {articleId: string}
-
-    /**
- * @deprecated
- * @summary Remove an article's PDF
- */
-export const useDeleteArticlePdf = <TError = Problem,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteArticlePdf>>,
-        TError,
-        DeleteArticlePdfMutationVariables,
-        TContext
-      > => {
-      return useMutation(getDeleteArticlePdfMutationOptions(options), queryClient);
     }
 
 export type citeArticlesResponse200 = {
