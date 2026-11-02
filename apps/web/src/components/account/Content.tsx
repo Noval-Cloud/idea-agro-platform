@@ -326,6 +326,8 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
       if (response.status !== 200) return setAsking("failed");
       setState({ ...state, rebuild: response.data });
       setAsking("idle");
+      // The button goes once the update starts; focus moves to the page's title, which the state sits beside.
+      requestAnimationFrame(() => document.getElementById("content-title")?.focus());
     } catch {
       setAsking("failed");
     }
@@ -340,6 +342,7 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
       : updating
         ? t("account.content.site.updating")
         : t("account.content.site.behind");
+  const hint = t("account.content.site.behindHint", { minutes: state.rebuild.quiet_minutes });
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -354,17 +357,26 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
         />
         {/* The rule behind the wait goes in a tooltip; the state itself is a few words. */}
         {behind && !updating ? (
-          <Tooltip label={t("account.content.site.behindHint", { minutes: state.rebuild.quiet_minutes })}>
-            <span>{words}</span>
+          <Tooltip label={hint}>
+            {/* Focusable, so the hint opens from the keyboard too. */}
+            <span tabIndex={0} className="rounded-xs">
+              {words}
+            </span>
           </Tooltip>
         ) : (
           <span>{words}</span>
+        )}
+        {behind && (
+          <span id="site-hint" className="sr-only">
+            {hint}
+          </span>
         )}
         {behind && (!updating || stalled) && (
           <Tooltip label={t("account.content.site.updateNow")}>
             <button
               type="button"
               aria-label={t("account.content.site.updateNow")}
+              aria-describedby="site-hint"
               disabled={asking === "busy"}
               onClick={() => void updateNow()}
               className="grid size-7 place-items-center rounded-sm text-ink-muted hover:bg-action-soft hover:text-ink disabled:opacity-50"

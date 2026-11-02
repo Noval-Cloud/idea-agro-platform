@@ -3,8 +3,9 @@ import { cn } from "@/lib/utils";
 
 /** A round tick, as when forwarding a message: a real checkbox for keyboards and readers, drawn as a circle. */
 export function Tick({ checked, onChange, className }: { checked: boolean; onChange: () => void; className?: string }) {
+  // The hidden checkbox stays inside the tick, so focusing it scrolls the tick into view.
   return (
-    <>
+    <span className="relative grid shrink-0">
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={onChange} />
       <span
         aria-hidden="true"
@@ -15,6 +16,6 @@ export function Tick({ checked, onChange, className }: { checked: boolean; onCha
       >
         <Check className="size-3.5" strokeWidth={3} />
       </span>
-    </>
+    </span>
   );
 }

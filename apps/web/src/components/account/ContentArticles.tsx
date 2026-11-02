@@ -704,7 +704,7 @@ function ArticlePicker({
         </div>
       }
     >
-      {/* The search stays at the panel's top while the articles scroll. */}
+      {/* The search stays at the panel's top while the articles scroll; the offsets undo the Sheet body's py-5. */}
       <div className="sticky -top-5 z-1 -mt-5 bg-surface pt-5 pb-3">
         <SearchField
           id="picker-search"

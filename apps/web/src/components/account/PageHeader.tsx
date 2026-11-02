@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export function PageHeader({ id, title, children }: { id: string; title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-8">
-      <h2 id={id} className="text-xl font-medium text-ink">
+      <h2 id={id} tabIndex={-1} className="text-xl font-medium text-ink focus:outline-none">
         {title}
       </h2>
       {children}
