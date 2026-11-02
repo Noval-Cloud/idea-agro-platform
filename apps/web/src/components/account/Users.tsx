@@ -328,7 +328,7 @@ export default function Users({ translator, signInPath, me }: Props) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <section aria-labelledby="users-title" className="grid max-w-(--ia-layout-page) gap-4">
+      <section aria-labelledby="users-title" className="grid gap-4">
         <PageHeader id="users-title" title={t("account.subpages.users")} />
         <ListToolbar
           end={

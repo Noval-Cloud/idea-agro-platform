@@ -1063,14 +1063,6 @@
       "pt": "Assets"
     }
   },
-  "account.content.gee.assetsLead": {
-    "format": "plain",
-    "default": {
-      "es": "Lo que lee el proceso diario de datos para calcular este indicador.",
-      "en": "What the daily data run reads to compute this indicator.",
-      "pt": "O que o processo diário de dados lê para calcular este indicador."
-    }
-  },
   "account.content.gee.bands": {
     "format": "plain",
     "default": {
@@ -1707,49 +1699,57 @@
   "account.content.site.behind": {
     "format": "plain",
     "default": {
-      "es": "Hay cambios que el sitio todavía no muestra; se actualiza {minutes} min después del último.",
-      "en": "Some changes are not on the site yet; it updates {minutes} min after the last one.",
-      "pt": "Há alterações que o site ainda não mostra; ele se atualiza {minutes} min depois da última."
+      "es": "Cambios pendientes",
+      "en": "Changes pending",
+      "pt": "Mudanças pendentes"
+    }
+  },
+  "account.content.site.behindHint": {
+    "format": "plain",
+    "default": {
+      "es": "Se publican {minutes} min después del último cambio.",
+      "en": "They go live {minutes} min after the last change.",
+      "pt": "São publicadas {minutes} min depois da última mudança."
     }
   },
   "account.content.site.failed": {
     "format": "plain",
     "default": {
-      "es": "No pudimos pedir la actualización. Probá de nuevo.",
-      "en": "We could not ask for the update. Try again.",
-      "pt": "Não conseguimos pedir a atualização. Tente de novo."
+      "es": "No pudimos pedirla. Probá de nuevo.",
+      "en": "We couldn't ask for it. Try again.",
+      "pt": "Não conseguimos pedi-la. Tente de novo."
     }
   },
   "account.content.site.noBuild": {
     "format": "plain",
     "default": {
-      "es": "Sitio al día",
-      "en": "Site up to date",
-      "pt": "Site em dia"
+      "es": "Al día",
+      "en": "Up to date",
+      "pt": "Em dia"
     }
   },
   "account.content.site.stalled": {
     "format": "plain",
     "default": {
-      "es": "La actualización tarda más de lo normal y puede haber fallado.",
-      "en": "The update is taking longer than usual and may have failed.",
-      "pt": "A atualização está demorando mais que o normal e pode ter falhado."
+      "es": "La actualización está demorada",
+      "en": "The update is taking long",
+      "pt": "A atualização está demorando"
     }
   },
   "account.content.site.unavailable": {
     "format": "plain",
     "default": {
-      "es": "En este entorno el sitio no se actualiza desde acá.",
-      "en": "In this environment the site does not update from here.",
-      "pt": "Neste ambiente o site não se atualiza daqui."
+      "es": "No se puede actualizar desde acá.",
+      "en": "It can't be updated from here.",
+      "pt": "Não dá para atualizar daqui."
     }
   },
   "account.content.site.upToDate": {
     "format": "plain",
     "default": {
-      "es": "Sitio al día · actualizado {ago}",
-      "en": "Site up to date · updated {ago}",
-      "pt": "Site em dia · atualizado {ago}"
+      "es": "Actualizado {ago}",
+      "en": "Updated {ago}",
+      "pt": "Atualizado {ago}"
     }
   },
   "account.content.site.updateNow": {
@@ -1763,9 +1763,9 @@
   "account.content.site.updating": {
     "format": "plain",
     "default": {
-      "es": "Actualizando el sitio (empezó {ago})…",
-      "en": "Updating the site (started {ago})…",
-      "pt": "Atualizando o site (começou {ago})…"
+      "es": "Actualizando…",
+      "en": "Updating…",
+      "pt": "Atualizando…"
     }
   },
   "account.content.states.default": {

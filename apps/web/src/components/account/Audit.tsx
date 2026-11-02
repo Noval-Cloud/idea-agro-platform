@@ -245,7 +245,7 @@ export default function Audit({ translator, signInPath }: Props) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <section aria-labelledby="audit-title" className="grid max-w-(--ia-layout-page) gap-4">
+      <section aria-labelledby="audit-title" className="grid gap-4">
         <PageHeader id="audit-title" title={t("account.subpages.audit")} />
         <ListToolbar
           end={

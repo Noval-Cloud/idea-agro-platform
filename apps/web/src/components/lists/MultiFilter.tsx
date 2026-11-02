@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import { matches } from "./filter";
 import type { ListsT } from "./i18n";
+import { Tick } from "./Tick";
 
 export type Choice = { value: string; label: string };
 /** A group of choices; a fixed one always shows, whatever the search. */
@@ -79,15 +80,7 @@ export function MultiFilter({
           key={choice.value}
           className="flex min-h-10 cursor-pointer items-center gap-3 rounded-sm px-2 text-sm text-ink hover:bg-action-soft has-focus-visible:bg-action-soft"
         >
-          <input
-            type="checkbox"
-            className="peer sr-only"
-            checked={selected.includes(choice.value)}
-            onChange={() => toggle(choice.value)}
-          />
-          <span className="grid size-5 shrink-0 place-items-center rounded-full border border-line-strong text-transparent transition-colors duration-(--ia-motion-fast) peer-checked:border-action peer-checked:bg-action peer-checked:text-action-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus">
-            <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
-          </span>
+          <Tick checked={selected.includes(choice.value)} onChange={() => toggle(choice.value)} />
           <span className="min-w-0 truncate">{choice.label}</span>
         </label>
       ))}

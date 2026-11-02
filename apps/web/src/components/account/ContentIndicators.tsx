@@ -266,12 +266,9 @@ function IndicatorEarthEngine({ translator, indicator }: { translator: AccountTr
   return (
     <div className="grid gap-6">
       <section aria-labelledby="gee-assets" className="grid gap-3">
-        <div className="grid gap-0.5">
-          <h4 id="gee-assets" className="text-sm font-medium text-ink">
-            {t("account.content.gee.assets")}
-          </h4>
-          <p className="text-sm text-ink-muted">{t("account.content.gee.assetsLead")}</p>
-        </div>
+        <h4 id="gee-assets" className="text-sm font-medium text-ink">
+          {t("account.content.gee.assets")}
+        </h4>
         <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
           {earthEngineSources[indicator].map((source) => (
             <li key={source.asset} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
