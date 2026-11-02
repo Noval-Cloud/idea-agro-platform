@@ -232,6 +232,14 @@
     transform-origin: var(--radix-popper-transform-origin);
   }
 
+  /* Panels slide in from the side they sit on, and their shade fades in; closing is instant. */
+  .ia-sheet[data-state="open"] {
+    animation: ia-slide-in var(--ia-motion-base) var(--ia-motion-ease-out);
+  }
+  .ia-fade[data-state="open"] {
+    animation: ia-fade-in var(--ia-motion-fast) var(--ia-motion-ease-out);
+  }
+
   /* Chart marks: thin, quiet chrome; the data is the only loud thing. */
   .chart-grid {
     stroke: var(--ia-viz-grid);
@@ -494,6 +502,19 @@
 .maplibregl-ctrl-attrib-button {
   @variant dark {
     filter: invert(1);
+  }
+}
+
+@keyframes ia-slide-in {
+  from {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+}
+
+@keyframes ia-fade-in {
+  from {
+    opacity: 0;
   }
 }
 

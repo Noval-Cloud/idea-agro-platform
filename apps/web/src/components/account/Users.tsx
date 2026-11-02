@@ -1,34 +1,68 @@
 import { useEffect, useRef, useState } from "react";
+import { SearchX } from "lucide-react";
 import type { AdminAccount } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Sheet } from "@/components/ui/sheet";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { EmptyState } from "@/components/lists/EmptyState";
+import { FilterSelect } from "@/components/lists/FilterSelect";
+import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
+import { SearchField } from "@/components/lists/SearchField";
+import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
+import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
+import { useQueryState } from "@/components/lists/state";
 import { signInProviders } from "@/lib/sign-in-providers";
+import { cn } from "@/lib/utils";
 import type { AccountTranslator } from "./i18n";
+import { PageHeader } from "./PageHeader";
+import { useLeaveGuard } from "./TextEditor";
 
-type Props = { t: AccountTranslator["t"]; signInPath: string; me: string };
+type Props = { translator: AccountTranslator; signInPath: string; me: string };
 type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
 /** An action and what it is called, for the person to recognize when asked to confirm it. */
 type Action = { run: Run; label: string; account: AdminAccount };
+type Role = "editor" | "admin";
+const filters = ["admin", "editor", "client", "disabled", "system"] as const;
+type Filter = "all" | (typeof filters)[number];
+const keys = ["name", "joined"] as const;
+type Key = (typeof keys)[number];
 
-const card = "rounded-lg border border-line bg-surface p-6";
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
-const nameOf = (account: AdminAccount) => account.name || account.email || account.id;
+// People sign in with an email; an account without one is the platform's own, such as the tests'.
+const isSystem = (account: AdminAccount) => !account.email;
 
-/** For admins: search accounts and change their roles and access. */
-export default function Users({ t, signInPath, me }: Props) {
-  const [query, setQuery] = useState("");
+/** For admins: find accounts, and change their roles and access in a side panel. */
+export default function Users({ translator, signInPath, me }: Props) {
+  const { t, date, collator } = translator;
+  const [query, setQuery] = useQueryState("q", "");
   const [accounts, setAccounts] = useState<AdminAccount[] | null>(null);
+  const [filterValue, setFilter] = useQueryState("role", "all");
+  const filter: Filter = filters.find((f) => f === filterValue) ?? "all";
+  const [sortValue, setSortValue] = useQueryState("sort", "name");
+  const sort = decodeSort<Key>(sortValue, keys, { key: "name", descending: false });
+  const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
+  const [view, setView] = useListView("users");
   const [open, setOpen] = useState<string | null>(null);
+  // The roles ticked in the open account's panel, saved only when asked.
+  const [draft, setDraft] = useState<Set<Role>>(new Set());
   const [notice, setNotice] = useState<Notice>(null);
   // An action waiting for the person to confirm it is them; confirming retries it.
   const [waiting, setWaiting] = useState<Action | null>(null);
   const [confirmReady, setConfirmReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  // Grows after every action, so the role checkboxes go back to what the account really has.
-  const [settled, setSettled] = useState(0);
   const confirm = useRef<(() => Promise<void>) | null>(null);
+  const asking = useConfirm(t("account.users.cancel"));
+
+  const nameOf = (account: AdminAccount) => account.name || account.email || t("account.users.system");
+  // Every account is a client; only the roles beyond it say something.
+  const rolesOf = (account: AdminAccount) => account.roles.filter((r): r is Role => r !== "client");
+  const opened = accounts?.find((a) => a.id === open) ?? null;
+  const unsaved =
+    opened !== null && (draft.size !== rolesOf(opened).length || rolesOf(opened).some((r) => !draft.has(r)));
+  const release = useLeaveGuard(unsaved);
 
   useEffect(() => {
     let live = true;
@@ -56,6 +90,27 @@ export default function Users({ t, signInPath, me }: Props) {
       .catch(() => setNotice("failed"));
   }, [waiting]);
 
+  const show = (account: AdminAccount) => {
+    setNotice(null);
+    setWaiting(null);
+    setDraft(new Set(rolesOf(account)));
+    setOpen(account.id);
+  };
+  const close = async () => {
+    if (
+      unsaved &&
+      !(await asking.ask({
+        title: t("account.content.leaveTitle"),
+        body: t("account.users.leaveBody"),
+        confirm: t("account.content.leave"),
+      }))
+    )
+      return;
+    setOpen(null);
+    setNotice(null);
+    setWaiting(null);
+  };
+
   const act = async (action: Action) => {
     if (busy) return;
     setNotice(null);
@@ -72,14 +127,16 @@ export default function Users({ t, signInPath, me }: Props) {
       }
       setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
       // The page shows the admin's own roles and sessions: it starts over when they change.
-      if (outcome.status < 300 && action.account.id === me) return location.reload();
+      if (outcome.status < 300 && action.account.id === me) {
+        release();
+        return location.reload();
+      }
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) return location.assign(signInPath);
       setNotice("failed");
     } finally {
       setBusy(false);
-      setSettled((n) => n + 1);
     }
   };
 
@@ -96,20 +153,28 @@ export default function Users({ t, signInPath, me }: Props) {
 
   const problem = (data: unknown) => (data as { type?: string | null }).type;
 
-  const saveRoles = (account: AdminAccount, roles: ("editor" | "admin")[]) =>
+  const saveRoles = (account: AdminAccount, roles: Role[]) =>
     void act({
       account,
       label: t("account.users.saveRoles"),
       run: async ([{ privately }, client]) => {
         const response = await privately((init) => client.changeAccountRoles(account.id, { roles }, init));
-        return response.status === 200
-          ? { status: 200, account: response.data }
-          : { status: response.status, type: problem(response.data) };
+        if (response.status !== 200) return { status: response.status, type: problem(response.data) };
+        setDraft(new Set(rolesOf(response.data)));
+        return { status: 200, account: response.data };
       },
     });
 
-  const setAccess = (account: AdminAccount, disabled: boolean) => {
-    if (disabled && !window.confirm(t("account.users.confirmDisable", { name: nameOf(account) }))) return;
+  const setAccess = async (account: AdminAccount, disabled: boolean) => {
+    if (
+      disabled &&
+      !(await asking.ask({
+        title: t("account.users.disable"),
+        body: t("account.users.confirmDisable", { name: nameOf(account) }),
+        confirm: t("account.users.disable"),
+      }))
+    )
+      return;
     void act({
       account,
       label: disabled ? t("account.users.disable") : t("account.users.enable"),
@@ -122,8 +187,16 @@ export default function Users({ t, signInPath, me }: Props) {
     });
   };
 
-  const revoke = (account: AdminAccount) => {
-    if (!window.confirm(t("account.users.confirmRevoke", { name: nameOf(account) }))) return;
+  const revoke = async (account: AdminAccount) => {
+    if (
+      !(await asking.ask({
+        title: t("account.users.revoke"),
+        body: t("account.users.confirmRevoke", { name: nameOf(account) }),
+        confirm: t("account.users.revoke"),
+        tone: "primary",
+      }))
+    )
+      return;
     void act({
       account,
       label: t("account.users.revoke"),
@@ -144,142 +217,365 @@ export default function Users({ t, signInPath, me }: Props) {
       },
     });
 
+  // The platform's own accounts show only when asked for.
+  const listed = (accounts ?? []).filter((a) => (filter === "system") === isSystem(a));
+  const shown = sortRows(
+    listed.filter((a) =>
+      filter === "all" || filter === "system"
+        ? true
+        : filter === "disabled"
+          ? a.disabled
+          : filter === "client"
+            ? rolesOf(a).length === 0
+            : a.roles.includes(filter),
+    ),
+    sort,
+    (a, key) => (key === "name" ? nameOf(a) : new Date(a.created_at).getTime()),
+    collator,
+  );
+  const sortOptions: { key: Key; label: string; descending: boolean }[] = [
+    { key: "name", label: t("account.users.sorts.name"), descending: false },
+    { key: "joined", label: t("account.users.sorts.joined"), descending: true },
+  ];
+  const chips = (account: AdminAccount) => (
+    <>
+      {rolesOf(account).map((role) => (
+        <RoleChip key={role}>{t(`account.roles.${role}`)}</RoleChip>
+      ))}
+      {isSystem(account) && <RoleChip>{t("account.users.systemChip")}</RoleChip>}
+      {account.disabled && <RoleChip tone="danger">{t("account.users.disabled")}</RoleChip>}
+    </>
+  );
+
   return (
-    <section id="users" aria-labelledby="users-title" className={card}>
-      <h2 id="users-title" className="text-lg font-medium text-ink">
-        {t("account.subpages.users")}
-      </h2>
-      <Input
-        type="search"
-        className="mt-4"
-        value={query}
-        aria-label={t("account.users.searchLabel")}
-        placeholder={t("account.users.searchPlaceholder")}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-      />
-      {waiting && (
-        <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-sm border border-line p-3 text-sm">
-          <p className="grow text-ink">
-            {t("account.users.confirmIdentity", { action: waiting.label, name: nameOf(waiting.account) })}
-          </p>
-          <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
-            {t("account.users.confirmAction")}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
-            {t("account.users.cancel")}
-          </Button>
-        </div>
-      )}
-      {notice && (
-        <p role={notice === "done" ? "status" : "alert"} className="mt-3 text-sm text-ink-muted">
-          {t(`account.users.${notice}`)}
-        </p>
-      )}
-      {accounts?.length === 0 && <p className="mt-3 text-sm text-ink-muted">{t("account.users.empty")}</p>}
-      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] divide-y divide-line">
-        {accounts?.map((account) => (
-          <li key={account.id} className="py-3">
-            <div className="flex items-center gap-x-4">
-              <div className="min-w-0 grow">
-                <p className="truncate text-sm font-medium text-ink">{nameOf(account)}</p>
-                <p className="truncate text-xs text-ink-subtle">
-                  {[
-                    account.email,
-                    account.roles.map((role) => t(`account.roles.${role}`)).join(", "),
-                    account.disabled ? t("account.users.disabled") : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="shrink-0"
-                aria-expanded={open === account.id}
-                onClick={() => setOpen(open === account.id ? null : account.id)}
-              >
-                {open === account.id ? t("account.users.close") : t("account.users.manage")}
-              </Button>
+    <TooltipProvider delayDuration={300}>
+      <section aria-labelledby="users-title" className="grid max-w-(--ia-layout-page) gap-4">
+        <PageHeader id="users-title" title={t("account.subpages.users")} />
+        <ListToolbar
+          end={
+            <>
+              <SortMenu t={t} sort={sort} options={sortOptions} onSort={setSort} />
+              <ViewToggle t={t} view={view} onView={setView} />
+            </>
+          }
+        >
+          <SearchField
+            t={t}
+            value={query}
+            label={t("account.users.searchLabel")}
+            placeholder={t("account.users.searchPlaceholder")}
+            onChange={setQuery}
+          />
+          <FilterSelect
+            label={t("account.users.filterLabel")}
+            value={filter}
+            all={t("account.users.filters.all")}
+            options={[...filters]}
+            labelOf={(f) => t(`account.users.filters.${f as (typeof filters)[number]}`)}
+            onChange={setFilter}
+          />
+          {accounts && <ListCount>{t("account.users.count", { count: shown.length })}</ListCount>}
+        </ListToolbar>
+
+        <div className={underToolbar}>
+          {accounts === null ? (
+            <p role="status" className="text-sm text-ink-muted">
+              {t("account.loading")}
+            </p>
+          ) : shown.length === 0 ? (
+            <EmptyState icon={<SearchX />} title={t("lists.noResults.title")} body={t("lists.noResults.body")}>
+              {(query || filter !== "all") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setQuery("");
+                    setFilter("all");
+                  }}
+                >
+                  {t("lists.clearFilters")}
+                </Button>
+              )}
+            </EmptyState>
+          ) : view === "cards" ? (
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {shown.map((account) => (
+                <li key={account.id}>
+                  <button
+                    type="button"
+                    onClick={() => show(account)}
+                    className="grid h-full w-full content-start gap-3 rounded-lg border border-line bg-surface p-4 text-left transition-colors duration-(--ia-motion-fast) hover:border-line-strong hover:bg-action-soft"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Avatar account={account} name={nameOf(account)} />
+                      <span className="grid min-w-0">
+                        <span className="truncate text-sm font-medium text-ink">{nameOf(account)}</span>
+                        {account.name && account.email && (
+                          <span className="truncate text-xs text-ink-muted">{account.email}</span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="flex flex-wrap items-center gap-1.5 text-xs text-ink-subtle">
+                      {chips(account)}
+                      <span>{t("account.users.since", { date: date(account.created_at) })}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-line bg-surface-sunken text-xs text-ink-subtle">
+                  <tr>
+                    <SortHeader
+                      label={t("account.users.columns.name")}
+                      column="name"
+                      sort={sort}
+                      natural={false}
+                      onSort={setSort}
+                      className="pl-4"
+                    />
+                    <th scope="col" className="hidden px-3 font-medium sm:table-cell">
+                      {t("account.users.columns.roles")}
+                    </th>
+                    <SortHeader
+                      label={t("account.users.columns.since")}
+                      column="joined"
+                      sort={sort}
+                      natural
+                      onSort={setSort}
+                      className="hidden md:table-cell"
+                    />
+                    <th scope="col" className="px-3">
+                      <span className="sr-only">{t("account.users.manage")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {shown.map((account) => (
+                    <tr key={account.id} className="transition-colors duration-(--ia-motion-fast) hover:bg-action-soft">
+                      <td className="py-3 pr-3 pl-4">
+                        <span className="flex items-center gap-3">
+                          <Avatar account={account} name={nameOf(account)} />
+                          <span className="grid min-w-0">
+                            <span className="truncate font-medium text-ink">{nameOf(account)}</span>
+                            {account.name && account.email && (
+                              <span className="truncate text-xs text-ink-muted">{account.email}</span>
+                            )}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="hidden px-3 py-3 sm:table-cell">
+                        <span className="flex flex-wrap gap-1.5">
+                          {chips(account)}
+                          {rolesOf(account).length === 0 && !account.disabled && !isSystem(account) && (
+                            <span className="text-ink-subtle">{t("account.roles.client")}</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="hidden px-3 py-3 whitespace-nowrap text-ink-muted tabular-nums md:table-cell">
+                        {date(account.created_at)}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={t("account.users.manageName", { name: nameOf(account) })}
+                          onClick={() => show(account)}
+                        >
+                          {t("account.users.manage")}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {open === account.id && (
-              <Manage
-                key={settled}
-                t={t}
-                account={account}
-                own={account.id === me}
-                busy={busy}
-                onRoles={(roles) => saveRoles(account, roles)}
-                onAccess={(disabled) => setAccess(account, disabled)}
-                onRevoke={() => revoke(account)}
-                onRecover={() => recover(account)}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
+          )}
+        </div>
+
+        {opened && (
+          <Sheet
+            open
+            onClose={() => void close()}
+            title={nameOf(opened)}
+            description={opened.name && opened.email ? opened.email : undefined}
+            close={t("account.users.close")}
+            footer={
+              notice || waiting ? (
+                <div className="grid gap-2">
+                  {waiting && (
+                    <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
+                      <p className="grow text-ink">
+                        {t("account.users.confirmIdentity", { action: waiting.label, name: nameOf(waiting.account) })}
+                      </p>
+                      <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
+                        {t("account.users.cancel")}
+                      </Button>
+                      <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
+                        {t("account.users.confirmAction")}
+                      </Button>
+                    </div>
+                  )}
+                  {notice && (
+                    <p
+                      role={notice === "done" ? "status" : "alert"}
+                      className={cn("text-sm", notice === "done" ? "text-ink-muted" : "text-danger")}
+                    >
+                      {t(`account.users.${notice}`)}
+                    </p>
+                  )}
+                </div>
+              ) : undefined
+            }
+          >
+            <Manage
+              translator={translator}
+              account={opened}
+              own={opened.id === me}
+              busy={busy}
+              roles={draft}
+              unsaved={unsaved}
+              onToggle={(role) =>
+                setDraft((now) => {
+                  const next = new Set(now);
+                  if (next.has(role)) next.delete(role);
+                  else next.add(role);
+                  return next;
+                })
+              }
+              onRoles={() => saveRoles(opened, [...draft])}
+              onAccess={(disabled) => void setAccess(opened, disabled)}
+              onRevoke={() => void revoke(opened)}
+              onRecover={() => recover(opened)}
+            />
+          </Sheet>
+        )}
+        {asking.dialog}
+      </section>
+    </TooltipProvider>
   );
 }
 
+function Avatar({ account, name }: { account: AdminAccount; name: string }) {
+  return account.picture ? (
+    <img
+      src={account.picture}
+      alt=""
+      width={32}
+      height={32}
+      referrerPolicy="no-referrer"
+      className="size-8 shrink-0 rounded-full object-cover"
+    />
+  ) : (
+    <span
+      aria-hidden="true"
+      className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-ink"
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function RoleChip({ children, tone }: { children: string; tone?: "danger" }) {
+  return (
+    <span
+      className={cn(
+        "rounded-pill px-2 py-0.5 text-2xs font-medium",
+        tone === "danger" ? "bg-danger/15 text-danger" : "bg-action-soft text-ink",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** What an admin can do with an account, each with what it means. */
 function Manage({
-  t,
+  translator,
   account,
   own,
   busy,
+  roles,
+  unsaved,
+  onToggle,
   onRoles,
   onAccess,
   onRevoke,
   onRecover,
 }: {
-  t: AccountTranslator["t"];
+  translator: AccountTranslator;
   account: AdminAccount;
   own: boolean;
   busy: boolean;
-  onRoles: (roles: ("editor" | "admin")[]) => void;
+  roles: Set<Role>;
+  unsaved: boolean;
+  onToggle: (role: Role) => void;
+  onRoles: () => void;
   onAccess: (disabled: boolean) => void;
   onRevoke: () => void;
   onRecover: () => void;
 }) {
-  const [roles, setRoles] = useState(() => new Set(account.roles.filter((r) => r !== "client")));
-  const toggle = (role: "editor" | "admin") =>
-    setRoles((now) => {
-      const next = new Set(now);
-      if (next.has(role)) next.delete(role);
-      else next.add(role);
-      return next;
-    });
+  const { t, date } = translator;
+  const part = "grid gap-3 border-b border-line py-5 first:pt-0 last:border-b-0";
 
   return (
-    <div className="mt-3 grid gap-3 rounded-sm bg-surface-sunken p-3 text-sm">
-      <fieldset className="flex flex-wrap items-center gap-4">
-        <legend className="sr-only">{t("account.users.roles")}</legend>
+    <div className="grid text-sm">
+      <p className="pb-5 text-xs text-ink-subtle">{t("account.users.since", { date: date(account.created_at) })}</p>
+      <fieldset className={part}>
+        <legend className="contents">
+          <span className="font-medium text-ink">{t("account.users.roles")}</span>
+        </legend>
+        <p className="text-ink-muted">{t("account.users.rolesBody")}</p>
         {(["editor", "admin"] as const).map((role) => (
-          <label key={role} className="flex items-center gap-2 text-ink">
+          <label key={role} className="flex items-start gap-3 text-ink">
             <input
               type="checkbox"
+              className="mt-0.5 size-4"
               checked={roles.has(role)}
               // Admins keep their own admin role.
               disabled={own && role === "admin"}
-              onChange={() => toggle(role)}
+              onChange={() => onToggle(role)}
             />
-            {t(`account.roles.${role}`)}
+            <span className="grid gap-0.5">
+              {t(`account.roles.${role}`)}
+              <span className="text-xs text-ink-muted">{t(`account.users.roleHints.${role}`)}</span>
+            </span>
           </label>
         ))}
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => onRoles([...roles])}>
+        <Button size="sm" className="justify-self-start" disabled={busy || !unsaved} onClick={onRoles}>
           {t("account.users.saveRoles")}
         </Button>
       </fieldset>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="ghost" disabled={busy} onClick={onRevoke}>
+      <div className={part}>
+        <p className="font-medium text-ink">{t("account.users.sessions")}</p>
+        <p className="text-ink-muted">{t("account.users.sessionsBody")}</p>
+        <Button size="sm" variant="outline" className="justify-self-start" disabled={busy} onClick={onRevoke}>
           {t("account.users.revoke")}
         </Button>
-        {!own && (
-          <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAccess(!account.disabled)}>
+      </div>
+      {!own && (
+        <div className={part}>
+          <p className="font-medium text-ink">{t("account.users.access")}</p>
+          <p className="text-ink-muted">
+            {account.disabled ? t("account.users.accessDisabled") : t("account.users.accessBody")}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn("justify-self-start", !account.disabled && "text-danger")}
+            disabled={busy}
+            onClick={() => onAccess(!account.disabled)}
+          >
             {account.disabled ? t("account.users.enable") : t("account.users.disable")}
           </Button>
-        )}
-        <Button size="sm" variant="ghost" disabled={busy} onClick={onRecover}>
+        </div>
+      )}
+      <div className={part}>
+        <p className="font-medium text-ink">{t("account.users.recoveryTitle")}</p>
+        <p className="text-ink-muted">{t("account.users.recoveryBody")}</p>
+        <Button size="sm" variant="ghost" className="-ml-3 justify-self-start" disabled={busy} onClick={onRecover}>
           {t("account.users.recovery")}
         </Button>
       </div>
