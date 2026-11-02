@@ -223,4 +223,9 @@ def test_the_audit_narrows_to_a_time_range(verifier: OidcVerifier, provider: Pro
         "/v1/admin/audit", params={"since": "2026-10-01T12:00:00Z", "until": "2026-10-31T12:00:00Z"}, headers=ANA
     ).json()
 
-    assert [(e["detail"], e["actor_id"]) for e in within] == [("15", ana), ("1", ana)]
+    assert [(e["detail"], e["actor_id"], e["actor_roles"]) for e in within] == [
+        ("15", ana, ["client", "admin"]),
+        ("1", ana, ["client", "admin"]),
+    ]
+    naive = client.get("/v1/admin/audit", params={"since": "2026-10-01T12:00:00"}, headers=ANA)
+    assert naive.status_code == 422

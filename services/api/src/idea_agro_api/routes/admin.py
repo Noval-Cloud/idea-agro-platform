@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response
 from fastapi import Path as PathParam
+from pydantic import AwareDatetime
 from starlette.exceptions import HTTPException
 
 from idea_agro_api.accounts import Account, Role
@@ -186,18 +187,24 @@ def send_account_recovery(account_id: AccountId, caller: AdminDep, services: Ser
 def list_audit(
     caller: AdminDep,
     services: ServicesDep,
-    since: Annotated[datetime | None, Query(description="Only actions at or after this time.")] = None,
-    until: Annotated[datetime | None, Query(description="Only actions before this time.")] = None,
+    since: Annotated[AwareDatetime | None, Query(description="Only actions at or after this time.")] = None,
+    until: Annotated[AwareDatetime | None, Query(description="Only actions before this time.")] = None,
 ) -> list[AuditOut]:
+    entries = services.audit.latest(200, since, until)
+    roles: dict[str, list[AccountRole]] = {}
+    for actor in {e.actor for e in entries}:
+        account = services.accounts.get(actor)
+        roles[actor] = admin_view(account).roles if account else []
     return [
         AuditOut(
             at=e.at,
             actor_id=e.actor,
+            actor_roles=roles[e.actor],
             actor_name=e.actor_name,
             action=e.action,
             target=e.target,
             target_email=e.target_email,
             detail=e.detail,
         )
-        for e in services.audit.latest(200, since, until)
+        for e in entries
     ]

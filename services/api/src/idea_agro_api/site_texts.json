@@ -425,12 +425,28 @@
       "pt": "Buscar ações"
     }
   },
+  "account.audit.searchPeople": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar una persona…",
+      "en": "Find a person…",
+      "pt": "Buscar uma pessoa…"
+    }
+  },
   "account.audit.searchPlaceholder": {
     "format": "plain",
     "default": {
       "es": "Persona, cuenta, texto…",
       "en": "Person, account, text…",
       "pt": "Pessoa, conta, texto…"
+    }
+  },
+  "account.audit.someone": {
+    "format": "plain",
+    "default": {
+      "es": "Otra persona",
+      "en": "Someone else",
+      "pt": "Outra pessoa"
     }
   },
   "account.content.allSections": {
@@ -7355,6 +7371,14 @@
       "es": "Buscar…",
       "en": "Search…",
       "pt": "Buscar…"
+    }
+  },
+  "lists.filters.searchIn": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar en {label}",
+      "en": "Search {label}",
+      "pt": "Buscar em {label}"
     }
   },
   "lists.more": {

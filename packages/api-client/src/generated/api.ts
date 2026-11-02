@@ -263,6 +263,8 @@ export interface AuditOut {
   at: string;
   /** The account that acted. */
   actor_id: string;
+  /** Its roles now, to group actions by who does them; empty if the account is gone. */
+  actor_roles: AccountRole[];
   /** The admin who acted, by their name at the time. */
   actor_name: string;
   action: AuditAction;

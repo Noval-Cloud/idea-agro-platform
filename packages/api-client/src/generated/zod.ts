@@ -2711,6 +2711,7 @@ export const ListAuditQueryParams = zod.object({
 export const ListAuditResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),
   "actor_id": zod.string().describe('The account that acted.'),
+  "actor_roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Its roles now, to group actions by who does them; empty if the account is gone.'),
   "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
   "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored', 'article_saved', 'article_deleted', 'citations_changed', 'articles_seeded']),
   "target": zod.string().describe('The account acted on.'),

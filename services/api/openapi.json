@@ -7187,6 +7187,14 @@
             "title": "Actor Id",
             "description": "The account that acted."
           },
+          "actor_roles": {
+            "items": {
+              "$ref": "#/components/schemas/AccountRole"
+            },
+            "type": "array",
+            "title": "Actor Roles",
+            "description": "Its roles now, to group actions by who does them; empty if the account is gone."
+          },
           "actor_name": {
             "type": "string",
             "title": "Actor Name",
@@ -7215,6 +7223,7 @@
         "required": [
           "at",
           "actor_id",
+          "actor_roles",
           "actor_name",
           "action",
           "target",
