@@ -681,6 +681,14 @@
       "pt": "O site mostra tudo o que foi publicado."
     }
   },
+  "account.content.site.stalled": {
+    "format": "plain",
+    "default": {
+      "es": "La última actualización tarda más de lo normal; puede haber fallado. Podés pedirla de nuevo.",
+      "en": "The last update is taking longer than usual and may have failed. You can ask for it again.",
+      "pt": "A última atualização está demorando mais que o normal e pode ter falhado. Você pode pedi-la de novo."
+    }
+  },
   "account.content.site.unavailable": {
     "format": "plain",
     "default": {

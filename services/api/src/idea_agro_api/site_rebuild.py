@@ -87,10 +87,14 @@ class CloudSiteRebuild:
             credentials = cast(Credentials, google.auth.default(scopes=[PUBSUB_SCOPE])[0])  # pyright: ignore[reportUnknownMemberType]
             self._session = AuthorizedSession(credentials)
         message = {"data": base64.b64encode(b"texts published").decode(), "attributes": {"reason": "texts"}}
-        response = self._session.post(
-            f"https://pubsub.googleapis.com/v1/{self._topic}:publish", json={"messages": [message]}, timeout=10
-        )
-        response.raise_for_status()
+        try:
+            response = self._session.post(
+                f"https://pubsub.googleapis.com/v1/{self._topic}:publish", json={"messages": [message]}, timeout=10
+            )
+            response.raise_for_status()
+        except Exception as error:
+            log.warning("The website's build could not be asked for", exc_info=True)
+            raise RebuildUnavailable("The site's build could not be asked for; try again in a moment.") from error
         self._document.set({"started_at": at}, merge=True)  # pyright: ignore[reportUnknownMemberType]
 
 

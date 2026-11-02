@@ -1168,6 +1168,7 @@ export const pt = {
         behind:
           "Há alterações publicadas que o site ainda não mostra. Ele se atualiza sozinho {minutes} minutos depois da última alteração.",
         updating: "Atualizando o site com o que foi publicado (começou {ago}). Leva alguns minutos.",
+        stalled: "A última atualização está demorando mais que o normal e pode ter falhado. Você pode pedi-la de novo.",
         upToDate: "O site mostra tudo o que foi publicado. Última atualização: {at}.",
         noBuild: "O site mostra tudo o que foi publicado.",
         updateNow: "Atualizar o site agora",

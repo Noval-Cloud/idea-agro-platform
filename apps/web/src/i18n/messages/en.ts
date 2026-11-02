@@ -1169,6 +1169,7 @@ export const en = {
         behind:
           "There are published changes the site does not show yet. It updates by itself {minutes} minutes after the last change.",
         updating: "Updating the site with what was published (started {ago}). It takes a few minutes.",
+        stalled: "The last update is taking longer than usual and may have failed. You can ask for it again.",
         upToDate: "The site shows everything published. Last updated: {at}.",
         noBuild: "The site shows everything published.",
         updateNow: "Update the site now",

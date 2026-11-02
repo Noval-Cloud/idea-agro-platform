@@ -100,12 +100,12 @@ def keep(services: Services, caller: Caller, text: SiteText, state: VersionState
     """Stores the text, its version and the audit entry."""
     at = datetime.now(UTC)
     services.site_texts.put(text)
-    if state in ("published", "default"):
-        services.site_rebuild.published(at)
     left = (text.draft or {}) if state in ("draft", "discarded") else text.published
     services.site_texts.add_version(TextVersion(new_version_id(), text.key, left, state, at, author(caller)))
     actor = caller.account
     services.audit.record(AuditEntry(at, actor.id, actor.display_name, action, text.key, "", ", ".join(sorted(left))))
+    if state in ("published", "default"):
+        services.site_rebuild.published(at)
     return out(text)
 
 

@@ -232,6 +232,8 @@ function Badge({ children, tone = "edited" }: { children: string; tone?: "edited
   );
 }
 
+const STALLED_MS = 20 * 60_000;
+
 /** When the site last built: written by each build, absent where the site is not built (local runs). */
 async function builtAt(): Promise<string | null> {
   try {
@@ -268,6 +270,8 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
   const time = (value: string | null) => (value ? new Date(value).getTime() : 0);
   const behind = Boolean(published && time(published) > time(built));
   const updating = behind && time(started) >= time(published);
+  // A build takes minutes; one asked for long ago that the site does not show may have failed.
+  const stalled = updating && Date.now() - time(started) > STALLED_MS;
 
   // While the site is behind, look again every half minute.
   useEffect(() => {
@@ -298,13 +302,15 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
           ? built
             ? t("account.content.site.upToDate", { at: moment(built) })
             : t("account.content.site.noBuild")
-          : updating
-            ? t("account.content.site.updating", { ago: started ? ago(started) : "" })
-            : t("account.content.site.behind", { minutes: state.rebuild.quiet_minutes })}
+          : stalled
+            ? t("account.content.site.stalled")
+            : updating
+              ? t("account.content.site.updating", { ago: started ? ago(started) : "" })
+              : t("account.content.site.behind", { minutes: state.rebuild.quiet_minutes })}
         {asking === "unavailable" && <span className="block text-danger">{t("account.content.site.unavailable")}</span>}
         {asking === "failed" && <span className="block text-danger">{t("account.content.site.failed")}</span>}
       </p>
-      {behind && !updating && (
+      {behind && (!updating || stalled) && (
         <Button size="sm" variant="outline" disabled={asking === "busy"} onClick={() => void updateNow()}>
           {t("account.content.site.updateNow")}
         </Button>

@@ -236,9 +236,8 @@ variable "domain" {
 }
 
 variable "web_rebuild_topic" {
-  description = "Topic whose messages rebuild the website, which \"Update the site now\" publishes to; empty for none"
+  description = "Topic whose messages rebuild the website, which \"Update the site now\" publishes to"
   type        = string
-  default     = ""
 }
 
 variable "publisher_role" {
