@@ -1,8 +1,11 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Check } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { iconSize } from "@/design/tokens";
@@ -26,7 +29,14 @@ export function sortRows<T, K extends string>(
   });
 }
 
-/** The sort as a menu, for the cards view and small screens; the table's headers sort too. */
+/** What a sort key holds, which names its two directions and decides the one it starts with. */
+export type SortKind = "text" | "date" | "number";
+export type SortOption<K extends string> = { key: K; label: string; kind: SortKind };
+
+/** Text starts from A, dates from the newest, numbers from the largest. */
+export const naturallyDescending = (kind: SortKind) => kind !== "text";
+
+/** The sort as a menu: the key and its direction, in every view; a table's headers sort too. */
 export function SortMenu<K extends string>({
   t,
   sort,
@@ -35,34 +45,50 @@ export function SortMenu<K extends string>({
 }: {
   t: ListsT;
   sort: Sort<K>;
-  options: { key: K; label: string; descending: boolean }[];
+  options: SortOption<K>[];
   onSort: (sort: Sort<K>) => void;
 }) {
-  const current = options.find((o) => o.key === sort.key);
-  // The arrow says the direction, which a table header may have turned around.
-  const Arrow = sort.descending ? ArrowDown : ArrowUp;
+  const current = options.find((o) => o.key === sort.key) ?? options[0];
+  const direction = (descending: boolean) => t(`lists.order.${current.kind}.${descending ? "desc" : "asc"}`);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={`${t("lists.sort")}: ${current?.label ?? ""}`}
+        aria-label={`${t("lists.sort")}: ${current.label}, ${direction(sort.descending)}`}
         className="inline-flex h-9 items-center gap-2 rounded-sm px-2.5 text-sm text-ink-muted hover:bg-action-soft hover:text-ink data-[state=open]:bg-action-soft"
       >
         <ArrowUpDown size={iconSize.sm} aria-hidden="true" />
-        <span className="hidden items-center gap-1 sm:inline-flex">
-          {current?.label}
-          {current && current.descending !== sort.descending && <Arrow size={iconSize.xs} aria-hidden="true" />}
+        <span className="hidden sm:inline">
+          {current.label} · {direction(sort.descending)}
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-48">
-        {options.map((option) => (
-          <DropdownMenuItem
-            key={option.key}
-            onSelect={() => onSort({ key: option.key, descending: option.descending })}
-          >
-            <Check aria-hidden="true" className={option.key === sort.key ? "opacity-100" : "opacity-0"} />
-            {option.label}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent className="min-w-56">
+        <DropdownMenuLabel>{t("lists.order.by")}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={current.key}
+          onValueChange={(key) => {
+            const option = options.find((o) => o.key === key);
+            if (option) onSort({ key: option.key, descending: naturallyDescending(option.kind) });
+          }}
+        >
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.key} value={option.key}>
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>{t("lists.order.label")}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={sort.descending ? "desc" : "asc"}
+          onValueChange={(value) => onSort({ key: current.key, descending: value === "desc" })}
+        >
+          {/* Each kind's usual direction comes first. */}
+          {(naturallyDescending(current.kind) ? [true, false] : [false, true]).map((descending) => (
+            <DropdownMenuRadioItem key={String(descending)} value={descending ? "desc" : "asc"}>
+              {direction(descending)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,17 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import { SearchX } from "lucide-react";
-import type { AdminAccount } from "@idea-agro/api-client";
+import { ChevronRight, SearchX } from "lucide-react";
+import type { AccountRole, AdminAccount } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Sheet } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  AppliedFilters,
+  FiltersToggle,
+  toggleId,
+  useFiltersShown,
+  type Applied,
+} from "@/components/lists/AppliedFilters";
 import { EmptyState } from "@/components/lists/EmptyState";
-import { FilterSelect } from "@/components/lists/FilterSelect";
+import { matches, rowText } from "@/components/lists/filter";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
+import { MultiFilter, chosenLabels, type ChoiceSection } from "@/components/lists/MultiFilter";
 import { SearchField } from "@/components/lists/SearchField";
-import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
+import {
+  SortHeader,
+  SortMenu,
+  decodeSort,
+  encodeSort,
+  sortRows,
+  type Sort,
+  type SortOption,
+} from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
-import { useQueryState } from "@/components/lists/state";
+import { useQueryList, useQueryState } from "@/components/lists/state";
 import { signInProviders } from "@/lib/sign-in-providers";
 import { cn } from "@/lib/utils";
 import type { AccountTranslator } from "./i18n";
@@ -25,22 +41,37 @@ type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
 /** An action and what it is called, for the person to recognize when asked to confirm it. */
 type Action = { run: Run; label: string; account: AdminAccount };
 type Role = "editor" | "admin";
-const filters = ["admin", "editor", "client", "disabled", "system"] as const;
-type Filter = "all" | (typeof filters)[number];
+const roleChoices = ["admin", "editor", "client"] as const;
+const statusChoices = ["active", "disabled"] as const;
+const kindChoices = ["people", "system"] as const;
+// Search covers every field but these: ids and pictures mean nothing to read, and roles go in as the row words them.
+const unsearched = ["id", "picture", "roles"];
 const keys = ["name", "joined"] as const;
 type Key = (typeof keys)[number];
 
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 // People sign in with an email; an account without one is the platform's own, such as the tests'.
 const isSystem = (account: AdminAccount) => !account.email;
+const kindOf = (account: AdminAccount) => (isSystem(account) ? "system" : "people");
+const statusOf = (account: AdminAccount) => (account.disabled ? "disabled" : "active");
+/** The choices in the address that the filter knows, so a stale link narrows nothing by mistake. */
+const known = <T extends string>(values: string[], choices: readonly T[]) =>
+  values.filter((v): v is T => (choices as readonly string[]).includes(v));
 
 /** For admins: find accounts, and change their roles and access in a side panel. */
 export default function Users({ translator, signInPath, me }: Props) {
-  const { t, date, collator } = translator;
+  const { t, date, collator, list } = translator;
   const [query, setQuery] = useQueryState("q", "");
   const [accounts, setAccounts] = useState<AdminAccount[] | null>(null);
-  const [filterValue, setFilter] = useQueryState("role", "all");
-  const filter: Filter = filters.find((f) => f === filterValue) ?? "all";
+  // The API lists the newest accounts; a search also asks it for older ones, by the start of a name or email.
+  const [older, setOlder] = useState<AdminAccount[]>([]);
+  const [roleValues, setRoles] = useQueryList("role");
+  const [statusValues, setStatuses] = useQueryList("status");
+  const [kindValues, setKinds] = useQueryList("account", ["people"]);
+  const roles = known(roleValues, roleChoices);
+  const statuses = known(statusValues, statusChoices);
+  const kinds = known(kindValues, kindChoices);
+  const [filtersShown, showFilters] = useFiltersShown("users");
   const [sortValue, setSortValue] = useQueryState("sort", "name");
   const sort = decodeSort<Key>(sortValue, keys, { key: "name", descending: false });
   const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
@@ -66,11 +97,24 @@ export default function Users({ translator, signInPath, me }: Props) {
 
   useEffect(() => {
     let live = true;
+    void api()
+      .then(([{ privately }, client]) => privately((init) => client.listAccounts(undefined, init)))
+      .then((response) => live && setAccounts(response.status === 200 ? response.data : []))
+      .catch(() => live && setAccounts([]));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    const text = query.trim();
     const timer = setTimeout(() => {
+      if (!text) return setOlder([]);
       void api()
-        .then(([{ privately }, client]) => privately((init) => client.listAccounts({ q: query.trim() }, init)))
-        .then((response) => live && setAccounts(response.status === 200 ? response.data : []))
-        .catch(() => live && setAccounts([]));
+        .then(([{ privately }, client]) => privately((init) => client.listAccounts({ q: text }, init)))
+        .then((response) => live && response.status === 200 && setOlder(response.data))
+        .catch(() => undefined);
     }, 250);
     return () => {
       live = false;
@@ -124,6 +168,7 @@ export default function Users({ translator, signInPath, me }: Props) {
       if (outcome.account) {
         const changed = outcome.account;
         setAccounts((all) => all?.map((a) => (a.id === changed.id ? changed : a)) ?? null);
+        setOlder((all) => all.map((a) => (a.id === changed.id ? changed : a)));
       }
       setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
       // The page shows the admin's own roles and sessions: it starts over when they change.
@@ -217,26 +262,72 @@ export default function Users({ translator, signInPath, me }: Props) {
       },
     });
 
-  // The platform's own accounts show only when asked for.
-  const listed = (accounts ?? []).filter((a) => (filter === "system") === isSystem(a));
+  const loaded = accounts ?? [];
+  const everyone = [...loaded, ...older.filter((a) => !loaded.some((b) => b.id === a.id))];
+  // What a row shows, and so what search finds: its fields, and its roles, status and date in words.
+  const words = (a: AdminAccount) => [
+    rowText(a, unsearched),
+    ...(rolesOf(a).length || isSystem(a) ? rolesOf(a) : (["client"] as const)).map((role) =>
+      t(`account.roles.${role}`),
+    ),
+    t(`account.users.statuses.${statusOf(a)}`),
+    isSystem(a) ? t("account.users.system") : "",
+    date(a.created_at),
+  ];
   const shown = sortRows(
-    listed.filter((a) =>
-      filter === "all" || filter === "system"
-        ? true
-        : filter === "disabled"
-          ? a.disabled
-          : filter === "client"
-            ? rolesOf(a).length === 0
-            : a.roles.includes(filter),
+    everyone.filter(
+      (a) =>
+        (kinds.length === 0 || kinds.includes(kindOf(a))) &&
+        (roles.length === 0 ||
+          roles.some((role) =>
+            role === "client" ? rolesOf(a).length === 0 : a.roles.includes(role as AccountRole),
+          )) &&
+        (statuses.length === 0 || statuses.includes(statusOf(a))) &&
+        matches(query, ...words(a)),
     ),
     sort,
     (a, key) => (key === "name" ? nameOf(a) : new Date(a.created_at).getTime()),
     collator,
   );
-  const sortOptions: { key: Key; label: string; descending: boolean }[] = [
-    { key: "name", label: t("account.users.sorts.name"), descending: false },
-    { key: "joined", label: t("account.users.sorts.joined"), descending: true },
+  const sortOptions: SortOption<Key>[] = [
+    { key: "name", label: t("account.users.sorts.name"), kind: "text" },
+    { key: "joined", label: t("account.users.sorts.joined"), kind: "date" },
   ];
+  const sections = {
+    role: [{ choices: roleChoices.map((value) => ({ value, label: t(`account.roles.${value}`) })) }],
+    status: [{ choices: statusChoices.map((value) => ({ value, label: t(`account.users.statuses.${value}`) })) }],
+    account: [{ choices: kindChoices.map((value) => ({ value, label: t(`account.users.kinds.${value}`) })) }],
+  } satisfies Record<string, ChoiceSection[]>;
+  // Only people show unless asked otherwise, so that choice is the starting point, not a filter.
+  const peopleOnly = kinds.length === 1 && kinds[0] === "people";
+  const clearFilters = () => {
+    setRoles([]);
+    setStatuses([]);
+    setKinds(["people"]);
+  };
+  const applied: Applied[] = [];
+  if (roles.length)
+    applied.push({
+      key: "role",
+      label: t("account.users.filters.role"),
+      value: list(chosenLabels(sections.role, roles)),
+      onRemove: () => setRoles([]),
+    });
+  if (statuses.length)
+    applied.push({
+      key: "status",
+      label: t("account.users.filters.status"),
+      value: list(chosenLabels(sections.status, statuses)),
+      onRemove: () => setStatuses([]),
+    });
+  if (!peopleOnly)
+    applied.push({
+      key: "account",
+      label: t("account.users.filters.account"),
+      // None ticked narrows nothing, as in every filter: all of them show.
+      value: list(chosenLabels(sections.account, kinds.length ? kinds : [...kindChoices])),
+      onRemove: () => setKinds(["people"]),
+    });
   const chips = (account: AdminAccount) => (
     <>
       {rolesOf(account).map((role) => (
@@ -258,6 +349,39 @@ export default function Users({ translator, signInPath, me }: Props) {
               <ViewToggle t={t} view={view} onView={setView} />
             </>
           }
+          filters={{
+            id: "users-filters",
+            shown: filtersShown,
+            controls: (
+              <>
+                <MultiFilter
+                  t={t}
+                  label={t("account.users.filters.role")}
+                  sections={sections.role}
+                  selected={roles}
+                  onChange={setRoles}
+                />
+                <MultiFilter
+                  t={t}
+                  label={t("account.users.filters.status")}
+                  sections={sections.status}
+                  selected={statuses}
+                  onChange={setStatuses}
+                />
+                <MultiFilter
+                  t={t}
+                  label={t("account.users.filters.account")}
+                  sections={sections.account}
+                  selected={kinds}
+                  onChange={setKinds}
+                  fallback={["people"]}
+                />
+              </>
+            ),
+          }}
+          applied={
+            <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("users-filters")} />
+          }
         >
           <SearchField
             t={t}
@@ -266,13 +390,12 @@ export default function Users({ translator, signInPath, me }: Props) {
             placeholder={t("account.users.searchPlaceholder")}
             onChange={setQuery}
           />
-          <FilterSelect
-            label={t("account.users.filterLabel")}
-            value={filter}
-            all={t("account.users.filters.all")}
-            options={[...filters]}
-            labelOf={(f) => t(`account.users.filters.${f as (typeof filters)[number]}`)}
-            onChange={setFilter}
+          <FiltersToggle
+            t={t}
+            shown={filtersShown}
+            active={applied.length}
+            controls="users-filters"
+            onToggle={() => showFilters(!filtersShown)}
           />
           {accounts && <ListCount>{t("account.users.count", { count: shown.length })}</ListCount>}
         </ListToolbar>
@@ -284,13 +407,13 @@ export default function Users({ translator, signInPath, me }: Props) {
             </p>
           ) : shown.length === 0 ? (
             <EmptyState icon={<SearchX />} title={t("lists.noResults.title")} body={t("lists.noResults.body")}>
-              {(query || filter !== "all") && (
+              {(query || applied.length > 0) && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => {
                     setQuery("");
-                    setFilter("all");
+                    clearFilters();
                   }}
                 >
                   {t("lists.clearFilters")}
@@ -308,12 +431,13 @@ export default function Users({ translator, signInPath, me }: Props) {
                   >
                     <span className="flex items-center gap-3">
                       <Avatar account={account} name={nameOf(account)} />
-                      <span className="grid min-w-0">
+                      <span className="grid min-w-0 grow">
                         <span className="truncate text-sm font-medium text-ink">{nameOf(account)}</span>
                         {account.name && account.email && (
                           <span className="truncate text-xs text-ink-muted">{account.email}</span>
                         )}
                       </span>
+                      <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
                     </span>
                     <span className="flex flex-wrap items-center gap-1.5 text-xs text-ink-subtle">
                       {chips(account)}
@@ -347,19 +471,27 @@ export default function Users({ translator, signInPath, me }: Props) {
                       onSort={setSort}
                       className="hidden md:table-cell"
                     />
-                    <th scope="col" className="px-3">
-                      <span className="sr-only">{t("account.users.manage")}</span>
-                    </th>
+                    <td aria-hidden="true" className="w-10" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {shown.map((account) => (
-                    <tr key={account.id} className="transition-colors duration-(--ia-motion-fast) hover:bg-action-soft">
+                    <tr
+                      key={account.id}
+                      className="relative transition-colors duration-(--ia-motion-fast) hover:bg-action-soft has-focus-visible:bg-action-soft"
+                    >
                       <td className="py-3 pr-3 pl-4">
                         <span className="flex items-center gap-3">
                           <Avatar account={account} name={nameOf(account)} />
                           <span className="grid min-w-0">
-                            <span className="truncate font-medium text-ink">{nameOf(account)}</span>
+                            {/* The whole row opens the account; the name is what a keyboard or reader reaches. */}
+                            <button
+                              type="button"
+                              onClick={() => show(account)}
+                              className="truncate text-left font-medium text-ink after:absolute after:inset-0"
+                            >
+                              {nameOf(account)}
+                            </button>
                             {account.name && account.email && (
                               <span className="truncate text-xs text-ink-muted">{account.email}</span>
                             )}
@@ -377,15 +509,8 @@ export default function Users({ translator, signInPath, me }: Props) {
                       <td className="hidden px-3 py-3 whitespace-nowrap text-ink-muted tabular-nums md:table-cell">
                         {date(account.created_at)}
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          aria-label={t("account.users.manageName", { name: nameOf(account) })}
-                          onClick={() => show(account)}
-                        >
-                          {t("account.users.manage")}
-                        </Button>
+                      <td className="py-3 pr-4">
+                        <ChevronRight aria-hidden="true" className="ml-auto size-4 text-ink-subtle" />
                       </td>
                     </tr>
                   ))}

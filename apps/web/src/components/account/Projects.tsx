@@ -11,7 +11,15 @@ import { EmptyState } from "@/components/lists/EmptyState";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
+import {
+  SortHeader,
+  SortMenu,
+  decodeSort,
+  encodeSort,
+  sortRows,
+  type Sort,
+  type SortOption,
+} from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { matches } from "@/components/lists/filter";
 import { useQueryState } from "@/components/lists/state";
@@ -92,10 +100,10 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
       : []),
   ];
 
-  const sortOptions: { key: Key; label: string; descending: boolean }[] = [
-    { key: "changed", label: t("account.projects.sort.recent"), descending: true },
-    { key: "name", label: t("account.projects.sort.name"), descending: false },
-    { key: "zones", label: t("account.projects.sort.zones"), descending: true },
+  const sortOptions: SortOption<Key>[] = [
+    { key: "changed", label: t("account.projects.sort.changed"), kind: "date" },
+    { key: "name", label: t("account.projects.sort.name"), kind: "text" },
+    { key: "zones", label: t("account.projects.sort.zones"), kind: "number" },
   ];
 
   return (

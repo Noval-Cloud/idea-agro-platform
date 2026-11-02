@@ -19,3 +19,9 @@ export function useQueryState(key: string, fallback: string): [string, (value: s
   };
   return [value, set];
 }
+
+/** Several choices of one filter in the address, comma-separated; `fallback` is what shows with none there. */
+export function useQueryList(key: string, fallback: string[] = []): [string[], (values: string[]) => void] {
+  const [value, setValue] = useQueryState(key, fallback.join(","));
+  return [value ? value.split(",") : [], (values) => setValue(values.join(","))];
+}

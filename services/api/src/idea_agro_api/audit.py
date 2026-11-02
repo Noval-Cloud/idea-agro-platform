@@ -40,8 +40,8 @@ class AuditEntry:
 class AuditStore(Protocol):
     def record(self, entry: AuditEntry) -> None: ...
 
-    def latest(self, limit: int) -> list[AuditEntry]:
-        """Newest first."""
+    def latest(self, limit: int, since: datetime | None = None, until: datetime | None = None) -> list[AuditEntry]:
+        """Newest first; `since` and `until` keep the actions from and before those times."""
         ...
 
 
@@ -52,8 +52,9 @@ class MemoryAudit:
     def record(self, entry: AuditEntry) -> None:
         self._entries.append(entry)
 
-    def latest(self, limit: int) -> list[AuditEntry]:
-        return sorted(self._entries, key=lambda e: e.at, reverse=True)[:limit]
+    def latest(self, limit: int, since: datetime | None = None, until: datetime | None = None) -> list[AuditEntry]:
+        within = [e for e in self._entries if (since is None or e.at >= since) and (until is None or e.at < until)]
+        return sorted(within, key=lambda e: e.at, reverse=True)[:limit]
 
 
 # google-cloud-firestore is only partly typed; this class is its only user here.
@@ -74,8 +75,13 @@ class FirestoreAudit:
             }
         )
 
-    def latest(self, limit: int) -> list[AuditEntry]:
-        query: Any = self._entries.order_by("at", direction=firestore.Query.DESCENDING).limit(limit)  # pyright: ignore[reportUnknownMemberType]
+    def latest(self, limit: int, since: datetime | None = None, until: datetime | None = None) -> list[AuditEntry]:
+        query: Any = self._entries
+        if since is not None:
+            query = query.where(filter=firestore.FieldFilter("at", ">=", since))
+        if until is not None:
+            query = query.where(filter=firestore.FieldFilter("at", "<", until))
+        query = query.order_by("at", direction=firestore.Query.DESCENDING).limit(limit)
         return [_from_document(cast(dict[str, Any], d.to_dict())) for d in query.stream()]
 
 

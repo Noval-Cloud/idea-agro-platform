@@ -223,22 +223,6 @@
       "pt": "{actor} restaurou o texto {target}"
     }
   },
-  "account.audit.actorLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Persona",
-      "en": "Person",
-      "pt": "Pessoa"
-    }
-  },
-  "account.audit.anyone": {
-    "format": "plain",
-    "default": {
-      "es": "Cualquier persona",
-      "en": "Anyone",
-      "pt": "Qualquer pessoa"
-    }
-  },
   "account.audit.articleCount": {
     "format": "plural",
     "default": {
@@ -254,6 +238,30 @@
         "one": "{count} artigo",
         "other": "{count} artigos"
       }
+    }
+  },
+  "account.audit.byRole.admin": {
+    "format": "plain",
+    "default": {
+      "es": "Administradores",
+      "en": "Admins",
+      "pt": "Administradores"
+    }
+  },
+  "account.audit.byRole.client": {
+    "format": "plain",
+    "default": {
+      "es": "Clientes",
+      "en": "Clients",
+      "pt": "Clientes"
+    }
+  },
+  "account.audit.byRole.editor": {
+    "format": "plain",
+    "default": {
+      "es": "Editores",
+      "en": "Editors",
+      "pt": "Editores"
     }
   },
   "account.audit.citeOne": {
@@ -305,15 +313,39 @@
       "pt": "Não conseguimos carregar o registro. Tente de novo."
     }
   },
-  "account.audit.filterLabel": {
+  "account.audit.filters.by": {
     "format": "plain",
     "default": {
-      "es": "Tipo de acción",
-      "en": "Kind of action",
-      "pt": "Tipo de ação"
+      "es": "Realizada por",
+      "en": "Made by",
+      "pt": "Feita por"
     }
   },
-  "account.audit.filters.accounts": {
+  "account.audit.filters.on": {
+    "format": "plain",
+    "default": {
+      "es": "Realizada sobre",
+      "en": "Made on",
+      "pt": "Feita sobre"
+    }
+  },
+  "account.audit.groups.people": {
+    "format": "plain",
+    "default": {
+      "es": "Personas",
+      "en": "People",
+      "pt": "Pessoas"
+    }
+  },
+  "account.audit.groups.roles": {
+    "format": "plain",
+    "default": {
+      "es": "Roles",
+      "en": "Roles",
+      "pt": "Papéis"
+    }
+  },
+  "account.audit.kinds.accounts": {
     "format": "plain",
     "default": {
       "es": "Cuentas",
@@ -321,15 +353,7 @@
       "pt": "Contas"
     }
   },
-  "account.audit.filters.all": {
-    "format": "plain",
-    "default": {
-      "es": "Todo",
-      "en": "All",
-      "pt": "Tudo"
-    }
-  },
-  "account.audit.filters.articles": {
+  "account.audit.kinds.articles": {
     "format": "plain",
     "default": {
       "es": "Artículos",
@@ -337,7 +361,15 @@
       "pt": "Artigos"
     }
   },
-  "account.audit.filters.texts": {
+  "account.audit.kinds.indicators": {
+    "format": "plain",
+    "default": {
+      "es": "Indicadores",
+      "en": "Indicators",
+      "pt": "Indicadores"
+    }
+  },
+  "account.audit.kinds.texts": {
     "format": "plain",
     "default": {
       "es": "Textos",
@@ -383,6 +415,38 @@
       "es": "Ayer",
       "en": "Yesterday",
       "pt": "Ontem"
+    }
+  },
+  "account.audit.searchLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar acciones",
+      "en": "Search actions",
+      "pt": "Buscar ações"
+    }
+  },
+  "account.audit.searchPeople": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar una persona…",
+      "en": "Find a person…",
+      "pt": "Buscar uma pessoa…"
+    }
+  },
+  "account.audit.searchPlaceholder": {
+    "format": "plain",
+    "default": {
+      "es": "Persona, cuenta, texto…",
+      "en": "Person, account, text…",
+      "pt": "Pessoa, conta, texto…"
+    }
+  },
+  "account.audit.someone": {
+    "format": "plain",
+    "default": {
+      "es": "Otra persona",
+      "en": "Someone else",
+      "pt": "Outra pessoa"
     }
   },
   "account.content.allSections": {
@@ -2475,20 +2539,20 @@
       "pt": "De {name}"
     }
   },
+  "account.projects.sort.changed": {
+    "format": "plain",
+    "default": {
+      "es": "Última modificación",
+      "en": "Last changed",
+      "pt": "Última modificação"
+    }
+  },
   "account.projects.sort.name": {
     "format": "plain",
     "default": {
       "es": "Nombre",
       "en": "Name",
       "pt": "Nome"
-    }
-  },
-  "account.projects.sort.recent": {
-    "format": "plain",
-    "default": {
-      "es": "Más recientes",
-      "en": "Most recent",
-      "pt": "Mais recentes"
     }
   },
   "account.projects.sort.zones": {
@@ -2861,7 +2925,15 @@
       "pt": "Não conseguimos concluir a ação. Tente de novo."
     }
   },
-  "account.users.filterLabel": {
+  "account.users.filters.account": {
+    "format": "plain",
+    "default": {
+      "es": "Cuenta",
+      "en": "Account",
+      "pt": "Conta"
+    }
+  },
+  "account.users.filters.role": {
     "format": "plain",
     "default": {
       "es": "Rol",
@@ -2869,52 +2941,28 @@
       "pt": "Papel"
     }
   },
-  "account.users.filters.admin": {
+  "account.users.filters.status": {
     "format": "plain",
     "default": {
-      "es": "Administradores",
-      "en": "Admins",
-      "pt": "Administradores"
+      "es": "Estado",
+      "en": "Status",
+      "pt": "Estado"
     }
   },
-  "account.users.filters.all": {
+  "account.users.kinds.people": {
     "format": "plain",
     "default": {
-      "es": "Todos los roles",
-      "en": "All roles",
-      "pt": "Todos os papéis"
+      "es": "Personas",
+      "en": "People",
+      "pt": "Pessoas"
     }
   },
-  "account.users.filters.client": {
+  "account.users.kinds.system": {
     "format": "plain",
     "default": {
-      "es": "Solo clientes",
-      "en": "Clients only",
-      "pt": "Só clientes"
-    }
-  },
-  "account.users.filters.disabled": {
-    "format": "plain",
-    "default": {
-      "es": "Deshabilitadas",
-      "en": "Disabled",
-      "pt": "Desativadas"
-    }
-  },
-  "account.users.filters.editor": {
-    "format": "plain",
-    "default": {
-      "es": "Editores",
-      "en": "Editors",
-      "pt": "Editores"
-    }
-  },
-  "account.users.filters.system": {
-    "format": "plain",
-    "default": {
-      "es": "Cuentas de sistema",
-      "en": "System accounts",
-      "pt": "Contas de sistema"
+      "es": "Sistema",
+      "en": "System",
+      "pt": "Sistema"
     }
   },
   "account.users.leaveBody": {
@@ -2923,22 +2971,6 @@
       "es": "Tildaste roles que todavía no guardaste. Si cerrás, se pierden.",
       "en": "You ticked roles you have not saved yet. Closing loses them.",
       "pt": "Você marcou papéis que ainda não salvou. Se fechar, eles se perdem."
-    }
-  },
-  "account.users.manage": {
-    "format": "plain",
-    "default": {
-      "es": "Administrar",
-      "en": "Manage",
-      "pt": "Administrar"
-    }
-  },
-  "account.users.manageName": {
-    "format": "plain",
-    "default": {
-      "es": "Administrar la cuenta de {name}",
-      "en": "Manage {name}'s account",
-      "pt": "Administrar a conta de {name}"
     }
   },
   "account.users.own": {
@@ -3040,9 +3072,9 @@
   "account.users.searchPlaceholder": {
     "format": "plain",
     "default": {
-      "es": "Nombre o correo…",
-      "en": "Name or email…",
-      "pt": "Nome ou e-mail…"
+      "es": "Nombre, correo, rol, fecha…",
+      "en": "Name, email, role, date…",
+      "pt": "Nome, e-mail, papel, data…"
     }
   },
   "account.users.sessions": {
@@ -3083,6 +3115,22 @@
       "es": "Nombre",
       "en": "Name",
       "pt": "Nome"
+    }
+  },
+  "account.users.statuses.active": {
+    "format": "plain",
+    "default": {
+      "es": "Habilitada",
+      "en": "Enabled",
+      "pt": "Ativada"
+    }
+  },
+  "account.users.statuses.disabled": {
+    "format": "plain",
+    "default": {
+      "es": "Deshabilitada",
+      "en": "Disabled",
+      "pt": "Desativada"
     }
   },
   "account.users.system": {
@@ -3505,20 +3553,20 @@
       "pt": "Nome ou departamento…"
     }
   },
+  "account.zones.sort.changed": {
+    "format": "plain",
+    "default": {
+      "es": "Última modificación",
+      "en": "Last changed",
+      "pt": "Última modificação"
+    }
+  },
   "account.zones.sort.name": {
     "format": "plain",
     "default": {
       "es": "Nombre",
       "en": "Name",
       "pt": "Nome"
-    }
-  },
-  "account.zones.sort.recent": {
-    "format": "plain",
-    "default": {
-      "es": "Más recientes",
-      "en": "Most recent",
-      "pt": "Mais recentes"
     }
   },
   "account.zones.sort.size": {
@@ -7196,6 +7244,143 @@
       "pt": "Limpar a busca"
     }
   },
+  "lists.dates.between": {
+    "format": "plain",
+    "default": {
+      "es": "{from} – {to}",
+      "en": "{from} – {to}",
+      "pt": "{from} – {to}"
+    }
+  },
+  "lists.dates.from": {
+    "format": "plain",
+    "default": {
+      "es": "Desde",
+      "en": "From",
+      "pt": "De"
+    }
+  },
+  "lists.dates.label": {
+    "format": "plain",
+    "default": {
+      "es": "Fecha",
+      "en": "Date",
+      "pt": "Data"
+    }
+  },
+  "lists.dates.month": {
+    "format": "plain",
+    "default": {
+      "es": "Este mes",
+      "en": "This month",
+      "pt": "Este mês"
+    }
+  },
+  "lists.dates.range": {
+    "format": "plain",
+    "default": {
+      "es": "Entre dos fechas",
+      "en": "Between two dates",
+      "pt": "Entre duas datas"
+    }
+  },
+  "lists.dates.since": {
+    "format": "plain",
+    "default": {
+      "es": "desde el {day}",
+      "en": "since {day}",
+      "pt": "desde {day}"
+    }
+  },
+  "lists.dates.to": {
+    "format": "plain",
+    "default": {
+      "es": "Hasta",
+      "en": "To",
+      "pt": "Até"
+    }
+  },
+  "lists.dates.today": {
+    "format": "plain",
+    "default": {
+      "es": "Hoy",
+      "en": "Today",
+      "pt": "Hoje"
+    }
+  },
+  "lists.dates.until": {
+    "format": "plain",
+    "default": {
+      "es": "hasta el {day}",
+      "en": "until {day}",
+      "pt": "até {day}"
+    }
+  },
+  "lists.dates.week": {
+    "format": "plain",
+    "default": {
+      "es": "Esta semana",
+      "en": "This week",
+      "pt": "Esta semana"
+    }
+  },
+  "lists.filters.chosen": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} elegido",
+        "other": "{count} elegidos"
+      },
+      "en": {
+        "one": "{count} chosen",
+        "other": "{count} chosen"
+      },
+      "pt": {
+        "one": "{count} escolhido",
+        "other": "{count} escolhidos"
+      }
+    }
+  },
+  "lists.filters.clear": {
+    "format": "plain",
+    "default": {
+      "es": "Limpiar",
+      "en": "Clear",
+      "pt": "Limpar"
+    }
+  },
+  "lists.filters.label": {
+    "format": "plain",
+    "default": {
+      "es": "Filtros",
+      "en": "Filters",
+      "pt": "Filtros"
+    }
+  },
+  "lists.filters.remove": {
+    "format": "plain",
+    "default": {
+      "es": "Quitar el filtro {label}",
+      "en": "Remove the {label} filter",
+      "pt": "Remover o filtro {label}"
+    }
+  },
+  "lists.filters.search": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar…",
+      "en": "Search…",
+      "pt": "Buscar…"
+    }
+  },
+  "lists.filters.searchIn": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar en {label}",
+      "en": "Search {label}",
+      "pt": "Buscar em {label}"
+    }
+  },
   "lists.more": {
     "format": "plain",
     "default": {
@@ -7218,6 +7403,70 @@
       "es": "Nada coincide",
       "en": "Nothing matches",
       "pt": "Nada corresponde"
+    }
+  },
+  "lists.order.by": {
+    "format": "plain",
+    "default": {
+      "es": "Ordenar por",
+      "en": "Sort by",
+      "pt": "Ordenar por"
+    }
+  },
+  "lists.order.date.asc": {
+    "format": "plain",
+    "default": {
+      "es": "Primero lo más antiguo",
+      "en": "Oldest first",
+      "pt": "Mais antigos primeiro"
+    }
+  },
+  "lists.order.date.desc": {
+    "format": "plain",
+    "default": {
+      "es": "Primero lo más reciente",
+      "en": "Newest first",
+      "pt": "Mais recentes primeiro"
+    }
+  },
+  "lists.order.label": {
+    "format": "plain",
+    "default": {
+      "es": "Orden",
+      "en": "Order",
+      "pt": "Ordem"
+    }
+  },
+  "lists.order.number.asc": {
+    "format": "plain",
+    "default": {
+      "es": "De menor a mayor",
+      "en": "Smallest first",
+      "pt": "Do menor ao maior"
+    }
+  },
+  "lists.order.number.desc": {
+    "format": "plain",
+    "default": {
+      "es": "De mayor a menor",
+      "en": "Largest first",
+      "pt": "Do maior ao menor"
+    }
+  },
+  "lists.order.text.asc": {
+    "format": "plain",
+    "default": {
+      "es": "A → Z",
+      "en": "A → Z",
+      "pt": "A → Z"
+    }
+  },
+  "lists.order.text.desc": {
+    "format": "plain",
+    "default": {
+      "es": "Z → A",
+      "en": "Z → A",
+      "pt": "Z → A"
     }
   },
   "lists.showing": {

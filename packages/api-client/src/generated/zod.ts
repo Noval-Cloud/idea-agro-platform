@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.16.0
+ * OpenAPI spec version: 1.17.0
  */
 import * as zod from 'zod';
 
@@ -2700,11 +2700,18 @@ export const SendAccountRecoveryResponse = zod.void()
 
 
 /**
- * For admins: the latest actions of admins and editors, newest first.
+ * For admins: the latest 200 actions of admins and editors, newest first, within the times given.
  * @summary What admins and editors did
  */
+export const ListAuditQueryParams = zod.object({
+  "since": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Only actions at or after this time.'),
+  "until": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Only actions before this time.')
+})
+
 export const ListAuditResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),
+  "actor_id": zod.string().describe('The account that acted.'),
+  "actor_roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Its roles now, to group actions by who does them; empty if the account is gone.'),
   "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
   "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored', 'article_saved', 'article_deleted', 'citations_changed', 'articles_seeded']),
   "target": zod.string().describe('The account acted on.'),

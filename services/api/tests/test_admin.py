@@ -1,12 +1,14 @@
 import time
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
 from auth_tokens import bearer, make_token
 from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
+from idea_agro_api.audit import AuditAction, AuditEntry
 from idea_agro_api.auth import OidcVerifier
-from idea_agro_api.services import services_for_tests
+from idea_agro_api.services import Services, services_for_tests
 
 # Signed in just now: sensitive actions need it.
 ANA = bearer(make_token("ana", auth_time=int(time.time())))
@@ -205,3 +207,25 @@ def test_what_the_provider_did_not_take_is_recorded(client: TestClient, provider
         ("enabled", "provider_failed"),
         ("disabled", "provider_failed"),
     ]
+
+
+def test_the_audit_narrows_to_a_time_range(verifier: OidcVerifier, provider: Provider) -> None:
+    services: Services = services_for_tests(
+        verifier=verifier, identity_admin=provider, admin_emails=frozenset({"ana@example.org"})
+    )
+    client = TestClient(create_app(services))
+    ana = account_of(client, ANA)
+    for day in (1, 15, 31):
+        at = datetime(2026, 10, day, 12, tzinfo=UTC)
+        services.audit.record(AuditEntry(at, ana, "Ana", AuditAction.ENABLED, "bo", "bo@example.org", str(day)))
+
+    within = client.get(
+        "/v1/admin/audit", params={"since": "2026-10-01T12:00:00Z", "until": "2026-10-31T12:00:00Z"}, headers=ANA
+    ).json()
+
+    assert [(e["detail"], e["actor_id"], e["actor_roles"]) for e in within] == [
+        ("15", ana, ["client", "admin"]),
+        ("1", ana, ["client", "admin"]),
+    ]
+    naive = client.get("/v1/admin/audit", params={"since": "2026-10-01T12:00:00"}, headers=ANA)
+    assert naive.status_code == 422

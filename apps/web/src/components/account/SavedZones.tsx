@@ -28,7 +28,15 @@ import { FilterSelect } from "@/components/lists/FilterSelect";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import { SortHeader, SortMenu, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
+import {
+  SortHeader,
+  SortMenu,
+  decodeSort,
+  encodeSort,
+  sortRows,
+  type Sort,
+  type SortOption,
+} from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { ZoneShape, ZoneThumbnail, useSavedZoneOutline } from "@/components/lists/ZoneShape";
 import { matches } from "@/components/lists/filter";
@@ -157,10 +165,10 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
     { label: t("account.zones.delete"), icon: <Trash2 />, onSelect: () => setDeleting(zone), danger: true },
   ];
 
-  const sortOptions: { key: Key; label: string; descending: boolean }[] = [
-    { key: "changed", label: t("account.zones.sort.recent"), descending: true },
-    { key: "name", label: t("account.zones.sort.name"), descending: false },
-    { key: "size", label: t("account.zones.sort.size"), descending: true },
+  const sortOptions: SortOption<Key>[] = [
+    { key: "changed", label: t("account.zones.sort.changed"), kind: "date" },
+    { key: "name", label: t("account.zones.sort.name"), kind: "text" },
+    { key: "size", label: t("account.zones.sort.size"), kind: "number" },
   ];
 
   return (

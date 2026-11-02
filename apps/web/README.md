@@ -39,6 +39,15 @@ scripts/prototype-data/  extraction of the explorer's data from Earth Engine
 
 Every text lives in the catalogs of `src/i18n/messages`, which define which texts exist and their defaults. Editors' published versions, read from the API's `/v1/texts` when a deploy is built (`src/i18n/edits.ts`), replace them; a build without an API shows the defaults. The texts that allow Markdown are listed in `src/i18n/texts.ts`, and components render them with `md()` (or `markdown()` in islands), never as plain text. After a change to the catalogs, `make generate` exports them for the API.
 
+## Lists
+
+Every list finds things the same way, with the pieces in `src/components/lists`:
+
+- **Search:** it matches any field a row shows, and a list names only the fields to leave out (`rowText`).
+- **Filters:** each is a `MultiFilter` (or `DateFilter`) behind the Filters toggle. The ones applied stay as chips under the toolbar (`AppliedFilters`).
+- **Sort:** `SortMenu` chooses the key and its direction in every view, and table headers sort too.
+- **State:** search, filters and sort live in the address (`useQueryState`, `useQueryList`); the view and the toggle live in the browser.
+
 ## Sign-in
 
 `src/lib/account.ts` is the only module that knows the sign-in provider (Firebase Authentication).
