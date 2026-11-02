@@ -77,10 +77,13 @@ export function Editor({
   textKey,
   translator,
   onChanged,
+  Heading = "h3",
 }: {
   textKey: string;
   translator: AccountTranslator;
   onChanged: () => void;
+  /** The level of the text's heading, one below where the editor sits. */
+  Heading?: "h3" | "h5";
 }) {
   const { t, moment } = translator;
   const [text, setText] = useState<SiteTextOut | null>(null);
@@ -164,9 +167,9 @@ export function Editor({
   return (
     <article className={cn(card, "grid gap-5 p-5 sm:p-6")} aria-labelledby="text-key">
       <header className="grid gap-1">
-        <h3 id="text-key" className="font-mono text-sm break-all text-ink">
+        <Heading id="text-key" className="font-mono text-sm break-all text-ink">
           {text.key}
-        </h3>
+        </Heading>
         <p className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
           <Badge>{t(`account.content.formats.${text.format}`)}</Badge>
           <span>{status}</span>

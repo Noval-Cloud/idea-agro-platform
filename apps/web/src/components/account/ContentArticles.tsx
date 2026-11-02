@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ArticleIn, ArticleOut, ArticlePublic, PublishedArticles } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -11,6 +11,8 @@ const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-c
 type Client = Awaited<ReturnType<typeof api>>[1];
 const card = "rounded-lg border border-line bg-surface";
 const empty: ArticleIn = { authors: "", year: new Date().getFullYear(), title: "", lang: "en", source: "" };
+const same = (a: string[], b: string[] | null) =>
+  b !== null && a.length === b.length && a.every((id, i) => id === b[i]);
 
 /** One private call; an answer other than `ok` statuses is an error. */
 async function call<T>(run: (client: Client, init: RequestInit) => Promise<{ status: number; data: unknown }>) {
@@ -135,7 +137,7 @@ function ArticleEditor({
   translator: AccountTranslator;
   onSaved: (id: string | null) => void;
 }) {
-  const { t, moment } = translator;
+  const { t, moment, list } = translator;
   const [article, setArticle] = useState<ArticleOut | null>(null);
   const [form, setForm] = useState<ArticleIn | null>(id ? null : empty);
   const [busy, setBusy] = useState(false);
@@ -247,10 +249,13 @@ function ArticleEditor({
           })}
         </p>
       )}
-      {citedBy.length > 0 && (
+      {id && (
         <p className="text-xs text-ink-muted">
-          {t("account.content.articles.citedBy")}:{" "}
-          {citedBy.map((i) => t(`indicators.items.${i}.name` as AccountKey)).join(", ")}
+          {citedBy.length > 0
+            ? t("account.content.articles.citedBy", {
+                names: list(citedBy.map((i) => t(`indicators.items.${i}.name` as AccountKey))),
+              })
+            : t("account.content.articles.citedByNone")}
         </p>
       )}
       {field("title", "account.content.articles.title", "account.content.articles.titleHint")}
@@ -345,11 +350,18 @@ export function IndicatorArticles({ translator, onChanged, changed, indicator }:
   const { t } = translator;
   const published = usePublished(changed);
   const [chosen, setChosen] = useState<string[] | null>(null);
+  // The list as last published, to tell whether the editor has changed it since.
+  const copied = useRef<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "done" | "failed"; key: AccountKey } | null>(null);
 
+  // The list follows what is published, unless the editor has changes still to publish.
   useEffect(() => {
-    if (published && published !== "failed") setChosen(published.citations[indicator] ?? []);
+    if (!published || published === "failed") return;
+    const fresh = published.citations[indicator] ?? [];
+    const before = copied.current;
+    copied.current = fresh;
+    setChosen((now) => (now === null || same(now, before) ? fresh : now));
   }, [published, indicator]);
 
   if (published === null || chosen === null) return <p className="text-sm text-ink-muted">{t("account.loading")}</p>;
@@ -357,8 +369,7 @@ export function IndicatorArticles({ translator, onChanged, changed, indicator }:
 
   const byId = new Map<string, ArticlePublic>(published.articles.map((a) => [a.id, a]));
   const others = published.articles.filter((a) => !chosen.includes(a.id));
-  const saved = published.citations[indicator] ?? [];
-  const dirty = JSON.stringify(saved) !== JSON.stringify(chosen);
+  const dirty = !same(published.citations[indicator] ?? [], chosen);
   const move = (index: number, by: number) => {
     const next = [...chosen];
     [next[index], next[index + by]] = [next[index + by], next[index]];

@@ -4,13 +4,8 @@ import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Locale } from "@/i18n/core";
-import {
-  accountSubpages,
-  createAccountTranslator,
-  type AccountCatalog,
-  type AccountSection,
-  type AccountSubpage,
-} from "./i18n";
+import { createAccountTranslator, type AccountCatalog } from "./i18n";
+import { accountSubpages, type AccountSection, type AccountSubpage } from "./paths";
 import { sectionRoles } from "./AccountNav";
 import SavedZones from "./SavedZones";
 import Invitations from "./Invitations";
@@ -69,7 +64,10 @@ export default function AccountApp({
     import("@/lib/account")
       .then(({ loadMe }) => loadMe())
       .then((me) => {
-        if (!me) return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.hash)}`);
+        if (!me)
+          return location.assign(
+            `${signInPath}?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`,
+          );
         const needed = sectionRoles[section];
         // A section outside the person's roles leads to their profile.
         if (needed && !needed.some((role) => me.roles.includes(role))) return location.replace(sectionPaths.profile);

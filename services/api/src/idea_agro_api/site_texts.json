@@ -282,9 +282,17 @@
   "account.content.articles.citedBy": {
     "format": "plain",
     "default": {
-      "es": "Lo citan",
-      "en": "Cited by",
-      "pt": "Citado por"
+      "es": "Lo citan: {names}.",
+      "en": "Cited by {names}.",
+      "pt": "Citado por {names}."
+    }
+  },
+  "account.content.articles.citedByNone": {
+    "format": "plain",
+    "default": {
+      "es": "Ningún indicador lo cita todavía.",
+      "en": "No indicator cites it yet.",
+      "pt": "Nenhum indicador o cita ainda."
     }
   },
   "account.content.articles.doi": {

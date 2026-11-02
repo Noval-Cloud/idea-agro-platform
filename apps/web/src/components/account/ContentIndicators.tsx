@@ -8,6 +8,26 @@ import { Badge, card, Editor, preview, run } from "./TextEditor";
 
 type Props = { translator: AccountTranslator; changed: number; onChanged: () => void };
 
+// An indicator's texts in the order its page reads; a field missing here goes last.
+const fieldOrder = [
+  "name",
+  "short",
+  "longName",
+  "measures",
+  "method",
+  "unit",
+  "cadence",
+  "period",
+  "resolution",
+  "mapShows",
+  "chartTitle",
+  "chartUnit",
+];
+const rank = (field: string) => {
+  const found = fieldOrder.indexOf(field);
+  return found < 0 ? fieldOrder.length : found;
+};
+
 const chosenFromAddress = (): IndicatorId => {
   const wanted = new URLSearchParams(location.search).get("id");
   return indicatorIds.find((id) => id === wanted) ?? indicatorIds[0];
@@ -19,8 +39,8 @@ const chosenFromAddress = (): IndicatorId => {
  */
 export function Indicators({ translator, changed, onChanged }: Props) {
   const { t } = translator;
-  const [indicator, setIndicator] = useState<IndicatorId>(indicatorIds[0]);
-  useEffect(() => setIndicator(chosenFromAddress()), []);
+  // The page only renders in the browser, once the account loads.
+  const [indicator, setIndicator] = useState<IndicatorId>(chosenFromAddress);
   const choose = (id: IndicatorId) => {
     setIndicator(id);
     history.replaceState(history.state, "", `${location.pathname}?id=${id}`);
@@ -33,17 +53,20 @@ export function Indicators({ translator, changed, onChanged }: Props) {
         <ul className="flex flex-wrap gap-1 lg:grid lg:gap-0.5">
           {indicatorIds.map((id) => (
             <li key={id}>
-              <button
-                type="button"
+              <a
+                href={`?id=${id}`}
                 aria-current={indicator === id ? "page" : undefined}
-                onClick={() => choose(id)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  choose(id);
+                }}
                 className={cn(
-                  "w-full rounded-sm px-3 py-2 text-left text-sm transition-colors duration-(--ia-motion-fast)",
+                  "block rounded-sm px-3 py-2 text-sm transition-colors duration-(--ia-motion-fast)",
                   indicator === id ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
                 )}
               >
                 {name(id)}
-              </button>
+              </a>
             </li>
           ))}
         </ul>
@@ -77,7 +100,15 @@ function IndicatorTexts({ translator, indicator, changed, onChanged }: Props & {
   useEffect(() => {
     let live = true;
     run<SiteTextMatch[]>((client, init) => client.listSection("indicators", init))
-      .then((found) => live && setTexts(found.filter((m) => m.key.startsWith(prefix))))
+      .then(
+        (found) =>
+          live &&
+          setTexts(
+            found
+              .filter((m) => m.key.startsWith(prefix))
+              .sort((a, b) => rank(a.key.slice(prefix.length)) - rank(b.key.slice(prefix.length))),
+          ),
+      )
       .catch(() => live && setTexts("failed"));
     return () => {
       live = false;
@@ -112,7 +143,7 @@ function IndicatorTexts({ translator, indicator, changed, onChanged }: Props & {
           </button>
           {open === match.key && (
             <div className="mt-2">
-              <Editor textKey={match.key} translator={translator} onChanged={onChanged} />
+              <Editor textKey={match.key} translator={translator} onChanged={onChanged} Heading="h5" />
             </div>
           )}
         </li>

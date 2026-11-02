@@ -1225,7 +1225,8 @@ export const es = {
         removeTitle: "¿Eliminar el artículo?",
         removeBody: "Se quita también de los indicadores que lo citan, junto con su PDF.",
         removed: "Artículo eliminado.",
-        citedBy: "Lo citan",
+        citedBy: "Lo citan: {names}.",
+        citedByNone: "Ningún indicador lo cita todavía.",
       },
       citations: {
         none: "Este indicador todavía no cita ningún artículo.",

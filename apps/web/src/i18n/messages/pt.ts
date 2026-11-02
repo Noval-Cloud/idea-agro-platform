@@ -1224,7 +1224,8 @@ export const pt = {
         removeTitle: "Excluir o artigo?",
         removeBody: "Ele também é retirado dos indicadores que o citam, com seu PDF.",
         removed: "Artigo excluído.",
-        citedBy: "Citado por",
+        citedBy: "Citado por {names}.",
+        citedByNone: "Nenhum indicador o cita ainda.",
       },
       citations: {
         none: "Este indicador ainda não cita nenhum artigo.",

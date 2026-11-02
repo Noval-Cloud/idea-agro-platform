@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Articles } from "./ContentArticles";
 import { Indicators } from "./ContentIndicators";
-import { accountSubpages, type AccountKey, type AccountTranslator } from "./i18n";
+import { type AccountKey, type AccountTranslator } from "./i18n";
+import { accountSubpages } from "./paths";
 import { api, Badge, card, Editor, field, preview, run, type Run } from "./TextEditor";
 
 type View = "search" | "sections" | "changes";
@@ -97,103 +98,98 @@ function Texts({
   const views: View[] = ["search", "sections", "changes"];
 
   return (
-    <>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <div className="grid content-start gap-3">
-          <div role="group" aria-label={t("account.content.viewsLabel")} className="flex gap-1">
-            {views.map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={view === v}
-                onClick={() => {
-                  setList(null);
-                  setView(v);
-                }}
-                className={cn(
-                  "h-9 rounded-pill px-3 text-sm transition-colors duration-(--ia-motion-fast)",
-                  view === v ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
-                )}
-              >
-                {t(`account.content.views.${v}`)}
-              </button>
-            ))}
-          </div>
-          {view === "search" && (
-            <Input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t("account.content.searchPlaceholder")}
-              aria-label={t("account.content.searchPlaceholder")}
-            />
-          )}
-          {view === "sections" && (
-            <select
-              className={cn(field, "h-11")}
-              value={section ?? ""}
-              onChange={(event) => setSection(event.target.value || null)}
-              aria-label={t("account.content.views.sections")}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid content-start gap-3">
+        <div role="group" aria-label={t("account.content.viewsLabel")} className="flex gap-1">
+          {views.map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => {
+                setList(null);
+                setView(v);
+              }}
+              className={cn(
+                "h-9 rounded-pill px-3 text-sm transition-colors duration-(--ia-motion-fast)",
+                view === v ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
+              )}
             >
-              <option value="">{t("account.content.pickSection")}</option>
-              {sections?.map((s) => (
-                <option key={s.name} value={s.name}>
-                  {sectionName(s.name)} ({s.count}
-                  {s.edited ? ` · ${t("account.content.editedCount", { count: s.edited })}` : ""}
-                  {s.drafts ? ` · ${t("account.content.draftCount", { count: s.drafts })}` : ""})
-                </option>
-              ))}
-            </select>
-          )}
-          <ul
-            className={cn(card, "grid max-h-128 divide-y divide-line overflow-y-auto")}
-            aria-busy={list === "loading"}
+              {t(`account.content.views.${v}`)}
+            </button>
+          ))}
+        </div>
+        {view === "search" && (
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("account.content.searchPlaceholder")}
+            aria-label={t("account.content.searchPlaceholder")}
+          />
+        )}
+        {view === "sections" && (
+          <select
+            className={cn(field, "h-11")}
+            value={section ?? ""}
+            onChange={(event) => setSection(event.target.value || null)}
+            aria-label={t("account.content.views.sections")}
           >
-            {typeof list === "string" || list === null || list.length === 0 ? (
-              <li className="p-4 text-sm text-ink-muted">
-                {list === "loading"
-                  ? t("account.loading")
-                  : list === "failed"
-                    ? t("account.content.listFailed")
-                    : list === null
-                      ? view === "search"
-                        ? t("account.content.searchHint")
-                        : t("account.content.pickSection")
-                      : t("account.content.nothing")}
+            <option value="">{t("account.content.pickSection")}</option>
+            {sections?.map((s) => (
+              <option key={s.name} value={s.name}>
+                {sectionName(s.name)} ({s.count}
+                {s.edited ? ` · ${t("account.content.editedCount", { count: s.edited })}` : ""}
+                {s.drafts ? ` · ${t("account.content.draftCount", { count: s.drafts })}` : ""})
+              </option>
+            ))}
+          </select>
+        )}
+        <ul className={cn(card, "grid max-h-128 divide-y divide-line overflow-y-auto")} aria-busy={list === "loading"}>
+          {typeof list === "string" || list === null || list.length === 0 ? (
+            <li className="p-4 text-sm text-ink-muted">
+              {list === "loading"
+                ? t("account.loading")
+                : list === "failed"
+                  ? t("account.content.listFailed")
+                  : list === null
+                    ? view === "search"
+                      ? t("account.content.searchHint")
+                      : t("account.content.pickSection")
+                    : t("account.content.nothing")}
+            </li>
+          ) : null}
+          {Array.isArray(list) &&
+            list.map((match) => (
+              <li key={match.key}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(match.key)}
+                  aria-current={selected === match.key ? "true" : undefined}
+                  className={cn(
+                    "grid w-full gap-1 p-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
+                    selected === match.key && "bg-surface-selected",
+                  )}
+                >
+                  <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
+                  <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                    <code className="break-all">{match.key}</code>
+                    {match.edited && <Badge>{t("account.content.edited")}</Badge>}
+                    {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
+                  </span>
+                </button>
               </li>
-            ) : null}
-            {Array.isArray(list) &&
-              list.map((match) => (
-                <li key={match.key}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(match.key)}
-                    aria-current={selected === match.key ? "true" : undefined}
-                    className={cn(
-                      "grid w-full gap-1 p-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
-                      selected === match.key && "bg-surface-selected",
-                    )}
-                  >
-                    <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
-                    <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
-                      <code className="break-all">{match.key}</code>
-                      {match.edited && <Badge>{t("account.content.edited")}</Badge>}
-                      {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
-                    </span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </div>
-        <div className="min-w-0">
-          {selected ? (
-            <Editor key={selected} textKey={selected} translator={translator} onChanged={onChanged} />
-          ) : (
-            <p className={cn(card, "p-6 text-sm text-ink-muted")}>{t("account.content.pickText")}</p>
-          )}
-        </div>
+            ))}
+        </ul>
       </div>
-    </>
+      <div className="min-w-0">
+        {selected ? (
+          <Editor key={selected} textKey={selected} translator={translator} onChanged={onChanged} />
+        ) : (
+          <p className={cn(card, "p-6 text-sm text-ink-muted")}>{t("account.content.pickText")}</p>
+        )}
+      </div>
+    </div>
   );
 }
 

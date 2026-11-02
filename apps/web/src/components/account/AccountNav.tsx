@@ -3,15 +3,8 @@ import type { Me } from "@idea-agro/api-client";
 import type { Locale } from "@/i18n/core";
 import { readHint } from "@/lib/account-hint";
 import { cn } from "@/lib/utils";
-import {
-  accountSections,
-  accountSubpages,
-  createAccountTranslator,
-  hasPages,
-  type AccountCatalog,
-  type AccountSection,
-  type AccountSubpage,
-} from "./i18n";
+import { createAccountTranslator, type AccountCatalog } from "./i18n";
+import { accountSections, accountSubpages, hasPages, type AccountSection, type AccountSubpage } from "./paths";
 
 type Props = {
   locale: Locale;
@@ -80,7 +73,7 @@ export default function AccountNav({ locale, catalog, section, subpage, sectionP
           <li key={s} className="shrink-0">
             <a
               href={sectionPaths[s]}
-              aria-current={s === section && !subpage ? "page" : undefined}
+              aria-current={s !== section ? undefined : subpage ? "true" : "page"}
               className={entry(s !== section ? null : subpage ? "holds" : "page")}
             >
               {t(`account.sections.${s}`)}

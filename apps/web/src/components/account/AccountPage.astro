@@ -1,7 +1,8 @@
 ---
 import AccountShell from "./AccountShell.astro";
 import AccountApp from "./AccountApp";
-import { accountPaths, pickAccountCatalog, type AccountSection, type AccountSubpage } from "./i18n";
+import { pickAccountCatalog } from "./i18n";
+import { accountPaths, type AccountSection, type AccountSubpage } from "./paths";
 import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
 
 interface Props {
