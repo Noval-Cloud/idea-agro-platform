@@ -28,15 +28,7 @@ import { FilterSelect } from "@/components/lists/FilterSelect";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import {
-  SortHeader,
-  SortMenu,
-  decodeSort,
-  encodeSort,
-  sortRows,
-  type Sort,
-  type SortOption,
-} from "@/components/lists/Sorting";
+import { SortHeader, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { ZoneShape, ZoneThumbnail, useSavedZoneOutline } from "@/components/lists/ZoneShape";
 import { matches } from "@/components/lists/filter";
@@ -165,18 +157,11 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
     { label: t("account.zones.delete"), icon: <Trash2 />, onSelect: () => setDeleting(zone), danger: true },
   ];
 
-  const sortOptions: SortOption<Key>[] = [
-    { key: "changed", label: t("account.zones.sort.changed"), kind: "date" },
-    { key: "name", label: t("account.zones.sort.name"), kind: "text" },
-    { key: "size", label: t("account.zones.sort.size"), kind: "number" },
-  ];
-
   return (
     <TooltipProvider delayDuration={300}>
       <ListToolbar
         end={
           <>
-            <SortMenu t={t} sort={sort} options={sortOptions} onSort={setSort} />
             <ViewToggle t={t} view={view} onView={setView} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -204,13 +189,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
           </>
         }
       >
-        <SearchField
-          t={t}
-          value={query}
-          label={t("account.zones.searchLabel")}
-          placeholder={t("account.zones.searchPlaceholder")}
-          onChange={setQuery}
-        />
+        <SearchField t={t} value={query} label={t("account.zones.searchLabel")} onChange={setQuery} />
         <Segmented
           value={kind}
           onValueChange={(value) => setKind(value as Kind)}

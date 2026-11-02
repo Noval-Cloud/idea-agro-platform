@@ -43,9 +43,9 @@ Every text lives in the catalogs of `src/i18n/messages`, which define which text
 
 Every list finds things the same way, with the pieces in `src/components/lists`:
 
-- **Search:** it matches any field a row shows, and a list names only the fields to leave out (`rowText`).
-- **Filters:** each is a `MultiFilter` (or `DateFilter`) behind the Filters toggle. The ones applied stay as chips under the toolbar (`AppliedFilters`).
-- **Sort:** `SortMenu` chooses the key and its direction in every view, and table headers sort too.
+- **Search:** its box says only "Buscar…", and it matches any field a row shows; a list names only the fields to leave out (`rowText`). On a phone it folds into a magnifier.
+- **Filters:** each is a `MultiFilter` (or `DateFilter`) behind the filters icon, on the right beside the view toggle. The ones applied stay as chips under the toolbar (`AppliedFilters`).
+- **Sort:** table headers sort; there is no sort menu.
 - **State:** search, filters and sort live in the address (`useQueryState`, `useQueryList`); the view and the toggle live in the browser.
 
 ## Sign-in

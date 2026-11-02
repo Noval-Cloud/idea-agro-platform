@@ -20,7 +20,8 @@ export function ListToolbar({
   return (
     <div className="sticky top-(--ia-layout-header) z-(--ia-layer-sticky) -mx-gutter border-b border-line bg-canvas px-gutter py-3 lg:-mx-10 lg:px-10">
       <div className="grid max-w-(--ia-layout-page) gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        {/* On a phone the right-hand icons keep the first row, and the left wraps under itself. */}
+        <div className="flex items-start gap-2 sm:flex-wrap sm:items-center">
           <div className="flex min-w-0 grow flex-wrap items-center gap-2">{children}</div>
           <div className="ml-auto flex shrink-0 items-center gap-2">{end}</div>
         </div>

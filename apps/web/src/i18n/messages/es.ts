@@ -857,7 +857,6 @@ export const es = {
     tabs: { label: "Secciones del proyecto", zones: "Zonas", people: "Personas", activity: "Actividad" },
     zones: {
       searchLabel: "Buscar en las zonas del proyecto",
-      searchPlaceholder: "Nombre o departamento…",
       count: { one: "{count} zona", other: "{count} zonas" },
       kinds: { label: "Tipo de zona", all: "Todos los tipos" },
       columns: { name: "Nombre", kind: "Tipo", detail: "Detalle" },
@@ -1001,8 +1000,13 @@ export const es = {
   lists: {
     actions: "Acciones",
     clearSearch: "Borrar la búsqueda",
-    sort: "Ordenar",
-    view: { label: "Vista", table: "Tabla", cards: "Tarjetas" },
+    search: "Buscar…",
+    view: {
+      label: "Vista",
+      table: "Tabla",
+      cards: "Tarjetas",
+      show: { table: "Ver como tabla", cards: "Ver como tarjetas" },
+    },
     more: "Más acciones para {name}",
     noResults: { title: "Nada coincide", body: "Probá con otras palabras o quitá los filtros." },
     clearFilters: "Quitar los filtros",
@@ -1014,11 +1018,6 @@ export const es = {
       chosen: { one: "{count} elegido", other: "{count} elegidos" },
       clear: "Limpiar",
       remove: "Quitar el filtro {label}",
-    },
-    order: {
-      text: { asc: "A → Z", desc: "Z → A" },
-      date: { asc: "Primero lo más antiguo", desc: "Primero lo más reciente" },
-      number: { asc: "De menor a mayor", desc: "De mayor a menor" },
     },
     dates: {
       label: "Fecha",
@@ -1036,7 +1035,6 @@ export const es = {
   account: {
     zones: {
       searchLabel: "Buscar en tus zonas",
-      searchPlaceholder: "Nombre o departamento…",
       count: { one: "{count} zona", other: "{count} zonas" },
       kinds: { label: "Tipo de zona", all: "Todas", areas: "Áreas", points: "Puntos" },
       departments: { label: "Departamento", all: "Todos los departamentos" },
@@ -1082,7 +1080,6 @@ export const es = {
     },
     projects: {
       searchLabel: "Buscar en tus proyectos",
-      searchPlaceholder: "Nombre o descripción…",
       count: { one: "{count} proyecto", other: "{count} proyectos" },
       filter: { label: "Qué proyectos mostrar", all: "Todos", mine: "Míos", shared: "Compartidos conmigo" },
       sort: { changed: "Última modificación", name: "Nombre", zones: "Cantidad de zonas" },
@@ -1184,7 +1181,6 @@ export const es = {
     },
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     content: {
-      searchPlaceholder: "Buscá por lo que dice o por su clave…",
       listFailed: "No pudimos cargar la lista. Probá de nuevo.",
       saveFailed: "No pudimos guardar el cambio. Revisá el texto y probá de nuevo.",
       indicator: {
@@ -1238,7 +1234,6 @@ export const es = {
         citedByNone: "Ningún indicador lo cita",
         editTitle: "Editar artículo",
         searchLabel: "Buscar artículos",
-        searchPlaceholder: "Título, autor, revista o año…",
         citedByLabel: "Indicador que lo cita",
         anyIndicator: "Cualquier indicador",
         filtersLabel: "Filtros",
@@ -1417,7 +1412,6 @@ export const es = {
     },
     users: {
       searchLabel: "Buscar cuentas",
-      searchPlaceholder: "Nombre, correo, rol, fecha…",
       disabled: "Deshabilitada",
       close: "Cerrar",
       roles: "Roles",
@@ -1493,7 +1487,6 @@ export const es = {
         other: "{count} acciones",
       },
       searchLabel: "Buscar acciones",
-      searchPlaceholder: "Persona, cuenta, texto…",
       filters: { by: "Realizada por", on: "Realizada sobre" },
       groups: { roles: "Roles", people: "Personas" },
       someone: "Otra persona",

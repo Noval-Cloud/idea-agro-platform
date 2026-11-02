@@ -17,15 +17,7 @@ import { matches, rowText } from "@/components/lists/filter";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { MultiFilter, chosenLabels, type ChoiceSection } from "@/components/lists/MultiFilter";
 import { SearchField } from "@/components/lists/SearchField";
-import {
-  SortHeader,
-  SortMenu,
-  decodeSort,
-  encodeSort,
-  sortRows,
-  type Sort,
-  type SortOption,
-} from "@/components/lists/Sorting";
+import { SortHeader, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { useQueryList, useQueryState } from "@/components/lists/state";
 import { signInProviders } from "@/lib/sign-in-providers";
@@ -289,10 +281,6 @@ export default function Users({ translator, signInPath, me }: Props) {
     (a, key) => (key === "name" ? nameOf(a) : new Date(a.created_at).getTime()),
     collator,
   );
-  const sortOptions: SortOption<Key>[] = [
-    { key: "name", label: t("account.users.sorts.name"), kind: "text" },
-    { key: "joined", label: t("account.users.sorts.joined"), kind: "date" },
-  ];
   const sections = {
     role: [{ choices: roleChoices.map((value) => ({ value, label: t(`account.roles.${value}`) })) }],
     status: [{ choices: statusChoices.map((value) => ({ value, label: t(`account.users.statuses.${value}`) })) }],
@@ -345,7 +333,12 @@ export default function Users({ translator, signInPath, me }: Props) {
         <ListToolbar
           end={
             <>
-              <SortMenu t={t} sort={sort} options={sortOptions} onSort={setSort} />
+              <FiltersToggle
+                t={t}
+                shown={filtersShown}
+                controls="users-filters"
+                onToggle={() => showFilters(!filtersShown)}
+              />
               <ViewToggle t={t} view={view} onView={setView} />
             </>
           }
@@ -383,20 +376,7 @@ export default function Users({ translator, signInPath, me }: Props) {
             <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("users-filters")} />
           }
         >
-          <SearchField
-            t={t}
-            value={query}
-            label={t("account.users.searchLabel")}
-            placeholder={t("account.users.searchPlaceholder")}
-            onChange={setQuery}
-          />
-          <FiltersToggle
-            t={t}
-            shown={filtersShown}
-            active={applied.length}
-            controls="users-filters"
-            onToggle={() => showFilters(!filtersShown)}
-          />
+          <SearchField t={t} value={query} label={t("account.users.searchLabel")} onChange={setQuery} />
           {accounts && <ListCount>{t("account.users.count", { count: shown.length })}</ListCount>}
         </ListToolbar>
 

@@ -113,11 +113,11 @@ export function Indicators({ translator, changed, onChanged }: Props) {
         <div className="hidden lg:block">
           <SearchField
             id="indicator-search"
+            collapsible={false}
             t={t}
             value={query}
             onChange={setQuery}
             label={t("account.content.indicator.search")}
-            placeholder={t("account.content.indicator.search")}
             className="sm:w-full"
           />
         </div>

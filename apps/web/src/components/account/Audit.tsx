@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BookOpen, Gauge, SearchX, Type, UserCog } from "lucide-react";
 import type { AdminAccount, ArticlePublic, AuditOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AppliedFilters,
   FiltersToggle,
@@ -243,115 +244,111 @@ export default function Audit({ translator, signInPath }: Props) {
   }
 
   return (
-    <section aria-labelledby="audit-title" className="grid max-w-(--ia-layout-page) gap-4">
-      <PageHeader id="audit-title" title={t("account.subpages.audit")} />
-      <ListToolbar
-        end={null}
-        filters={{
-          id: "audit-filters",
-          shown: filtersShown,
-          controls: (
-            <>
-              <MultiFilter
-                t={t}
-                label={t("account.audit.filters.by")}
-                sections={sections.by}
-                selected={by}
-                onChange={setBy}
-                searchable
-                searchLabel={t("account.audit.searchPeople")}
-                onSearch={setLookup}
-              />
-              <MultiFilter
-                t={t}
-                label={t("account.audit.filters.on")}
-                sections={sections.on}
-                selected={on}
-                onChange={setOn}
-              />
-              <DateFilter t={t} value={dates} onChange={(value) => setDateValue(encodeDates(value))} />
-            </>
-          ),
-        }}
-        applied={
-          <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("audit-filters")} />
-        }
-      >
-        <SearchField
-          t={t}
-          value={query}
-          label={t("account.audit.searchLabel")}
-          placeholder={t("account.audit.searchPlaceholder")}
-          onChange={setQuery}
-        />
-        <FiltersToggle
-          t={t}
-          shown={filtersShown}
-          active={applied.length}
-          controls="audit-filters"
-          onToggle={() => showFilters(!filtersShown)}
-        />
-        {Array.isArray(audit) && <ListCount>{t("account.audit.count", { count: shown.length })}</ListCount>}
-      </ListToolbar>
+    <TooltipProvider delayDuration={300}>
+      <section aria-labelledby="audit-title" className="grid max-w-(--ia-layout-page) gap-4">
+        <PageHeader id="audit-title" title={t("account.subpages.audit")} />
+        <ListToolbar
+          end={
+            <FiltersToggle
+              t={t}
+              shown={filtersShown}
+              controls="audit-filters"
+              onToggle={() => showFilters(!filtersShown)}
+            />
+          }
+          filters={{
+            id: "audit-filters",
+            shown: filtersShown,
+            controls: (
+              <>
+                <MultiFilter
+                  t={t}
+                  label={t("account.audit.filters.by")}
+                  sections={sections.by}
+                  selected={by}
+                  onChange={setBy}
+                  searchable
+                  searchLabel={t("account.audit.searchPeople")}
+                  onSearch={setLookup}
+                />
+                <MultiFilter
+                  t={t}
+                  label={t("account.audit.filters.on")}
+                  sections={sections.on}
+                  selected={on}
+                  onChange={setOn}
+                />
+                <DateFilter t={t} value={dates} onChange={(value) => setDateValue(encodeDates(value))} />
+              </>
+            ),
+          }}
+          applied={
+            <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("audit-filters")} />
+          }
+        >
+          <SearchField t={t} value={query} label={t("account.audit.searchLabel")} onChange={setQuery} />
+          {Array.isArray(audit) && <ListCount>{t("account.audit.count", { count: shown.length })}</ListCount>}
+        </ListToolbar>
 
-      <div className={`grid max-w-3xl gap-6 ${underToolbar}`}>
-        {audit === null && (
-          <p role="status" className="text-sm text-ink-muted">
-            {t("account.loading")}
-          </p>
-        )}
-        {audit === "failed" && (
-          <p role="alert" className="text-sm text-danger">
-            {t("account.audit.failed")}
-          </p>
-        )}
-        {Array.isArray(audit) && shown.length === 0 && (
-          <EmptyState
-            icon={<SearchX />}
-            title={entries.length === 0 && !dates ? t("account.audit.empty") : t("lists.noResults.title")}
-          >
-            {(query || applied.length > 0) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setQuery("");
-                  clearFilters();
-                }}
-              >
-                {t("lists.clearFilters")}
-              </Button>
-            )}
-          </EmptyState>
-        )}
-        {timeline.map((group) => (
-          <section key={group.key} aria-labelledby={`period-${group.key}`} className="grid gap-3">
-            <h3 id={`period-${group.key}`} className="text-xs font-medium tracking-wide text-ink-subtle uppercase">
-              {group.title}
-            </h3>
-            <ol className="relative grid gap-5 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-px before:bg-line">
-              {group.entries.map((entry, index) => {
-                const Icon = icons[kindOf(entry.action)];
-                const more = detail(entry);
-                return (
-                  <li key={`${entry.at}-${index}`} className="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
-                    <span className="z-1 grid size-8 place-items-center rounded-full border border-line bg-surface text-ink-muted">
-                      <Icon aria-hidden="true" className="size-4" />
-                    </span>
-                    <div className="grid gap-0.5 pt-1">
-                      <p className="text-sm text-ink">{sentence(entry)}</p>
-                      {more && <p className="text-sm text-ink-muted">{more}</p>}
-                      <time dateTime={entry.at} className="text-xs text-ink-subtle">
-                        {group.recent ? time(entry.at) : moment(entry.at)}
-                      </time>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ))}
-      </div>
-    </section>
+        <div className={`grid max-w-3xl gap-6 ${underToolbar}`}>
+          {audit === null && (
+            <p role="status" className="text-sm text-ink-muted">
+              {t("account.loading")}
+            </p>
+          )}
+          {audit === "failed" && (
+            <p role="alert" className="text-sm text-danger">
+              {t("account.audit.failed")}
+            </p>
+          )}
+          {Array.isArray(audit) && shown.length === 0 && (
+            <EmptyState
+              icon={<SearchX />}
+              title={entries.length === 0 && !dates ? t("account.audit.empty") : t("lists.noResults.title")}
+            >
+              {(query || applied.length > 0) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setQuery("");
+                    clearFilters();
+                  }}
+                >
+                  {t("lists.clearFilters")}
+                </Button>
+              )}
+            </EmptyState>
+          )}
+          {timeline.map((group) => (
+            <section key={group.key} aria-labelledby={`period-${group.key}`} className="grid gap-3">
+              <h3 id={`period-${group.key}`} className="text-xs font-medium tracking-wide text-ink-subtle uppercase">
+                {group.title}
+              </h3>
+              <ol className="relative grid gap-5 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-px before:bg-line">
+                {group.entries.map((entry, index) => {
+                  const Icon = icons[kindOf(entry.action)];
+                  const more = detail(entry);
+                  return (
+                    <li key={`${entry.at}-${index}`} className="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
+                      <span className="z-1 grid size-8 place-items-center rounded-full border border-line bg-surface text-ink-muted">
+                        <Icon aria-hidden="true" className="size-4" />
+                      </span>
+                      <div className="grid gap-0.5 pt-1">
+                        <p className="text-sm text-ink">{sentence(entry)}</p>
+                        {more && <p className="text-sm text-ink-muted">{more}</p>}
+                        <time dateTime={entry.at} className="text-xs text-ink-subtle">
+                          {group.recent ? time(entry.at) : moment(entry.at)}
+                        </time>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
+      </section>
+    </TooltipProvider>
   );
 }

@@ -863,7 +863,6 @@ export const en = {
     tabs: { label: "Project sections", zones: "Areas", people: "People", activity: "Activity" },
     zones: {
       searchLabel: "Search the project's areas",
-      searchPlaceholder: "Name or department…",
       count: { one: "{count} area", other: "{count} areas" },
       kinds: { label: "Kind of area", all: "Every kind" },
       columns: { name: "Name", kind: "Kind", detail: "Detail" },
@@ -1002,8 +1001,8 @@ export const en = {
   lists: {
     actions: "Actions",
     clearSearch: "Clear the search",
-    sort: "Sort",
-    view: { label: "View", table: "Table", cards: "Cards" },
+    search: "Search…",
+    view: { label: "View", table: "Table", cards: "Cards", show: { table: "Show as a table", cards: "Show as cards" } },
     more: "More actions for {name}",
     noResults: { title: "Nothing matches", body: "Try other words or remove the filters." },
     clearFilters: "Remove the filters",
@@ -1015,11 +1014,6 @@ export const en = {
       chosen: { one: "{count} chosen", other: "{count} chosen" },
       clear: "Clear",
       remove: "Remove the {label} filter",
-    },
-    order: {
-      text: { asc: "A → Z", desc: "Z → A" },
-      date: { asc: "Oldest first", desc: "Newest first" },
-      number: { asc: "Smallest first", desc: "Largest first" },
     },
     dates: {
       label: "Date",
@@ -1037,7 +1031,6 @@ export const en = {
   account: {
     zones: {
       searchLabel: "Search your areas",
-      searchPlaceholder: "Name or department…",
       count: { one: "{count} area", other: "{count} areas" },
       kinds: { label: "Kind of area", all: "All", areas: "Areas", points: "Points" },
       departments: { label: "Department", all: "Every department" },
@@ -1083,7 +1076,6 @@ export const en = {
     },
     projects: {
       searchLabel: "Search your projects",
-      searchPlaceholder: "Name or description…",
       count: { one: "{count} project", other: "{count} projects" },
       filter: { label: "Which projects to show", all: "All", mine: "Mine", shared: "Shared with me" },
       sort: { changed: "Last changed", name: "Name", zones: "Number of areas" },
@@ -1184,7 +1176,6 @@ export const en = {
     },
     roles: { client: "Client", editor: "Editor", admin: "Administrator" },
     content: {
-      searchPlaceholder: "Search by what it says or by its key…",
       listFailed: "We could not load the list. Try again.",
       saveFailed: "We could not save the change. Check the text and try again.",
       indicator: {
@@ -1238,7 +1229,6 @@ export const en = {
         citedByNone: "No indicator cites it",
         editTitle: "Edit article",
         searchLabel: "Search articles",
-        searchPlaceholder: "Title, author, journal or year…",
         citedByLabel: "Indicator citing it",
         anyIndicator: "Any indicator",
         filtersLabel: "Filters",
@@ -1417,7 +1407,6 @@ export const en = {
     },
     users: {
       searchLabel: "Search accounts",
-      searchPlaceholder: "Name, email, role, date…",
       disabled: "Disabled",
       close: "Close",
       roles: "Roles",
@@ -1493,7 +1482,6 @@ export const en = {
         other: "{count} actions",
       },
       searchLabel: "Search actions",
-      searchPlaceholder: "Person, account, text…",
       filters: { by: "Made by", on: "Made on" },
       groups: { roles: "Roles", people: "People" },
       someone: "Someone else",
