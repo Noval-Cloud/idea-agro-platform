@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { AdminAccount, AuditOut } from "@idea-agro/api-client";
+import type { AdminAccount } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signInProviders } from "@/lib/sign-in-providers";
 import type { AccountTranslator } from "./i18n";
 
-type Props = { t: AccountTranslator["t"]; moment: AccountTranslator["moment"]; signInPath: string; me: string };
+type Props = { t: AccountTranslator["t"]; signInPath: string; me: string };
 type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
@@ -16,13 +16,12 @@ const card = "rounded-lg border border-line bg-surface p-6";
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 const nameOf = (account: AdminAccount) => account.name || account.email || account.id;
 
-/** For admins: search accounts, change their roles and access, and read what admins did. */
-export default function Users({ t, moment, signInPath, me }: Props) {
+/** For admins: search accounts and change their roles and access. */
+export default function Users({ t, signInPath, me }: Props) {
   const [query, setQuery] = useState("");
   const [accounts, setAccounts] = useState<AdminAccount[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
-  const [audit, setAudit] = useState<AuditOut[] | null>(null);
   // An action waiting for the person to confirm it is them; confirming retries it.
   const [waiting, setWaiting] = useState<Action | null>(null);
   const [confirmReady, setConfirmReady] = useState(false);
@@ -44,14 +43,6 @@ export default function Users({ t, moment, signInPath, me }: Props) {
       clearTimeout(timer);
     };
   }, [query]);
-
-  const loadAudit = () =>
-    void api()
-      .then(([{ privately }, client]) => privately((init) => client.listAudit(init)))
-      .then((response) => setAudit(response.status === 200 ? response.data : []))
-      .catch(() => setAudit([]));
-
-  useEffect(loadAudit, []);
 
   // Confirming opens the provider's window, which browsers allow only right inside a click: it loads ahead.
   useEffect(() => {
@@ -82,7 +73,6 @@ export default function Users({ t, moment, signInPath, me }: Props) {
       setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
       // The page shows the admin's own roles and sessions: it starts over when they change.
       if (outcome.status < 300 && action.account.id === me) return location.reload();
-      loadAudit();
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) return location.assign(signInPath);
@@ -157,7 +147,7 @@ export default function Users({ t, moment, signInPath, me }: Props) {
   return (
     <section id="users" aria-labelledby="users-title" className={card}>
       <h2 id="users-title" className="text-lg font-medium text-ink">
-        {t("account.users.title")}
+        {t("account.subpages.users")}
       </h2>
       <Input
         type="search"
@@ -228,34 +218,6 @@ export default function Users({ t, moment, signInPath, me }: Props) {
           </li>
         ))}
       </ul>
-      <details className="mt-4 text-sm">
-        <summary className="cursor-pointer text-ink">{t("account.users.audit")}</summary>
-        {audit?.length === 0 && <p className="mt-2 text-ink-muted">{t("account.users.auditEmpty")}</p>}
-        <ol className="mt-3 grid gap-2">
-          {audit?.map((entry, index) => (
-            <li key={index}>
-              <p className="text-ink">
-                {t(`account.users.actions.${entry.action}`, {
-                  actor: entry.actor_name,
-                  target: entry.target_email || entry.target,
-                  // Only a change of roles lists roles; a text's change lists its languages.
-                  detail:
-                    entry.action === "roles_changed"
-                      ? entry.detail
-                          .split(",")
-                          .filter(Boolean)
-                          .map((role) => t(`account.roles.${role as "editor" | "admin"}`))
-                          .join(", ") || t("account.users.noRoles")
-                      : entry.detail,
-                })}
-              </p>
-              <time dateTime={entry.at} className="text-xs text-ink-subtle">
-                {moment(entry.at)}
-              </time>
-            </li>
-          ))}
-        </ol>
-      </details>
     </section>
   );
 }

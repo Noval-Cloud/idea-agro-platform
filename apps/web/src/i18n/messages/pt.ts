@@ -1109,6 +1109,13 @@ export const pt = {
       content: "Conteúdo",
       admin: "Admin",
     },
+    subpages: {
+      texts: "Textos",
+      articles: "Artigos",
+      indicators: "Indicadores",
+      users: "Usuários",
+      audit: "Registro de ações",
+    },
     invitations: {
       intro:
         "Convide alguém para o IDEA-Agro. A pessoa recebe um e-mail com o seu nome e um link para entrar; vale uma semana. Você vai ver aqui quando ela entrar.",
@@ -1152,8 +1159,14 @@ export const pt = {
     },
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     content: {
-      title: "Conteúdo",
-      body: "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado.",
+      viewsLabel: "Como listar os textos",
+      lead: {
+        texts:
+          "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado.",
+        articles:
+          "Os artigos científicos que sustentam os indicadores. Cada indicador escolhe, na sua página, quais cita.",
+        indicators: "Cada indicador num só lugar: seus textos e os artigos que o sustentam.",
+      },
       views: {
         search: "Buscar",
         sections: "Por seção",
@@ -1166,11 +1179,23 @@ export const pt = {
       nothing: "Nenhum texto corresponde.",
       listFailed: "Não conseguimos carregar a lista. Tente de novo.",
       saveFailed: "Não conseguimos salvar a alteração. Revise o texto e tente de novo.",
-      modesLabel: "O que editar",
-      modes: {
+      indicator: {
         texts: "Textos",
-        articles: "Artigos",
-        citations: "Artigos de cada indicador",
+        articles: "Artigos que o sustentam",
+      },
+      indicatorFields: {
+        short: "Sigla",
+        name: "Nome",
+        longName: "Nome completo",
+        measures: "O que mede",
+        method: "Como é calculado",
+        unit: "Unidade",
+        cadence: "Frequência",
+        period: "Período",
+        resolution: "Resolução",
+        mapShows: "O que o mapa mostra",
+        chartTitle: "Título do gráfico",
+        chartUnit: "Unidade do gráfico",
       },
       articles: {
         add: "Novo artigo",
@@ -1199,9 +1224,9 @@ export const pt = {
         removeTitle: "Excluir o artigo?",
         removeBody: "Ele também é retirado dos indicadores que o citam, com seu PDF.",
         removed: "Artigo excluído.",
+        citedBy: "Citado por",
       },
       citations: {
-        indicator: "Indicador",
         none: "Este indicador ainda não cita nenhum artigo.",
         add: "Adicionar um artigo",
         pick: "Escolha um artigo",
@@ -1308,7 +1333,6 @@ export const pt = {
       },
     },
     users: {
-      title: "Usuários",
       searchLabel: "Buscar contas",
       searchPlaceholder: "Nome ou e-mail",
       empty: "Não há contas com esse nome ou e-mail.",
@@ -1330,8 +1354,11 @@ export const pt = {
       confirmIdentity: "Por segurança, “{action}” para {name} pede que você confirme que é você.",
       cancel: "Cancelar",
       confirmAction: "Confirmar com o Google",
-      audit: "Registro de ações",
-      auditEmpty: "Ainda não há ações registradas.",
+    },
+    audit: {
+      lead: "O que administradores e editores fizeram, do mais recente ao mais antigo.",
+      failed: "Não conseguimos carregar o registro. Tente de novo.",
+      empty: "Ainda não há ações registradas.",
       noRoles: "só cliente",
       actions: {
         admin_bootstrapped: "{actor} recebeu o papel de administrador pela configuração",

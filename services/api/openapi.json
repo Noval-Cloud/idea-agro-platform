@@ -6833,8 +6833,8 @@
         "tags": [
           "Admin"
         ],
-        "summary": "What admins did",
-        "description": "For admins: the latest admin actions, newest first.",
+        "summary": "What admins and editors did",
+        "description": "For admins: the latest actions of admins and editors, newest first.",
         "operationId": "list_audit",
         "responses": {
           "200": {
