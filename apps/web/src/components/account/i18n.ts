@@ -20,12 +20,18 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     new Intl.NumberFormat(intlLocale[locale], { maximumFractionDigits: 1 }).format(value);
   const moment = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  const time = (value: string) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { timeStyle: "short" }).format(new Date(value));
+  const month = (value: Date) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { month: "long", year: "numeric" }).format(value);
   const collator = new Intl.Collator(intlLocale[locale], { sensitivity: "base", numeric: true });
   const list = (items: string[]) => new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
   return {
     ...translator,
     date,
     moment,
+    time,
+    month,
     number,
     degrees: degreesFormat(locale),
     ago: relativeTimeFormat(locale),

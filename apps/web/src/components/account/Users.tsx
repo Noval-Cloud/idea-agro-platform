@@ -1,25 +1,45 @@
 import { useEffect, useRef, useState } from "react";
+import { LayoutGrid, Rows3, Search } from "lucide-react";
 import type { AdminAccount } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Sheet } from "@/components/ui/sheet";
 import { signInProviders } from "@/lib/sign-in-providers";
+import { cn } from "@/lib/utils";
 import type { AccountTranslator } from "./i18n";
 
-type Props = { t: AccountTranslator["t"]; signInPath: string; me: string };
+type Props = { translator: AccountTranslator; signInPath: string; me: string };
 type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
 /** An action and what it is called, for the person to recognize when asked to confirm it. */
 type Action = { run: Run; label: string; account: AdminAccount };
+type Sort = "name" | "newest" | "oldest";
+type Filter = "all" | "admin" | "editor" | "client" | "disabled";
+type View = "table" | "cards";
 
-const card = "rounded-lg border border-line bg-surface p-6";
+const sorts: Sort[] = ["name", "newest", "oldest"];
+const filters: Filter[] = ["all", "admin", "editor", "client", "disabled"];
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
-const nameOf = (account: AdminAccount) => account.name || account.email || account.id;
+const VIEW_KEY = "ia-users-view";
 
-/** For admins: search accounts and change their roles and access. */
-export default function Users({ t, signInPath, me }: Props) {
+const readView = (): View => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "cards" ? "cards" : "table";
+  } catch {
+    return "table";
+  }
+};
+
+/** For admins: find accounts, and change their roles and access in a side panel. */
+export default function Users({ translator, signInPath, me }: Props) {
+  const { t, date, collator } = translator;
   const [query, setQuery] = useState("");
   const [accounts, setAccounts] = useState<AdminAccount[] | null>(null);
+  const [sort, setSort] = useState<Sort>("name");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<View>(readView);
   const [open, setOpen] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   // An action waiting for the person to confirm it is them; confirming retries it.
@@ -29,6 +49,10 @@ export default function Users({ t, signInPath, me }: Props) {
   // Grows after every action, so the role checkboxes go back to what the account really has.
   const [settled, setSettled] = useState(0);
   const confirm = useRef<(() => Promise<void>) | null>(null);
+  const asking = useConfirm(t("account.users.cancel"));
+
+  // Someone without a name or an email is an account the platform itself uses.
+  const nameOf = (account: AdminAccount) => account.name || account.email || t("account.users.system");
 
   useEffect(() => {
     let live = true;
@@ -43,6 +67,15 @@ export default function Users({ t, signInPath, me }: Props) {
       clearTimeout(timer);
     };
   }, [query]);
+
+  const choose = (next: View) => {
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // The view is a convenience; without storage it is not remembered.
+    }
+  };
 
   // Confirming opens the provider's window, which browsers allow only right inside a click: it loads ahead.
   useEffect(() => {
@@ -108,8 +141,16 @@ export default function Users({ t, signInPath, me }: Props) {
       },
     });
 
-  const setAccess = (account: AdminAccount, disabled: boolean) => {
-    if (disabled && !window.confirm(t("account.users.confirmDisable", { name: nameOf(account) }))) return;
+  const setAccess = async (account: AdminAccount, disabled: boolean) => {
+    if (
+      disabled &&
+      !(await asking.ask({
+        title: t("account.users.disable"),
+        body: t("account.users.confirmDisable", { name: nameOf(account) }),
+        confirm: t("account.users.disable"),
+      }))
+    )
+      return;
     void act({
       account,
       label: disabled ? t("account.users.disable") : t("account.users.enable"),
@@ -122,8 +163,16 @@ export default function Users({ t, signInPath, me }: Props) {
     });
   };
 
-  const revoke = (account: AdminAccount) => {
-    if (!window.confirm(t("account.users.confirmRevoke", { name: nameOf(account) }))) return;
+  const revoke = async (account: AdminAccount) => {
+    if (
+      !(await asking.ask({
+        title: t("account.users.revoke"),
+        body: t("account.users.confirmRevoke", { name: nameOf(account) }),
+        confirm: t("account.users.revoke"),
+        tone: "primary",
+      }))
+    )
+      return;
     void act({
       account,
       label: t("account.users.revoke"),
@@ -144,86 +193,292 @@ export default function Users({ t, signInPath, me }: Props) {
       },
     });
 
+  const shown = (accounts ?? [])
+    .filter((a) =>
+      filter === "all"
+        ? true
+        : filter === "disabled"
+          ? a.disabled
+          : filter === "client"
+            ? !a.roles.some((r) => r !== "client")
+            : a.roles.includes(filter),
+    )
+    .sort((a, b) =>
+      sort === "name"
+        ? collator.compare(nameOf(a), nameOf(b))
+        : (sort === "newest" ? -1 : 1) * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    );
+  const opened = accounts?.find((a) => a.id === open) ?? null;
+  // Every account is a client; only the roles beyond it say something.
+  const roles = (account: AdminAccount) => account.roles.filter((r) => r !== "client");
+  const select = "h-11 rounded-sm border border-input bg-surface px-3 text-sm text-ink";
+
   return (
-    <section id="users" aria-labelledby="users-title" className={card}>
-      <h2 id="users-title" className="text-lg font-medium text-ink">
-        {t("account.subpages.users")}
-      </h2>
-      <Input
-        type="search"
-        className="mt-4"
-        value={query}
-        aria-label={t("account.users.searchLabel")}
-        placeholder={t("account.users.searchPlaceholder")}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-      />
-      {waiting && (
-        <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-sm border border-line p-3 text-sm">
-          <p className="grow text-ink">
-            {t("account.users.confirmIdentity", { action: waiting.label, name: nameOf(waiting.account) })}
+    <section aria-labelledby="users-title" className="grid gap-6 pt-8">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <h2 id="users-title" className="text-xl font-medium text-ink">
+          {t("account.subpages.users")}
+        </h2>
+        {accounts && (
+          <p role="status" className="text-sm text-ink-muted">
+            {t("account.users.count", { count: shown.length })}
           </p>
-          <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
-            {t("account.users.confirmAction")}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
-            {t("account.users.cancel")}
-          </Button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-60 grow">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle"
+          />
+          <Input
+            type="search"
+            value={query}
+            className="pl-9"
+            aria-label={t("account.users.searchLabel")}
+            placeholder={t("account.users.searchPlaceholder")}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+          />
         </div>
-      )}
-      {notice && (
-        <p role={notice === "done" ? "status" : "alert"} className="mt-3 text-sm text-ink-muted">
-          {t(`account.users.${notice}`)}
-        </p>
-      )}
-      {accounts?.length === 0 && <p className="mt-3 text-sm text-ink-muted">{t("account.users.empty")}</p>}
-      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] divide-y divide-line">
-        {accounts?.map((account) => (
-          <li key={account.id} className="py-3">
-            <div className="flex items-center gap-x-4">
-              <div className="min-w-0 grow">
-                <p className="truncate text-sm font-medium text-ink">{nameOf(account)}</p>
-                <p className="truncate text-xs text-ink-subtle">
-                  {[
-                    account.email,
-                    account.roles.map((role) => t(`account.roles.${role}`)).join(", "),
-                    account.disabled ? t("account.users.disabled") : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="shrink-0"
-                aria-expanded={open === account.id}
-                onClick={() => setOpen(open === account.id ? null : account.id)}
+        <select
+          className={select}
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as Filter)}
+          aria-label={t("account.users.filterLabel")}
+        >
+          {filters.map((f) => (
+            <option key={f} value={f}>
+              {t(`account.users.filters.${f}`)}
+            </option>
+          ))}
+        </select>
+        <select
+          className={select}
+          value={sort}
+          onChange={(event) => setSort(event.target.value as Sort)}
+          aria-label={t("account.users.sortLabel")}
+        >
+          {sorts.map((s) => (
+            <option key={s} value={s}>
+              {t(`account.users.sorts.${s}`)}
+            </option>
+          ))}
+        </select>
+        <div
+          role="group"
+          aria-label={t("account.users.viewLabel")}
+          className="hidden rounded-sm border border-line p-0.5 sm:flex"
+        >
+          {(["table", "cards"] as const).map((v) => {
+            const Icon = v === "table" ? Rows3 : LayoutGrid;
+            return (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                aria-label={t(`account.users.views.${v}`)}
+                title={t(`account.users.views.${v}`)}
+                onClick={() => choose(v)}
+                className={cn(
+                  "grid size-9 place-items-center rounded-xs transition-colors duration-(--ia-motion-fast)",
+                  view === v ? "bg-surface-selected text-ink" : "text-ink-muted hover:text-ink",
+                )}
               >
-                {open === account.id ? t("account.users.close") : t("account.users.manage")}
-              </Button>
+                <Icon aria-hidden="true" className="size-4" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {accounts === null ? (
+        <p className="text-sm text-ink-muted">{t("account.loading")}</p>
+      ) : shown.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-line p-6 text-sm text-ink-muted">
+          {t("account.users.empty")}
+        </p>
+      ) : (
+        <>
+          {/* Phones always get cards: a table does not fit. */}
+          <ul className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-3", view === "table" && "sm:hidden")}>
+            {shown.map((account) => (
+              <li key={account.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(account.id)}
+                  className="grid h-full w-full content-start gap-3 rounded-lg border border-line bg-surface p-4 text-left transition-colors duration-(--ia-motion-fast) hover:border-line-strong hover:bg-action-soft"
+                >
+                  <span className="flex items-center gap-3">
+                    <Avatar account={account} name={nameOf(account)} />
+                    <span className="grid min-w-0">
+                      <span className="truncate text-sm font-medium text-ink">{nameOf(account)}</span>
+                      {account.name && account.email && (
+                        <span className="truncate text-xs text-ink-muted">{account.email}</span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="flex flex-wrap items-center gap-1.5 text-xs text-ink-subtle">
+                    {roles(account).map((role) => (
+                      <RoleChip key={role}>{t(`account.roles.${role}`)}</RoleChip>
+                    ))}
+                    {account.disabled && <RoleChip tone="danger">{t("account.users.disabled")}</RoleChip>}
+                    <span>{t("account.users.since", { date: date(account.created_at) })}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {view === "table" && (
+            <div className="hidden overflow-x-auto rounded-lg border border-line bg-surface sm:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-line text-xs text-ink-subtle">
+                  <tr>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      {t("account.users.columns.name")}
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      {t("account.users.columns.roles")}
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      {t("account.users.columns.since")}
+                    </th>
+                    <th scope="col" className="px-4 py-2.5">
+                      <span className="sr-only">{t("account.users.manage")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {shown.map((account) => (
+                    <tr key={account.id} className="transition-colors duration-(--ia-motion-fast) hover:bg-action-soft">
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-3">
+                          <Avatar account={account} name={nameOf(account)} />
+                          <span className="grid min-w-0">
+                            <span className="truncate font-medium text-ink">{nameOf(account)}</span>
+                            {account.name && account.email && (
+                              <span className="truncate text-xs text-ink-muted">{account.email}</span>
+                            )}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="flex flex-wrap gap-1.5">
+                          {roles(account).map((role) => (
+                            <RoleChip key={role}>{t(`account.roles.${role}`)}</RoleChip>
+                          ))}
+                          {account.disabled && <RoleChip tone="danger">{t("account.users.disabled")}</RoleChip>}
+                          {roles(account).length === 0 && !account.disabled && (
+                            <span className="text-ink-subtle">{t("account.roles.client")}</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-ink-muted tabular-nums">
+                        {date(account.created_at)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button size="sm" variant="ghost" onClick={() => setOpen(account.id)}>
+                          {t("account.users.manage")}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {open === account.id && (
-              <Manage
-                key={settled}
-                t={t}
-                account={account}
-                own={account.id === me}
-                busy={busy}
-                onRoles={(roles) => saveRoles(account, roles)}
-                onAccess={(disabled) => setAccess(account, disabled)}
-                onRevoke={() => revoke(account)}
-                onRecover={() => recover(account)}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
+          )}
+        </>
+      )}
+
+      {opened && (
+        <Sheet
+          open
+          onClose={() => {
+            setOpen(null);
+            setNotice(null);
+            setWaiting(null);
+          }}
+          title={nameOf(opened)}
+          description={opened.name && opened.email ? opened.email : undefined}
+          close={t("account.users.close")}
+          footer={
+            notice || waiting ? (
+              <div className="grid gap-2">
+                {waiting && (
+                  <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
+                    <p className="grow text-ink">
+                      {t("account.users.confirmIdentity", { action: waiting.label, name: nameOf(waiting.account) })}
+                    </p>
+                    <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
+                      {t("account.users.cancel")}
+                    </Button>
+                    <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
+                      {t("account.users.confirmAction")}
+                    </Button>
+                  </div>
+                )}
+                {notice && (
+                  <p role={notice === "done" ? "status" : "alert"} className="text-sm text-ink-muted">
+                    {t(`account.users.${notice}`)}
+                  </p>
+                )}
+              </div>
+            ) : undefined
+          }
+        >
+          <Manage
+            key={`${opened.id}-${settled}`}
+            translator={translator}
+            account={opened}
+            own={opened.id === me}
+            busy={busy}
+            onRoles={(next) => saveRoles(opened, next)}
+            onAccess={(disabled) => void setAccess(opened, disabled)}
+            onRevoke={() => void revoke(opened)}
+            onRecover={() => recover(opened)}
+          />
+        </Sheet>
+      )}
+      {asking.dialog}
     </section>
   );
 }
 
+function Avatar({ account, name }: { account: AdminAccount; name: string }) {
+  return account.picture ? (
+    <img
+      src={account.picture}
+      alt=""
+      width={32}
+      height={32}
+      referrerPolicy="no-referrer"
+      className="size-8 shrink-0 rounded-full object-cover"
+    />
+  ) : (
+    <span
+      aria-hidden="true"
+      className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-ink"
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function RoleChip({ children, tone }: { children: string; tone?: "danger" }) {
+  return (
+    <span
+      className={cn(
+        "rounded-pill px-2 py-0.5 text-2xs font-medium",
+        tone === "danger" ? "bg-danger/15 text-danger" : "bg-action-soft text-ink",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** What an admin can do with an account, each with what it means. */
 function Manage({
-  t,
+  translator,
   account,
   own,
   busy,
@@ -232,7 +487,7 @@ function Manage({
   onRevoke,
   onRecover,
 }: {
-  t: AccountTranslator["t"];
+  translator: AccountTranslator;
   account: AdminAccount;
   own: boolean;
   busy: boolean;
@@ -241,6 +496,7 @@ function Manage({
   onRevoke: () => void;
   onRecover: () => void;
 }) {
+  const { t, date } = translator;
   const [roles, setRoles] = useState(() => new Set(account.roles.filter((r) => r !== "client")));
   const toggle = (role: "editor" | "admin") =>
     setRoles((now) => {
@@ -249,37 +505,72 @@ function Manage({
       else next.add(role);
       return next;
     });
+  const changed =
+    roles.size !== account.roles.filter((r) => r !== "client").length ||
+    [...roles].some((r) => !account.roles.includes(r));
+  const part = "grid gap-3 border-b border-line py-5 first:pt-0 last:border-b-0";
 
   return (
-    <div className="mt-3 grid gap-3 rounded-sm bg-surface-sunken p-3 text-sm">
-      <fieldset className="flex flex-wrap items-center gap-4">
-        <legend className="sr-only">{t("account.users.roles")}</legend>
+    <div className="grid text-sm">
+      <p className="pb-5 text-xs text-ink-subtle">{t("account.users.since", { date: date(account.created_at) })}</p>
+      <fieldset className={part}>
+        <legend className="contents">
+          <span className="font-medium text-ink">{t("account.users.roles")}</span>
+        </legend>
+        <p className="text-ink-muted">{t("account.users.rolesBody")}</p>
         {(["editor", "admin"] as const).map((role) => (
-          <label key={role} className="flex items-center gap-2 text-ink">
+          <label key={role} className="flex items-start gap-3 text-ink">
             <input
               type="checkbox"
+              className="mt-0.5 size-4"
               checked={roles.has(role)}
               // Admins keep their own admin role.
               disabled={own && role === "admin"}
               onChange={() => toggle(role)}
             />
-            {t(`account.roles.${role}`)}
+            <span className="grid gap-0.5">
+              {t(`account.roles.${role}`)}
+              <span className="text-xs text-ink-muted">{t(`account.users.roleHints.${role}`)}</span>
+            </span>
           </label>
         ))}
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => onRoles([...roles])}>
+        <Button
+          size="sm"
+          className="justify-self-start"
+          disabled={busy || !changed}
+          onClick={() => onRoles([...roles])}
+        >
           {t("account.users.saveRoles")}
         </Button>
       </fieldset>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="ghost" disabled={busy} onClick={onRevoke}>
+      <div className={part}>
+        <p className="font-medium text-ink">{t("account.users.sessions")}</p>
+        <p className="text-ink-muted">{t("account.users.sessionsBody")}</p>
+        <Button size="sm" variant="outline" className="justify-self-start" disabled={busy} onClick={onRevoke}>
           {t("account.users.revoke")}
         </Button>
-        {!own && (
-          <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAccess(!account.disabled)}>
+      </div>
+      {!own && (
+        <div className={part}>
+          <p className="font-medium text-ink">{t("account.users.access")}</p>
+          <p className="text-ink-muted">
+            {account.disabled ? t("account.users.accessDisabled") : t("account.users.accessBody")}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn("justify-self-start", !account.disabled && "text-danger")}
+            disabled={busy}
+            onClick={() => onAccess(!account.disabled)}
+          >
             {account.disabled ? t("account.users.enable") : t("account.users.disable")}
           </Button>
-        )}
-        <Button size="sm" variant="ghost" disabled={busy} onClick={onRecover}>
+        </div>
+      )}
+      <div className={part}>
+        <p className="font-medium text-ink">{t("account.users.recoveryTitle")}</p>
+        <p className="text-ink-muted">{t("account.users.recoveryBody")}</p>
+        <Button size="sm" variant="ghost" className="-ml-3 justify-self-start" disabled={busy} onClick={onRecover}>
           {t("account.users.recovery")}
         </Button>
       </div>

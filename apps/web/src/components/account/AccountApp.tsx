@@ -53,7 +53,7 @@ export default function AccountApp({
   mapPath,
 }: Props) {
   const translator = createAccountTranslator(locale, catalog);
-  const { t, date, moment } = translator;
+  const { t, date } = translator;
   const [state, setState] = useState<State>({ kind: "loading" });
   const [ending, setEnding] = useState<"idle" | "working" | "failed">("idle");
   const [confirming, setConfirming] = useState(false);
@@ -118,11 +118,11 @@ export default function AccountApp({
     return <Content translator={translator} page={accountSubpages.content.find((p) => p === subpage) ?? "texts"} />;
   if (section === "admin")
     return (
-      <div className="max-w-(--ia-layout-page) pt-8">
+      <div className="max-w-(--ia-layout-page)">
         {subpage === "audit" ? (
-          <Audit t={t} moment={moment} signInPath={signInPath} />
+          <Audit translator={translator} signInPath={signInPath} />
         ) : (
-          <Users t={t} signInPath={signInPath} me={me.id} />
+          <Users translator={translator} signInPath={signInPath} me={me.id} />
         )}
       </div>
     );

@@ -138,17 +138,17 @@
   "account.audit.actions.articles_seeded": {
     "format": "plain",
     "default": {
-      "es": "{actor} cargó los artículos que tenía el sitio ({detail})",
-      "en": "{actor} loaded the articles the site had ({detail})",
-      "pt": "{actor} carregou os artigos que o site tinha ({detail})"
+      "es": "{actor} cargó los artículos que tenía el sitio",
+      "en": "{actor} loaded the articles the site had",
+      "pt": "{actor} carregou os artigos que o site tinha"
     }
   },
   "account.audit.actions.citations_changed": {
     "format": "plain",
     "default": {
-      "es": "{actor} cambió los artículos del indicador {target}: {detail}",
-      "en": "{actor} changed the articles of the indicator {target}: {detail}",
-      "pt": "{actor} mudou os artigos do indicador {target}: {detail}"
+      "es": "{actor} cambió los artículos de {target}",
+      "en": "{actor} changed the articles of {target}",
+      "pt": "{actor} mudou os artigos de {target}"
     }
   },
   "account.audit.actions.disabled": {
@@ -178,9 +178,9 @@
   "account.audit.actions.roles_changed": {
     "format": "plain",
     "default": {
-      "es": "{actor} cambió los roles de {target}: {detail}",
-      "en": "{actor} changed the roles of {target}: {detail}",
-      "pt": "{actor} mudou os papéis de {target}: {detail}"
+      "es": "{actor} cambió los roles de {target}",
+      "en": "{actor} changed the roles of {target}",
+      "pt": "{actor} mudou os papéis de {target}"
     }
   },
   "account.audit.actions.sessions_revoked": {
@@ -202,17 +202,17 @@
   "account.audit.actions.text_drafted": {
     "format": "plain",
     "default": {
-      "es": "{actor} guardó un borrador del texto {target} ({detail})",
-      "en": "{actor} saved a draft of the text {target} ({detail})",
-      "pt": "{actor} salvou um rascunho do texto {target} ({detail})"
+      "es": "{actor} guardó un borrador del texto {target}",
+      "en": "{actor} saved a draft of the text {target}",
+      "pt": "{actor} salvou um rascunho do texto {target}"
     }
   },
   "account.audit.actions.text_published": {
     "format": "plain",
     "default": {
-      "es": "{actor} publicó el texto {target} ({detail})",
-      "en": "{actor} published the text {target} ({detail})",
-      "pt": "{actor} publicou o texto {target} ({detail})"
+      "es": "{actor} publicó el texto {target}",
+      "en": "{actor} published the text {target}",
+      "pt": "{actor} publicou o texto {target}"
     }
   },
   "account.audit.actions.text_restored": {
@@ -221,6 +221,56 @@
       "es": "{actor} restauró el texto {target}",
       "en": "{actor} restored the text {target}",
       "pt": "{actor} restaurou o texto {target}"
+    }
+  },
+  "account.audit.actorLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Persona",
+      "en": "Person",
+      "pt": "Pessoa"
+    }
+  },
+  "account.audit.anyone": {
+    "format": "plain",
+    "default": {
+      "es": "Cualquier persona",
+      "en": "Anyone",
+      "pt": "Qualquer pessoa"
+    }
+  },
+  "account.audit.articleCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} artículo",
+        "other": "{count} artículos"
+      },
+      "en": {
+        "one": "{count} article",
+        "other": "{count} articles"
+      },
+      "pt": {
+        "one": "{count} artigo",
+        "other": "{count} artigos"
+      }
+    }
+  },
+  "account.audit.count": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} acción",
+        "other": "{count} acciones"
+      },
+      "en": {
+        "one": "{count} action",
+        "other": "{count} actions"
+      },
+      "pt": {
+        "one": "{count} ação",
+        "other": "{count} ações"
+      }
     }
   },
   "account.audit.empty": {
@@ -239,12 +289,52 @@
       "pt": "Não conseguimos carregar o registro. Tente de novo."
     }
   },
-  "account.audit.lead": {
+  "account.audit.filterLabel": {
     "format": "plain",
     "default": {
-      "es": "Lo que hicieron administradores y editores, empezando por lo último.",
-      "en": "What admins and editors did, newest first.",
-      "pt": "O que administradores e editores fizeram, do mais recente ao mais antigo."
+      "es": "Tipo de acción",
+      "en": "Kind of action",
+      "pt": "Tipo de ação"
+    }
+  },
+  "account.audit.filters.accounts": {
+    "format": "plain",
+    "default": {
+      "es": "Cuentas",
+      "en": "Accounts",
+      "pt": "Contas"
+    }
+  },
+  "account.audit.filters.all": {
+    "format": "plain",
+    "default": {
+      "es": "Todo",
+      "en": "All",
+      "pt": "Tudo"
+    }
+  },
+  "account.audit.filters.articles": {
+    "format": "plain",
+    "default": {
+      "es": "Artículos",
+      "en": "Articles",
+      "pt": "Artigos"
+    }
+  },
+  "account.audit.filters.texts": {
+    "format": "plain",
+    "default": {
+      "es": "Textos",
+      "en": "Texts",
+      "pt": "Textos"
+    }
+  },
+  "account.audit.noMatch": {
+    "format": "plain",
+    "default": {
+      "es": "Ninguna acción coincide con los filtros.",
+      "en": "No action matches the filters.",
+      "pt": "Nenhuma ação corresponde aos filtros."
     }
   },
   "account.audit.noRoles": {
@@ -255,12 +345,68 @@
       "pt": "só cliente"
     }
   },
+  "account.audit.pdf": {
+    "format": "plain",
+    "default": {
+      "es": "Su PDF",
+      "en": "Its PDF",
+      "pt": "Seu PDF"
+    }
+  },
+  "account.audit.periods.month": {
+    "format": "plain",
+    "default": {
+      "es": "Este mes",
+      "en": "This month",
+      "pt": "Este mês"
+    }
+  },
+  "account.audit.periods.today": {
+    "format": "plain",
+    "default": {
+      "es": "Hoy",
+      "en": "Today",
+      "pt": "Hoje"
+    }
+  },
+  "account.audit.periods.week": {
+    "format": "plain",
+    "default": {
+      "es": "Esta semana",
+      "en": "This week",
+      "pt": "Esta semana"
+    }
+  },
+  "account.audit.periods.yesterday": {
+    "format": "plain",
+    "default": {
+      "es": "Ayer",
+      "en": "Yesterday",
+      "pt": "Ontem"
+    }
+  },
+  "account.content.allSections": {
+    "format": "plain",
+    "default": {
+      "es": "Todas las secciones",
+      "en": "All sections",
+      "pt": "Todas as seções"
+    }
+  },
   "account.content.articles.add": {
     "format": "plain",
     "default": {
-      "es": "Nuevo artículo",
-      "en": "New article",
-      "pt": "Novo artigo"
+      "es": "Agregar artículo",
+      "en": "Add article",
+      "pt": "Adicionar artigo"
+    }
+  },
+  "account.content.articles.anyIndicator": {
+    "format": "plain",
+    "default": {
+      "es": "Cualquier indicador",
+      "en": "Any indicator",
+      "pt": "Qualquer indicador"
     }
   },
   "account.content.articles.authors": {
@@ -287,12 +433,62 @@
       "pt": "Citado por {names}."
     }
   },
+  "account.content.articles.citedByCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "Lo cita {count} indicador",
+        "other": "Lo citan {count} indicadores"
+      },
+      "en": {
+        "one": "Cited by {count} indicator",
+        "other": "Cited by {count} indicators"
+      },
+      "pt": {
+        "one": "Citado por {count} indicador",
+        "other": "Citado por {count} indicadores"
+      }
+    }
+  },
+  "account.content.articles.citedByLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Indicador que lo cita",
+      "en": "Indicator citing it",
+      "pt": "Indicador que o cita"
+    }
+  },
   "account.content.articles.citedByNone": {
     "format": "plain",
     "default": {
-      "es": "Ningún indicador lo cita todavía.",
-      "en": "No indicator cites it yet.",
-      "pt": "Nenhum indicador o cita ainda."
+      "es": "Ningún indicador lo cita",
+      "en": "No indicator cites it",
+      "pt": "Nenhum indicador o cita"
+    }
+  },
+  "account.content.articles.count": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} artículo",
+        "other": "{count} artículos"
+      },
+      "en": {
+        "one": "{count} article",
+        "other": "{count} articles"
+      },
+      "pt": {
+        "one": "{count} artigo",
+        "other": "{count} artigos"
+      }
+    }
+  },
+  "account.content.articles.create": {
+    "format": "plain",
+    "default": {
+      "es": "Agregar",
+      "en": "Add",
+      "pt": "Adicionar"
     }
   },
   "account.content.articles.doi": {
@@ -311,12 +507,44 @@
       "pt": "Por exemplo 10.1007/s10021-005-0013-x. Quando houver, é o link principal."
     }
   },
-  "account.content.articles.framework": {
+  "account.content.articles.editTitle": {
     "format": "plain",
     "default": {
-      "es": "marco de referencia",
-      "en": "reference framework",
-      "pt": "marco de referência"
+      "es": "Editar artículo",
+      "en": "Edit article",
+      "pt": "Editar artigo"
+    }
+  },
+  "account.content.articles.filtersLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Filtros",
+      "en": "Filters",
+      "pt": "Filtros"
+    }
+  },
+  "account.content.articles.flags.framework": {
+    "format": "plain",
+    "default": {
+      "es": "Marco de referencia",
+      "en": "Reference framework",
+      "pt": "Marco de referência"
+    }
+  },
+  "account.content.articles.flags.pdf": {
+    "format": "plain",
+    "default": {
+      "es": "Con PDF",
+      "en": "With PDF",
+      "pt": "Com PDF"
+    }
+  },
+  "account.content.articles.flags.uncited": {
+    "format": "plain",
+    "default": {
+      "es": "Sin citar",
+      "en": "Not cited",
+      "pt": "Sem citação"
     }
   },
   "account.content.articles.frameworkLabel": {
@@ -343,12 +571,20 @@
       "pt": "Um código: es, en, pt…"
     }
   },
+  "account.content.articles.noMatch": {
+    "format": "plain",
+    "default": {
+      "es": "Ningún artículo coincide. Probá con otra palabra o quitá un filtro.",
+      "en": "No article matches. Try another word or remove a filter.",
+      "pt": "Nenhum artigo corresponde. Tente outra palavra ou tire um filtro."
+    }
+  },
   "account.content.articles.none": {
     "format": "plain",
     "default": {
-      "es": "Todavía no hay artículos en la base.",
-      "en": "There are no articles in the database yet.",
-      "pt": "Ainda não há artigos no banco."
+      "es": "Todavía no hay artículos. Cargá los que tenía el sitio o agregá uno.",
+      "en": "There are no articles yet. Load the ones the site had or add one.",
+      "pt": "Ainda não há artigos. Carregue os que o site tinha ou adicione um."
     }
   },
   "account.content.articles.pdf": {
@@ -375,20 +611,20 @@
       "pt": "Remover o PDF"
     }
   },
+  "account.content.articles.pdfReplace": {
+    "format": "plain",
+    "default": {
+      "es": "Reemplazar el PDF",
+      "en": "Replace the PDF",
+      "pt": "Substituir o PDF"
+    }
+  },
   "account.content.articles.pdfUpload": {
     "format": "plain",
     "default": {
       "es": "Subir un PDF",
       "en": "Upload a PDF",
       "pt": "Enviar um PDF"
-    }
-  },
-  "account.content.articles.pick": {
-    "format": "plain",
-    "default": {
-      "es": "Elegí un artículo de la lista, o agregá uno nuevo.",
-      "en": "Pick an article from the list, or add a new one.",
-      "pt": "Escolha um artigo da lista, ou adicione um novo."
     }
   },
   "account.content.articles.remove": {
@@ -421,6 +657,38 @@
       "es": "Artículo eliminado.",
       "en": "Article deleted.",
       "pt": "Artigo excluído."
+    }
+  },
+  "account.content.articles.save": {
+    "format": "plain",
+    "default": {
+      "es": "Guardar",
+      "en": "Save",
+      "pt": "Salvar"
+    }
+  },
+  "account.content.articles.saved": {
+    "format": "plain",
+    "default": {
+      "es": "Guardado. El sitio lo va a mostrar en su próxima actualización.",
+      "en": "Saved. The site will show it when it next updates.",
+      "pt": "Salvo. O site vai mostrá-lo na próxima atualização."
+    }
+  },
+  "account.content.articles.searchLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar artículos",
+      "en": "Search articles",
+      "pt": "Buscar artigos"
+    }
+  },
+  "account.content.articles.searchPlaceholder": {
+    "format": "plain",
+    "default": {
+      "es": "Título, autor, revista o año…",
+      "en": "Title, author, journal or year…",
+      "pt": "Título, autor, revista ou ano…"
     }
   },
   "account.content.articles.seed": {
@@ -490,17 +758,75 @@
   "account.content.citations.add": {
     "format": "plain",
     "default": {
-      "es": "Agregar un artículo",
-      "en": "Add an article",
-      "pt": "Adicionar um artigo"
+      "es": "Agregar artículos",
+      "en": "Add articles",
+      "pt": "Adicionar artigos"
+    }
+  },
+  "account.content.citations.addPicked": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "Agregar {count}",
+        "other": "Agregar {count}"
+      },
+      "en": {
+        "one": "Add {count}",
+        "other": "Add {count}"
+      },
+      "pt": {
+        "one": "Adicionar {count}",
+        "other": "Adicionar {count}"
+      }
+    }
+  },
+  "account.content.citations.added": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "Agregaste {count} artículo.",
+        "other": "Agregaste {count} artículos."
+      },
+      "en": {
+        "one": "You added {count} article.",
+        "other": "You added {count} articles."
+      },
+      "pt": {
+        "one": "Você adicionou {count} artigo.",
+        "other": "Você adicionou {count} artigos."
+      }
+    }
+  },
+  "account.content.citations.allCited": {
+    "format": "plain",
+    "default": {
+      "es": "Este indicador ya cita todos los artículos.",
+      "en": "This indicator already cites every article.",
+      "pt": "Este indicador já cita todos os artigos."
     }
   },
   "account.content.citations.down": {
     "format": "plain",
     "default": {
-      "es": "Bajar",
-      "en": "Move down",
-      "pt": "Descer"
+      "es": "Bajar «{title}»",
+      "en": "Move “{title}” down",
+      "pt": "Descer «{title}»"
+    }
+  },
+  "account.content.citations.lead": {
+    "format": "plain",
+    "default": {
+      "es": "En el orden en que el sitio los lista. Cada cambio se publica al momento.",
+      "en": "In the order the site lists them. Each change is published at once.",
+      "pt": "Na ordem em que o site os lista. Cada alteração é publicada na hora."
+    }
+  },
+  "account.content.citations.moved": {
+    "format": "plain",
+    "default": {
+      "es": "Orden guardado.",
+      "en": "Order saved.",
+      "pt": "Ordem salva."
     }
   },
   "account.content.citations.none": {
@@ -511,28 +837,77 @@
       "pt": "Este indicador ainda não cita nenhum artigo."
     }
   },
-  "account.content.citations.pick": {
+  "account.content.citations.pickTitle": {
     "format": "plain",
     "default": {
-      "es": "Elegí un artículo",
-      "en": "Pick an article",
-      "pt": "Escolha um artigo"
+      "es": "Agregar artículos",
+      "en": "Add articles",
+      "pt": "Adicionar artigos"
+    }
+  },
+  "account.content.citations.picked": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} elegido",
+        "other": "{count} elegidos"
+      },
+      "en": {
+        "one": "{count} picked",
+        "other": "{count} picked"
+      },
+      "pt": {
+        "one": "{count} escolhido",
+        "other": "{count} escolhidos"
+      }
     }
   },
   "account.content.citations.remove": {
     "format": "plain",
     "default": {
-      "es": "Quitar",
-      "en": "Remove",
-      "pt": "Remover"
+      "es": "Quitar «{title}»",
+      "en": "Remove “{title}”",
+      "pt": "Remover «{title}»"
+    }
+  },
+  "account.content.citations.removed": {
+    "format": "plain",
+    "default": {
+      "es": "Quitaste «{title}».",
+      "en": "You removed “{title}”.",
+      "pt": "Você removeu «{title}»."
+    }
+  },
+  "account.content.citations.restored": {
+    "format": "plain",
+    "default": {
+      "es": "Volvió a la lista.",
+      "en": "It is back on the list.",
+      "pt": "Voltou para a lista."
+    }
+  },
+  "account.content.citations.undo": {
+    "format": "plain",
+    "default": {
+      "es": "Deshacer",
+      "en": "Undo",
+      "pt": "Desfazer"
     }
   },
   "account.content.citations.up": {
     "format": "plain",
     "default": {
-      "es": "Subir",
-      "en": "Move up",
-      "pt": "Subir"
+      "es": "Subir «{title}»",
+      "en": "Move “{title}” up",
+      "pt": "Subir «{title}»"
+    }
+  },
+  "account.content.close": {
+    "format": "plain",
+    "default": {
+      "es": "Cerrar",
+      "en": "Close",
+      "pt": "Fechar"
     }
   },
   "account.content.default": {
@@ -598,6 +973,14 @@
       "es": "Borrador guardado.",
       "en": "Draft saved.",
       "pt": "Rascunho salvo."
+    }
+  },
+  "account.content.editText": {
+    "format": "plain",
+    "default": {
+      "es": "Editar texto",
+      "en": "Edit text",
+      "pt": "Editar texto"
     }
   },
   "account.content.edited": {
@@ -673,6 +1056,86 @@
       "pt": "Para um"
     }
   },
+  "account.content.gee.assets": {
+    "format": "plain",
+    "default": {
+      "es": "Assets",
+      "en": "Assets",
+      "pt": "Assets"
+    }
+  },
+  "account.content.gee.assetsLead": {
+    "format": "plain",
+    "default": {
+      "es": "Lo que lee el proceso diario de datos para calcular este indicador.",
+      "en": "What the daily data run reads to compute this indicator.",
+      "pt": "O que o processo diário de dados lê para calcular este indicador."
+    }
+  },
+  "account.content.gee.bands": {
+    "format": "plain",
+    "default": {
+      "es": "Bandas:",
+      "en": "Bands:",
+      "pt": "Bandas:"
+    }
+  },
+  "account.content.gee.cadences.days16": {
+    "format": "plain",
+    "default": {
+      "es": "Una banda cada 16 días",
+      "en": "A band every 16 days",
+      "pt": "Uma banda a cada 16 dias"
+    }
+  },
+  "account.content.gee.cadences.days8": {
+    "format": "plain",
+    "default": {
+      "es": "Una banda cada 8 días",
+      "en": "A band every 8 days",
+      "pt": "Uma banda a cada 8 dias"
+    }
+  },
+  "account.content.gee.cadences.fixed": {
+    "format": "plain",
+    "default": {
+      "es": "Un solo mapa",
+      "en": "A single map",
+      "pt": "Um único mapa"
+    }
+  },
+  "account.content.gee.cadences.yearly": {
+    "format": "plain",
+    "default": {
+      "es": "Una banda por año",
+      "en": "A band per year",
+      "pt": "Uma banda por ano"
+    }
+  },
+  "account.content.gee.open": {
+    "format": "plain",
+    "default": {
+      "es": "Abrir en Earth Engine",
+      "en": "Open in Earth Engine",
+      "pt": "Abrir no Earth Engine"
+    }
+  },
+  "account.content.gee.scripts": {
+    "format": "plain",
+    "default": {
+      "es": "Scripts de actualización",
+      "en": "Update scripts",
+      "pt": "Scripts de atualização"
+    }
+  },
+  "account.content.gee.scriptsEmpty": {
+    "format": "plain",
+    "default": {
+      "es": "Todavía no hay scripts registrados. Acá vas a poder registrar los que actualizan estos assets y ver cuándo corrieron.",
+      "en": "No scripts are registered yet. This is where you will register the ones that update these assets and see when they ran.",
+      "pt": "Ainda não há scripts registrados. Aqui você vai poder registrar os que atualizam estes assets e ver quando rodaram."
+    }
+  },
   "account.content.history": {
     "format": "plain",
     "default": {
@@ -681,12 +1144,61 @@
       "pt": "Histórico"
     }
   },
+  "account.content.indicator.articleCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} artículo",
+        "other": "{count} artículos"
+      },
+      "en": {
+        "one": "{count} article",
+        "other": "{count} articles"
+      },
+      "pt": {
+        "one": "{count} artigo",
+        "other": "{count} artigos"
+      }
+    }
+  },
   "account.content.indicator.articles": {
     "format": "plain",
     "default": {
-      "es": "Artículos que lo respaldan",
-      "en": "Articles behind it",
-      "pt": "Artigos que o sustentam"
+      "es": "Artículos",
+      "en": "Articles",
+      "pt": "Artigos"
+    }
+  },
+  "account.content.indicator.gee": {
+    "format": "plain",
+    "default": {
+      "es": "GEE",
+      "en": "GEE",
+      "pt": "GEE"
+    }
+  },
+  "account.content.indicator.pick": {
+    "format": "plain",
+    "default": {
+      "es": "Indicador",
+      "en": "Indicator",
+      "pt": "Indicador"
+    }
+  },
+  "account.content.indicator.search": {
+    "format": "plain",
+    "default": {
+      "es": "Buscar indicador…",
+      "en": "Search indicators…",
+      "pt": "Buscar indicador…"
+    }
+  },
+  "account.content.indicator.tabsLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Partes del indicador",
+      "en": "Parts of the indicator",
+      "pt": "Partes do indicador"
     }
   },
   "account.content.indicator.texts": {
@@ -793,6 +1305,14 @@
       "pt": "Unidade"
     }
   },
+  "account.content.keepEditing": {
+    "format": "plain",
+    "default": {
+      "es": "Seguir editando",
+      "en": "Keep editing",
+      "pt": "Continuar editando"
+    }
+  },
   "account.content.languages.en": {
     "format": "plain",
     "default": {
@@ -817,28 +1337,28 @@
       "pt": "Português"
     }
   },
-  "account.content.lead.articles": {
+  "account.content.leave": {
     "format": "plain",
     "default": {
-      "es": "Los artículos científicos que respaldan los indicadores. Cada indicador elige, desde su página, cuáles cita.",
-      "en": "The scientific articles behind the indicators. Each indicator chooses, on its own page, the ones it cites.",
-      "pt": "Os artigos científicos que sustentam os indicadores. Cada indicador escolhe, na sua página, quais cita."
+      "es": "Descartar los cambios",
+      "en": "Discard changes",
+      "pt": "Descartar as alterações"
     }
   },
-  "account.content.lead.indicators": {
+  "account.content.leaveBody": {
     "format": "plain",
     "default": {
-      "es": "Cada indicador en un lugar: sus textos y los artículos que lo respaldan.",
-      "en": "Each indicator in one place: its texts and the articles behind it.",
-      "pt": "Cada indicador num só lugar: seus textos e os artigos que o sustentam."
+      "es": "Tenés cambios sin publicar ni guardar como borrador. Si cerrás, se pierden.",
+      "en": "You have changes you have neither published nor saved as a draft. Closing loses them.",
+      "pt": "Você tem alterações que não publicou nem salvou como rascunho. Se fechar, elas se perdem."
     }
   },
-  "account.content.lead.texts": {
+  "account.content.leaveTitle": {
     "format": "plain",
     "default": {
-      "es": "Todos los textos del sitio, en sus tres idiomas. Buscá un texto por lo que dice, editalo y publicalo, o guardalo como borrador para que otro editor lo revise. El sitio muestra lo publicado cuando se actualiza.",
-      "en": "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
-      "pt": "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado."
+      "es": "¿Descartar los cambios?",
+      "en": "Discard your changes?",
+      "pt": "Descartar as alterações?"
     }
   },
   "account.content.listFailed": {
@@ -857,6 +1377,14 @@
       "pt": "Você pode usar **negrito**, *itálico*, [links](https://…) e listas com \"- \". Deixe uma linha em branco entre parágrafos."
     }
   },
+  "account.content.moreActions": {
+    "format": "plain",
+    "default": {
+      "es": "Más acciones",
+      "en": "More actions",
+      "pt": "Mais ações"
+    }
+  },
   "account.content.noHistory": {
     "format": "plain",
     "default": {
@@ -868,25 +1396,9 @@
   "account.content.nothing": {
     "format": "plain",
     "default": {
-      "es": "No hay textos que coincidan.",
-      "en": "No text matches.",
-      "pt": "Nenhum texto corresponde."
-    }
-  },
-  "account.content.pickSection": {
-    "format": "plain",
-    "default": {
-      "es": "Elegí una sección del sitio",
-      "en": "Pick a section of the site",
-      "pt": "Escolha uma seção do site"
-    }
-  },
-  "account.content.pickText": {
-    "format": "plain",
-    "default": {
-      "es": "Elegí un texto de la lista para editarlo.",
-      "en": "Pick a text from the list to edit it.",
-      "pt": "Escolha um texto da lista para editá-lo."
+      "es": "Ningún texto coincide. Probá con otra palabra o quitá un filtro.",
+      "en": "No text matches. Try another word or remove a filter.",
+      "pt": "Nenhum texto corresponde. Tente outra palavra ou tire um filtro."
     }
   },
   "account.content.preview": {
@@ -977,20 +1489,28 @@
       "pt": "Não conseguimos salvar a alteração. Revise o texto e tente de novo."
     }
   },
-  "account.content.searchHint": {
+  "account.content.searchLabel": {
     "format": "plain",
     "default": {
-      "es": "Escribí una palabra que aparezca en el texto, en cualquier idioma.",
-      "en": "Type a word the text contains, in any language.",
-      "pt": "Digite uma palavra do texto, em qualquer idioma."
+      "es": "Buscar textos",
+      "en": "Search texts",
+      "pt": "Buscar textos"
     }
   },
   "account.content.searchPlaceholder": {
     "format": "plain",
     "default": {
-      "es": "Buscá por lo que dice el texto o por su clave",
-      "en": "Search by what the text says or by its key",
-      "pt": "Busque pelo que o texto diz ou pela sua chave"
+      "es": "Buscá por lo que dice o por su clave…",
+      "en": "Search by what it says or by its key…",
+      "pt": "Busque pelo que diz ou pela sua chave…"
+    }
+  },
+  "account.content.sectionLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Sección del sitio",
+      "en": "Part of the site",
+      "pt": "Seção do site"
     }
   },
   "account.content.sections.a11y": {
@@ -1204,9 +1724,9 @@
   "account.content.site.behind": {
     "format": "plain",
     "default": {
-      "es": "Hay cambios publicados que el sitio todavía no muestra. Se actualiza solo {minutes} minutos después del último cambio.",
-      "en": "There are published changes the site does not show yet. It updates by itself {minutes} minutes after the last change.",
-      "pt": "Há alterações publicadas que o site ainda não mostra. Ele se atualiza sozinho {minutes} minutos depois da última alteração."
+      "es": "Hay cambios que el sitio todavía no muestra; se actualiza {minutes} min después del último.",
+      "en": "Some changes are not on the site yet; it updates {minutes} min after the last one.",
+      "pt": "Há alterações que o site ainda não mostra; ele se atualiza {minutes} min depois da última."
     }
   },
   "account.content.site.failed": {
@@ -1220,17 +1740,17 @@
   "account.content.site.noBuild": {
     "format": "plain",
     "default": {
-      "es": "El sitio muestra todo lo publicado.",
-      "en": "The site shows everything published.",
-      "pt": "O site mostra tudo o que foi publicado."
+      "es": "Sitio al día",
+      "en": "Site up to date",
+      "pt": "Site em dia"
     }
   },
   "account.content.site.stalled": {
     "format": "plain",
     "default": {
-      "es": "La última actualización tarda más de lo normal; puede haber fallado. Podés pedirla de nuevo.",
-      "en": "The last update is taking longer than usual and may have failed. You can ask for it again.",
-      "pt": "A última atualização está demorando mais que o normal e pode ter falhado. Você pode pedi-la de novo."
+      "es": "La actualización tarda más de lo normal y puede haber fallado.",
+      "en": "The update is taking longer than usual and may have failed.",
+      "pt": "A atualização está demorando mais que o normal e pode ter falhado."
     }
   },
   "account.content.site.unavailable": {
@@ -1244,25 +1764,25 @@
   "account.content.site.upToDate": {
     "format": "plain",
     "default": {
-      "es": "El sitio muestra todo lo publicado. Última actualización: {at}.",
-      "en": "The site shows everything published. Last updated: {at}.",
-      "pt": "O site mostra tudo o que foi publicado. Última atualização: {at}."
+      "es": "Sitio al día · actualizado {ago}",
+      "en": "Site up to date · updated {ago}",
+      "pt": "Site em dia · atualizado {ago}"
     }
   },
   "account.content.site.updateNow": {
     "format": "plain",
     "default": {
-      "es": "Actualizar el sitio ahora",
-      "en": "Update the site now",
-      "pt": "Atualizar o site agora"
+      "es": "Actualizar ahora",
+      "en": "Update now",
+      "pt": "Atualizar agora"
     }
   },
   "account.content.site.updating": {
     "format": "plain",
     "default": {
-      "es": "Actualizando el sitio con lo publicado (empezó {ago}). Tarda unos minutos.",
-      "en": "Updating the site with what was published (started {ago}). It takes a few minutes.",
-      "pt": "Atualizando o site com o que foi publicado (começou {ago}). Leva alguns minutos."
+      "es": "Actualizando el sitio (empezó {ago})…",
+      "en": "Updating the site (started {ago})…",
+      "pt": "Atualizando o site (começou {ago})…"
     }
   },
   "account.content.states.default": {
@@ -1297,6 +1817,55 @@
       "pt": "Publicado"
     }
   },
+  "account.content.statusLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Estado",
+      "en": "State",
+      "pt": "Estado"
+    }
+  },
+  "account.content.statuses.all": {
+    "format": "plain",
+    "default": {
+      "es": "Todos",
+      "en": "All",
+      "pt": "Todos"
+    }
+  },
+  "account.content.statuses.draft": {
+    "format": "plain",
+    "default": {
+      "es": "Borradores",
+      "en": "Drafts",
+      "pt": "Rascunhos"
+    }
+  },
+  "account.content.statuses.edited": {
+    "format": "plain",
+    "default": {
+      "es": "Editados",
+      "en": "Edited",
+      "pt": "Editados"
+    }
+  },
+  "account.content.textCount": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} texto",
+        "other": "{count} textos"
+      },
+      "en": {
+        "one": "{count} text",
+        "other": "{count} texts"
+      },
+      "pt": {
+        "one": "{count} texto",
+        "other": "{count} textos"
+      }
+    }
+  },
   "account.content.toDefault": {
     "format": "plain",
     "default": {
@@ -1327,38 +1896,6 @@
       "es": "Muestra el texto por defecto",
       "en": "Shows the default text",
       "pt": "Mostra o texto padrão"
-    }
-  },
-  "account.content.views.changes": {
-    "format": "plain",
-    "default": {
-      "es": "Cambios",
-      "en": "Changes",
-      "pt": "Alterações"
-    }
-  },
-  "account.content.views.search": {
-    "format": "plain",
-    "default": {
-      "es": "Buscar",
-      "en": "Search",
-      "pt": "Buscar"
-    }
-  },
-  "account.content.views.sections": {
-    "format": "plain",
-    "default": {
-      "es": "Por sección",
-      "en": "By section",
-      "pt": "Por seção"
-    }
-  },
-  "account.content.viewsLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Cómo listar los textos",
-      "en": "How to list the texts",
-      "pt": "Como listar os textos"
     }
   },
   "account.failed": {
@@ -2228,6 +2765,30 @@
       "pt": "Sua conta"
     }
   },
+  "account.users.access": {
+    "format": "plain",
+    "default": {
+      "es": "Acceso",
+      "en": "Access",
+      "pt": "Acesso"
+    }
+  },
+  "account.users.accessBody": {
+    "format": "plain",
+    "default": {
+      "es": "Una cuenta deshabilitada no puede usar la plataforma hasta que la habilites.",
+      "en": "A disabled account cannot use the platform until you enable it.",
+      "pt": "Uma conta desativada não pode usar a plataforma até você ativá-la."
+    }
+  },
+  "account.users.accessDisabled": {
+    "format": "plain",
+    "default": {
+      "es": "Esta cuenta está deshabilitada y no puede usar la plataforma.",
+      "en": "This account is disabled and cannot use the platform.",
+      "pt": "Esta conta está desativada e não pode usar a plataforma."
+    }
+  },
   "account.users.cancel": {
     "format": "plain",
     "default": {
@@ -2242,6 +2803,30 @@
       "es": "Cerrar",
       "en": "Close",
       "pt": "Fechar"
+    }
+  },
+  "account.users.columns.name": {
+    "format": "plain",
+    "default": {
+      "es": "Nombre",
+      "en": "Name",
+      "pt": "Nome"
+    }
+  },
+  "account.users.columns.roles": {
+    "format": "plain",
+    "default": {
+      "es": "Roles",
+      "en": "Roles",
+      "pt": "Papéis"
+    }
+  },
+  "account.users.columns.since": {
+    "format": "plain",
+    "default": {
+      "es": "Alta",
+      "en": "Joined",
+      "pt": "Cadastro"
     }
   },
   "account.users.confirmAction": {
@@ -2276,6 +2861,23 @@
       "pt": "Encerrar todas as sessões de {name}? Será preciso entrar de novo."
     }
   },
+  "account.users.count": {
+    "format": "plural",
+    "default": {
+      "es": {
+        "one": "{count} cuenta",
+        "other": "{count} cuentas"
+      },
+      "en": {
+        "one": "{count} account",
+        "other": "{count} accounts"
+      },
+      "pt": {
+        "one": "{count} conta",
+        "other": "{count} contas"
+      }
+    }
+  },
   "account.users.disable": {
     "format": "plain",
     "default": {
@@ -2303,9 +2905,9 @@
   "account.users.empty": {
     "format": "plain",
     "default": {
-      "es": "No hay cuentas con ese nombre o correo.",
-      "en": "No accounts with that name or email.",
-      "pt": "Não há contas com esse nome ou e-mail."
+      "es": "Ninguna cuenta coincide. Probá con otro nombre o quitá el filtro.",
+      "en": "No account matches. Try another name or remove the filter.",
+      "pt": "Nenhuma conta corresponde. Tente outro nome ou tire o filtro."
     }
   },
   "account.users.enable": {
@@ -2322,6 +2924,54 @@
       "es": "No pudimos completar la acción. Intentá de nuevo.",
       "en": "We could not complete the action. Try again.",
       "pt": "Não conseguimos concluir a ação. Tente de novo."
+    }
+  },
+  "account.users.filterLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Rol",
+      "en": "Role",
+      "pt": "Papel"
+    }
+  },
+  "account.users.filters.admin": {
+    "format": "plain",
+    "default": {
+      "es": "Administradores",
+      "en": "Admins",
+      "pt": "Administradores"
+    }
+  },
+  "account.users.filters.all": {
+    "format": "plain",
+    "default": {
+      "es": "Todos los roles",
+      "en": "All roles",
+      "pt": "Todos os papéis"
+    }
+  },
+  "account.users.filters.client": {
+    "format": "plain",
+    "default": {
+      "es": "Solo clientes",
+      "en": "Clients only",
+      "pt": "Só clientes"
+    }
+  },
+  "account.users.filters.disabled": {
+    "format": "plain",
+    "default": {
+      "es": "Deshabilitadas",
+      "en": "Disabled",
+      "pt": "Desativadas"
+    }
+  },
+  "account.users.filters.editor": {
+    "format": "plain",
+    "default": {
+      "es": "Editores",
+      "en": "Editors",
+      "pt": "Editores"
     }
   },
   "account.users.manage": {
@@ -2348,12 +2998,28 @@
       "pt": "Enviar um link de recuperação"
     }
   },
+  "account.users.recoveryBody": {
+    "format": "plain",
+    "default": {
+      "es": "Envía a su correo un enlace para recuperar la contraseña, si ingresa con una.",
+      "en": "Emails them a link to recover their password, if they sign in with one.",
+      "pt": "Envia ao e-mail um link para recuperar a senha, se entra com uma."
+    }
+  },
   "account.users.recoveryNotApplicable": {
     "format": "plain",
     "default": {
       "es": "Las cuentas ingresan con Google: no hay contraseña que recuperar.",
       "en": "Accounts sign in with Google: there is no password to recover.",
       "pt": "As contas entram com o Google: não há senha para recuperar."
+    }
+  },
+  "account.users.recoveryTitle": {
+    "format": "plain",
+    "default": {
+      "es": "Recuperación",
+      "en": "Recovery",
+      "pt": "Recuperação"
     }
   },
   "account.users.revoke": {
@@ -2364,12 +3030,36 @@
       "pt": "Encerrar suas sessões"
     }
   },
+  "account.users.roleHints.admin": {
+    "format": "plain",
+    "default": {
+      "es": "Además administra las cuentas y ve el registro de acciones.",
+      "en": "Also manages accounts and reads the action log.",
+      "pt": "Também administra as contas e vê o registro de ações."
+    }
+  },
+  "account.users.roleHints.editor": {
+    "format": "plain",
+    "default": {
+      "es": "Edita los textos, los artículos y los indicadores del sitio.",
+      "en": "Edits the site's texts, articles and indicators.",
+      "pt": "Edita os textos, os artigos e os indicadores do site."
+    }
+  },
   "account.users.roles": {
     "format": "plain",
     "default": {
       "es": "Roles",
       "en": "Roles",
       "pt": "Papéis"
+    }
+  },
+  "account.users.rolesBody": {
+    "format": "plain",
+    "default": {
+      "es": "Todas las cuentas pueden explorar y guardar zonas; los roles suman permisos.",
+      "en": "Every account can explore and save areas; roles add permissions.",
+      "pt": "Todas as contas podem explorar e salvar áreas; os papéis somam permissões."
     }
   },
   "account.users.saveRoles": {
@@ -2391,9 +3081,97 @@
   "account.users.searchPlaceholder": {
     "format": "plain",
     "default": {
-      "es": "Nombre o correo",
-      "en": "Name or email",
-      "pt": "Nome ou e-mail"
+      "es": "Nombre o correo…",
+      "en": "Name or email…",
+      "pt": "Nome ou e-mail…"
+    }
+  },
+  "account.users.sessions": {
+    "format": "plain",
+    "default": {
+      "es": "Sesiones",
+      "en": "Sessions",
+      "pt": "Sessões"
+    }
+  },
+  "account.users.sessionsBody": {
+    "format": "plain",
+    "default": {
+      "es": "Cierra la sesión en todos sus dispositivos; va a tener que ingresar de nuevo.",
+      "en": "Signs them out on all their devices; they will have to sign in again.",
+      "pt": "Encerra a sessão em todos os seus dispositivos; vai ter que entrar de novo."
+    }
+  },
+  "account.users.since": {
+    "format": "plain",
+    "default": {
+      "es": "Desde el {date}",
+      "en": "Since {date}",
+      "pt": "Desde {date}"
+    }
+  },
+  "account.users.sortLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Orden",
+      "en": "Order",
+      "pt": "Ordem"
+    }
+  },
+  "account.users.sorts.name": {
+    "format": "plain",
+    "default": {
+      "es": "Por nombre",
+      "en": "By name",
+      "pt": "Por nome"
+    }
+  },
+  "account.users.sorts.newest": {
+    "format": "plain",
+    "default": {
+      "es": "Más nuevas primero",
+      "en": "Newest first",
+      "pt": "Mais novas primeiro"
+    }
+  },
+  "account.users.sorts.oldest": {
+    "format": "plain",
+    "default": {
+      "es": "Más antiguas primero",
+      "en": "Oldest first",
+      "pt": "Mais antigas primeiro"
+    }
+  },
+  "account.users.system": {
+    "format": "plain",
+    "default": {
+      "es": "Cuenta de sistema",
+      "en": "System account",
+      "pt": "Conta de sistema"
+    }
+  },
+  "account.users.viewLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Vista",
+      "en": "View",
+      "pt": "Visualização"
+    }
+  },
+  "account.users.views.cards": {
+    "format": "plain",
+    "default": {
+      "es": "Tarjetas",
+      "en": "Cards",
+      "pt": "Cartões"
+    }
+  },
+  "account.users.views.table": {
+    "format": "plain",
+    "default": {
+      "es": "Tabla",
+      "en": "Table",
+      "pt": "Tabela"
     }
   },
   "account.zones.add": {

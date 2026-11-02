@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clock, RefreshCw, Search } from "lucide-react";
 import type { SiteRebuildOut, SiteTextMatch, TextSection } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,14 +8,15 @@ import { Articles } from "./ContentArticles";
 import { Indicators } from "./ContentIndicators";
 import { type AccountKey, type AccountTranslator } from "./i18n";
 import { accountSubpages } from "./paths";
-import { api, Badge, card, Editor, field, preview, run, type Run } from "./TextEditor";
+import { api, Badge, preview, run, TextPanel, type Run } from "./TextEditor";
 
-type View = "search" | "sections" | "changes";
 type ContentPage = (typeof accountSubpages.content)[number];
+type Status = "all" | "edited" | "draft";
+const statuses: Status[] = ["all", "edited", "draft"];
 
 /**
- * The Content section's pages, for editors and admins: the site's texts, the articles, and each indicator. Every
- * page tells whether the site shows what was published yet.
+ * The Content section's pages, for editors and admins: the site's texts, the articles, and each indicator. Each
+ * page's title says whether the site shows what was published yet.
  */
 export default function Content({ translator, page }: { translator: AccountTranslator; page: ContentPage }) {
   const { t } = translator;
@@ -23,13 +25,9 @@ export default function Content({ translator, page }: { translator: AccountTrans
   const onChanged = () => setChanged((n) => n + 1);
   return (
     <section id="content" aria-labelledby="content-title" className="grid gap-6 pt-8">
-      <div className="max-w-prose">
-        <h2 id="content-title" className="text-lg font-medium text-ink">
-          {t(`account.subpages.${page}`)}
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">{t(`account.content.lead.${page}`)}</p>
-      </div>
-      <SiteStatus translator={translator} changed={changed} />
+      <PageHeader title={t(`account.subpages.${page}`)}>
+        <SiteStatus translator={translator} changed={changed} />
+      </PageHeader>
       {page === "texts" && <Texts translator={translator} changed={changed} onChanged={onChanged} />}
       {page === "articles" && <Articles translator={translator} changed={changed} onChanged={onChanged} />}
       {page === "indicators" && <Indicators translator={translator} changed={changed} onChanged={onChanged} />}
@@ -37,7 +35,33 @@ export default function Content({ translator, page }: { translator: AccountTrans
   );
 }
 
-/** Every text the site shows, found by what it says, by part of the site or among the changes, and edited. */
+/** A page's title, with what it says about itself beside it. */
+export function PageHeader({ title, children }: { title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+      <h2 id="content-title" className="text-xl font-medium text-ink">
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+/** The filters in the address, so a reload or a shared link opens the same list. */
+function readFilters() {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("status");
+  return {
+    query: params.get("q") ?? "",
+    section: params.get("section"),
+    status: statuses.find((s) => s === status) ?? "all",
+  };
+}
+
+/**
+ * Every text the site shows. It opens on the site's sections; a search, a section or a state lists texts, and
+ * each opens in a side panel.
+ */
 function Texts({
   translator,
   changed,
@@ -48,148 +72,227 @@ function Texts({
   onChanged: () => void;
 }) {
   const { t } = translator;
-  const [view, setView] = useState<View>("search");
-  const [query, setQuery] = useState("");
+  const [{ query, section, status }, setFilters] = useState(readFilters);
   const [sections, setSections] = useState<TextSection[] | null>(null);
-  const [section, setSection] = useState<string | null>(null);
-  // null: nothing asked yet; "loading" and "failed" while and when a list does not arrive.
+  // null: no filter, the sections show; "loading" and "failed" while and when a list does not arrive.
   const [list, setList] = useState<SiteTextMatch[] | null | "loading" | "failed">(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const filter = (patch: Partial<ReturnType<typeof readFilters>>) => setFilters((now) => ({ ...now, ...patch }));
 
-  // A new query or view shows "loading"; a reload after a change keeps the list, and its scroll, until it arrives.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (section) params.set("section", section);
+    if (status !== "all") params.set("status", status);
+    const search = params.size ? `?${params}` : "";
+    if (search !== location.search) history.replaceState(history.state, "", `${location.pathname}${search}`);
+  }, [query, section, status]);
+
+  // A new filter shows "loading"; a reload after a change keeps the list, and its scroll, until it arrives.
   const asked = useRef("");
   useEffect(() => {
     let live = true;
-    const wanted = `${view}|${query}|${section ?? ""}`;
+    const wanted = `${query}|${section ?? ""}|${status}`;
     const fresh = asked.current !== wanted;
     asked.current = wanted;
-    const load = (call: Run) => {
+    const q = query.trim();
+    const call: Run | null = q
+      ? (client, init) => client.searchTexts({ q }, init)
+      : section
+        ? (client, init) => client.listSection(section, init)
+        : status !== "all"
+          ? (client, init) => client.listChanges(init)
+          : null;
+    const timer = setTimeout(() => {
+      if (!call) return setList(null);
       if (fresh) setList("loading");
       void run<SiteTextMatch[]>(call)
         .then((found) => live && setList(found))
         .catch(() => live && setList("failed"));
-    };
-    const timer = setTimeout(() => {
-      if (view === "search") {
-        if (query.trim()) load((client, init) => client.searchTexts({ q: query.trim() }, init));
-        else setList(null);
-      } else if (view === "changes") load((client, init) => client.listChanges(init));
-      else if (section) load((client, init) => client.listSection(section, init));
-      else setList(null);
     }, 250);
     return () => {
       live = false;
       clearTimeout(timer);
     };
-  }, [view, query, section, changed]);
+  }, [query, section, status, changed]);
 
   useEffect(() => {
-    if (view !== "sections") return;
     void api()
       .then(([{ privately }, client]) => privately((init) => client.listSections(init)))
       .then((response) => setSections(response.status === 200 ? response.data : []))
       .catch(() => setSections([]));
-  }, [view, changed]);
+  }, [changed]);
 
   const sectionName = (name: string) => {
     const key = `account.content.sections.${name}`;
     return translator.has(key) ? t(key as AccountKey) : name;
   };
-  const views: View[] = ["search", "sections", "changes"];
+  const shown = Array.isArray(list)
+    ? list.filter(
+        (m) =>
+          (!section || m.key.startsWith(`${section}.`)) &&
+          (status === "all" || (status === "draft" ? m.draft : m.edited)),
+      )
+    : list;
+  const totals = (sections ?? []).reduce((sum, s) => ({ edited: sum.edited + s.edited, draft: sum.draft + s.drafts }), {
+    edited: 0,
+    draft: 0,
+  });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-      <div className="grid content-start gap-3">
-        <div role="group" aria-label={t("account.content.viewsLabel")} className="flex gap-1">
-          {views.map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              onClick={() => {
-                setList(null);
-                setView(v);
-              }}
-              className={cn(
-                "h-9 rounded-pill px-3 text-sm transition-colors duration-(--ia-motion-fast)",
-                view === v ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
-              )}
-            >
-              {t(`account.content.views.${v}`)}
-            </button>
-          ))}
-        </div>
-        {view === "search" && (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-60 grow">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle"
+          />
           <Input
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => filter({ query: event.target.value })}
             placeholder={t("account.content.searchPlaceholder")}
-            aria-label={t("account.content.searchPlaceholder")}
+            aria-label={t("account.content.searchLabel")}
+            className="pl-9"
           />
-        )}
-        {view === "sections" && (
-          <select
-            className={cn(field, "h-11")}
-            value={section ?? ""}
-            onChange={(event) => setSection(event.target.value || null)}
-            aria-label={t("account.content.views.sections")}
-          >
-            <option value="">{t("account.content.pickSection")}</option>
-            {sections?.map((s) => (
-              <option key={s.name} value={s.name}>
-                {sectionName(s.name)} ({s.count}
-                {s.edited ? ` · ${t("account.content.editedCount", { count: s.edited })}` : ""}
-                {s.drafts ? ` · ${t("account.content.draftCount", { count: s.drafts })}` : ""})
-              </option>
-            ))}
-          </select>
-        )}
-        <ul className={cn(card, "grid max-h-128 divide-y divide-line overflow-y-auto")} aria-busy={list === "loading"}>
-          {typeof list === "string" || list === null || list.length === 0 ? (
-            <li className="p-4 text-sm text-ink-muted">
-              {list === "loading"
+        </div>
+        <select
+          className="h-11 rounded-sm border border-input bg-surface px-3 text-sm text-ink"
+          value={section ?? ""}
+          onChange={(event) => filter({ section: event.target.value || null })}
+          aria-label={t("account.content.sectionLabel")}
+        >
+          <option value="">{t("account.content.allSections")}</option>
+          {sections?.map((s) => (
+            <option key={s.name} value={s.name}>
+              {sectionName(s.name)}
+            </option>
+          ))}
+        </select>
+        <div
+          role="group"
+          aria-label={t("account.content.statusLabel")}
+          className="flex rounded-sm border border-line p-0.5"
+        >
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={status === s}
+              onClick={() => filter({ status: s })}
+              className={cn(
+                "h-9 rounded-xs px-3 text-sm whitespace-nowrap transition-colors duration-(--ia-motion-fast)",
+                status === s ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
+              )}
+            >
+              {t(`account.content.statuses.${s}`)}
+              {s !== "all" && totals[s] > 0 && <span className="ml-1.5 text-xs text-ink-subtle">{totals[s]}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {shown === null ? (
+        <SectionGrid
+          sections={sections}
+          name={sectionName}
+          translator={translator}
+          onPick={(s) => filter({ section: s })}
+        />
+      ) : (
+        <div className="grid gap-2">
+          <div className="flex min-h-9 items-center gap-2 text-sm text-ink-muted">
+            {section && !query && (
+              <Button variant="ghost" size="sm" className="-ml-3" onClick={() => filter({ section: null })}>
+                <ChevronLeft aria-hidden="true" />
+                {t("account.content.allSections")}
+              </Button>
+            )}
+            <span role="status">
+              {shown === "loading"
                 ? t("account.loading")
-                : list === "failed"
+                : shown === "failed"
                   ? t("account.content.listFailed")
-                  : list === null
-                    ? view === "search"
-                      ? t("account.content.searchHint")
-                      : t("account.content.pickSection")
-                    : t("account.content.nothing")}
-            </li>
-          ) : null}
-          {Array.isArray(list) &&
-            list.map((match) => (
-              <li key={match.key}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(match.key)}
-                  aria-current={selected === match.key ? "true" : undefined}
-                  className={cn(
-                    "grid w-full gap-1 p-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
-                    selected === match.key && "bg-surface-selected",
-                  )}
-                >
-                  <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
-                  <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
-                    <code className="break-all">{match.key}</code>
-                    {match.edited && <Badge>{t("account.content.edited")}</Badge>}
-                    {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
-                  </span>
-                </button>
-              </li>
-            ))}
-        </ul>
-      </div>
-      <div className="min-w-0">
-        {selected ? (
-          <Editor key={selected} textKey={selected} translator={translator} onChanged={onChanged} />
-        ) : (
-          <p className={cn(card, "p-6 text-sm text-ink-muted")}>{t("account.content.pickText")}</p>
-        )}
-      </div>
+                  : t("account.content.textCount", { count: shown.length })}
+            </span>
+          </div>
+          {Array.isArray(shown) && shown.length === 0 && (
+            <p className="rounded-lg border border-dashed border-line p-6 text-sm text-ink-muted">
+              {t("account.content.nothing")}
+            </p>
+          )}
+          {Array.isArray(shown) && shown.length > 0 && (
+            <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
+              {shown.map((match) => (
+                <li key={match.key}>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(match.key)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
+                  >
+                    <span className="grid min-w-0 grow gap-1">
+                      <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
+                      <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                        <code className="break-all">{match.key}</code>
+                        {match.edited && <Badge>{t("account.content.edited")}</Badge>}
+                        {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
+                      </span>
+                    </span>
+                    <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {open && (
+        <TextPanel
+          key={open}
+          textKey={open}
+          translator={translator}
+          onChanged={onChanged}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/** The site's sections, as the way in when nothing is searched: what each holds and what changed in it. */
+function SectionGrid({
+  sections,
+  name,
+  translator,
+  onPick,
+}: {
+  sections: TextSection[] | null;
+  name: (section: string) => string;
+  translator: AccountTranslator;
+  onPick: (section: string) => void;
+}) {
+  const { t } = translator;
+  if (sections === null) return <p className="text-sm text-ink-muted">{t("account.loading")}</p>;
+  const sorted = [...sections].sort((a, b) => translator.collator.compare(name(a.name), name(b.name)));
+  return (
+    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {sorted.map((s) => (
+        <li key={s.name}>
+          <button
+            type="button"
+            onClick={() => onPick(s.name)}
+            className="grid h-full w-full content-start gap-1.5 rounded-lg border border-line bg-surface p-4 text-left transition-colors duration-(--ia-motion-fast) hover:border-line-strong hover:bg-action-soft"
+          >
+            <span className="text-sm font-medium text-ink">{name(s.name)}</span>
+            <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+              {t("account.content.textCount", { count: s.count })}
+              {s.edited > 0 && <Badge>{t("account.content.editedCount", { count: s.edited })}</Badge>}
+              {s.drafts > 0 && <Badge tone="draft">{t("account.content.draftCount", { count: s.drafts })}</Badge>}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -206,11 +309,11 @@ async function builtAt(): Promise<string | null> {
 }
 
 /**
- * Whether the site shows what editors published: behind, updating, or up to date. Changes accumulate; the site
- * rebuilds by itself some minutes after the last one, or at once when asked.
+ * Whether the site shows what editors published: behind, updating, or up to date, in one line. Changes
+ * accumulate; the site rebuilds by itself some minutes after the last one, or at once when asked.
  */
 function SiteStatus({ translator, changed }: { translator: AccountTranslator; changed: number }) {
-  const { t, moment, ago } = translator;
+  const { t, ago } = translator;
   const [state, setState] = useState<{ rebuild: SiteRebuildOut; built: string | null } | null>(null);
   const [asking, setAsking] = useState<"idle" | "busy" | "unavailable" | "failed">("idle");
   const [tick, setTick] = useState(0);
@@ -255,27 +358,35 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
       setAsking("failed");
     }
   };
+  const Icon = !behind ? Check : stalled ? AlertTriangle : updating ? RefreshCw : Clock;
 
   return (
-    <div role="status" className={cn(card, "flex flex-wrap items-center justify-between gap-3 p-4 text-sm")}>
-      <p className="text-ink-muted">
+    <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+      <Icon aria-hidden="true" className={cn("size-4 shrink-0", stalled ? "text-danger" : "text-ink-subtle")} />
+      <span>
         {!behind
           ? built
-            ? t("account.content.site.upToDate", { at: moment(built) })
+            ? t("account.content.site.upToDate", { ago: ago(built) })
             : t("account.content.site.noBuild")
           : stalled
             ? t("account.content.site.stalled")
             : updating
               ? t("account.content.site.updating", { ago: started ? ago(started) : "" })
               : t("account.content.site.behind", { minutes: state.rebuild.quiet_minutes })}
-        {asking === "unavailable" && <span className="block text-danger">{t("account.content.site.unavailable")}</span>}
-        {asking === "failed" && <span className="block text-danger">{t("account.content.site.failed")}</span>}
-      </p>
+      </span>
       {behind && (!updating || stalled) && (
-        <Button size="sm" variant="outline" disabled={asking === "busy"} onClick={() => void updateNow()}>
+        <Button
+          variant="link"
+          size="sm"
+          className="h-auto px-0"
+          disabled={asking === "busy"}
+          onClick={() => void updateNow()}
+        >
           {t("account.content.site.updateNow")}
         </Button>
       )}
+      {asking === "unavailable" && <span className="text-danger">{t("account.content.site.unavailable")}</span>}
+      {asking === "failed" && <span className="text-danger">{t("account.content.site.failed")}</span>}
     </div>
   );
 }
