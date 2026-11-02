@@ -16,4 +16,5 @@ fi
 levels=scripts/oasdiff-levels.txt
 scripts/oasdiff.sh changelog "$main" "$document" --severity-levels "$levels"
 # A break listed in the accepted file was agreed on (same section).
-scripts/oasdiff.sh breaking "$main" "$document" --severity-levels "$levels" --err-ignore scripts/oasdiff-accepted.txt --fail-on ERR
+scripts/oasdiff.sh breaking "$main" "$document" --severity-levels "$levels" --err-ignore scripts/oasdiff-accepted.txt \
+  --deprecation-days-stable 90 --fail-on ERR
