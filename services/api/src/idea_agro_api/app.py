@@ -95,8 +95,10 @@ def create_app(services: Services) -> FastAPI:
         allow_origins=["*"],
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["*"],
+        expose_headers=["Deprecation", "Sunset"],
     )
     app.middleware("http")(security_headers)
+    app.middleware("http")(articles.announce_pdf_sunset)
     # Geometries and indexes are megabytes of text; Cloud Run does not compress by itself.
     app.add_middleware(
         GZipMiddleware, minimum_size=1024, exclude_content_types=DEFAULT_EXCLUDED_CONTENT_TYPES + COMPRESSED

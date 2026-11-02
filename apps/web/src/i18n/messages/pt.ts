@@ -1206,7 +1206,7 @@ export const pt = {
         frameworkLabel: "É o marco de referência que os indicadores seguem",
         remove: "Excluir o artigo",
         removeTitle: "Excluir o artigo?",
-        removeBody: "Ele também é retirado dos indicadores que o citam, com seu PDF.",
+        removeBody: "Ele também é retirado dos indicadores que o citam.",
         removed: "Artigo excluído.",
         citedBy: "Citado por {names}.",
         citedByNone: "Nenhum indicador o cita",

@@ -1,11 +1,13 @@
 """The scientific articles behind the indicators: published for anyone, kept by editors."""
 
+import re
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 from email.utils import format_datetime
 from typing import Annotated
 
-from fastapi import APIRouter, File, Response, UploadFile
+from fastapi import APIRouter, File, Request, Response, UploadFile
 from fastapi import Path as PathParam
 from starlette.exceptions import HTTPException
 
@@ -29,12 +31,18 @@ PDF: dict[int | str, dict[str, object]] = {200: {"description": "The PDF.", "con
 PDF_DEPRECATED = datetime(2026, 11, 2, tzinfo=UTC)
 PDF_SUNSET = datetime(2026, 12, 2, tzinfo=UTC)
 PDF_GONE = f"Deprecated: articles are read at their link or DOI. Removed on {PDF_SUNSET:%Y-%m-%d}."
+# oasdiff refuses to see a route removed before this date.
+PDF_SUNSET_EXTRA: dict[str, object] = {"x-sunset": f"{PDF_SUNSET:%Y-%m-%d}"}
+PDF_PATH = re.compile(r"^/v1/articles/[^/]+/pdf$")
 
 
-def deprecated(response: Response) -> None:
-    """The headers that announce a route's end (RFC 9745 and RFC 8594)."""
-    response.headers["Deprecation"] = f"@{int(PDF_DEPRECATED.timestamp())}"
-    response.headers["Sunset"] = format_datetime(PDF_SUNSET, usegmt=True)
+async def announce_pdf_sunset(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Every answer of the PDF routes, errors too, announces their end (RFC 9745 and RFC 8594)."""
+    response = await call_next(request)
+    if PDF_PATH.match(request.url.path):
+        response.headers["Deprecation"] = f"@{int(PDF_DEPRECATED.timestamp())}"
+        response.headers["Sunset"] = format_datetime(PDF_SUNSET, usegmt=True)
+    return response
 
 
 def public(article: Article) -> ArticlePublic:
@@ -177,6 +185,7 @@ def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesD
     summary="An article's PDF",
     description=PDF_GONE,
     deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     response_class=Response,
     responses=PDF | problems(404, 422),
 )
@@ -185,13 +194,11 @@ def get_article_pdf(article_id: ArticleId, services: ServicesDep) -> Response:
     content = services.document_files.get(pdf_name(article_id)) if article.pdf else None
     if content is None:
         raise HTTPException(404, "The article has no PDF.")
-    response = Response(
+    return Response(
         content,
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{article_id}.pdf"', "Cache-Control": CACHE_CONTROL},
     )
-    deprecated(response)
-    return response
 
 
 @router.put(
@@ -199,6 +206,7 @@ def get_article_pdf(article_id: ArticleId, services: ServicesDep) -> Response:
     summary="Attach an article's PDF",
     description=f"{PDF_GONE} Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
     deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     responses=problems(401, 403, 404, 413, 415, 422),
 )
 def put_article_pdf(
@@ -206,7 +214,6 @@ def put_article_pdf(
     file: Annotated[UploadFile, File(description="The PDF.")],
     caller: EditorDep,
     services: ServicesDep,
-    response: Response,
 ) -> ArticleOut:
     article = found(services, article_id)
     limit = services.limits.document_bytes
@@ -221,7 +228,6 @@ def put_article_pdf(
     updated = replace(article, pdf=True, updated_at=datetime.now(UTC), updated_by=author(caller))
     services.articles.put(updated)
     changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
-    deprecated(response)
     return out(updated)
 
 
@@ -230,17 +236,15 @@ def put_article_pdf(
     summary="Remove an article's PDF",
     description=PDF_GONE,
     deprecated=True,
+    openapi_extra=PDF_SUNSET_EXTRA,
     responses=problems(401, 403, 404, 422),
 )
-def delete_article_pdf(
-    article_id: ArticleId, caller: EditorDep, services: ServicesDep, response: Response
-) -> ArticleOut:
+def delete_article_pdf(article_id: ArticleId, caller: EditorDep, services: ServicesDep) -> ArticleOut:
     article = found(services, article_id)
     services.document_files.delete(pdf_name(article_id))
     updated = replace(article, pdf=False, updated_at=datetime.now(UTC), updated_by=author(caller))
     services.articles.put(updated)
     changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
-    deprecated(response)
     return out(updated)
 
 

@@ -1207,7 +1207,7 @@ export const en = {
         frameworkLabel: "It is the reference framework the indicators follow",
         remove: "Delete the article",
         removeTitle: "Delete the article?",
-        removeBody: "It is also removed from the indicators that cite it, with its PDF.",
+        removeBody: "It is also removed from the indicators that cite it.",
         removed: "Article deleted.",
         citedBy: "Cited by {names}.",
         citedByNone: "No indicator cites it",

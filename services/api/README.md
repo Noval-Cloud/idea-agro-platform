@@ -71,8 +71,8 @@ Editors change every text the website shows under `/v1/texts/{key}`, and anyone 
 
 The scientific articles behind the indicators live in the content database: `articles`, one per article, and `indicator_articles`, each indicator's ordered list of the articles it cites. The link goes from the indicator to the articles.
 
-- **Reading:** `/v1/articles` gives every article and the citations to anyone, which the website reads when it is built. `/v1/articles/{id}/pdf` serves an uploaded PDF, kept beside the saved zones' files under `articles/`.
-- **Editing:** editors add, change and remove articles, attach a PDF, and set each indicator's list (`/v1/indicators/{indicator}/articles`). Each change is audited and marks the site behind, as a text's publish does.
+- **Reading:** `/v1/articles` gives every article and the citations to anyone, which the website reads when it is built. An article is read at its link or its DOI; the platform keeps no file for it.
+- **Editing:** editors add, change and remove articles and set each indicator's list (`/v1/indicators/{indicator}/articles`). Each change is audited and marks the site behind, as a text's publish does.
 - **First load:** `POST /v1/articles/seed` loads, once, what the website's code had (`articles_seed.json`).
 
 ## Emails

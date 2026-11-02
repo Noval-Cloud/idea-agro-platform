@@ -589,9 +589,9 @@
   "account.content.articles.removeBody": {
     "format": "plain",
     "default": {
-      "es": "Se quita también de los indicadores que lo citan, junto con su PDF.",
-      "en": "It is also removed from the indicators that cite it, with its PDF.",
-      "pt": "Ele também é retirado dos indicadores que o citam, com seu PDF."
+      "es": "Se quita también de los indicadores que lo citan.",
+      "en": "It is also removed from the indicators that cite it.",
+      "pt": "Ele também é retirado dos indicadores que o citam."
     }
   },
   "account.content.articles.removeTitle": {
