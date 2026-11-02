@@ -179,8 +179,8 @@ def send_account_recovery(account_id: AccountId, caller: AdminDep, services: Ser
 
 @router.get(
     "/v1/admin/audit",
-    summary="What admins did",
-    description="For admins: the latest admin actions, newest first.",
+    summary="What admins and editors did",
+    description="For admins: the latest actions of admins and editors, newest first.",
     responses=problems(401, 403, 429),
 )
 def list_audit(caller: AdminDep, services: ServicesDep) -> list[AuditOut]:

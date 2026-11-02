@@ -12178,8 +12178,8 @@ export const getListAuditUrl = () => {
 }
 
 /**
- * For admins: the latest admin actions, newest first.
- * @summary What admins did
+ * For admins: the latest actions of admins and editors, newest first.
+ * @summary What admins and editors did
  */
 export const listAudit = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listAuditResponse> => {
 
@@ -12250,7 +12250,7 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary What admins did
+ * @summary What admins and editors did
  */
 
 export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(

@@ -111,6 +111,150 @@
       "pt": "Usar tema claro"
     }
   },
+  "account.audit.actions.admin_bootstrapped": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} recibió el rol de administrador por configuración",
+      "en": "{actor} became an admin through the configuration",
+      "pt": "{actor} recebeu o papel de administrador pela configuração"
+    }
+  },
+  "account.audit.actions.article_deleted": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} eliminó el artículo {target}",
+      "en": "{actor} deleted the article {target}",
+      "pt": "{actor} excluiu o artigo {target}"
+    }
+  },
+  "account.audit.actions.article_saved": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} guardó el artículo {target}",
+      "en": "{actor} saved the article {target}",
+      "pt": "{actor} salvou o artigo {target}"
+    }
+  },
+  "account.audit.actions.articles_seeded": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cargó los artículos que tenía el sitio ({detail})",
+      "en": "{actor} loaded the articles the site had ({detail})",
+      "pt": "{actor} carregou os artigos que o site tinha ({detail})"
+    }
+  },
+  "account.audit.actions.citations_changed": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cambió los artículos del indicador {target}: {detail}",
+      "en": "{actor} changed the articles of the indicator {target}: {detail}",
+      "pt": "{actor} mudou os artigos do indicador {target}: {detail}"
+    }
+  },
+  "account.audit.actions.disabled": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} deshabilitó la cuenta de {target}",
+      "en": "{actor} disabled the account of {target}",
+      "pt": "{actor} desativou a conta de {target}"
+    }
+  },
+  "account.audit.actions.enabled": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} habilitó la cuenta de {target}",
+      "en": "{actor} enabled the account of {target}",
+      "pt": "{actor} ativou a conta de {target}"
+    }
+  },
+  "account.audit.actions.recovery_sent": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} envió un enlace de recuperación a {target}",
+      "en": "{actor} sent a recovery link to {target}",
+      "pt": "{actor} enviou um link de recuperação para {target}"
+    }
+  },
+  "account.audit.actions.roles_changed": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cambió los roles de {target}: {detail}",
+      "en": "{actor} changed the roles of {target}: {detail}",
+      "pt": "{actor} mudou os papéis de {target}: {detail}"
+    }
+  },
+  "account.audit.actions.sessions_revoked": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cerró las sesiones de {target}",
+      "en": "{actor} ended the sessions of {target}",
+      "pt": "{actor} encerrou as sessões de {target}"
+    }
+  },
+  "account.audit.actions.text_draft_discarded": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} descartó el borrador del texto {target}",
+      "en": "{actor} discarded the draft of the text {target}",
+      "pt": "{actor} descartou o rascunho do texto {target}"
+    }
+  },
+  "account.audit.actions.text_drafted": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} guardó un borrador del texto {target} ({detail})",
+      "en": "{actor} saved a draft of the text {target} ({detail})",
+      "pt": "{actor} salvou um rascunho do texto {target} ({detail})"
+    }
+  },
+  "account.audit.actions.text_published": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} publicó el texto {target} ({detail})",
+      "en": "{actor} published the text {target} ({detail})",
+      "pt": "{actor} publicou o texto {target} ({detail})"
+    }
+  },
+  "account.audit.actions.text_restored": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} restauró el texto {target}",
+      "en": "{actor} restored the text {target}",
+      "pt": "{actor} restaurou o texto {target}"
+    }
+  },
+  "account.audit.empty": {
+    "format": "plain",
+    "default": {
+      "es": "Todavía no hay acciones registradas.",
+      "en": "No actions recorded yet.",
+      "pt": "Ainda não há ações registradas."
+    }
+  },
+  "account.audit.failed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos cargar el registro. Probá de nuevo.",
+      "en": "We couldn't load the log. Try again.",
+      "pt": "Não conseguimos carregar o registro. Tente de novo."
+    }
+  },
+  "account.audit.lead": {
+    "format": "plain",
+    "default": {
+      "es": "Lo que hicieron administradores y editores, empezando por lo último.",
+      "en": "What admins and editors did, newest first.",
+      "pt": "O que administradores e editores fizeram, do mais recente ao mais antigo."
+    }
+  },
+  "account.audit.noRoles": {
+    "format": "plain",
+    "default": {
+      "es": "solo cliente",
+      "en": "client only",
+      "pt": "só cliente"
+    }
+  },
   "account.content.articles.add": {
     "format": "plain",
     "default": {
@@ -133,6 +277,22 @@
       "es": "Como se citan: «Paruelo, J. M. & Lauenroth, W. K.».",
       "en": "As they are cited: \"Paruelo, J. M. & Lauenroth, W. K.\".",
       "pt": "Como são citados: \"Paruelo, J. M. & Lauenroth, W. K.\"."
+    }
+  },
+  "account.content.articles.citedBy": {
+    "format": "plain",
+    "default": {
+      "es": "Lo citan: {names}.",
+      "en": "Cited by {names}.",
+      "pt": "Citado por {names}."
+    }
+  },
+  "account.content.articles.citedByNone": {
+    "format": "plain",
+    "default": {
+      "es": "Ningún indicador lo cita todavía.",
+      "en": "No indicator cites it yet.",
+      "pt": "Nenhum indicador o cita ainda."
     }
   },
   "account.content.articles.doi": {
@@ -319,14 +479,6 @@
       "pt": "Ano"
     }
   },
-  "account.content.body": {
-    "format": "plain",
-    "default": {
-      "es": "Todos los textos del sitio, en sus tres idiomas. Buscá un texto por lo que dice, editalo y publicalo, o guardalo como borrador para que otro editor lo revise. El sitio muestra lo publicado cuando se actualiza.",
-      "en": "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
-      "pt": "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado."
-    }
-  },
   "account.content.cancel": {
     "format": "plain",
     "default": {
@@ -349,14 +501,6 @@
       "es": "Bajar",
       "en": "Move down",
       "pt": "Descer"
-    }
-  },
-  "account.content.citations.indicator": {
-    "format": "plain",
-    "default": {
-      "es": "Indicador",
-      "en": "Indicator",
-      "pt": "Indicador"
     }
   },
   "account.content.citations.none": {
@@ -537,6 +681,118 @@
       "pt": "Histórico"
     }
   },
+  "account.content.indicator.articles": {
+    "format": "plain",
+    "default": {
+      "es": "Artículos que lo respaldan",
+      "en": "Articles behind it",
+      "pt": "Artigos que o sustentam"
+    }
+  },
+  "account.content.indicator.texts": {
+    "format": "plain",
+    "default": {
+      "es": "Textos",
+      "en": "Texts",
+      "pt": "Textos"
+    }
+  },
+  "account.content.indicatorFields.cadence": {
+    "format": "plain",
+    "default": {
+      "es": "Frecuencia",
+      "en": "Frequency",
+      "pt": "Frequência"
+    }
+  },
+  "account.content.indicatorFields.chartTitle": {
+    "format": "plain",
+    "default": {
+      "es": "Título del gráfico",
+      "en": "Chart title",
+      "pt": "Título do gráfico"
+    }
+  },
+  "account.content.indicatorFields.chartUnit": {
+    "format": "plain",
+    "default": {
+      "es": "Unidad del gráfico",
+      "en": "Chart unit",
+      "pt": "Unidade do gráfico"
+    }
+  },
+  "account.content.indicatorFields.longName": {
+    "format": "plain",
+    "default": {
+      "es": "Nombre completo",
+      "en": "Full name",
+      "pt": "Nome completo"
+    }
+  },
+  "account.content.indicatorFields.mapShows": {
+    "format": "plain",
+    "default": {
+      "es": "Qué muestra el mapa",
+      "en": "What the map shows",
+      "pt": "O que o mapa mostra"
+    }
+  },
+  "account.content.indicatorFields.measures": {
+    "format": "plain",
+    "default": {
+      "es": "Qué mide",
+      "en": "What it measures",
+      "pt": "O que mede"
+    }
+  },
+  "account.content.indicatorFields.method": {
+    "format": "plain",
+    "default": {
+      "es": "Cómo se calcula",
+      "en": "How it is computed",
+      "pt": "Como é calculado"
+    }
+  },
+  "account.content.indicatorFields.name": {
+    "format": "plain",
+    "default": {
+      "es": "Nombre",
+      "en": "Name",
+      "pt": "Nome"
+    }
+  },
+  "account.content.indicatorFields.period": {
+    "format": "plain",
+    "default": {
+      "es": "Período",
+      "en": "Period",
+      "pt": "Período"
+    }
+  },
+  "account.content.indicatorFields.resolution": {
+    "format": "plain",
+    "default": {
+      "es": "Resolución",
+      "en": "Resolution",
+      "pt": "Resolução"
+    }
+  },
+  "account.content.indicatorFields.short": {
+    "format": "plain",
+    "default": {
+      "es": "Sigla",
+      "en": "Abbreviation",
+      "pt": "Sigla"
+    }
+  },
+  "account.content.indicatorFields.unit": {
+    "format": "plain",
+    "default": {
+      "es": "Unidad",
+      "en": "Unit",
+      "pt": "Unidade"
+    }
+  },
   "account.content.languages.en": {
     "format": "plain",
     "default": {
@@ -561,6 +817,30 @@
       "pt": "Português"
     }
   },
+  "account.content.lead.articles": {
+    "format": "plain",
+    "default": {
+      "es": "Los artículos científicos que respaldan los indicadores. Cada indicador elige, desde su página, cuáles cita.",
+      "en": "The scientific articles behind the indicators. Each indicator chooses, on its own page, the ones it cites.",
+      "pt": "Os artigos científicos que sustentam os indicadores. Cada indicador escolhe, na sua página, quais cita."
+    }
+  },
+  "account.content.lead.indicators": {
+    "format": "plain",
+    "default": {
+      "es": "Cada indicador en un lugar: sus textos y los artículos que lo respaldan.",
+      "en": "Each indicator in one place: its texts and the articles behind it.",
+      "pt": "Cada indicador num só lugar: seus textos e os artigos que o sustentam."
+    }
+  },
+  "account.content.lead.texts": {
+    "format": "plain",
+    "default": {
+      "es": "Todos los textos del sitio, en sus tres idiomas. Buscá un texto por lo que dice, editalo y publicalo, o guardalo como borrador para que otro editor lo revise. El sitio muestra lo publicado cuando se actualiza.",
+      "en": "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
+      "pt": "Todos os textos do site, nos seus três idiomas. Busque um texto pelo que ele diz, edite e publique, ou salve como rascunho para outro editor revisar. O site mostra o que está publicado quando é atualizado."
+    }
+  },
   "account.content.listFailed": {
     "format": "plain",
     "default": {
@@ -575,38 +855,6 @@
       "es": "Podés usar **negrita**, *cursiva*, [links](https://…) y listas con «- ». Dejá una línea en blanco entre párrafos.",
       "en": "You can use **bold**, *italics*, [links](https://…) and lists with \"- \". Leave a blank line between paragraphs.",
       "pt": "Você pode usar **negrito**, *itálico*, [links](https://…) e listas com \"- \". Deixe uma linha em branco entre parágrafos."
-    }
-  },
-  "account.content.modes.articles": {
-    "format": "plain",
-    "default": {
-      "es": "Artículos",
-      "en": "Articles",
-      "pt": "Artigos"
-    }
-  },
-  "account.content.modes.citations": {
-    "format": "plain",
-    "default": {
-      "es": "Artículos de cada indicador",
-      "en": "Each indicator's articles",
-      "pt": "Artigos de cada indicador"
-    }
-  },
-  "account.content.modes.texts": {
-    "format": "plain",
-    "default": {
-      "es": "Textos",
-      "en": "Texts",
-      "pt": "Textos"
-    }
-  },
-  "account.content.modesLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Qué editar",
-      "en": "What to edit",
-      "pt": "O que editar"
     }
   },
   "account.content.noHistory": {
@@ -1049,14 +1297,6 @@
       "pt": "Publicado"
     }
   },
-  "account.content.title": {
-    "format": "plain",
-    "default": {
-      "es": "Contenido",
-      "en": "Content",
-      "pt": "Conteúdo"
-    }
-  },
   "account.content.toDefault": {
     "format": "plain",
     "default": {
@@ -1111,6 +1351,14 @@
       "es": "Por sección",
       "en": "By section",
       "pt": "Por seção"
+    }
+  },
+  "account.content.viewsLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Cómo listar los textos",
+      "en": "How to list the texts",
+      "pt": "Como listar os textos"
     }
   },
   "account.failed": {
@@ -1932,140 +2180,52 @@
       "pt": "Sessões"
     }
   },
+  "account.subpages.articles": {
+    "format": "plain",
+    "default": {
+      "es": "Artículos",
+      "en": "Articles",
+      "pt": "Artigos"
+    }
+  },
+  "account.subpages.audit": {
+    "format": "plain",
+    "default": {
+      "es": "Registro de acciones",
+      "en": "Action log",
+      "pt": "Registro de ações"
+    }
+  },
+  "account.subpages.indicators": {
+    "format": "plain",
+    "default": {
+      "es": "Indicadores",
+      "en": "Indicators",
+      "pt": "Indicadores"
+    }
+  },
+  "account.subpages.texts": {
+    "format": "plain",
+    "default": {
+      "es": "Textos",
+      "en": "Texts",
+      "pt": "Textos"
+    }
+  },
+  "account.subpages.users": {
+    "format": "plain",
+    "default": {
+      "es": "Usuarios",
+      "en": "Users",
+      "pt": "Usuários"
+    }
+  },
   "account.title": {
     "format": "plain",
     "default": {
       "es": "Tu cuenta",
       "en": "Your account",
       "pt": "Sua conta"
-    }
-  },
-  "account.users.actions.admin_bootstrapped": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} recibió el rol de administrador por configuración",
-      "en": "{actor} became an admin through the configuration",
-      "pt": "{actor} recebeu o papel de administrador pela configuração"
-    }
-  },
-  "account.users.actions.article_deleted": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} eliminó el artículo {target}",
-      "en": "{actor} deleted the article {target}",
-      "pt": "{actor} excluiu o artigo {target}"
-    }
-  },
-  "account.users.actions.article_saved": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} guardó el artículo {target}",
-      "en": "{actor} saved the article {target}",
-      "pt": "{actor} salvou o artigo {target}"
-    }
-  },
-  "account.users.actions.articles_seeded": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} cargó los artículos que tenía el sitio ({detail})",
-      "en": "{actor} loaded the articles the site had ({detail})",
-      "pt": "{actor} carregou os artigos que o site tinha ({detail})"
-    }
-  },
-  "account.users.actions.citations_changed": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} cambió los artículos del indicador {target}: {detail}",
-      "en": "{actor} changed the articles of the indicator {target}: {detail}",
-      "pt": "{actor} mudou os artigos do indicador {target}: {detail}"
-    }
-  },
-  "account.users.actions.disabled": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} deshabilitó la cuenta de {target}",
-      "en": "{actor} disabled the account of {target}",
-      "pt": "{actor} desativou a conta de {target}"
-    }
-  },
-  "account.users.actions.enabled": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} habilitó la cuenta de {target}",
-      "en": "{actor} enabled the account of {target}",
-      "pt": "{actor} ativou a conta de {target}"
-    }
-  },
-  "account.users.actions.recovery_sent": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} envió un enlace de recuperación a {target}",
-      "en": "{actor} sent a recovery link to {target}",
-      "pt": "{actor} enviou um link de recuperação para {target}"
-    }
-  },
-  "account.users.actions.roles_changed": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} cambió los roles de {target}: {detail}",
-      "en": "{actor} changed the roles of {target}: {detail}",
-      "pt": "{actor} mudou os papéis de {target}: {detail}"
-    }
-  },
-  "account.users.actions.sessions_revoked": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} cerró las sesiones de {target}",
-      "en": "{actor} ended the sessions of {target}",
-      "pt": "{actor} encerrou as sessões de {target}"
-    }
-  },
-  "account.users.actions.text_draft_discarded": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} descartó el borrador del texto {target}",
-      "en": "{actor} discarded the draft of the text {target}",
-      "pt": "{actor} descartou o rascunho do texto {target}"
-    }
-  },
-  "account.users.actions.text_drafted": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} guardó un borrador del texto {target} ({detail})",
-      "en": "{actor} saved a draft of the text {target} ({detail})",
-      "pt": "{actor} salvou um rascunho do texto {target} ({detail})"
-    }
-  },
-  "account.users.actions.text_published": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} publicó el texto {target} ({detail})",
-      "en": "{actor} published the text {target} ({detail})",
-      "pt": "{actor} publicou o texto {target} ({detail})"
-    }
-  },
-  "account.users.actions.text_restored": {
-    "format": "plain",
-    "default": {
-      "es": "{actor} restauró el texto {target}",
-      "en": "{actor} restored the text {target}",
-      "pt": "{actor} restaurou o texto {target}"
-    }
-  },
-  "account.users.audit": {
-    "format": "plain",
-    "default": {
-      "es": "Registro de acciones",
-      "en": "Admin log",
-      "pt": "Registro de ações"
-    }
-  },
-  "account.users.auditEmpty": {
-    "format": "plain",
-    "default": {
-      "es": "Todavía no hay acciones registradas.",
-      "en": "No actions recorded yet.",
-      "pt": "Ainda não há ações registradas."
     }
   },
   "account.users.cancel": {
@@ -2172,14 +2332,6 @@
       "pt": "Administrar"
     }
   },
-  "account.users.noRoles": {
-    "format": "plain",
-    "default": {
-      "es": "solo cliente",
-      "en": "client only",
-      "pt": "só cliente"
-    }
-  },
   "account.users.own": {
     "format": "plain",
     "default": {
@@ -2242,14 +2394,6 @@
       "es": "Nombre o correo",
       "en": "Name or email",
       "pt": "Nome ou e-mail"
-    }
-  },
-  "account.users.title": {
-    "format": "plain",
-    "default": {
-      "es": "Usuarios",
-      "en": "Users",
-      "pt": "Usuários"
     }
   },
   "account.zones.add": {

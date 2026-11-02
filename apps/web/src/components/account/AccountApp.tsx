@@ -4,18 +4,21 @@ import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Locale } from "@/i18n/core";
-import { createAccountTranslator, type AccountCatalog, type AccountSection } from "./i18n";
+import { createAccountTranslator, type AccountCatalog } from "./i18n";
+import { accountSubpages, type AccountSection, type AccountSubpage } from "./paths";
 import { sectionRoles } from "./AccountNav";
 import SavedZones from "./SavedZones";
 import Invitations from "./Invitations";
 import Projects from "./Projects";
 import Users from "./Users";
+import Audit from "./Audit";
 import Content from "./Content";
 
 type Props = {
   locale: Locale;
   catalog: AccountCatalog;
   section: AccountSection;
+  subpage?: AccountSubpage;
   sectionPaths: Record<AccountSection, string>;
   signInPath: string;
   homePath: string;
@@ -39,6 +42,7 @@ export default function AccountApp({
   locale,
   catalog,
   section,
+  subpage,
   sectionPaths,
   signInPath,
   homePath,
@@ -60,7 +64,10 @@ export default function AccountApp({
     import("@/lib/account")
       .then(({ loadMe }) => loadMe())
       .then((me) => {
-        if (!me) return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname + location.hash)}`);
+        if (!me)
+          return location.assign(
+            `${signInPath}?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`,
+          );
         const needed = sectionRoles[section];
         // A section outside the person's roles leads to their profile.
         if (needed && !needed.some((role) => me.roles.includes(role))) return location.replace(sectionPaths.profile);
@@ -107,11 +114,16 @@ export default function AccountApp({
   if (section === "projects")
     return <Projects translator={translator} projectPath={projectPath} mapPath={mapPath} signInPath={signInPath} />;
   if (section === "invitations") return <Invitations translator={translator} locale={locale} signInPath={signInPath} />;
-  if (section === "content") return <Content translator={translator} />;
+  if (section === "content")
+    return <Content translator={translator} page={accountSubpages.content.find((p) => p === subpage) ?? "texts"} />;
   if (section === "admin")
     return (
       <div className="max-w-(--ia-layout-page) pt-8">
-        <Users t={t} moment={moment} signInPath={signInPath} me={me.id} />
+        {subpage === "audit" ? (
+          <Audit t={t} moment={moment} signInPath={signInPath} />
+        ) : (
+          <Users t={t} signInPath={signInPath} me={me.id} />
+        )}
       </div>
     );
 

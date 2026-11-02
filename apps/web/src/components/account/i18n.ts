@@ -12,10 +12,6 @@ export const pickAccountCatalog = (catalog: Catalog): AccountCatalog => ({
   indicators: catalog.indicators,
 });
 
-/** The account's sections, in the order the panel lists them. */
-export const accountSections = ["profile", "zones", "projects", "invitations", "content", "admin"] as const;
-export type AccountSection = (typeof accountSections)[number];
-
 export function createAccountTranslator(locale: Locale, catalog: AccountCatalog) {
   const translator = createCatalogTranslator(locale, catalog);
   const date = (value: string) =>
@@ -25,6 +21,7 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
   const moment = (value: string) =>
     new Intl.DateTimeFormat(intlLocale[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const collator = new Intl.Collator(intlLocale[locale], { sensitivity: "base", numeric: true });
+  const list = (items: string[]) => new Intl.ListFormat(intlLocale[locale], { type: "conjunction" }).format(items);
   return {
     ...translator,
     date,
@@ -33,6 +30,7 @@ export function createAccountTranslator(locale: Locale, catalog: AccountCatalog)
     degrees: degreesFormat(locale),
     ago: relativeTimeFormat(locale),
     collator,
+    list,
   };
 }
 

@@ -1,30 +1,30 @@
 ---
 import AccountShell from "./AccountShell.astro";
 import AccountApp from "./AccountApp";
-import { accountSections, pickAccountCatalog, type AccountSection } from "./i18n";
+import { pickAccountCatalog } from "./i18n";
+import { accountPaths, type AccountSection, type AccountSubpage } from "./paths";
 import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
 
 interface Props {
   locale: Locale;
   section: AccountSection;
+  subpage?: AccountSubpage;
 }
-const { locale, section } = Astro.props;
+const { locale, section, subpage } = Astro.props;
 const { t } = createTranslator(locale);
-const account = localizePath("/account/", locale);
-const sectionPaths = Object.fromEntries(
-  accountSections.map((s) => [s, s === "profile" ? account : `${account}${s}/`]),
-) as Record<AccountSection, string>;
-const title =
-  section === "profile" ? t("meta.accountTitle") : `${t(`account.sections.${section}`)} · ${t("meta.accountTitle")}`;
+const paths = accountPaths(localizePath("/account/", locale));
+const named = subpage ? t(`account.subpages.${subpage}`) : section === "profile" ? null : t(`account.sections.${section}`);
+const title = named ? `${named} · ${t("meta.accountTitle")}` : t("meta.accountTitle");
 ---
 
-<AccountShell locale={locale} section={section} title={title}>
+<AccountShell locale={locale} section={section} subpage={subpage} title={title}>
   <AccountApp
     client:load
     locale={locale}
     catalog={pickAccountCatalog(catalogs[locale])}
     section={section}
-    sectionPaths={sectionPaths}
+    subpage={subpage}
+    sectionPaths={paths.sections}
     signInPath={localizePath("/login/", locale)}
     homePath={localizePath("/", locale)}
     zonePath={localizePath("/zone/", locale)}

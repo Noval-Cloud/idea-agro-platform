@@ -2821,8 +2821,8 @@ export const SendAccountRecoveryResponse = zod.void()
 
 
 /**
- * For admins: the latest admin actions, newest first.
- * @summary What admins did
+ * For admins: the latest actions of admins and editors, newest first.
+ * @summary What admins and editors did
  */
 export const ListAuditResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),

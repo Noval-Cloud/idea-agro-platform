@@ -1109,6 +1109,13 @@ export const en = {
       content: "Content",
       admin: "Admin",
     },
+    subpages: {
+      texts: "Texts",
+      articles: "Articles",
+      indicators: "Indicators",
+      users: "Users",
+      audit: "Action log",
+    },
     invitations: {
       intro:
         "Invite someone to IDEA-Agro. They get an email with your name and a link to sign in; it lasts a week. You will see here when they join.",
@@ -1153,8 +1160,14 @@ export const en = {
     },
     roles: { client: "Client", editor: "Editor", admin: "Administrator" },
     content: {
-      title: "Content",
-      body: "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
+      viewsLabel: "How to list the texts",
+      lead: {
+        texts:
+          "Every text of the site, in its three languages. Find a text by what it says, edit it and publish it, or keep it as a draft for another editor to review. The site shows what is published when it updates.",
+        articles:
+          "The scientific articles behind the indicators. Each indicator chooses, on its own page, the ones it cites.",
+        indicators: "Each indicator in one place: its texts and the articles behind it.",
+      },
       views: {
         search: "Search",
         sections: "By section",
@@ -1167,11 +1180,23 @@ export const en = {
       nothing: "No text matches.",
       listFailed: "We could not load the list. Try again.",
       saveFailed: "We could not save the change. Check the text and try again.",
-      modesLabel: "What to edit",
-      modes: {
+      indicator: {
         texts: "Texts",
-        articles: "Articles",
-        citations: "Each indicator's articles",
+        articles: "Articles behind it",
+      },
+      indicatorFields: {
+        short: "Abbreviation",
+        name: "Name",
+        longName: "Full name",
+        measures: "What it measures",
+        method: "How it is computed",
+        unit: "Unit",
+        cadence: "Frequency",
+        period: "Period",
+        resolution: "Resolution",
+        mapShows: "What the map shows",
+        chartTitle: "Chart title",
+        chartUnit: "Chart unit",
       },
       articles: {
         add: "New article",
@@ -1200,9 +1225,10 @@ export const en = {
         removeTitle: "Delete the article?",
         removeBody: "It is also removed from the indicators that cite it, with its PDF.",
         removed: "Article deleted.",
+        citedBy: "Cited by {names}.",
+        citedByNone: "No indicator cites it yet.",
       },
       citations: {
-        indicator: "Indicator",
         none: "This indicator cites no article yet.",
         add: "Add an article",
         pick: "Pick an article",
@@ -1309,7 +1335,6 @@ export const en = {
       },
     },
     users: {
-      title: "Users",
       searchLabel: "Search accounts",
       searchPlaceholder: "Name or email",
       empty: "No accounts with that name or email.",
@@ -1331,8 +1356,11 @@ export const en = {
       confirmIdentity: "For safety, “{action}” for {name} asks you to confirm it is you.",
       cancel: "Cancel",
       confirmAction: "Confirm with Google",
-      audit: "Admin log",
-      auditEmpty: "No actions recorded yet.",
+    },
+    audit: {
+      lead: "What admins and editors did, newest first.",
+      failed: "We couldn't load the log. Try again.",
+      empty: "No actions recorded yet.",
       noRoles: "client only",
       actions: {
         admin_bootstrapped: "{actor} became an admin through the configuration",
