@@ -433,14 +433,6 @@
       "pt": "Buscar uma pessoa…"
     }
   },
-  "account.audit.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Persona, cuenta, texto…",
-      "en": "Person, account, text…",
-      "pt": "Pessoa, conta, texto…"
-    }
-  },
   "account.audit.someone": {
     "format": "plain",
     "default": {
@@ -688,14 +680,6 @@
       "es": "Buscar artículos",
       "en": "Search articles",
       "pt": "Buscar artigos"
-    }
-  },
-  "account.content.articles.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Título, autor, revista o año…",
-      "en": "Title, author, journal or year…",
-      "pt": "Título, autor, revista ou ano…"
     }
   },
   "account.content.articles.seed": {
@@ -1502,14 +1486,6 @@
       "es": "Buscar textos",
       "en": "Search texts",
       "pt": "Buscar textos"
-    }
-  },
-  "account.content.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Buscá por lo que dice o por su clave…",
-      "en": "Search by what it says or by its key…",
-      "pt": "Busque pelo que diz ou pela sua chave…"
     }
   },
   "account.content.sectionLabel": {
@@ -2523,14 +2499,6 @@
       "pt": "Buscar nos seus projetos"
     }
   },
-  "account.projects.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Nombre o descripción…",
-      "en": "Name or description…",
-      "pt": "Nome ou descrição…"
-    }
-  },
   "account.projects.sharedBy": {
     "format": "plain",
     "default": {
@@ -3069,14 +3037,6 @@
       "pt": "Buscar contas"
     }
   },
-  "account.users.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Nombre, correo, rol, fecha…",
-      "en": "Name, email, role, date…",
-      "pt": "Nome, e-mail, papel, data…"
-    }
-  },
   "account.users.sessions": {
     "format": "plain",
     "default": {
@@ -3543,14 +3503,6 @@
       "es": "Buscar en tus zonas",
       "en": "Search your areas",
       "pt": "Buscar nas suas zonas"
-    }
-  },
-  "account.zones.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Nombre o departamento…",
-      "en": "Name or department…",
-      "pt": "Nome ou departamento…"
     }
   },
   "account.zones.sort.changed": {
@@ -7405,52 +7357,12 @@
       "pt": "Nada corresponde"
     }
   },
-  "lists.order.date.asc": {
+  "lists.search": {
     "format": "plain",
     "default": {
-      "es": "Primero lo más antiguo",
-      "en": "Oldest first",
-      "pt": "Mais antigos primeiro"
-    }
-  },
-  "lists.order.date.desc": {
-    "format": "plain",
-    "default": {
-      "es": "Primero lo más reciente",
-      "en": "Newest first",
-      "pt": "Mais recentes primeiro"
-    }
-  },
-  "lists.order.number.asc": {
-    "format": "plain",
-    "default": {
-      "es": "De menor a mayor",
-      "en": "Smallest first",
-      "pt": "Do menor ao maior"
-    }
-  },
-  "lists.order.number.desc": {
-    "format": "plain",
-    "default": {
-      "es": "De mayor a menor",
-      "en": "Largest first",
-      "pt": "Do maior ao menor"
-    }
-  },
-  "lists.order.text.asc": {
-    "format": "plain",
-    "default": {
-      "es": "A → Z",
-      "en": "A → Z",
-      "pt": "A → Z"
-    }
-  },
-  "lists.order.text.desc": {
-    "format": "plain",
-    "default": {
-      "es": "Z → A",
-      "en": "Z → A",
-      "pt": "Z → A"
+      "es": "Buscar…",
+      "en": "Search…",
+      "pt": "Buscar…"
     }
   },
   "lists.showing": {
@@ -7459,14 +7371,6 @@
       "es": "{shown} de {total}",
       "en": "{shown} of {total}",
       "pt": "{shown} de {total}"
-    }
-  },
-  "lists.sort": {
-    "format": "plain",
-    "default": {
-      "es": "Ordenar",
-      "en": "Sort",
-      "pt": "Ordenar"
     }
   },
   "lists.view.cards": {
@@ -7483,6 +7387,22 @@
       "es": "Vista",
       "en": "View",
       "pt": "Visualização"
+    }
+  },
+  "lists.view.show.cards": {
+    "format": "plain",
+    "default": {
+      "es": "Ver como tarjetas",
+      "en": "Show as cards",
+      "pt": "Ver como cartões"
+    }
+  },
+  "lists.view.show.table": {
+    "format": "plain",
+    "default": {
+      "es": "Ver como tabla",
+      "en": "Show as a table",
+      "pt": "Ver como tabela"
     }
   },
   "lists.view.table": {
@@ -9052,14 +8972,6 @@
       "es": "Buscar en las zonas del proyecto",
       "en": "Search the project's areas",
       "pt": "Buscar nas zonas do projeto"
-    }
-  },
-  "project.zones.searchPlaceholder": {
-    "format": "plain",
-    "default": {
-      "es": "Nombre o departamento…",
-      "en": "Name or department…",
-      "pt": "Nome ou departamento…"
     }
   },
   "resources.lead": {

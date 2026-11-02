@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { FunnelX, SlidersHorizontal, X } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import type { ListsT } from "./i18n";
@@ -31,40 +32,35 @@ export function useFiltersShown(list: string): [boolean, (shown: boolean) => voi
 /** The toggle's id, for whatever hands focus back to it. */
 export const toggleId = (controls: string) => `${controls}-toggle`;
 
-/** Shows or hides the filter controls; the number says how many filters narrow the list. */
+/** Shows or hides the filter controls, as an icon; the chips say which filters are applied. */
 export function FiltersToggle({
   t,
   shown,
-  active,
   controls,
   onToggle,
 }: {
   t: ListsT;
   shown: boolean;
-  active: number;
   controls: string;
   onToggle: () => void;
 }) {
   return (
-    <button
-      id={toggleId(controls)}
-      type="button"
-      aria-expanded={shown}
-      aria-controls={controls}
-      onClick={onToggle}
-      className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-sm border px-3 text-sm transition-colors duration-(--ia-motion-fast)",
-        shown ? "border-ink-subtle bg-action-soft text-ink" : "border-input text-ink-muted hover:border-ink-subtle",
-      )}
-    >
-      <SlidersHorizontal size={iconSize.sm} aria-hidden="true" />
-      {t("lists.filters.label")}
-      {active > 0 && (
-        <span className="rounded-pill bg-ink px-1.5 text-2xs leading-4 font-medium text-canvas tabular-nums">
-          {active}
-        </span>
-      )}
-    </button>
+    <Tooltip label={t("lists.filters.label")}>
+      <button
+        id={toggleId(controls)}
+        type="button"
+        aria-label={t("lists.filters.label")}
+        aria-expanded={shown}
+        aria-controls={controls}
+        onClick={onToggle}
+        className={cn(
+          "inline-flex size-9 items-center justify-center rounded-sm transition-colors duration-(--ia-motion-fast)",
+          shown ? "bg-action-soft text-ink" : "text-ink-muted hover:bg-action-soft hover:text-ink",
+        )}
+      >
+        <SlidersHorizontal size={iconSize.sm} aria-hidden="true" />
+      </button>
+    </Tooltip>
   );
 }
 
@@ -113,13 +109,16 @@ export function AppliedFilters({
         </li>
       ))}
       <li>
-        <button
-          type="button"
-          onClick={() => then(applied.length, onClear)}
-          className="px-1.5 text-xs text-link hover:underline"
-        >
-          {t("lists.clearFilters")}
-        </button>
+        <Tooltip label={t("lists.clearFilters")}>
+          <button
+            type="button"
+            aria-label={t("lists.clearFilters")}
+            onClick={() => then(applied.length, onClear)}
+            className="grid size-7 place-items-center rounded-full text-ink-subtle hover:bg-action-soft hover:text-ink"
+          >
+            <FunnelX size={iconSize.sm} aria-hidden="true" />
+          </button>
+        </Tooltip>
       </li>
     </ul>
   );

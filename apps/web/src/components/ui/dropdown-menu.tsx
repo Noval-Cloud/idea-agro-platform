@@ -47,18 +47,3 @@ export function DropdownMenuItem({
 export function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typeof Menu.Separator>) {
   return <Menu.Separator className={cn("-mx-1 my-1 h-px bg-line", className)} {...props} />;
 }
-
-export const DropdownMenuRadioGroup = Menu.RadioGroup;
-
-/** One of a group's choices; the one in use reads stronger. */
-export function DropdownMenuRadioItem({ className, ...props }: React.ComponentProps<typeof Menu.RadioItem>) {
-  return (
-    <Menu.RadioItem
-      className={cn(
-        "group flex h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-sm text-ink-muted outline-none select-none data-highlighted:bg-action-soft data-[state=checked]:font-medium data-[state=checked]:text-ink [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-subtle",
-        className,
-      )}
-      {...props}
-    />
-  );
-}

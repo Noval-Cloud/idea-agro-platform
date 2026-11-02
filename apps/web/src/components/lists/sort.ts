@@ -15,13 +15,6 @@ export function sortRows<T, K extends string>(
   });
 }
 
-/** What a sort key holds, which names its two directions and decides the one it starts with. */
-export type SortKind = "text" | "date" | "number";
-export type SortOption<K extends string> = { key: K; label: string; kind: SortKind };
-
-/** Text starts from A, dates from the newest, numbers from the largest. */
-export const naturallyDescending = (kind: SortKind) => kind !== "text";
-
 /** The sort after choosing a key: the current one turns around, another starts in its usual direction. */
 export const chooseSort = <K extends string>(sort: Sort<K>, key: K, natural: boolean): Sort<K> => ({
   key,

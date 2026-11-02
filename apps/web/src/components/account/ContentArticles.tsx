@@ -149,13 +149,7 @@ export function Articles({ translator, onChanged, changed }: Props) {
   return (
     <div className="grid gap-4">
       <ListToolbar end={add}>
-        <SearchField
-          t={t}
-          value={query}
-          label={t("account.content.articles.searchLabel")}
-          placeholder={t("account.content.articles.searchPlaceholder")}
-          onChange={setQuery}
-        />
+        <SearchField t={t} value={query} label={t("account.content.articles.searchLabel")} onChange={setQuery} />
         <FilterSelect
           label={t("account.content.articles.citedByLabel")}
           value={citedBy}
@@ -713,11 +707,11 @@ function ArticlePicker({
       <div className="sticky top-0 z-1 bg-surface pb-3">
         <SearchField
           id="picker-search"
+          collapsible={false}
           t={t}
           value={query}
           onChange={setQuery}
           label={t("account.content.articles.searchLabel")}
-          placeholder={t("account.content.articles.searchPlaceholder")}
           className="sm:w-full"
         />
       </div>

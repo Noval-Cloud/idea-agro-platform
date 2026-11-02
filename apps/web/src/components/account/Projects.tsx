@@ -11,15 +11,7 @@ import { EmptyState } from "@/components/lists/EmptyState";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
 import { SearchField } from "@/components/lists/SearchField";
-import {
-  SortHeader,
-  SortMenu,
-  decodeSort,
-  encodeSort,
-  sortRows,
-  type Sort,
-  type SortOption,
-} from "@/components/lists/Sorting";
+import { SortHeader, decodeSort, encodeSort, sortRows, type Sort } from "@/components/lists/Sorting";
 import { ViewToggle, useListView } from "@/components/lists/ViewToggle";
 import { matches } from "@/components/lists/filter";
 import { useQueryState } from "@/components/lists/state";
@@ -100,30 +92,17 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
       : []),
   ];
 
-  const sortOptions: SortOption<Key>[] = [
-    { key: "changed", label: t("account.projects.sort.changed"), kind: "date" },
-    { key: "name", label: t("account.projects.sort.name"), kind: "text" },
-    { key: "zones", label: t("account.projects.sort.zones"), kind: "number" },
-  ];
-
   return (
     <TooltipProvider delayDuration={300}>
       <ListToolbar
         end={
           <>
-            <SortMenu t={t} sort={sort} options={sortOptions} onSort={setSort} />
             <ViewToggle t={t} view={view} onView={setView} />
             <NewProject translator={translator} projectPath={projectPath} signInPath={signInPath} />
           </>
         }
       >
-        <SearchField
-          t={t}
-          value={query}
-          label={t("account.projects.searchLabel")}
-          placeholder={t("account.projects.searchPlaceholder")}
-          onChange={setQuery}
-        />
+        <SearchField t={t} value={query} label={t("account.projects.searchLabel")} onChange={setQuery} />
         <Segmented
           value={show}
           onValueChange={(value) => setShow(value as Show)}

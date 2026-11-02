@@ -142,7 +142,6 @@ function Texts({
           t={t}
           value={query}
           label={t("account.content.searchLabel")}
-          placeholder={t("account.content.searchPlaceholder")}
           onChange={setQuery}
           className="sm:w-80"
         />

@@ -144,13 +144,7 @@ export function ZonesTab({
           </>
         }
       >
-        <SearchField
-          t={t}
-          value={query}
-          label={t("project.zones.searchLabel")}
-          placeholder={t("project.zones.searchPlaceholder")}
-          onChange={setQuery}
-        />
+        <SearchField t={t} value={query} label={t("project.zones.searchLabel")} onChange={setQuery} />
         {present.length > 1 && (
           <FilterSelect
             label={t("project.zones.kinds.label")}
