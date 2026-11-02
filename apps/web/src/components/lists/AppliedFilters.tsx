@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,9 @@ export function useFiltersShown(list: string): [boolean, (shown: boolean) => voi
   return [shown, choose];
 }
 
+/** The toggle's id, for whatever hands focus back to it. */
+export const toggleId = (controls: string) => `${controls}-toggle`;
+
 /** Shows or hides the filter controls; the number says how many filters narrow the list. */
 export function FiltersToggle({
   t,
@@ -44,6 +47,7 @@ export function FiltersToggle({
 }) {
   return (
     <button
+      id={toggleId(controls)}
       type="button"
       aria-expanded={shown}
       aria-controls={controls}
@@ -64,12 +68,33 @@ export function FiltersToggle({
   );
 }
 
-/** The filters that narrow the list, each as a chip that removes it, and one way to remove them all. */
-export function AppliedFilters({ t, applied, onClear }: { t: ListsT; applied: Applied[]; onClear: () => void }) {
+/**
+ * The filters that narrow the list, each as a chip that removes it, and one way to remove them all. Focus moves to
+ * the next chip, or to `returnFocus` once none is left.
+ */
+export function AppliedFilters({
+  t,
+  applied,
+  onClear,
+  returnFocus,
+}: {
+  t: ListsT;
+  applied: Applied[];
+  onClear: () => void;
+  returnFocus: string;
+}) {
+  const list = useRef<HTMLUListElement>(null);
+  const then = (index: number, act: () => void) => {
+    act();
+    requestAnimationFrame(() => {
+      const left = list.current?.querySelectorAll<HTMLButtonElement>("button[data-remove]") ?? [];
+      (left[Math.min(index, left.length - 1)] ?? document.getElementById(returnFocus))?.focus();
+    });
+  };
   if (applied.length === 0) return null;
   return (
-    <ul className="flex flex-wrap items-center gap-2">
-      {applied.map((filter) => (
+    <ul ref={list} className="flex flex-wrap items-center gap-2">
+      {applied.map((filter, index) => (
         <li
           key={filter.key}
           className="inline-flex h-7 max-w-full items-center gap-1 rounded-pill border border-line bg-surface pr-0.5 pl-3 text-xs"
@@ -78,8 +103,9 @@ export function AppliedFilters({ t, applied, onClear }: { t: ListsT; applied: Ap
           <span className="truncate font-medium text-ink">{filter.value}</span>
           <button
             type="button"
+            data-remove
             aria-label={t("lists.filters.remove", { label: filter.label })}
-            onClick={filter.onRemove}
+            onClick={() => then(index, filter.onRemove)}
             className="grid size-6 shrink-0 place-items-center rounded-full text-ink-subtle hover:bg-action-soft hover:text-ink"
           >
             <X size={iconSize.xs} aria-hidden="true" />
@@ -87,7 +113,11 @@ export function AppliedFilters({ t, applied, onClear }: { t: ListsT; applied: Ap
         </li>
       ))}
       <li>
-        <button type="button" onClick={onClear} className="px-1.5 text-xs text-link hover:underline">
+        <button
+          type="button"
+          onClick={() => then(applied.length, onClear)}
+          className="px-1.5 text-xs text-link hover:underline"
+        >
           {t("lists.clearFilters")}
         </button>
       </li>

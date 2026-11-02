@@ -1010,6 +1010,7 @@ export const es = {
     filters: {
       label: "Filtros",
       search: "Buscar…",
+      searchIn: "Buscar en {label}",
       chosen: { one: "{count} elegido", other: "{count} elegidos" },
       clear: "Limpiar",
       remove: "Quitar el filtro {label}",
@@ -1497,6 +1498,8 @@ export const es = {
       searchPlaceholder: "Persona, cuenta, texto…",
       filters: { by: "Realizada por", on: "Realizada sobre" },
       groups: { roles: "Roles", people: "Personas" },
+      someone: "Otra persona",
+      searchPeople: "Buscar una persona…",
       byRole: { admin: "Administradores", editor: "Editores", client: "Clientes" },
       kinds: {
         accounts: "Cuentas",

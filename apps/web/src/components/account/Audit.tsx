@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookOpen, Gauge, SearchX, Type, UserCog } from "lucide-react";
 import type { AdminAccount, ArticlePublic, AuditOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
-import { AppliedFilters, FiltersToggle, useFiltersShown, type Applied } from "@/components/lists/AppliedFilters";
+import {
+  AppliedFilters,
+  FiltersToggle,
+  toggleId,
+  useFiltersShown,
+  type Applied,
+} from "@/components/lists/AppliedFilters";
 import { DateFilter, dateLabel } from "@/components/lists/DateFilter";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { matches } from "@/components/lists/filter";
@@ -46,8 +52,14 @@ export default function Audit({ translator, signInPath }: Props) {
   const [filtersShown, showFilters] = useFiltersShown("audit");
   // How each article is cited, to name it instead of by its id; without the list the ids show.
   const [articles, setArticles] = useState<Map<string, string>>(new Map());
-  // The accounts that acted, for their roles now; without them only people can be chosen.
-  const [accounts, setAccounts] = useState<Map<string, AdminAccount>>(new Map());
+  // Every person named since the page opened, so one chosen stays named when the range or search leaves them out.
+  const seen = useRef(new Map<string, string>());
+  // "Made by" looks people up among every account, not only those in the log.
+  const [lookup, setLookup] = useState("");
+  const [found, setFound] = useState<AdminAccount[]>([]);
+
+  // An account without a name is the platform's own.
+  const who = (entry: AuditOut) => entry.actor_name || t("account.users.system");
 
   // The API keeps the range, so its 200 latest actions are the range's.
   useEffect(() => {
@@ -58,7 +70,13 @@ export default function Audit({ translator, signInPath }: Props) {
       .then(([{ privately }, client]) =>
         privately((init) => client.listAudit({ since: since?.toISOString(), until: until?.toISOString() }, init)),
       )
-      .then((response) => live && setAudit(response.status === 200 ? response.data : "failed"))
+      .then((response) => {
+        if (!live) return;
+        if (response.status !== 200) return setAudit("failed");
+        for (const entry of response.data)
+          if (!seen.current.has(entry.actor_id)) seen.current.set(entry.actor_id, who(entry));
+        setAudit(response.data);
+      })
       .catch(async (error: unknown) => {
         const { SignedOut } = await import("@/lib/account");
         if (error instanceof SignedOut) return location.assign(signInPath);
@@ -70,11 +88,24 @@ export default function Audit({ translator, signInPath }: Props) {
   }, [dateValue, signInPath]);
 
   useEffect(() => {
-    void Promise.all([import("@/lib/account"), import("@idea-agro/api-client")])
-      .then(([{ privately }, client]) => privately((init) => client.listAccounts(undefined, init)))
-      .then((response) => response.status === 200 && setAccounts(new Map(response.data.map((a) => [a.id, a]))))
-      .catch(() => undefined);
-  }, []);
+    let live = true;
+    const text = lookup.trim();
+    const timer = setTimeout(() => {
+      if (!text) return setFound([]);
+      void Promise.all([import("@/lib/account"), import("@idea-agro/api-client")])
+        .then(([{ privately }, client]) => privately((init) => client.listAccounts({ q: text }, init)))
+        .then((response) => {
+          if (!live || response.status !== 200) return;
+          for (const a of response.data) seen.current.set(a.id, a.name || a.email || t("account.users.system"));
+          setFound(response.data);
+        })
+        .catch(() => undefined);
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [lookup]);
 
   useEffect(() => {
     const cite = (article: ArticlePublic) => {
@@ -92,29 +123,30 @@ export default function Audit({ translator, signInPath }: Props) {
   }, []);
 
   const entries = Array.isArray(audit) ? audit : [];
-  // An account without a name is the platform's own.
-  const who = (entry: AuditOut) => entry.actor_name || t("account.users.system");
-  const inGroup = (actor: string, group: Group) => {
-    const roles = accounts.get(actor)?.roles;
-    if (!roles) return false;
-    return group === "client" ? !roles.some((r) => r !== "client") : roles.includes(group);
-  };
-  // Each person by their name now, or as the log recorded it.
-  const people = new Map<string, string>();
-  for (const entry of entries) {
-    const account = accounts.get(entry.actor_id);
-    people.set(entry.actor_id, account?.name || account?.email || who(entry));
-  }
+  // By their roles now: a client is an account with no other role.
+  const inGroup = (entry: AuditOut, group: Group) =>
+    group === "client"
+      ? entry.actor_roles.length > 0 && entry.actor_roles.every((r) => r === "client")
+      : entry.actor_roles.includes(group);
+  const nameOf = (id: string) => seen.current.get(id) ?? t("account.audit.someone");
+  const chosenPeople = by.filter((value) => !value.startsWith(GROUP));
+  // Without a search, whoever is chosen and whoever acted in the range; with one, the accounts it finds.
+  const people = new Set(
+    lookup.trim()
+      ? [...found.map((a) => a.id), ...entries.filter((e) => matches(lookup, who(e))).map((e) => e.actor_id)]
+      : [...chosenPeople, ...entries.map((e) => e.actor_id)],
+  );
   const sections = {
     by: [
       {
         label: t("account.audit.groups.roles"),
+        fixed: true,
         choices: groups.map((group) => ({ value: `${GROUP}${group}`, label: t(`account.audit.byRole.${group}`) })),
       },
       {
         label: t("account.audit.groups.people"),
         choices: [...people]
-          .map(([value, label]) => ({ value, label }))
+          .map((value) => ({ value, label: nameOf(value) }))
           .sort((a, b) => collator.compare(a.label, b.label)),
       },
     ],
@@ -156,7 +188,7 @@ export default function Audit({ translator, signInPath }: Props) {
     (e) =>
       (by.length === 0 ||
         by.some((value) =>
-          value.startsWith(GROUP) ? inGroup(e.actor_id, value.slice(GROUP.length) as Group) : value === e.actor_id,
+          value.startsWith(GROUP) ? inGroup(e, value.slice(GROUP.length) as Group) : value === e.actor_id,
         )) &&
       (on.length === 0 || on.includes(kindOf(e.action))) &&
       matches(query, sentence(e), detail(e), moment(e.at)),
@@ -167,7 +199,7 @@ export default function Audit({ translator, signInPath }: Props) {
     applied.push({
       key: "by",
       label: t("account.audit.filters.by"),
-      value: list(chosenLabels(sections.by, by)),
+      value: list([...chosenLabels(sections.by.slice(0, 1), by), ...chosenPeople.map(nameOf)]),
       onRemove: () => setBy([]),
     });
   if (on.length)
@@ -226,6 +258,8 @@ export default function Audit({ translator, signInPath }: Props) {
                 selected={by}
                 onChange={setBy}
                 searchable
+                searchLabel={t("account.audit.searchPeople")}
+                onSearch={setLookup}
               />
               <MultiFilter
                 t={t}
@@ -238,7 +272,9 @@ export default function Audit({ translator, signInPath }: Props) {
             </>
           ),
         }}
-        applied={<AppliedFilters t={t} applied={applied} onClear={clearFilters} />}
+        applied={
+          <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("audit-filters")} />
+        }
       >
         <SearchField
           t={t}

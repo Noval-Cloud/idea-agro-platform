@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Sheet } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppliedFilters, FiltersToggle, useFiltersShown, type Applied } from "@/components/lists/AppliedFilters";
+import {
+  AppliedFilters,
+  FiltersToggle,
+  toggleId,
+  useFiltersShown,
+  type Applied,
+} from "@/components/lists/AppliedFilters";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { matches, rowText } from "@/components/lists/filter";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
@@ -38,8 +44,8 @@ type Role = "editor" | "admin";
 const roleChoices = ["admin", "editor", "client"] as const;
 const statusChoices = ["active", "disabled"] as const;
 const kindChoices = ["people", "system"] as const;
-// Search covers every field but these, which mean nothing to whoever reads the list.
-const unsearched = ["id", "picture"];
+// Search covers every field but these: ids and pictures mean nothing to read, and roles go in as the row words them.
+const unsearched = ["id", "picture", "roles"];
 const keys = ["name", "joined"] as const;
 type Key = (typeof keys)[number];
 
@@ -261,7 +267,9 @@ export default function Users({ translator, signInPath, me }: Props) {
   // What a row shows, and so what search finds: its fields, and its roles, status and date in words.
   const words = (a: AdminAccount) => [
     rowText(a, unsearched),
-    ...a.roles.map((role) => t(`account.roles.${role}`)),
+    ...(rolesOf(a).length || isSystem(a) ? rolesOf(a) : (["client"] as const)).map((role) =>
+      t(`account.roles.${role}`),
+    ),
     t(`account.users.statuses.${statusOf(a)}`),
     isSystem(a) ? t("account.users.system") : "",
     date(a.created_at),
@@ -371,7 +379,9 @@ export default function Users({ translator, signInPath, me }: Props) {
               </>
             ),
           }}
-          applied={<AppliedFilters t={t} applied={applied} onClear={clearFilters} />}
+          applied={
+            <AppliedFilters t={t} applied={applied} onClear={clearFilters} returnFocus={toggleId("users-filters")} />
+          }
         >
           <SearchField
             t={t}
