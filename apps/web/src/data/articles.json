@@ -49,7 +49,7 @@
       "url": null
     },
     {
-      "id": "baezaParuelo2018",
+      "id": "baezaparuelo2018",
       "authors": "Baeza, S. & Paruelo, J. M.",
       "year": 2018,
       "title": "Spatial and temporal variation of human appropriation of net primary production in the Rio de la Plata grasslands",
@@ -73,7 +73,7 @@
       "url": null
     },
     {
-      "id": "alcarazSegura2013",
+      "id": "alcarazsegura2013",
       "authors": "Alcaraz-Segura, D., Paruelo, J. M., Epstein, H. E. & Cabello, J.",
       "year": 2013,
       "title": "Environmental and human controls of ecosystem functional diversity in temperate South America",
@@ -153,8 +153,8 @@
     "rh": ["gallego2023"],
     "et": ["gallego2023"],
     "iose": ["paruelo2016"],
-    "divtfe": ["paruelo2001", "alcarazSegura2013"],
+    "divtfe": ["paruelo2001", "alcarazsegura2013"],
     "csue": ["renard1997"],
-    "ahppn": ["baezaParuelo2018"]
+    "ahppn": ["baezaparuelo2018"]
   }
 }

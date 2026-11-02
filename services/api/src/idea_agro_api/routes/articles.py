@@ -198,6 +198,8 @@ def put_article_pdf(
         raise HTTPException(413, f"A PDF takes at most {limit} bytes.")
     if not content.startswith(b"%PDF"):
         raise HTTPException(415, "Attach a PDF.")
+    # The bucket only writes a file that is not there yet, so a PDF it replaces goes first.
+    services.document_files.delete(pdf_name(article_id))
     services.document_files.put(pdf_name(article_id), content, "application/pdf")
     updated = replace(article, pdf=True, updated_at=datetime.now(UTC), updated_by=author(caller))
     services.articles.put(updated)

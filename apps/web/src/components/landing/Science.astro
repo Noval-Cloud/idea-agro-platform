@@ -10,11 +10,10 @@ interface Props {
 const { t } = createTranslator(Astro.props.locale);
 const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
 
-// Each reference with the indicators it backs, oldest first.
+// Each article with the indicators it backs, newest first, as the store keeps them.
 const backed = articles
   .filter((a) => !a.framework)
-  .map((a) => ({ ...a, indicators: indicatorIds.filter((id) => citedBy(a.id).includes(id)) }))
-  .sort((a, b) => a.year - b.year);
+  .map((a) => ({ ...a, indicators: indicatorIds.filter((id) => citedBy(a.id).includes(id)) }));
 ---
 
 <section id="science" class="border-b border-line py-section" aria-labelledby="science-title">

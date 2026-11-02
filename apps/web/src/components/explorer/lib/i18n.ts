@@ -6,7 +6,7 @@ import type { IndicatorManifest } from "./data";
 import { degreesFormat } from "@/lib/degrees";
 
 /** The slice of the catalog the explorer and zone islands ship to the browser. */
-export type AppCatalog = Pick<Catalog, "explorer" | "zone" | "indicators" | "communities" | "science">;
+export type AppCatalog = Pick<Catalog, "explorer" | "zone" | "indicators" | "communities" | "science" | "a11y">;
 /** A message key of that slice; dynamic keys (built from ids) are cast to it. */
 export type AppKey = Leaves<AppCatalog>;
 export const pickAppCatalog = (catalog: Catalog): AppCatalog => ({
@@ -15,6 +15,7 @@ export const pickAppCatalog = (catalog: Catalog): AppCatalog => ({
   indicators: catalog.indicators,
   communities: catalog.communities,
   science: catalog.science,
+  a11y: catalog.a11y,
 });
 
 export function createAppTranslator(locale: Locale, catalog: AppCatalog) {

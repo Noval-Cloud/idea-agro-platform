@@ -704,6 +704,7 @@ function About({ indicator }: { indicator: IndicatorId }) {
                     className="text-link underline-offset-(--ia-link-underline-offset) hover:underline"
                   >
                     {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
+                    <span className="sr-only"> {t("a11y.externalLink")}</span>
                   </a>
                 </>
               )}

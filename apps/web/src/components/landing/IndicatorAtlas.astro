@@ -213,7 +213,7 @@ const initial: IndicatorId = "ppna";
                           <li>
                             {r.authors} ({r.year}). <span lang={r.lang}>{withPeriod(r.title)}</span>{" "}
                             <span class="text-ink-subtle">{withPeriod(r.source)}</span>
-{articleUrl(r) && (
+                            {articleUrl(r) && (
                               <a
                                 class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline"
                                 href={articleUrl(r)}

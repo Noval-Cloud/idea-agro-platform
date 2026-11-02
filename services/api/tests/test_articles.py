@@ -94,3 +94,18 @@ def test_an_article_takes_a_pdf_that_anyone_reads(client: TestClient) -> None:
     assert response.headers["content-type"] == "application/pdf"
     client.delete(f"/v1/articles/{article}/pdf", headers=ANA)
     assert client.get(f"/v1/articles/{article}/pdf").status_code == 404
+
+
+def test_every_loaded_article_is_reachable_by_its_id(client: TestClient) -> None:
+    loaded = client.post("/v1/articles/seed", headers=ANA).json()
+
+    for article in loaded["articles"]:
+        assert client.get(f"/v1/articles/{article['id']}", headers=ANA).status_code == 200
+
+
+def test_a_pdf_is_replaced_by_a_new_one(client: TestClient) -> None:
+    article = client.post("/v1/articles", headers=ANA, json=PAPER).json()["id"]
+    for body in (b"%PDF-1.7 first", b"%PDF-1.7 second"):
+        client.put(f"/v1/articles/{article}/pdf", headers=ANA, files={"file": ("a.pdf", body, "application/pdf")})
+
+    assert client.get(f"/v1/articles/{article}/pdf").content == b"%PDF-1.7 second"

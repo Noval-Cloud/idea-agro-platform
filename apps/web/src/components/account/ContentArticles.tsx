@@ -157,7 +157,12 @@ function ArticleEditor({
       .catch(() => setNotice({ tone: "failed", key: "account.content.failed" }));
   }, [id]);
 
-  if (!form) return <p className={cn(card, "p-6 text-sm text-ink-muted")}>{t("account.loading")}</p>;
+  if (!form)
+    return (
+      <p className={cn(card, "p-6 text-sm", notice ? "text-danger" : "text-ink-muted")}>
+        {notice ? t(notice.key) : t("account.loading")}
+      </p>
+    );
 
   const set = (patch: Partial<ArticleIn>) => setForm({ ...form, ...patch });
   const clean = (value: string | null | undefined) => (value?.trim() ? value.trim() : null);
@@ -214,10 +219,16 @@ function ArticleEditor({
       return null;
     }, "account.content.articles.removed");
 
+  // The API's own limits, so a long value is caught while typing.
+  const lengths = { authors: 500, title: 500, source: 300, doi: 200, url: 500 };
   const field = (name: "authors" | "title" | "source" | "doi" | "url", key: AccountKey, hint?: AccountKey) => (
     <label className="grid gap-1 text-sm text-ink">
       {t(key)}
-      <Input value={form[name] ?? ""} onChange={(event) => set({ [name]: event.target.value })} />
+      <Input
+        value={form[name] ?? ""}
+        maxLength={lengths[name]}
+        onChange={(event) => set({ [name]: event.target.value })}
+      />
       {hint && <span className="text-xs text-ink-subtle">{t(hint)}</span>}
     </label>
   );

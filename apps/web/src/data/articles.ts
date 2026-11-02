@@ -3,7 +3,7 @@ import type { IndicatorId } from "./indicators";
 
 /*
  * The scientific articles behind the indicators, and which each indicator cites, as editors keep them. A deploy build
- * reads them from the API; checks, local builds and an API that has none yet read the committed copy, which
+ * reads them from the API; checks, local builds and an API never loaded with them read the committed copy, which
  * `node scripts/articles.ts` refreshes.
  */
 
@@ -30,7 +30,8 @@ async function fetchArticles(base: string): Promise<Published | null> {
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`${response.status} /v1/articles`);
   const found = (await response.json()) as Published;
-  return found.articles.length ? found : null;
+  // Only a store never loaded falls back; one whose articles were all removed shows none.
+  return found.articles.length || Object.keys(found.citations).length ? found : null;
 }
 
 const published: Published = (api?.startsWith("https://") ? await fetchArticles(api) : null) ?? (copy as Published);
