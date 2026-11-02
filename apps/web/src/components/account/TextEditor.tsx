@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, MoreHorizontal } from "lucide-react";
 import type { PluralText, SiteTextOut, TextValue, TextVersionOut } from "@idea-agro/api-client";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -64,14 +64,20 @@ export function Badge({ children, tone = "edited" }: { children: string; tone?: 
   );
 }
 
-/** Asks before a reload or closing the tab loses unsaved changes. */
+/** Asks before a reload or closing the tab loses unsaved changes; `release` lets the page reload on purpose. */
 export function useLeaveGuard(dirty: boolean) {
+  const released = useRef(false);
   useEffect(() => {
     if (!dirty) return;
-    const ask = (event: BeforeUnloadEvent) => event.preventDefault();
+    const ask = (event: BeforeUnloadEvent) => {
+      if (!released.current) event.preventDefault();
+    };
     addEventListener("beforeunload", ask);
     return () => removeEventListener("beforeunload", ask);
   }, [dirty]);
+  return () => {
+    released.current = true;
+  };
 }
 
 export type Run = (

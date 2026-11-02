@@ -62,7 +62,7 @@ export default function Users({ translator, signInPath, me }: Props) {
   const opened = accounts?.find((a) => a.id === open) ?? null;
   const unsaved =
     opened !== null && (draft.size !== rolesOf(opened).length || rolesOf(opened).some((r) => !draft.has(r)));
-  useLeaveGuard(unsaved);
+  const release = useLeaveGuard(unsaved);
 
   useEffect(() => {
     let live = true;
@@ -127,7 +127,10 @@ export default function Users({ translator, signInPath, me }: Props) {
       }
       setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
       // The page shows the admin's own roles and sessions: it starts over when they change.
-      if (outcome.status < 300 && action.account.id === me) return location.reload();
+      if (outcome.status < 300 && action.account.id === me) {
+        release();
+        return location.reload();
+      }
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) return location.assign(signInPath);

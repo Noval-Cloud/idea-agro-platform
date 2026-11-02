@@ -113,6 +113,8 @@ export function Articles({ translator, onChanged, changed }: Props) {
       onSaved={(id) => {
         setOpen(id);
         onChanged();
+        // A removed article takes its row with it: focus goes to the search.
+        if (!id) requestAnimationFrame(() => document.getElementById("list-search")?.focus());
       }}
       onClose={() => setOpen(null)}
     />
@@ -601,7 +603,7 @@ export function IndicatorArticles({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-muted">{t("account.content.citations.lead")}</p>
-        <Button disabled={busy} onClick={() => setPicking(true)}>
+        <Button id="citations-add" disabled={busy} onClick={() => setPicking(true)}>
           <Plus aria-hidden="true" />
           {t("account.content.citations.add")}
         </Button>
@@ -704,7 +706,10 @@ export function IndicatorArticles({
           onClose={() => setPicking(false)}
           onPick={(ids) => {
             setPicking(false);
-            void save([...chosen, ...ids], t("account.content.citations.added", { count: ids.length }));
+            // The button that opened the picker waits for the save; focus goes back to it then.
+            void save([...chosen, ...ids], t("account.content.citations.added", { count: ids.length })).then(() =>
+              requestAnimationFrame(() => document.getElementById("citations-add")?.focus()),
+            );
           }}
         />
       )}

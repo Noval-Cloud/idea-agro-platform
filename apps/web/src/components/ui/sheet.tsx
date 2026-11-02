@@ -32,6 +32,12 @@ function useOpener(open: boolean) {
   };
 }
 
+/** Escape clears a search being typed before it closes the dialog around it. */
+const keepSearch = (event: KeyboardEvent) => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement && target.type === "search" && target.value) event.preventDefault();
+};
+
 /**
  * A panel over the right of the page, the whole screen on phones, for working on one thing while the list it
  * came from stays behind. Focus returns to what opened it.
@@ -45,6 +51,7 @@ export function Sheet({ open, onClose, title, description, close, footer, childr
         <Dialog.Content
           {...(description ? {} : { "aria-describedby": undefined })}
           onCloseAutoFocus={giveBack}
+          onEscapeKeyDown={keepSearch}
           className="ia-sheet fixed inset-y-0 right-0 z-(--ia-layer-modal) flex w-full flex-col bg-surface text-ink shadow-overlay sm:w-[min(42rem,100vw)] sm:border-l sm:border-line"
         >
           <header className="flex items-start gap-3 border-b border-line py-3 pr-3 pl-5 sm:pl-6">
@@ -85,6 +92,7 @@ export function Modal({
         <Dialog.Content
           {...(description ? {} : { "aria-describedby": undefined })}
           onCloseAutoFocus={giveBack}
+          onEscapeKeyDown={keepSearch}
           className={cn(
             "ia-pop fixed top-1/2 left-1/2 z-(--ia-layer-modal) flex max-h-[min(40rem,calc(100dvh-2rem))] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded-md border border-line bg-surface text-ink shadow-overlay",
             className,
