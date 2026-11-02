@@ -4702,6 +4702,192 @@
         }
       }
     },
+    "/v1/texts/sections": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "The parts of the site's texts",
+        "description": "Each first part of the keys, with how many texts it has, are edited and have a draft. For editors.",
+        "operationId": "list_sections",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TextSection"
+                  },
+                  "type": "array",
+                  "title": "Response List Sections"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/texts/sections/{section}": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "The texts of a part of the site",
+        "operationId": "list_section",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "section",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,100}$",
+              "description": "The keys' first part.",
+              "title": "Section"
+            },
+            "description": "The keys' first part."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SiteTextMatch"
+                  },
+                  "title": "Response List Section"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/texts/changes": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "The texts editors changed",
+        "description": "Every text with a published edit or a draft, most recently changed first. For editors.",
+        "operationId": "list_changes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SiteTextMatch"
+                  },
+                  "type": "array",
+                  "title": "Response List Changes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/texts/search": {
       "get": {
         "tags": [
@@ -8612,6 +8798,41 @@
         "type": "object",
         "title": "TextRestore",
         "description": "What a text goes back to."
+      },
+      "TextSection": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "journey"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "How many texts it has."
+          },
+          "edited": {
+            "type": "integer",
+            "title": "Edited",
+            "description": "How many show an edit instead of their default."
+          },
+          "drafts": {
+            "type": "integer",
+            "title": "Drafts",
+            "description": "How many have a draft waiting."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "count",
+          "edited",
+          "drafts"
+        ],
+        "title": "TextSection",
+        "description": "A part of the site's texts: the first part of their keys."
       },
       "TextValue": {
         "anyOf": [

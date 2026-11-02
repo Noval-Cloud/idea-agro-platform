@@ -1761,6 +1761,75 @@ export const GetPublishedTextsResponse = zod.object({
 
 
 /**
+ * Each first part of the keys, with how many texts it has, are edited and have a draft. For editors.
+ * @summary The parts of the site's texts
+ */
+export const ListSectionsResponseItem = zod.object({
+  "name": zod.string(),
+  "count": zod.int().describe('How many texts it has.'),
+  "edited": zod.int().describe('How many show an edit instead of their default.'),
+  "drafts": zod.int().describe('How many have a draft waiting.')
+}).describe('A part of the site\'s texts: the first part of their keys.')
+export const ListSectionsResponse = zod.array(ListSectionsResponseItem)
+
+
+/**
+ * @summary The texts of a part of the site
+ */
+export const listSectionPathSectionRegExp = new RegExp('^[A-Za-z0-9_-]{1,100}$');
+
+
+export const ListSectionParams = zod.object({
+  "section": zod.string().regex(listSectionPathSectionRegExp).describe('The keys\' first part.')
+})
+
+export const listSectionResponseCurrentOneMax = 8000;
+
+export const listSectionResponseCurrentTwoOneMax = 2000;
+
+export const listSectionResponseCurrentTwoOtherMax = 2000;
+
+
+
+export const ListSectionResponseItem = zod.object({
+  "key": zod.string(),
+  "format": zod.enum(['plain', 'markdown', 'plural']),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(listSectionResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(listSectionResponseCurrentTwoOneMax),
+  "other": zod.string().max(listSectionResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "edited": zod.boolean().describe('Whether a language shows an edit instead of its default.'),
+  "draft": zod.boolean().describe('Whether a draft waits.')
+}).describe('A text a search found.')
+export const ListSectionResponse = zod.array(ListSectionResponseItem)
+
+
+/**
+ * Every text with a published edit or a draft, most recently changed first. For editors.
+ * @summary The texts editors changed
+ */
+export const listChangesResponseCurrentOneMax = 8000;
+
+export const listChangesResponseCurrentTwoOneMax = 2000;
+
+export const listChangesResponseCurrentTwoOtherMax = 2000;
+
+
+
+export const ListChangesResponseItem = zod.object({
+  "key": zod.string(),
+  "format": zod.enum(['plain', 'markdown', 'plural']),
+  "current": zod.record(zod.string(), zod.union([zod.string().max(listChangesResponseCurrentOneMax),zod.object({
+  "one": zod.string().max(listChangesResponseCurrentTwoOneMax),
+  "other": zod.string().max(listChangesResponseCurrentTwoOtherMax)
+}).describe('A text that depends on a count: `one` for one, `other` for any other number.')])).describe('What the site shows in each language once rebuilt.'),
+  "edited": zod.boolean().describe('Whether a language shows an edit instead of its default.'),
+  "draft": zod.boolean().describe('Whether a draft waits.')
+}).describe('A text a search found.')
+export const ListChangesResponse = zod.array(ListChangesResponseItem)
+
+
+/**
  * Texts whose key or words, in any language, hold the query; exact words first. For editors.
  * @summary Find the site's texts
  */

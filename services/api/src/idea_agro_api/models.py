@@ -627,6 +627,15 @@ class SiteRebuildOut(BaseModel):
     quiet_minutes: int = Field(description="Minutes without a publish after which the build is asked for by itself.")
 
 
+class TextSection(BaseModel):
+    """A part of the site's texts: the first part of their keys."""
+
+    name: str = Field(examples=["journey"])
+    count: int = Field(description="How many texts it has.")
+    edited: int = Field(description="How many show an edit instead of their default.")
+    drafts: int = Field(description="How many have a draft waiting.")
+
+
 class TextChange(BaseModel):
     """Texts an editor saves, for one or more languages."""
 

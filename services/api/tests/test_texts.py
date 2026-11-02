@@ -142,6 +142,21 @@ def test_every_change_is_audited(client: TestClient, services: Services) -> None
     assert ("text_published", KEY) in actions
 
 
+def test_texts_are_listed_by_section_and_changes(client: TestClient) -> None:
+    put(client, es="{indicator} en {year}")
+    put(client, key="nav.groups.structure", publish=False, es="Estructura")
+
+    sections = {s["name"]: s for s in client.get("/v1/texts/sections", headers=ANA).json()}
+    zone = client.get("/v1/texts/sections/zone", headers=ANA).json()
+    changes = client.get("/v1/texts/changes", headers=ANA).json()
+
+    assert sections["zone"]["edited"] == 1
+    assert sections["nav"]["drafts"] == 1
+    assert KEY in [m["key"] for m in zone]
+    assert [m["key"] for m in changes] == ["nav.groups.structure", KEY]
+    assert client.get("/v1/texts/sections/nothing", headers=ANA).status_code == 404
+
+
 def test_only_published_versions_come_back(client: TestClient) -> None:
     put(client, es="{indicator} en {year}")
     put(client, publish=False, en="{indicator} in {year}")

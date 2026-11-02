@@ -1177,6 +1177,19 @@ export interface TextRestore {
 }
 
 /**
+ * A part of the site's texts: the first part of their keys.
+ */
+export interface TextSection {
+  name: string;
+  /** How many texts it has. */
+  count: number;
+  /** How many show an edit instead of their default. */
+  edited: number;
+  /** How many have a draft waiting. */
+  drafts: number;
+}
+
+/**
  * `published` and `default` changed what the site shows; `draft` and `discarded` only the draft.
  */
 export type TextVersionOutState = typeof TextVersionOutState[keyof typeof TextVersionOutState];
@@ -8616,6 +8629,393 @@ export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublis
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetPublishedTextsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listSectionsResponse200 = {
+  data: TextSection[]
+  status: 200
+}
+
+export type listSectionsResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listSectionsResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listSectionsResponseSuccess = (listSectionsResponse200) & {
+  headers: Headers;
+};
+export type listSectionsResponseError = (listSectionsResponse401 | listSectionsResponse403) & {
+  headers: Headers;
+};
+
+export type listSectionsResponse = (listSectionsResponseSuccess | listSectionsResponseError)
+
+export const getListSectionsUrl = () => {
+
+
+
+
+  return `/v1/texts/sections`
+}
+
+/**
+ * Each first part of the keys, with how many texts it has, are edited and have a draft. For editors.
+ * @summary The parts of the site's texts
+ */
+export const listSections = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listSectionsResponse> => {
+
+  return apiFetch<listSectionsResponse>(getListSectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSectionsQueryKey = () => {
+    return [
+    `/v1/texts/sections`
+    ] as const;
+    }
+
+
+export const getListSectionsQueryOptions = <TData = Awaited<ReturnType<typeof listSections>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSections>>> = ({ signal }) => listSections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSections>>>
+export type ListSectionsQueryError = Problem
+
+
+export function useListSections<TData = Awaited<ReturnType<typeof listSections>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSections>>,
+          TError,
+          Awaited<ReturnType<typeof listSections>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSections<TData = Awaited<ReturnType<typeof listSections>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSections>>,
+          TError,
+          Awaited<ReturnType<typeof listSections>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSections<TData = Awaited<ReturnType<typeof listSections>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The parts of the site's texts
+ */
+
+export function useListSections<TData = Awaited<ReturnType<typeof listSections>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSections>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listSectionResponse200 = {
+  data: SiteTextMatch[]
+  status: 200
+}
+
+export type listSectionResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listSectionResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listSectionResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type listSectionResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type listSectionResponseSuccess = (listSectionResponse200) & {
+  headers: Headers;
+};
+export type listSectionResponseError = (listSectionResponse401 | listSectionResponse403 | listSectionResponse404 | listSectionResponse422) & {
+  headers: Headers;
+};
+
+export type listSectionResponse = (listSectionResponseSuccess | listSectionResponseError)
+
+export const getListSectionUrl = (section: string,) => {
+
+
+
+
+  return `/v1/texts/sections/${section}`
+}
+
+/**
+ * @summary The texts of a part of the site
+ */
+export const listSection = async (section: string, options?: Parameters<typeof apiFetch>[1]): Promise<listSectionResponse> => {
+
+  return apiFetch<listSectionResponse>(getListSectionUrl(section),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSectionQueryKey = (section: string,) => {
+    return [
+    `/v1/texts/sections/${section}`
+    ] as const;
+    }
+
+
+export const getListSectionQueryOptions = <TData = Awaited<ReturnType<typeof listSection>>, TError = Problem>(section: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSectionQueryKey(section);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSection>>> = ({ signal }) => listSection(section, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: section !== null && section !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSectionQueryResult = NonNullable<Awaited<ReturnType<typeof listSection>>>
+export type ListSectionQueryError = Problem
+
+
+export function useListSection<TData = Awaited<ReturnType<typeof listSection>>, TError = Problem>(
+ section: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSection>>,
+          TError,
+          Awaited<ReturnType<typeof listSection>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSection<TData = Awaited<ReturnType<typeof listSection>>, TError = Problem>(
+ section: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSection>>,
+          TError,
+          Awaited<ReturnType<typeof listSection>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSection<TData = Awaited<ReturnType<typeof listSection>>, TError = Problem>(
+ section: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The texts of a part of the site
+ */
+
+export function useListSection<TData = Awaited<ReturnType<typeof listSection>>, TError = Problem>(
+ section: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSection>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSectionQueryOptions(section,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listChangesResponse200 = {
+  data: SiteTextMatch[]
+  status: 200
+}
+
+export type listChangesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listChangesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listChangesResponseSuccess = (listChangesResponse200) & {
+  headers: Headers;
+};
+export type listChangesResponseError = (listChangesResponse401 | listChangesResponse403) & {
+  headers: Headers;
+};
+
+export type listChangesResponse = (listChangesResponseSuccess | listChangesResponseError)
+
+export const getListChangesUrl = () => {
+
+
+
+
+  return `/v1/texts/changes`
+}
+
+/**
+ * Every text with a published edit or a draft, most recently changed first. For editors.
+ * @summary The texts editors changed
+ */
+export const listChanges = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listChangesResponse> => {
+
+  return apiFetch<listChangesResponse>(getListChangesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListChangesQueryKey = () => {
+    return [
+    `/v1/texts/changes`
+    ] as const;
+    }
+
+
+export const getListChangesQueryOptions = <TData = Awaited<ReturnType<typeof listChanges>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListChangesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChanges>>> = ({ signal }) => listChanges({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListChangesQueryResult = NonNullable<Awaited<ReturnType<typeof listChanges>>>
+export type ListChangesQueryError = Problem
+
+
+export function useListChanges<TData = Awaited<ReturnType<typeof listChanges>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listChanges>>,
+          TError,
+          Awaited<ReturnType<typeof listChanges>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListChanges<TData = Awaited<ReturnType<typeof listChanges>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listChanges>>,
+          TError,
+          Awaited<ReturnType<typeof listChanges>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListChanges<TData = Awaited<ReturnType<typeof listChanges>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The texts editors changed
+ */
+
+export function useListChanges<TData = Awaited<ReturnType<typeof listChanges>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChanges>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListChangesQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
