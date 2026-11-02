@@ -111,6 +111,214 @@
       "pt": "Usar tema claro"
     }
   },
+  "account.content.articles.add": {
+    "format": "plain",
+    "default": {
+      "es": "Nuevo artículo",
+      "en": "New article",
+      "pt": "Novo artigo"
+    }
+  },
+  "account.content.articles.authors": {
+    "format": "plain",
+    "default": {
+      "es": "Autores",
+      "en": "Authors",
+      "pt": "Autores"
+    }
+  },
+  "account.content.articles.authorsHint": {
+    "format": "plain",
+    "default": {
+      "es": "Como se citan: «Paruelo, J. M. & Lauenroth, W. K.».",
+      "en": "As they are cited: \"Paruelo, J. M. & Lauenroth, W. K.\".",
+      "pt": "Como são citados: \"Paruelo, J. M. & Lauenroth, W. K.\"."
+    }
+  },
+  "account.content.articles.doi": {
+    "format": "plain",
+    "default": {
+      "es": "DOI",
+      "en": "DOI",
+      "pt": "DOI"
+    }
+  },
+  "account.content.articles.doiHint": {
+    "format": "plain",
+    "default": {
+      "es": "Por ejemplo 10.1007/s10021-005-0013-x. Si lo tiene, es el link principal.",
+      "en": "For example 10.1007/s10021-005-0013-x. When there is one, it is the main link.",
+      "pt": "Por exemplo 10.1007/s10021-005-0013-x. Quando houver, é o link principal."
+    }
+  },
+  "account.content.articles.framework": {
+    "format": "plain",
+    "default": {
+      "es": "marco de referencia",
+      "en": "reference framework",
+      "pt": "marco de referência"
+    }
+  },
+  "account.content.articles.frameworkLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Es el marco de referencia que siguen los indicadores",
+      "en": "It is the reference framework the indicators follow",
+      "pt": "É o marco de referência que os indicadores seguem"
+    }
+  },
+  "account.content.articles.lang": {
+    "format": "plain",
+    "default": {
+      "es": "Idioma del título",
+      "en": "Language of the title",
+      "pt": "Idioma do título"
+    }
+  },
+  "account.content.articles.langHint": {
+    "format": "plain",
+    "default": {
+      "es": "Código: es, en, pt…",
+      "en": "A code: es, en, pt…",
+      "pt": "Um código: es, en, pt…"
+    }
+  },
+  "account.content.articles.none": {
+    "format": "plain",
+    "default": {
+      "es": "Todavía no hay artículos en la base.",
+      "en": "There are no articles in the database yet.",
+      "pt": "Ainda não há artigos no banco."
+    }
+  },
+  "account.content.articles.pdf": {
+    "format": "plain",
+    "default": {
+      "es": "PDF",
+      "en": "PDF",
+      "pt": "PDF"
+    }
+  },
+  "account.content.articles.pdfAttached": {
+    "format": "plain",
+    "default": {
+      "es": "Tiene un PDF adjunto.",
+      "en": "A PDF is attached.",
+      "pt": "Tem um PDF anexado."
+    }
+  },
+  "account.content.articles.pdfRemove": {
+    "format": "plain",
+    "default": {
+      "es": "Quitar el PDF",
+      "en": "Remove the PDF",
+      "pt": "Remover o PDF"
+    }
+  },
+  "account.content.articles.pdfUpload": {
+    "format": "plain",
+    "default": {
+      "es": "Subir un PDF",
+      "en": "Upload a PDF",
+      "pt": "Enviar um PDF"
+    }
+  },
+  "account.content.articles.pick": {
+    "format": "plain",
+    "default": {
+      "es": "Elegí un artículo de la lista, o agregá uno nuevo.",
+      "en": "Pick an article from the list, or add a new one.",
+      "pt": "Escolha um artigo da lista, ou adicione um novo."
+    }
+  },
+  "account.content.articles.remove": {
+    "format": "plain",
+    "default": {
+      "es": "Eliminar el artículo",
+      "en": "Delete the article",
+      "pt": "Excluir o artigo"
+    }
+  },
+  "account.content.articles.removeBody": {
+    "format": "plain",
+    "default": {
+      "es": "Se quita también de los indicadores que lo citan, junto con su PDF.",
+      "en": "It is also removed from the indicators that cite it, with its PDF.",
+      "pt": "Ele também é retirado dos indicadores que o citam, com seu PDF."
+    }
+  },
+  "account.content.articles.removeTitle": {
+    "format": "plain",
+    "default": {
+      "es": "¿Eliminar el artículo?",
+      "en": "Delete the article?",
+      "pt": "Excluir o artigo?"
+    }
+  },
+  "account.content.articles.removed": {
+    "format": "plain",
+    "default": {
+      "es": "Artículo eliminado.",
+      "en": "Article deleted.",
+      "pt": "Artigo excluído."
+    }
+  },
+  "account.content.articles.seed": {
+    "format": "plain",
+    "default": {
+      "es": "Cargar los artículos que tenía el sitio",
+      "en": "Load the articles the site had",
+      "pt": "Carregar os artigos que o site tinha"
+    }
+  },
+  "account.content.articles.source": {
+    "format": "plain",
+    "default": {
+      "es": "Dónde se publicó",
+      "en": "Where it was published",
+      "pt": "Onde foi publicado"
+    }
+  },
+  "account.content.articles.sourceHint": {
+    "format": "plain",
+    "default": {
+      "es": "Revista, volumen y páginas, o la editorial.",
+      "en": "Journal, volume and pages, or the publisher.",
+      "pt": "Revista, volume e páginas, ou a editora."
+    }
+  },
+  "account.content.articles.title": {
+    "format": "plain",
+    "default": {
+      "es": "Título",
+      "en": "Title",
+      "pt": "Título"
+    }
+  },
+  "account.content.articles.titleHint": {
+    "format": "plain",
+    "default": {
+      "es": "En el idioma en que se publicó.",
+      "en": "In the language it was published in.",
+      "pt": "No idioma em que foi publicado."
+    }
+  },
+  "account.content.articles.url": {
+    "format": "plain",
+    "default": {
+      "es": "Link (si no tiene DOI)",
+      "en": "Link (without a DOI)",
+      "pt": "Link (sem DOI)"
+    }
+  },
+  "account.content.articles.year": {
+    "format": "plain",
+    "default": {
+      "es": "Año",
+      "en": "Year",
+      "pt": "Ano"
+    }
+  },
   "account.content.body": {
     "format": "plain",
     "default": {
@@ -125,6 +333,62 @@
       "es": "Cancelar",
       "en": "Cancel",
       "pt": "Cancelar"
+    }
+  },
+  "account.content.citations.add": {
+    "format": "plain",
+    "default": {
+      "es": "Agregar un artículo",
+      "en": "Add an article",
+      "pt": "Adicionar um artigo"
+    }
+  },
+  "account.content.citations.down": {
+    "format": "plain",
+    "default": {
+      "es": "Bajar",
+      "en": "Move down",
+      "pt": "Descer"
+    }
+  },
+  "account.content.citations.indicator": {
+    "format": "plain",
+    "default": {
+      "es": "Indicador",
+      "en": "Indicator",
+      "pt": "Indicador"
+    }
+  },
+  "account.content.citations.none": {
+    "format": "plain",
+    "default": {
+      "es": "Este indicador todavía no cita ningún artículo.",
+      "en": "This indicator cites no article yet.",
+      "pt": "Este indicador ainda não cita nenhum artigo."
+    }
+  },
+  "account.content.citations.pick": {
+    "format": "plain",
+    "default": {
+      "es": "Elegí un artículo",
+      "en": "Pick an article",
+      "pt": "Escolha um artigo"
+    }
+  },
+  "account.content.citations.remove": {
+    "format": "plain",
+    "default": {
+      "es": "Quitar",
+      "en": "Remove",
+      "pt": "Remover"
+    }
+  },
+  "account.content.citations.up": {
+    "format": "plain",
+    "default": {
+      "es": "Subir",
+      "en": "Move up",
+      "pt": "Subir"
     }
   },
   "account.content.default": {
@@ -311,6 +575,38 @@
       "es": "Podés usar **negrita**, *cursiva*, [links](https://…) y listas con «- ». Dejá una línea en blanco entre párrafos.",
       "en": "You can use **bold**, *italics*, [links](https://…) and lists with \"- \". Leave a blank line between paragraphs.",
       "pt": "Você pode usar **negrito**, *itálico*, [links](https://…) e listas com \"- \". Deixe uma linha em branco entre parágrafos."
+    }
+  },
+  "account.content.modes.articles": {
+    "format": "plain",
+    "default": {
+      "es": "Artículos",
+      "en": "Articles",
+      "pt": "Artigos"
+    }
+  },
+  "account.content.modes.citations": {
+    "format": "plain",
+    "default": {
+      "es": "Artículos de cada indicador",
+      "en": "Each indicator's articles",
+      "pt": "Artigos de cada indicador"
+    }
+  },
+  "account.content.modes.texts": {
+    "format": "plain",
+    "default": {
+      "es": "Textos",
+      "en": "Texts",
+      "pt": "Textos"
+    }
+  },
+  "account.content.modesLabel": {
+    "format": "plain",
+    "default": {
+      "es": "Qué editar",
+      "en": "What to edit",
+      "pt": "O que editar"
     }
   },
   "account.content.noHistory": {
@@ -1650,6 +1946,38 @@
       "es": "{actor} recibió el rol de administrador por configuración",
       "en": "{actor} became an admin through the configuration",
       "pt": "{actor} recebeu o papel de administrador pela configuração"
+    }
+  },
+  "account.users.actions.article_deleted": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} eliminó el artículo {target}",
+      "en": "{actor} deleted the article {target}",
+      "pt": "{actor} excluiu o artigo {target}"
+    }
+  },
+  "account.users.actions.article_saved": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} guardó el artículo {target}",
+      "en": "{actor} saved the article {target}",
+      "pt": "{actor} salvou o artigo {target}"
+    }
+  },
+  "account.users.actions.articles_seeded": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cargó los artículos que tenía el sitio ({detail})",
+      "en": "{actor} loaded the articles the site had ({detail})",
+      "pt": "{actor} carregou os artigos que o site tinha ({detail})"
+    }
+  },
+  "account.users.actions.citations_changed": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} cambió los artículos del indicador {target}: {detail}",
+      "en": "{actor} changed the articles of the indicator {target}: {detail}",
+      "pt": "{actor} mudou os artigos do indicador {target}: {detail}"
     }
   },
   "account.users.actions.disabled": {
@@ -7716,12 +8044,28 @@
       "pt": "Os indicadores seguem o marco de desempenho ambiental definido pelo INIA para os sistemas agropecuários do Uruguai e se apoiam em pesquisa revisada por pares."
     }
   },
+  "science.link": {
+    "format": "plain",
+    "default": {
+      "es": "Leer el artículo",
+      "en": "Read the article",
+      "pt": "Ler o artigo"
+    }
+  },
   "science.papersLabel": {
     "format": "plain",
     "default": {
       "es": "Artículos que respaldan los indicadores",
       "en": "Papers behind the indicators",
       "pt": "Artigos que respaldam os indicadores"
+    }
+  },
+  "science.pdf": {
+    "format": "plain",
+    "default": {
+      "es": "PDF",
+      "en": "PDF",
+      "pt": "PDF"
     }
   },
   "science.title": {

@@ -1,5 +1,5 @@
 ---
-import { references, type Reference } from "@/data/references";
+import { articles, citedBy, type Article } from "@/data/articles";
 import { createTranslator, type Locale } from "@/i18n";
 
 interface Props {
@@ -7,8 +7,11 @@ interface Props {
 }
 const { t } = createTranslator(Astro.props.locale);
 
-/* Three of the papers behind the indicators, oldest first. */
-const papers: Reference[] = [references.monteith1972, references.pineiro2006, references.paruelo2016];
+/* Three of the papers behind the indicators, oldest first: the first, one from the middle and the latest. */
+const cited = articles.filter((a) => citedBy(a.id).length > 0).sort((a, b) => a.year - b.year);
+const papers: Article[] = [...new Set([cited[0], cited[Math.floor(cited.length / 2)], cited[cited.length - 1]])].filter(
+  (a): a is Article => a !== undefined,
+);
 ---
 
 <div class="relative flex aspect-16/10 w-full items-center justify-center" aria-hidden="true">

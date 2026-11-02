@@ -2283,6 +2283,447 @@ export const RestoreTextResponse = zod.object({
 
 
 /**
+ * Every article, newest first, and which each indicator cites. Cacheable for a minute.
+ * @summary The articles behind the indicators
+ */
+export const listArticlesResponseArticlesItemAuthorsMax = 500;
+
+export const listArticlesResponseArticlesItemYearMin = 1800;
+export const listArticlesResponseArticlesItemYearMax = 2100;
+
+export const listArticlesResponseArticlesItemTitleMax = 500;
+
+export const listArticlesResponseArticlesItemLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const listArticlesResponseArticlesItemSourceMax = 300;
+
+export const listArticlesResponseArticlesItemDoiOneMax = 200;
+
+
+export const listArticlesResponseArticlesItemDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const listArticlesResponseArticlesItemUrlOneMax = 500;
+
+
+export const listArticlesResponseArticlesItemUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const listArticlesResponseArticlesItemFrameworkDefault = false;
+
+export const ListArticlesResponse = zod.object({
+  "articles": zod.array(zod.object({
+  "authors": zod.string().min(1).max(listArticlesResponseArticlesItemAuthorsMax),
+  "year": zod.int().min(listArticlesResponseArticlesItemYearMin).max(listArticlesResponseArticlesItemYearMax),
+  "title": zod.string().min(1).max(listArticlesResponseArticlesItemTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(listArticlesResponseArticlesItemLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(listArticlesResponseArticlesItemSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(listArticlesResponseArticlesItemDoiOneMax).regex(listArticlesResponseArticlesItemDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(listArticlesResponseArticlesItemUrlOneMax).regex(listArticlesResponseArticlesItemUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(listArticlesResponseArticlesItemFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.')
+}).describe('An article as the site shows it.')),
+  "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
+}).describe('The articles behind the indicators, newest first, and which each indicator cites.')
+
+
+/**
+ * Its id comes from the first author's surname and the year. For editors.
+ * @summary Add an article
+ */
+export const addArticleBodyAuthorsMax = 500;
+
+export const addArticleBodyYearMin = 1800;
+export const addArticleBodyYearMax = 2100;
+
+export const addArticleBodyTitleMax = 500;
+
+export const addArticleBodyLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const addArticleBodySourceMax = 300;
+
+export const addArticleBodyDoiOneMax = 200;
+
+
+export const addArticleBodyDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const addArticleBodyUrlOneMax = 500;
+
+
+export const addArticleBodyUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const addArticleBodyFrameworkDefault = false;
+
+export const AddArticleBody = zod.object({
+  "authors": zod.string().min(1).max(addArticleBodyAuthorsMax),
+  "year": zod.int().min(addArticleBodyYearMin).max(addArticleBodyYearMax),
+  "title": zod.string().min(1).max(addArticleBodyTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(addArticleBodyLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(addArticleBodySourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(addArticleBodyDoiOneMax).regex(addArticleBodyDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(addArticleBodyUrlOneMax).regex(addArticleBodyUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(addArticleBodyFrameworkDefault).describe('The reference framework the indicators follow.')
+}).describe('An article as an editor writes it.')
+
+export const addArticleResponseAuthorsMax = 500;
+
+export const addArticleResponseYearMin = 1800;
+export const addArticleResponseYearMax = 2100;
+
+export const addArticleResponseTitleMax = 500;
+
+export const addArticleResponseLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const addArticleResponseSourceMax = 300;
+
+export const addArticleResponseDoiOneMax = 200;
+
+
+export const addArticleResponseDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const addArticleResponseUrlOneMax = 500;
+
+
+export const addArticleResponseUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const addArticleResponseFrameworkDefault = false;
+
+export const AddArticleResponse = zod.object({
+  "authors": zod.string().min(1).max(addArticleResponseAuthorsMax),
+  "year": zod.int().min(addArticleResponseYearMin).max(addArticleResponseYearMax),
+  "title": zod.string().min(1).max(addArticleResponseTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(addArticleResponseLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(addArticleResponseSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(addArticleResponseDoiOneMax).regex(addArticleResponseDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(addArticleResponseUrlOneMax).regex(addArticleResponseUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(addArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who changed it.')
+}).describe('An article as an editor works on it.')
+
+
+/**
+ * Loads, once, the articles and citations the website's code had; refused once there are any.
+ * @summary Load the articles the site had
+ */
+export const seedArticlesResponseArticlesItemAuthorsMax = 500;
+
+export const seedArticlesResponseArticlesItemYearMin = 1800;
+export const seedArticlesResponseArticlesItemYearMax = 2100;
+
+export const seedArticlesResponseArticlesItemTitleMax = 500;
+
+export const seedArticlesResponseArticlesItemLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const seedArticlesResponseArticlesItemSourceMax = 300;
+
+export const seedArticlesResponseArticlesItemDoiOneMax = 200;
+
+
+export const seedArticlesResponseArticlesItemDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const seedArticlesResponseArticlesItemUrlOneMax = 500;
+
+
+export const seedArticlesResponseArticlesItemUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const seedArticlesResponseArticlesItemFrameworkDefault = false;
+
+export const SeedArticlesResponse = zod.object({
+  "articles": zod.array(zod.object({
+  "authors": zod.string().min(1).max(seedArticlesResponseArticlesItemAuthorsMax),
+  "year": zod.int().min(seedArticlesResponseArticlesItemYearMin).max(seedArticlesResponseArticlesItemYearMax),
+  "title": zod.string().min(1).max(seedArticlesResponseArticlesItemTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(seedArticlesResponseArticlesItemLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(seedArticlesResponseArticlesItemSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(seedArticlesResponseArticlesItemDoiOneMax).regex(seedArticlesResponseArticlesItemDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(seedArticlesResponseArticlesItemUrlOneMax).regex(seedArticlesResponseArticlesItemUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(seedArticlesResponseArticlesItemFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.')
+}).describe('An article as the site shows it.')),
+  "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
+}).describe('The articles behind the indicators, newest first, and which each indicator cites.')
+
+
+/**
+ * With who changed it last. For editors.
+ * @summary An article
+ */
+export const getArticlePathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const GetArticleParams = zod.object({
+  "article_id": zod.string().regex(getArticlePathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const getArticleResponseAuthorsMax = 500;
+
+export const getArticleResponseYearMin = 1800;
+export const getArticleResponseYearMax = 2100;
+
+export const getArticleResponseTitleMax = 500;
+
+export const getArticleResponseLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const getArticleResponseSourceMax = 300;
+
+export const getArticleResponseDoiOneMax = 200;
+
+
+export const getArticleResponseDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const getArticleResponseUrlOneMax = 500;
+
+
+export const getArticleResponseUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const getArticleResponseFrameworkDefault = false;
+
+export const GetArticleResponse = zod.object({
+  "authors": zod.string().min(1).max(getArticleResponseAuthorsMax),
+  "year": zod.int().min(getArticleResponseYearMin).max(getArticleResponseYearMax),
+  "title": zod.string().min(1).max(getArticleResponseTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(getArticleResponseLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(getArticleResponseSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(getArticleResponseDoiOneMax).regex(getArticleResponseDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(getArticleResponseUrlOneMax).regex(getArticleResponseUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(getArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who changed it.')
+}).describe('An article as an editor works on it.')
+
+
+/**
+ * @summary Change an article
+ */
+export const putArticlePathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const PutArticleParams = zod.object({
+  "article_id": zod.string().regex(putArticlePathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const putArticleBodyAuthorsMax = 500;
+
+export const putArticleBodyYearMin = 1800;
+export const putArticleBodyYearMax = 2100;
+
+export const putArticleBodyTitleMax = 500;
+
+export const putArticleBodyLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const putArticleBodySourceMax = 300;
+
+export const putArticleBodyDoiOneMax = 200;
+
+
+export const putArticleBodyDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const putArticleBodyUrlOneMax = 500;
+
+
+export const putArticleBodyUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const putArticleBodyFrameworkDefault = false;
+
+export const PutArticleBody = zod.object({
+  "authors": zod.string().min(1).max(putArticleBodyAuthorsMax),
+  "year": zod.int().min(putArticleBodyYearMin).max(putArticleBodyYearMax),
+  "title": zod.string().min(1).max(putArticleBodyTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(putArticleBodyLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(putArticleBodySourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(putArticleBodyDoiOneMax).regex(putArticleBodyDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(putArticleBodyUrlOneMax).regex(putArticleBodyUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(putArticleBodyFrameworkDefault).describe('The reference framework the indicators follow.')
+}).describe('An article as an editor writes it.')
+
+export const putArticleResponseAuthorsMax = 500;
+
+export const putArticleResponseYearMin = 1800;
+export const putArticleResponseYearMax = 2100;
+
+export const putArticleResponseTitleMax = 500;
+
+export const putArticleResponseLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const putArticleResponseSourceMax = 300;
+
+export const putArticleResponseDoiOneMax = 200;
+
+
+export const putArticleResponseDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const putArticleResponseUrlOneMax = 500;
+
+
+export const putArticleResponseUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const putArticleResponseFrameworkDefault = false;
+
+export const PutArticleResponse = zod.object({
+  "authors": zod.string().min(1).max(putArticleResponseAuthorsMax),
+  "year": zod.int().min(putArticleResponseYearMin).max(putArticleResponseYearMax),
+  "title": zod.string().min(1).max(putArticleResponseTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(putArticleResponseLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(putArticleResponseSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(putArticleResponseDoiOneMax).regex(putArticleResponseDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(putArticleResponseUrlOneMax).regex(putArticleResponseUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(putArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who changed it.')
+}).describe('An article as an editor works on it.')
+
+
+/**
+ * Also from every indicator that cites it, with its PDF. For editors.
+ * @summary Remove an article
+ */
+export const deleteArticlePathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const DeleteArticleParams = zod.object({
+  "article_id": zod.string().regex(deleteArticlePathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const DeleteArticleResponse = zod.void()
+
+
+/**
+ * @summary An article's PDF
+ */
+export const getArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const GetArticlePdfParams = zod.object({
+  "article_id": zod.string().regex(getArticlePdfPathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const GetArticlePdfResponse = zod.unknown()
+
+
+/**
+ * Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * @summary Attach an article's PDF
+ */
+export const putArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const PutArticlePdfParams = zod.object({
+  "article_id": zod.string().regex(putArticlePdfPathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const PutArticlePdfBody = zod.object({
+  "file": zod.instanceof(Blob)
+})
+
+export const putArticlePdfResponseAuthorsMax = 500;
+
+export const putArticlePdfResponseYearMin = 1800;
+export const putArticlePdfResponseYearMax = 2100;
+
+export const putArticlePdfResponseTitleMax = 500;
+
+export const putArticlePdfResponseLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const putArticlePdfResponseSourceMax = 300;
+
+export const putArticlePdfResponseDoiOneMax = 200;
+
+
+export const putArticlePdfResponseDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const putArticlePdfResponseUrlOneMax = 500;
+
+
+export const putArticlePdfResponseUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const putArticlePdfResponseFrameworkDefault = false;
+
+export const PutArticlePdfResponse = zod.object({
+  "authors": zod.string().min(1).max(putArticlePdfResponseAuthorsMax),
+  "year": zod.int().min(putArticlePdfResponseYearMin).max(putArticlePdfResponseYearMax),
+  "title": zod.string().min(1).max(putArticlePdfResponseTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(putArticlePdfResponseLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(putArticlePdfResponseSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(putArticlePdfResponseDoiOneMax).regex(putArticlePdfResponseDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(putArticlePdfResponseUrlOneMax).regex(putArticlePdfResponseUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(putArticlePdfResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who changed it.')
+}).describe('An article as an editor works on it.')
+
+
+/**
+ * @summary Remove an article's PDF
+ */
+export const deleteArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
+
+
+export const DeleteArticlePdfParams = zod.object({
+  "article_id": zod.string().regex(deleteArticlePdfPathArticleIdRegExp).describe('The article\'s id.')
+})
+
+export const deleteArticlePdfResponseAuthorsMax = 500;
+
+export const deleteArticlePdfResponseYearMin = 1800;
+export const deleteArticlePdfResponseYearMax = 2100;
+
+export const deleteArticlePdfResponseTitleMax = 500;
+
+export const deleteArticlePdfResponseLangRegExp = new RegExp('^[a-z]{2,3}(-[A-Z]{2})?$');
+export const deleteArticlePdfResponseSourceMax = 300;
+
+export const deleteArticlePdfResponseDoiOneMax = 200;
+
+
+export const deleteArticlePdfResponseDoiOneRegExp = new RegExp('^10\\.\\d{4,9}/\\S+$');
+export const deleteArticlePdfResponseUrlOneMax = 500;
+
+
+export const deleteArticlePdfResponseUrlOneRegExp = new RegExp('^https?://\\S+$');
+export const deleteArticlePdfResponseFrameworkDefault = false;
+
+export const DeleteArticlePdfResponse = zod.object({
+  "authors": zod.string().min(1).max(deleteArticlePdfResponseAuthorsMax),
+  "year": zod.int().min(deleteArticlePdfResponseYearMin).max(deleteArticlePdfResponseYearMax),
+  "title": zod.string().min(1).max(deleteArticlePdfResponseTitleMax).describe('In the language it was published in.'),
+  "lang": zod.string().regex(deleteArticlePdfResponseLangRegExp).describe('The title\'s language (BCP 47).'),
+  "source": zod.string().max(deleteArticlePdfResponseSourceMax).describe('Where it was published.'),
+  "doi": zod.union([zod.string().max(deleteArticlePdfResponseDoiOneMax).regex(deleteArticlePdfResponseDoiOneRegExp),zod.null()]).optional(),
+  "url": zod.union([zod.string().max(deleteArticlePdfResponseUrlOneMax).regex(deleteArticlePdfResponseUrlOneRegExp),zod.null()]).optional(),
+  "framework": zod.boolean().default(deleteArticlePdfResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
+  "id": zod.string(),
+  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who changed it.')
+}).describe('An article as an editor works on it.')
+
+
+/**
+ * In the order the site lists them. For editors.
+ * @summary Choose the articles an indicator cites
+ */
+export const CiteArticlesParams = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
+})
+
+export const citeArticlesBodyArticlesMax = 50;
+
+
+
+export const CiteArticlesBody = zod.object({
+  "articles": zod.array(zod.string()).max(citeArticlesBodyArticlesMax)
+}).describe('The articles an indicator cites, in order.')
+
+export const citeArticlesResponseArticlesMax = 50;
+
+
+
+export const CiteArticlesResponse = zod.object({
+  "articles": zod.array(zod.string()).max(citeArticlesResponseArticlesMax)
+}).describe('The articles an indicator cites, in order.')
+
+
+/**
  * For admins: the newest accounts, or those whose email or name starts with the search.
  * @summary Accounts
  */
@@ -2386,7 +2827,7 @@ export const SendAccountRecoveryResponse = zod.void()
 export const ListAuditResponseItem = zod.object({
   "at": zod.iso.datetime({"offset":true}),
   "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
-  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored']),
+  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored', 'article_saved', 'article_deleted', 'citations_changed', 'articles_seeded']),
   "target": zod.string().describe('The account acted on.'),
   "target_email": zod.string().describe('Its email at the time.'),
   "detail": zod.string().describe('The roles given, for a role change; `provider_failed` when the sign-in provider did not take it.')

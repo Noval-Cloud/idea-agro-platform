@@ -6,6 +6,7 @@ from pathlib import Path
 
 from idea_agro_api.accounts import AccountStore, MemoryAccounts, accounts_from
 from idea_agro_api.activity import ActivityStore, MemoryActivity, activity_from
+from idea_agro_api.articles import ArticleStore, MemoryArticles, articles_from
 from idea_agro_api.audit import AuditStore, MemoryAudit, audit_from
 from idea_agro_api.auth import OidcVerifier, PublishedKeys, TokenVerifier
 from idea_agro_api.documents import (
@@ -93,7 +94,9 @@ class Limits:
 
     def body_bytes(self, path: str) -> int:
         """The largest request body a route takes: a document, an import, or else one outline."""
-        if path.startswith("/v1/saved-zones/") and path.endswith("/documents"):
+        if (path.startswith("/v1/saved-zones/") and path.endswith("/documents")) or (
+            path.startswith("/v1/articles/") and path.endswith("/pdf")
+        ):
             # The form around the file takes a little more than the file.
             return self.document_bytes + 64_000
         return self.import_bytes if path == "/v1/saved-zones/import" else self.geometry_bytes
@@ -124,6 +127,8 @@ class Services:
     site_texts: SiteTextStore = field(default_factory=MemorySiteTexts)
     # When the website rebuilds with the published texts.
     site_rebuild: SiteRebuild = field(default_factory=MemorySiteRebuild)
+    # The scientific articles, and which each indicator cites.
+    articles: ArticleStore = field(default_factory=MemoryArticles)
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -166,6 +171,7 @@ class Services:
             platform_invitations=platform_invitations_from(records),
             site_texts=site_texts_from(records),
             site_rebuild=site_rebuild_from(records, env.get("WEB_REBUILD_TOPIC", "")),
+            articles=articles_from(records),
             document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,

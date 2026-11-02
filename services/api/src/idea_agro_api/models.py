@@ -661,3 +661,47 @@ class TextVersionOut(BaseModel):
     texts: dict[TextLocale, TextValue] = Field(description="What the change left: the published edits or the draft.")
     at: datetime
     by: TextAuthor
+
+
+class ArticleBase(BaseModel):
+    authors: str = Field(min_length=1, max_length=500, examples=["Paruelo, J. M. & Lauenroth, W. K."])
+    year: int = Field(ge=1800, le=2100)
+    title: str = Field(min_length=1, max_length=500, description="In the language it was published in.")
+    lang: str = Field(
+        pattern=r"^[a-z]{2,3}(-[A-Z]{2})?$", description="The title's language (BCP 47).", examples=["en"]
+    )
+    source: str = Field(max_length=300, description="Where it was published.", examples=["Ecosystems 9: 357-373"])
+    doi: str | None = Field(default=None, pattern=r"^10\.\d{4,9}/\S+$", max_length=200)
+    url: str | None = Field(default=None, pattern=r"^https?://\S+$", max_length=500)
+    framework: bool = Field(default=False, description="The reference framework the indicators follow.")
+
+
+class ArticleIn(ArticleBase):
+    """An article as an editor writes it."""
+
+
+class ArticlePublic(ArticleBase):
+    """An article as the site shows it."""
+
+    id: str = Field(examples=["paruelo2016"])
+    pdf: bool = Field(description="Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.")
+
+
+class ArticleOut(ArticlePublic):
+    """An article as an editor works on it."""
+
+    updated_at: datetime | None = Field(description="When it last changed.")
+    updated_by: TextAuthor | None = Field(description="Who changed it.")
+
+
+class PublishedArticles(BaseModel):
+    """The articles behind the indicators, newest first, and which each indicator cites."""
+
+    articles: list[ArticlePublic]
+    citations: dict[str, list[str]] = Field(description="By indicator, the ids of the articles it cites, in order.")
+
+
+class Citations(BaseModel):
+    """The articles an indicator cites, in order."""
+
+    articles: list[str] = Field(max_length=50)

@@ -1,6 +1,6 @@
 ---
 import { createTranslator, type Locale, type MessageKey } from "@/i18n";
-import { framework, references, doiUrl, type ReferenceId } from "@/data/references";
+import { articles, articleUrl, citedBy, framework } from "@/data/articles";
 import { indicatorIds, indicators } from "@/data/indicators";
 import { familyBackground } from "@/design/family-classes";
 
@@ -10,10 +10,10 @@ interface Props {
 const { t } = createTranslator(Astro.props.locale);
 const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
 
-// Each reference with the indicators it backs, oldest first.
-const backed = (Object.keys(references) as ReferenceId[])
-  .map((ref) => ({ ref, ...references[ref], indicators: indicatorIds.filter((id) => indicators[id].references.includes(ref)) }))
-  .sort((a, b) => a.year - b.year);
+// Each article with the indicators it backs, newest first, as the store keeps them.
+const backed = articles
+  .filter((a) => !a.framework)
+  .map((a) => ({ ...a, indicators: indicatorIds.filter((id) => citedBy(a.id).includes(id)) }));
 ---
 
 <section id="science" class="border-b border-line py-section" aria-labelledby="science-title">
@@ -23,12 +23,20 @@ const backed = (Object.keys(references) as ReferenceId[])
       <p class="mt-5 text-base text-ink-muted">{t("science.lead")}</p>
       <div class="mt-8 rounded-lg border border-line bg-surface p-6 lg:sticky lg:top-24">
         <p class="text-xs font-medium text-ink-subtle">{t("science.frameworkLabel")}</p>
-        <p class="mt-3 font-display text-xl leading-snug text-ink" lang={framework.lang}>{framework.title}</p>
-        <p class="mt-2 text-sm text-ink-muted">{framework.authors} ({framework.year}). {framework.source}.</p>
-        <a class="mt-3 inline-block text-sm text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={doiUrl(framework.doi)} rel="noopener" target="_blank">
-          {t("science.doi", { doi: framework.doi })}
-          <span class="sr-only"> {t("a11y.externalLink")}</span>
-        </a>
+        {
+          framework && (
+            <>
+              <p class="mt-3 font-display text-xl leading-snug text-ink" lang={framework.lang}>{framework.title}</p>
+              <p class="mt-2 text-sm text-ink-muted">{framework.authors} ({framework.year}). {framework.source}.</p>
+              {articleUrl(framework) && (
+                <a class="mt-3 inline-block text-sm text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(framework)} rel="noopener" target="_blank">
+                  {framework.doi ? t("science.doi", { doi: framework.doi }) : t("science.link")}
+                  <span class="sr-only"> {t("a11y.externalLink")}</span>
+                </a>
+              )}
+            </>
+          )
+        }
       </div>
     </div>
 
@@ -43,9 +51,9 @@ const backed = (Object.keys(references) as ReferenceId[])
                 <p class="text-base text-ink" lang={r.lang}>{r.title}</p>
                 <p class="mt-1 text-sm text-ink-muted">
                   {withPeriod(r.authors)} {r.source}.
-                  {"doi" in r && r.doi && (
-                    <a class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={doiUrl(r.doi)} rel="noopener" target="_blank">
-                      {t("science.doi", { doi: r.doi })}
+                  {articleUrl(r) && (
+                    <a class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(r)} rel="noopener" target="_blank">
+                      {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
                       <span class="sr-only"> {t("a11y.externalLink")}</span>
                     </a>
                   )}

@@ -67,6 +67,14 @@ Editors change every text the website shows under `/v1/texts/{key}`, and anyone 
 - **Reaching the site:** a publish records the time in `site_state/texts`. The data job's `site` task asks for the website's build once publishes settle, and `POST /v1/texts/rebuild` asks at once; both publish to `WEB_REBUILD_TOPIC`, which only a Cloud Build trigger listens to. `GET /v1/texts/rebuild` says whether the site is behind, which the website compares with its own `/build.json`.
 - **Rules:** editors (or admins) publish directly, or save a draft that any of them publishes or discards. An edit keeps its default's placeholders, and a plural one both forms. A version can be brought back, or a text returned to its defaults.
 
+## Articles
+
+The scientific articles behind the indicators live in the content database: `articles`, one per article, and `indicator_articles`, each indicator's ordered list of the articles it cites. The link goes from the indicator to the articles.
+
+- **Reading:** `/v1/articles` gives every article and the citations to anyone, which the website reads when it is built. `/v1/articles/{id}/pdf` serves an uploaded PDF, kept beside the saved zones' files under `articles/`.
+- **Editing:** editors add, change and remove articles, attach a PDF, and set each indicator's list (`/v1/indicators/{indicator}/articles`). Each change is audited and marks the site behind, as a text's publish does.
+- **First load:** `POST /v1/articles/seed` loads, once, what the website's code had (`articles_seed.json`).
+
 ## Emails
 
 Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.

@@ -19,6 +19,10 @@ class AuditAction(StrEnum):
     TEXT_DRAFTED = "text_drafted"
     TEXT_DRAFT_DISCARDED = "text_draft_discarded"
     TEXT_RESTORED = "text_restored"
+    ARTICLE_SAVED = "article_saved"
+    ARTICLE_DELETED = "article_deleted"
+    CITATIONS_CHANGED = "citations_changed"
+    ARTICLES_SEEDED = "articles_seeded"
 
 
 @dataclass(frozen=True)
