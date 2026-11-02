@@ -5620,6 +5620,708 @@
         }
       }
     },
+    "/v1/articles": {
+      "get": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "The articles behind the indicators",
+        "description": "Every article, newest first, and which each indicator cites. Cacheable for a minute.",
+        "operationId": "list_articles",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedArticles"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Add an article",
+        "description": "Its id comes from the first author's surname and the year. For editors.",
+        "operationId": "add_article",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/articles/seed": {
+      "post": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Load the articles the site had",
+        "description": "Loads, once, the articles and citations the website's code had; refused once there are any.",
+        "operationId": "seed_articles",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedArticles"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what already exists.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/articles/{article_id}": {
+      "get": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "An article",
+        "description": "With who changed it last. For editors.",
+        "operationId": "get_article",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Change an article",
+        "operationId": "put_article",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Remove an article",
+        "description": "Also from every indicator that cites it, with its PDF. For editors.",
+        "operationId": "delete_article",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/articles/{article_id}/pdf": {
+      "get": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "An article's PDF",
+        "operationId": "get_article_pdf",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The PDF.",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Attach an article's PDF",
+        "description": "Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+        "operationId": "put_article_pdf",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_put_article_pdf"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "It is larger than allowed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "That kind of file is not accepted.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Remove an article's PDF",
+        "operationId": "delete_article_pdf",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,60}$",
+              "description": "The article's id.",
+              "title": "Article Id"
+            },
+            "description": "The article's id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "It does not exist, or it is not yours to see.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/indicators/{indicator}/articles": {
+      "put": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Choose the articles an indicator cites",
+        "description": "In the order the site lists them. For editors.",
+        "operationId": "cite_articles",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Citations"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Citations"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/accounts": {
       "get": {
         "tags": [
@@ -6341,6 +7043,318 @@
         "title": "AdminAccount",
         "description": "An account, as admins see it."
       },
+      "ArticleIn": {
+        "properties": {
+          "authors": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Authors",
+            "examples": [
+              "Paruelo, J. M. & Lauenroth, W. K."
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1800.0,
+            "title": "Year"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "description": "In the language it was published in."
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+            "title": "Lang",
+            "description": "The title's language (BCP 47).",
+            "examples": [
+              "en"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Source",
+            "description": "Where it was published.",
+            "examples": [
+              "Ecosystems 9: 357-373"
+            ]
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^10\\.\\d{4,9}/\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "pattern": "^https?://\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "framework": {
+            "type": "boolean",
+            "title": "Framework",
+            "description": "The reference framework the indicators follow.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "authors",
+          "year",
+          "title",
+          "lang",
+          "source"
+        ],
+        "title": "ArticleIn",
+        "description": "An article as an editor writes it."
+      },
+      "ArticleOut": {
+        "properties": {
+          "authors": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Authors",
+            "examples": [
+              "Paruelo, J. M. & Lauenroth, W. K."
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1800.0,
+            "title": "Year"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "description": "In the language it was published in."
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+            "title": "Lang",
+            "description": "The title's language (BCP 47).",
+            "examples": [
+              "en"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Source",
+            "description": "Where it was published.",
+            "examples": [
+              "Ecosystems 9: 357-373"
+            ]
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^10\\.\\d{4,9}/\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "pattern": "^https?://\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "framework": {
+            "type": "boolean",
+            "title": "Framework",
+            "description": "The reference framework the indicators follow.",
+            "default": false
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "paruelo2016"
+            ]
+          },
+          "pdf": {
+            "type": "boolean",
+            "title": "Pdf",
+            "description": "Whether a PDF goes with it, at `/v1/articles/{id}/pdf`."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "When it last changed."
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who changed it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "authors",
+          "year",
+          "title",
+          "lang",
+          "source",
+          "id",
+          "pdf",
+          "updated_at",
+          "updated_by"
+        ],
+        "title": "ArticleOut",
+        "description": "An article as an editor works on it."
+      },
+      "ArticlePublic": {
+        "properties": {
+          "authors": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Authors",
+            "examples": [
+              "Paruelo, J. M. & Lauenroth, W. K."
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1800.0,
+            "title": "Year"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "description": "In the language it was published in."
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+            "title": "Lang",
+            "description": "The title's language (BCP 47).",
+            "examples": [
+              "en"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Source",
+            "description": "Where it was published.",
+            "examples": [
+              "Ecosystems 9: 357-373"
+            ]
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^10\\.\\d{4,9}/\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "pattern": "^https?://\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "framework": {
+            "type": "boolean",
+            "title": "Framework",
+            "description": "The reference framework the indicators follow.",
+            "default": false
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "paruelo2016"
+            ]
+          },
+          "pdf": {
+            "type": "boolean",
+            "title": "Pdf",
+            "description": "Whether a PDF goes with it, at `/v1/articles/{id}/pdf`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "authors",
+          "year",
+          "title",
+          "lang",
+          "source",
+          "id",
+          "pdf"
+        ],
+        "title": "ArticlePublic",
+        "description": "An article as the site shows it."
+      },
       "AuditAction": {
         "type": "string",
         "enum": [
@@ -6353,7 +7367,11 @@
           "text_published",
           "text_drafted",
           "text_draft_discarded",
-          "text_restored"
+          "text_restored",
+          "article_saved",
+          "article_deleted",
+          "citations_changed",
+          "articles_seeded"
         ],
         "title": "AuditAction"
       },
@@ -6414,6 +7432,21 @@
           "file"
         ],
         "title": "Body_attach_saved_zone_document"
+      },
+      "Body_put_article_pdf": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "The PDF."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_put_article_pdf"
       },
       "Catalog": {
         "properties": {
@@ -6511,6 +7544,24 @@
         ],
         "title": "Catalog",
         "description": "What data exists, and the frame of the map images."
+      },
+      "Citations": {
+        "properties": {
+          "articles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Articles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "articles"
+        ],
+        "title": "Citations",
+        "description": "The articles an indicator cites, in order."
       },
       "Department": {
         "type": "string",
@@ -8037,6 +9088,35 @@
         ],
         "title": "ProjectSummary",
         "description": "One of your projects, or one shared with you, without its zones."
+      },
+      "PublishedArticles": {
+        "properties": {
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/ArticlePublic"
+            },
+            "type": "array",
+            "title": "Articles"
+          },
+          "citations": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Citations",
+            "description": "By indicator, the ids of the articles it cites, in order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "articles",
+          "citations"
+        ],
+        "title": "PublishedArticles",
+        "description": "The articles behind the indicators, newest first, and which each indicator cites."
       },
       "PublishedTexts": {
         "properties": {

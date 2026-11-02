@@ -115,6 +115,131 @@ export interface AdminAccount {
   created_at: string;
 }
 
+/**
+ * An article as an editor writes it.
+ */
+export interface ArticleIn {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  authors: string;
+  /**
+     * @minimum 1800
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * In the language it was published in.
+     * @minLength 1
+     * @maxLength 500
+     */
+  title: string;
+  /**
+     * The title's language (BCP 47).
+     * @pattern ^[a-z]{2,3}(-[A-Z]{2})?$
+     */
+  lang: string;
+  /**
+     * Where it was published.
+     * @maxLength 300
+     */
+  source: string;
+  doi?: string | null;
+  url?: string | null;
+  /** The reference framework the indicators follow. */
+  framework?: boolean;
+}
+
+export interface TextAuthor {
+  /** The editor's account id. */
+  id: string;
+  /** Their name at the time. */
+  name: string;
+}
+
+/**
+ * An article as an editor works on it.
+ */
+export interface ArticleOut {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  authors: string;
+  /**
+     * @minimum 1800
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * In the language it was published in.
+     * @minLength 1
+     * @maxLength 500
+     */
+  title: string;
+  /**
+     * The title's language (BCP 47).
+     * @pattern ^[a-z]{2,3}(-[A-Z]{2})?$
+     */
+  lang: string;
+  /**
+     * Where it was published.
+     * @maxLength 300
+     */
+  source: string;
+  doi?: string | null;
+  url?: string | null;
+  /** The reference framework the indicators follow. */
+  framework?: boolean;
+  id: string;
+  /** Whether a PDF goes with it, at `/v1/articles/{id}/pdf`. */
+  pdf: boolean;
+  /** When it last changed. */
+  updated_at: string | null;
+  /** Who changed it. */
+  updated_by: TextAuthor | null;
+}
+
+/**
+ * An article as the site shows it.
+ */
+export interface ArticlePublic {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  authors: string;
+  /**
+     * @minimum 1800
+     * @maximum 2100
+     */
+  year: number;
+  /**
+     * In the language it was published in.
+     * @minLength 1
+     * @maxLength 500
+     */
+  title: string;
+  /**
+     * The title's language (BCP 47).
+     * @pattern ^[a-z]{2,3}(-[A-Z]{2})?$
+     */
+  lang: string;
+  /**
+     * Where it was published.
+     * @maxLength 300
+     */
+  source: string;
+  doi?: string | null;
+  url?: string | null;
+  /** The reference framework the indicators follow. */
+  framework?: boolean;
+  id: string;
+  /** Whether a PDF goes with it, at `/v1/articles/{id}/pdf`. */
+  pdf: boolean;
+}
+
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
 
 
@@ -129,6 +254,10 @@ export const AuditAction = {
   text_drafted: 'text_drafted',
   text_draft_discarded: 'text_draft_discarded',
   text_restored: 'text_restored',
+  article_saved: 'article_saved',
+  article_deleted: 'article_deleted',
+  citations_changed: 'citations_changed',
+  articles_seeded: 'articles_seeded',
 } as const;
 
 /**
@@ -149,6 +278,11 @@ export interface AuditOut {
 
 export interface BodyAttachSavedZoneDocument {
   /** The document. */
+  file: Blob | File;
+}
+
+export interface BodyPutArticlePdf {
+  /** The PDF. */
   file: Blob | File;
 }
 
@@ -308,6 +442,14 @@ export interface Catalog {
   /** The departments with rural parcels. */
   padrones: Partial<Record<Department, PadronDepartment>>;
   outline: MapOutline;
+}
+
+/**
+ * The articles an indicator cites, in order.
+ */
+export interface Citations {
+  /** @maxItems 50 */
+  articles: string[];
 }
 
 export interface DivisionItem {
@@ -919,6 +1061,20 @@ export interface ProjectSummary {
   updated_at: string;
 }
 
+/**
+ * By indicator, the ids of the articles it cites, in order.
+ */
+export type PublishedArticlesCitations = {[key: string]: string[]};
+
+/**
+ * The articles behind the indicators, newest first, and which each indicator cites.
+ */
+export interface PublishedArticles {
+  articles: ArticlePublic[];
+  /** By indicator, the ids of the articles it cites, in order. */
+  citations: PublishedArticlesCitations;
+}
+
 export type TextValue = string | PluralText;
 
 /**
@@ -1136,13 +1292,6 @@ export const SiteTextOutFormat = {
   markdown: 'markdown',
   plural: 'plural',
 } as const;
-
-export interface TextAuthor {
-  /** The editor's account id. */
-  id: string;
-  /** Their name at the time. */
-  name: string;
-}
 
 /**
  * One of the website's texts, as an editor works on it.
@@ -10157,6 +10306,1184 @@ export const useRestoreText = <TError = Problem,
         TContext
       > => {
       return useMutation(getRestoreTextMutationOptions(options), queryClient);
+    }
+
+export type listArticlesResponse200 = {
+  data: PublishedArticles
+  status: 200
+}
+
+export type listArticlesResponseSuccess = (listArticlesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listArticlesResponse = (listArticlesResponseSuccess)
+
+export const getListArticlesUrl = () => {
+
+
+
+
+  return `/v1/articles`
+}
+
+/**
+ * Every article, newest first, and which each indicator cites. Cacheable for a minute.
+ * @summary The articles behind the indicators
+ */
+export const listArticles = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listArticlesResponse> => {
+
+  return apiFetch<listArticlesResponse>(getListArticlesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListArticlesQueryKey = () => {
+    return [
+    `/v1/articles`
+    ] as const;
+    }
+
+
+export const getListArticlesQueryOptions = <TData = Awaited<ReturnType<typeof listArticles>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListArticlesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listArticles>>> = ({ signal }) => listArticles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListArticlesQueryResult = NonNullable<Awaited<ReturnType<typeof listArticles>>>
+export type ListArticlesQueryError = unknown
+
+
+export function useListArticles<TData = Awaited<ReturnType<typeof listArticles>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listArticles>>,
+          TError,
+          Awaited<ReturnType<typeof listArticles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListArticles<TData = Awaited<ReturnType<typeof listArticles>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listArticles>>,
+          TError,
+          Awaited<ReturnType<typeof listArticles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListArticles<TData = Awaited<ReturnType<typeof listArticles>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The articles behind the indicators
+ */
+
+export function useListArticles<TData = Awaited<ReturnType<typeof listArticles>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listArticles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListArticlesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type addArticleResponse201 = {
+  data: ArticleOut
+  status: 201
+}
+
+export type addArticleResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type addArticleResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type addArticleResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type addArticleResponseSuccess = (addArticleResponse201) & {
+  headers: Headers;
+};
+export type addArticleResponseError = (addArticleResponse401 | addArticleResponse403 | addArticleResponse422) & {
+  headers: Headers;
+};
+
+export type addArticleResponse = (addArticleResponseSuccess | addArticleResponseError)
+
+export const getAddArticleUrl = () => {
+
+
+
+
+  return `/v1/articles`
+}
+
+/**
+ * Its id comes from the first author's surname and the year. For editors.
+ * @summary Add an article
+ */
+export const addArticle = async (articleIn: ArticleIn, options?: Parameters<typeof apiFetch>[1]): Promise<addArticleResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<addArticleResponse>(getAddArticleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(articleIn)
+  }
+);}
+
+
+
+
+
+export const getAddArticleMutationKey = () => ['addArticle'] as const;
+
+export const getAddArticleMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addArticle>>, TError,AddArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addArticle>>, TError,AddArticleMutationVariables, TContext> => {
+
+const mutationKey = getAddArticleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addArticle>>, AddArticleMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  addArticle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddArticleMutationResult = NonNullable<Awaited<ReturnType<typeof addArticle>>>
+    export type AddArticleMutationBody = ArticleIn
+    export type AddArticleMutationError = Problem
+    export type AddArticleMutationVariables = {data: ArticleIn}
+
+    /**
+ * @summary Add an article
+ */
+export const useAddArticle = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addArticle>>, TError,AddArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addArticle>>,
+        TError,
+        AddArticleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddArticleMutationOptions(options), queryClient);
+    }
+
+export type seedArticlesResponse200 = {
+  data: PublishedArticles
+  status: 200
+}
+
+export type seedArticlesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type seedArticlesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type seedArticlesResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type seedArticlesResponseSuccess = (seedArticlesResponse200) & {
+  headers: Headers;
+};
+export type seedArticlesResponseError = (seedArticlesResponse401 | seedArticlesResponse403 | seedArticlesResponse409) & {
+  headers: Headers;
+};
+
+export type seedArticlesResponse = (seedArticlesResponseSuccess | seedArticlesResponseError)
+
+export const getSeedArticlesUrl = () => {
+
+
+
+
+  return `/v1/articles/seed`
+}
+
+/**
+ * Loads, once, the articles and citations the website's code had; refused once there are any.
+ * @summary Load the articles the site had
+ */
+export const seedArticles = async ( options?: Parameters<typeof apiFetch>[1]): Promise<seedArticlesResponse> => {
+
+  return apiFetch<seedArticlesResponse>(getSeedArticlesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSeedArticlesMutationKey = () => ['seedArticles'] as const;
+
+export const getSeedArticlesMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedArticles>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof seedArticles>>, TError,void, TContext> => {
+
+const mutationKey = getSeedArticlesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof seedArticles>>, void> = () => {
+
+
+          return  seedArticles(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SeedArticlesMutationResult = NonNullable<Awaited<ReturnType<typeof seedArticles>>>
+
+    export type SeedArticlesMutationError = Problem
+
+
+    /**
+ * @summary Load the articles the site had
+ */
+export const useSeedArticles = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedArticles>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof seedArticles>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSeedArticlesMutationOptions(options), queryClient);
+    }
+
+export type getArticleResponse200 = {
+  data: ArticleOut
+  status: 200
+}
+
+export type getArticleResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getArticleResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getArticleResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getArticleResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getArticleResponseSuccess = (getArticleResponse200) & {
+  headers: Headers;
+};
+export type getArticleResponseError = (getArticleResponse401 | getArticleResponse403 | getArticleResponse404 | getArticleResponse422) & {
+  headers: Headers;
+};
+
+export type getArticleResponse = (getArticleResponseSuccess | getArticleResponseError)
+
+export const getGetArticleUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}`
+}
+
+/**
+ * With who changed it last. For editors.
+ * @summary An article
+ */
+export const getArticle = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getArticleResponse> => {
+
+  return apiFetch<getArticleResponse>(getGetArticleUrl(articleId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArticleQueryKey = (articleId: string,) => {
+    return [
+    `/v1/articles/${articleId}`
+    ] as const;
+    }
+
+
+export const getGetArticleQueryOptions = <TData = Awaited<ReturnType<typeof getArticle>>, TError = Problem>(articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArticleQueryKey(articleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArticle>>> = ({ signal }) => getArticle(articleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: articleId !== null && articleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetArticleQueryResult = NonNullable<Awaited<ReturnType<typeof getArticle>>>
+export type GetArticleQueryError = Problem
+
+
+export function useGetArticle<TData = Awaited<ReturnType<typeof getArticle>>, TError = Problem>(
+ articleId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArticle>>,
+          TError,
+          Awaited<ReturnType<typeof getArticle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetArticle<TData = Awaited<ReturnType<typeof getArticle>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArticle>>,
+          TError,
+          Awaited<ReturnType<typeof getArticle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetArticle<TData = Awaited<ReturnType<typeof getArticle>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary An article
+ */
+
+export function useGetArticle<TData = Awaited<ReturnType<typeof getArticle>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticle>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetArticleQueryOptions(articleId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type putArticleResponse200 = {
+  data: ArticleOut
+  status: 200
+}
+
+export type putArticleResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type putArticleResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type putArticleResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type putArticleResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type putArticleResponseSuccess = (putArticleResponse200) & {
+  headers: Headers;
+};
+export type putArticleResponseError = (putArticleResponse401 | putArticleResponse403 | putArticleResponse404 | putArticleResponse422) & {
+  headers: Headers;
+};
+
+export type putArticleResponse = (putArticleResponseSuccess | putArticleResponseError)
+
+export const getPutArticleUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}`
+}
+
+/**
+ * @summary Change an article
+ */
+export const putArticle = async (articleId: string,
+    articleIn: ArticleIn, options?: Parameters<typeof apiFetch>[1]): Promise<putArticleResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<putArticleResponse>(getPutArticleUrl(articleId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(articleIn)
+  }
+);}
+
+
+
+
+
+export const getPutArticleMutationKey = () => ['putArticle'] as const;
+
+export const getPutArticleMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticle>>, TError,PutArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putArticle>>, TError,PutArticleMutationVariables, TContext> => {
+
+const mutationKey = getPutArticleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putArticle>>, PutArticleMutationVariables> = (props) => {
+          const {articleId,data} = props ?? {};
+
+          return  putArticle(articleId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutArticleMutationResult = NonNullable<Awaited<ReturnType<typeof putArticle>>>
+    export type PutArticleMutationBody = ArticleIn
+    export type PutArticleMutationError = Problem
+    export type PutArticleMutationVariables = {articleId: string;data: ArticleIn}
+
+    /**
+ * @summary Change an article
+ */
+export const usePutArticle = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticle>>, TError,PutArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putArticle>>,
+        TError,
+        PutArticleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPutArticleMutationOptions(options), queryClient);
+    }
+
+export type deleteArticleResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteArticleResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type deleteArticleResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type deleteArticleResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deleteArticleResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type deleteArticleResponseSuccess = (deleteArticleResponse204) & {
+  headers: Headers;
+};
+export type deleteArticleResponseError = (deleteArticleResponse401 | deleteArticleResponse403 | deleteArticleResponse404 | deleteArticleResponse422) & {
+  headers: Headers;
+};
+
+export type deleteArticleResponse = (deleteArticleResponseSuccess | deleteArticleResponseError)
+
+export const getDeleteArticleUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}`
+}
+
+/**
+ * Also from every indicator that cites it, with its PDF. For editors.
+ * @summary Remove an article
+ */
+export const deleteArticle = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteArticleResponse> => {
+
+  return apiFetch<deleteArticleResponse>(getDeleteArticleUrl(articleId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteArticleMutationKey = () => ['deleteArticle'] as const;
+
+export const getDeleteArticleMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticle>>, TError,DeleteArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteArticle>>, TError,DeleteArticleMutationVariables, TContext> => {
+
+const mutationKey = getDeleteArticleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArticle>>, DeleteArticleMutationVariables> = (props) => {
+          const {articleId} = props ?? {};
+
+          return  deleteArticle(articleId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteArticleMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArticle>>>
+
+    export type DeleteArticleMutationError = Problem
+    export type DeleteArticleMutationVariables = {articleId: string}
+
+    /**
+ * @summary Remove an article
+ */
+export const useDeleteArticle = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticle>>, TError,DeleteArticleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteArticle>>,
+        TError,
+        DeleteArticleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteArticleMutationOptions(options), queryClient);
+    }
+
+export type getArticlePdfResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getArticlePdfResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getArticlePdfResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getArticlePdfResponseSuccess = (getArticlePdfResponse200) & {
+  headers: Headers;
+};
+export type getArticlePdfResponseError = (getArticlePdfResponse404 | getArticlePdfResponse422) & {
+  headers: Headers;
+};
+
+export type getArticlePdfResponse = (getArticlePdfResponseSuccess | getArticlePdfResponseError)
+
+export const getGetArticlePdfUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}/pdf`
+}
+
+/**
+ * @summary An article's PDF
+ */
+export const getArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getArticlePdfResponse> => {
+
+  return apiFetch<getArticlePdfResponse>(getGetArticlePdfUrl(articleId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArticlePdfQueryKey = (articleId: string,) => {
+    return [
+    `/v1/articles/${articleId}/pdf`
+    ] as const;
+    }
+
+
+export const getGetArticlePdfQueryOptions = <TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArticlePdfQueryKey(articleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArticlePdf>>> = ({ signal }) => getArticlePdf(articleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: articleId !== null && articleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetArticlePdfQueryResult = NonNullable<Awaited<ReturnType<typeof getArticlePdf>>>
+export type GetArticlePdfQueryError = Problem
+
+
+export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
+ articleId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArticlePdf>>,
+          TError,
+          Awaited<ReturnType<typeof getArticlePdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArticlePdf>>,
+          TError,
+          Awaited<ReturnType<typeof getArticlePdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary An article's PDF
+ */
+
+export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf>>, TError = Problem>(
+ articleId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getArticlePdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetArticlePdfQueryOptions(articleId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type putArticlePdfResponse200 = {
+  data: ArticleOut
+  status: 200
+}
+
+export type putArticlePdfResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type putArticlePdfResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type putArticlePdfResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type putArticlePdfResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type putArticlePdfResponse415 = {
+  data: Problem
+  status: 415
+}
+
+export type putArticlePdfResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type putArticlePdfResponseSuccess = (putArticlePdfResponse200) & {
+  headers: Headers;
+};
+export type putArticlePdfResponseError = (putArticlePdfResponse401 | putArticlePdfResponse403 | putArticlePdfResponse404 | putArticlePdfResponse413 | putArticlePdfResponse415 | putArticlePdfResponse422) & {
+  headers: Headers;
+};
+
+export type putArticlePdfResponse = (putArticlePdfResponseSuccess | putArticlePdfResponseError)
+
+export const getPutArticlePdfUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}/pdf`
+}
+
+/**
+ * Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * @summary Attach an article's PDF
+ */
+export const putArticlePdf = async (articleId: string,
+    bodyPutArticlePdf: BodyPutArticlePdf, options?: Parameters<typeof apiFetch>[1]): Promise<putArticlePdfResponse> => {
+    const formData = new FormData();
+formData.append(`file`, bodyPutArticlePdf.file);
+
+  return apiFetch<putArticlePdfResponse>(getPutArticlePdfUrl(articleId),
+  {
+    ...options,
+    method: 'PUT'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getPutArticlePdfMutationKey = () => ['putArticlePdf'] as const;
+
+export const getPutArticlePdfMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext> => {
+
+const mutationKey = getPutArticlePdfMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putArticlePdf>>, PutArticlePdfMutationVariables> = (props) => {
+          const {articleId,data} = props ?? {};
+
+          return  putArticlePdf(articleId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutArticlePdfMutationResult = NonNullable<Awaited<ReturnType<typeof putArticlePdf>>>
+    export type PutArticlePdfMutationBody = BodyPutArticlePdf
+    export type PutArticlePdfMutationError = Problem
+    export type PutArticlePdfMutationVariables = {articleId: string;data: BodyPutArticlePdf}
+
+    /**
+ * @summary Attach an article's PDF
+ */
+export const usePutArticlePdf = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putArticlePdf>>, TError,PutArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putArticlePdf>>,
+        TError,
+        PutArticlePdfMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPutArticlePdfMutationOptions(options), queryClient);
+    }
+
+export type deleteArticlePdfResponse200 = {
+  data: ArticleOut
+  status: 200
+}
+
+export type deleteArticlePdfResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type deleteArticlePdfResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type deleteArticlePdfResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deleteArticlePdfResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type deleteArticlePdfResponseSuccess = (deleteArticlePdfResponse200) & {
+  headers: Headers;
+};
+export type deleteArticlePdfResponseError = (deleteArticlePdfResponse401 | deleteArticlePdfResponse403 | deleteArticlePdfResponse404 | deleteArticlePdfResponse422) & {
+  headers: Headers;
+};
+
+export type deleteArticlePdfResponse = (deleteArticlePdfResponseSuccess | deleteArticlePdfResponseError)
+
+export const getDeleteArticlePdfUrl = (articleId: string,) => {
+
+
+
+
+  return `/v1/articles/${articleId}/pdf`
+}
+
+/**
+ * @summary Remove an article's PDF
+ */
+export const deleteArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteArticlePdfResponse> => {
+
+  return apiFetch<deleteArticlePdfResponse>(getDeleteArticlePdfUrl(articleId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteArticlePdfMutationKey = () => ['deleteArticlePdf'] as const;
+
+export const getDeleteArticlePdfMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext> => {
+
+const mutationKey = getDeleteArticlePdfMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArticlePdf>>, DeleteArticlePdfMutationVariables> = (props) => {
+          const {articleId} = props ?? {};
+
+          return  deleteArticlePdf(articleId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteArticlePdfMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArticlePdf>>>
+
+    export type DeleteArticlePdfMutationError = Problem
+    export type DeleteArticlePdfMutationVariables = {articleId: string}
+
+    /**
+ * @summary Remove an article's PDF
+ */
+export const useDeleteArticlePdf = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArticlePdf>>, TError,DeleteArticlePdfMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteArticlePdf>>,
+        TError,
+        DeleteArticlePdfMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteArticlePdfMutationOptions(options), queryClient);
+    }
+
+export type citeArticlesResponse200 = {
+  data: Citations
+  status: 200
+}
+
+export type citeArticlesResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type citeArticlesResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type citeArticlesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type citeArticlesResponseSuccess = (citeArticlesResponse200) & {
+  headers: Headers;
+};
+export type citeArticlesResponseError = (citeArticlesResponse401 | citeArticlesResponse403 | citeArticlesResponse422) & {
+  headers: Headers;
+};
+
+export type citeArticlesResponse = (citeArticlesResponseSuccess | citeArticlesResponseError)
+
+export const getCiteArticlesUrl = (indicator: Indicator,) => {
+
+
+
+
+  return `/v1/indicators/${indicator}/articles`
+}
+
+/**
+ * In the order the site lists them. For editors.
+ * @summary Choose the articles an indicator cites
+ */
+export const citeArticles = async (indicator: Indicator,
+    citations: Citations, options?: Parameters<typeof apiFetch>[1]): Promise<citeArticlesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<citeArticlesResponse>(getCiteArticlesUrl(indicator),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(citations)
+  }
+);}
+
+
+
+
+
+export const getCiteArticlesMutationKey = () => ['citeArticles'] as const;
+
+export const getCiteArticlesMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof citeArticles>>, TError,CiteArticlesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof citeArticles>>, TError,CiteArticlesMutationVariables, TContext> => {
+
+const mutationKey = getCiteArticlesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof citeArticles>>, CiteArticlesMutationVariables> = (props) => {
+          const {indicator,data} = props ?? {};
+
+          return  citeArticles(indicator,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CiteArticlesMutationResult = NonNullable<Awaited<ReturnType<typeof citeArticles>>>
+    export type CiteArticlesMutationBody = Citations
+    export type CiteArticlesMutationError = Problem
+    export type CiteArticlesMutationVariables = {indicator: Indicator;data: Citations}
+
+    /**
+ * @summary Choose the articles an indicator cites
+ */
+export const useCiteArticles = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof citeArticles>>, TError,CiteArticlesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof citeArticles>>,
+        TError,
+        CiteArticlesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCiteArticlesMutationOptions(options), queryClient);
     }
 
 export type listAccountsResponse200 = {

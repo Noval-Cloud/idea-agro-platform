@@ -8,7 +8,7 @@ import RangeStrip from "@/components/charts/RangeStrip.astro";
 import { monthTicks } from "@/components/charts/month-ticks";
 import { createTranslator, localizePath, type Locale, type MessageKey } from "@/i18n";
 import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
-import { references, doiUrl } from "@/data/references";
+import { articleUrl, citations } from "@/data/articles";
 import {
   aparSeasonal,
   compositeDate,
@@ -208,20 +208,19 @@ const initial: IndicatorId = "ppna";
                   <div class="mt-8 border-t border-line pt-5">
                     <SubHeading class="text-xs font-medium text-ink-subtle">{t("indicators.fields.reference")}</SubHeading>
                     <ul class="mt-2 grid max-w-measure gap-3 text-xs text-ink-muted">
-                      {config.references.map((ref) => {
-                        const r = references[ref];
+                      {citations(id).map((r) => {
                         return (
                           <li>
                             {r.authors} ({r.year}). <span lang={r.lang}>{withPeriod(r.title)}</span>{" "}
                             <span class="text-ink-subtle">{withPeriod(r.source)}</span>
-                            {"doi" in r && r.doi && (
+{articleUrl(r) && (
                               <a
                                 class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline"
-                                href={doiUrl(r.doi)}
+                                href={articleUrl(r)}
                                 rel="noopener"
                                 target="_blank"
                               >
-                                {t("science.doi", { doi: r.doi })}
+                                {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
                                 <span class="sr-only"> {t("a11y.externalLink")}</span>
                               </a>
                             )}

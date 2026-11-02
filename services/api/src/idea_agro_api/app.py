@@ -14,6 +14,7 @@ from idea_agro_api.documents import COMPRESSED
 from idea_agro_api.errors import http_problem, server_problems, validation_problem
 from idea_agro_api.routes import (
     admin,
+    articles,
     catalog,
     documents,
     invitations,
@@ -115,6 +116,7 @@ def create_app(services: Services) -> FastAPI:
         invitations,
         platform_invitations,
         texts,
+        articles,
         admin,
     ):
         app.include_router(module.router)

@@ -4,11 +4,12 @@ import { degreesFormat } from "@/lib/degrees";
 import { relativeTimeFormat } from "@/lib/relative-time";
 
 /** The slice of the catalog the account island ships to the browser. */
-export type AccountCatalog = Pick<Catalog, "account" | "lists">;
+export type AccountCatalog = Pick<Catalog, "account" | "lists" | "indicators">;
 export type AccountKey = Leaves<AccountCatalog>;
 export const pickAccountCatalog = (catalog: Catalog): AccountCatalog => ({
   account: catalog.account,
   lists: catalog.lists,
+  indicators: catalog.indicators,
 });
 
 /** The account's sections, in the order the panel lists them. */

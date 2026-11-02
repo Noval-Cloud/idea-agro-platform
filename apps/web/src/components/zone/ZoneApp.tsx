@@ -1,5 +1,7 @@
 import {
+  createContext,
   Fragment,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -14,7 +16,7 @@ import type { Department } from "@idea-agro/api-client";
 import { ArrowLeft, Download, LoaderCircle } from "lucide-react";
 import { iconSize } from "@/design/tokens";
 import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
-import { references, type Reference } from "@/data/references";
+import type { Article } from "@/data/articles";
 import { familyBackground } from "@/design/family-classes";
 import { cn } from "@/lib/utils";
 import { intlLocale, type Locale } from "@/i18n/core";
@@ -57,9 +59,15 @@ import OutlineVersions from "./OutlineVersions";
 import ZoneDocuments from "./ZoneDocuments";
 import SeasonLegend from "./SeasonLegend";
 
+/** An article an indicator cites, with where it is read. */
+export type Citation = Article & { href?: string };
+/** By indicator, the articles it cites: resolved when the site is built, so the island reads no store. */
+const CitationsContext = createContext<Partial<Record<IndicatorId, Citation[]>>>({});
+
 interface Props {
   locale: Locale;
   catalog: AppCatalog;
+  citations: Partial<Record<IndicatorId, Citation[]>>;
   explorePath: string;
   signInPath: string;
   projectsPath: string;
@@ -176,7 +184,15 @@ function downloadCsv(name: string, header: string[], rows: (string | number | nu
   URL.revokeObjectURL(url);
 }
 
-export default function ZoneApp({ locale, catalog, explorePath, signInPath, projectsPath, outlinePath }: Props) {
+export default function ZoneApp({
+  locale,
+  catalog,
+  citations,
+  explorePath,
+  signInPath,
+  projectsPath,
+  outlinePath,
+}: Props) {
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
@@ -354,130 +370,138 @@ export default function ZoneApp({ locale, catalog, explorePath, signInPath, proj
 
   return (
     <I18nContext.Provider value={i18n}>
-      <div className="px-gutter py-8 lg:py-10">
-        {zone === undefined || target === undefined ? (
-          <>
-            {back}
-            <p role="status" className="mt-10 text-sm text-ink-muted">
-              {t("zone.loading")}
-            </p>
-          </>
-        ) : zone === null ? (
-          <>
-            {back}
-            <p role="status" className="mt-10 max-w-prose text-base text-ink">
-              {signedOut ? t("zone.signInToSee") : t("zone.notFound")}
-            </p>
-            {signedOut && (
-              <a
-                href={`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`}
-                className="mt-4 inline-block text-link underline underline-offset-(--ia-link-underline-offset)"
-              >
-                {t("zone.signIn")}
-              </a>
-            )}
-          </>
-        ) : (
-          // The indicator list stays put on the left (as on the map); the zone and its charts on the right.
-          <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
-            <div className="min-w-0 lg:col-span-9 lg:col-start-4 lg:row-start-1">
+      <CitationsContext.Provider value={citations}>
+        <div className="px-gutter py-8 lg:py-10">
+          {zone === undefined || target === undefined ? (
+            <>
               {back}
-              <header className="mt-6 flex flex-wrap items-start justify-between gap-8 border-b border-line pb-8">
-                <div className="min-w-0">
-                  <p className="text-sm text-ink-subtle">{zone.kind}</p>
-                  <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
-                  {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
-                  <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-                    {zone.geometry.type === "Point" ? (
-                      <>
-                        <Fact label={t("explorer.zone.latitude")} value={i18n.degrees(zone.geometry.coordinates[1])} />
-                        <Fact label={t("explorer.zone.longitude")} value={i18n.degrees(zone.geometry.coordinates[0])} />
-                      </>
-                    ) : (
-                      <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
-                    )}
-                    {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
-                    {zone.target.kind === "division" && (
-                      <GrasslandFact
-                        division={zone.target.division}
-                        id={zone.target.id}
-                        year={manifest?.indicators.cob.years?.at(-1)}
-                      />
-                    )}
-                  </dl>
-                  {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
-                    <a
-                      href={`${outlinePath}?${new URLSearchParams({
-                        saved: zone.target.id,
-                        // Owners change their zones through their library, whatever their role in the project.
-                        ...(zone.target.project && !zone.access.own ? { project: zone.target.project } : {}),
-                      })}`}
-                      className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
-                    >
-                      {t("zone.outline.edit")}
-                    </a>
-                  )}
-                  {zone.target.kind !== "custom" &&
-                    (zone.target.kind !== "saved" || zone.access?.own) &&
-                    // The whole country has no layer on the map, where projects show their zones.
-                    (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
-                      <AddToProject
-                        t={t}
-                        item={projectItem(zone.target)}
-                        projectsPath={projectsPath}
-                        signInPath={signInPath}
-                      />
-                    )}
-                </div>
-                {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
+              <p role="status" className="mt-10 text-sm text-ink-muted">
+                {t("zone.loading")}
+              </p>
+            </>
+          ) : zone === null ? (
+            <>
+              {back}
+              <p role="status" className="mt-10 max-w-prose text-base text-ink">
+                {signedOut ? t("zone.signInToSee") : t("zone.notFound")}
+              </p>
+              {signedOut && (
                 <a
-                  href={mapHref}
-                  className="block w-32 shrink-0 rounded-sm"
-                  style={
-                    manifest ? { aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` } : undefined
-                  }
-                  aria-label={t("zone.viewOnMap")}
+                  href={`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`}
+                  className="mt-4 inline-block text-link underline underline-offset-(--ia-link-underline-offset)"
                 >
-                  {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
+                  {t("zone.signIn")}
                 </a>
-              </header>
-              {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
-                <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
               )}
-              {zone.target.kind === "saved" && (
-                <ZoneDocuments
-                  t={t}
-                  locale={locale}
-                  zoneId={zone.target.id}
-                  project={zone.target.project}
-                  own={zone.access?.own ?? false}
-                />
-              )}
-            </div>
-            <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">
-              <div className="lg:sticky lg:top-(--ia-layout-header) lg:pt-6">
-                <IndicatorNav indicator={indicator} onIndicator={setIndicator} />
+            </>
+          ) : (
+            // The indicator list stays put on the left (as on the map); the zone and its charts on the right.
+            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
+              <div className="min-w-0 lg:col-span-9 lg:col-start-4 lg:row-start-1">
+                {back}
+                <header className="mt-6 flex flex-wrap items-start justify-between gap-8 border-b border-line pb-8">
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink-subtle">{zone.kind}</p>
+                    <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
+                    {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
+                    <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
+                      {zone.geometry.type === "Point" ? (
+                        <>
+                          <Fact
+                            label={t("explorer.zone.latitude")}
+                            value={i18n.degrees(zone.geometry.coordinates[1])}
+                          />
+                          <Fact
+                            label={t("explorer.zone.longitude")}
+                            value={i18n.degrees(zone.geometry.coordinates[0])}
+                          />
+                        </>
+                      ) : (
+                        <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
+                      )}
+                      {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
+                      {zone.target.kind === "division" && (
+                        <GrasslandFact
+                          division={zone.target.division}
+                          id={zone.target.id}
+                          year={manifest?.indicators.cob.years?.at(-1)}
+                        />
+                      )}
+                    </dl>
+                    {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
+                      <a
+                        href={`${outlinePath}?${new URLSearchParams({
+                          saved: zone.target.id,
+                          // Owners change their zones through their library, whatever their role in the project.
+                          ...(zone.target.project && !zone.access.own ? { project: zone.target.project } : {}),
+                        })}`}
+                        className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
+                      >
+                        {t("zone.outline.edit")}
+                      </a>
+                    )}
+                    {zone.target.kind !== "custom" &&
+                      (zone.target.kind !== "saved" || zone.access?.own) &&
+                      // The whole country has no layer on the map, where projects show their zones.
+                      (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
+                        <AddToProject
+                          t={t}
+                          item={projectItem(zone.target)}
+                          projectsPath={projectsPath}
+                          signInPath={signInPath}
+                        />
+                      )}
+                  </div>
+                  {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
+                  <a
+                    href={mapHref}
+                    className="block w-32 shrink-0 rounded-sm"
+                    style={
+                      manifest ? { aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` } : undefined
+                    }
+                    aria-label={t("zone.viewOnMap")}
+                  >
+                    {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
+                  </a>
+                </header>
+                {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
+                  <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
+                )}
+                {zone.target.kind === "saved" && (
+                  <ZoneDocuments
+                    t={t}
+                    locale={locale}
+                    zoneId={zone.target.id}
+                    project={zone.target.project}
+                    own={zone.access?.own ?? false}
+                  />
+                )}
               </div>
-            </aside>
-            <div className="min-w-0 lg:col-span-9 lg:col-start-4">
-              {manifest ? (
-                <IndicatorPanel
-                  manifest={manifest}
-                  zone={zone}
-                  indicator={indicator}
-                  year={year}
-                  onYear={setYear}
-                  compared={compared}
-                  onCompared={setCompared}
-                />
-              ) : (
-                // Same footprint as the panel while the manifest loads.
-                <div className="min-h-120" />
-              )}
+              <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+                <div className="lg:sticky lg:top-(--ia-layout-header) lg:pt-6">
+                  <IndicatorNav indicator={indicator} onIndicator={setIndicator} />
+                </div>
+              </aside>
+              <div className="min-w-0 lg:col-span-9 lg:col-start-4">
+                {manifest ? (
+                  <IndicatorPanel
+                    manifest={manifest}
+                    zone={zone}
+                    indicator={indicator}
+                    year={year}
+                    onYear={setYear}
+                    compared={compared}
+                    onCompared={setCompared}
+                  />
+                ) : (
+                  // Same footprint as the panel while the manifest loads.
+                  <div className="min-h-120" />
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </CitationsContext.Provider>
     </I18nContext.Provider>
   );
 }
@@ -636,7 +660,7 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear, compared, onC
 function About({ indicator }: { indicator: IndicatorId }) {
   const { t } = useI18n();
   const field = (name: string) => t(`indicators.items.${indicator}.${name}` as AppKey);
-  const refs = indicators[indicator].references.map((r) => references[r as keyof typeof references] as Reference);
+  const refs = useContext(CitationsContext)[indicator] ?? [];
   return (
     <div className="grid gap-x-10 gap-y-6 text-sm md:grid-cols-2">
       <div>
@@ -670,14 +694,16 @@ function About({ indicator }: { indicator: IndicatorId }) {
                 {r.title}
               </span>
               . {r.source}.
-              {r.doi && (
+              {r.href && (
                 <>
                   {" "}
                   <a
-                    href={`https://doi.org/${r.doi}`}
+                    href={r.href}
+                    rel="noopener"
+                    target="_blank"
                     className="text-link underline-offset-(--ia-link-underline-offset) hover:underline"
                   >
-                    {t("science.doi", { doi: r.doi })}
+                    {r.doi ? t("science.doi", { doi: r.doi }) : r.url ? t("science.link") : t("science.pdf")}
                   </a>
                 </>
               )}
