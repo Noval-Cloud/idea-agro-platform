@@ -1017,8 +1017,6 @@ export const pt = {
       remove: "Remover o filtro {label}",
     },
     order: {
-      by: "Ordenar por",
-      label: "Ordem",
       text: { asc: "A → Z", desc: "Z → A" },
       date: { asc: "Mais antigos primeiro", desc: "Mais recentes primeiro" },
       number: { asc: "Do menor ao maior", desc: "Do maior ao menor" },

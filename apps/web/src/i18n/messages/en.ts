@@ -1017,8 +1017,6 @@ export const en = {
       remove: "Remove the {label} filter",
     },
     order: {
-      by: "Sort by",
-      label: "Order",
       text: { asc: "A → Z", desc: "Z → A" },
       date: { asc: "Oldest first", desc: "Newest first" },
       number: { asc: "Smallest first", desc: "Largest first" },
