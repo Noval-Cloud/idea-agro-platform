@@ -619,6 +619,14 @@ class SiteTextMatch(BaseModel):
     draft: bool = Field(description="Whether a draft waits.")
 
 
+class SiteRebuildOut(BaseModel):
+    """Whether the website shows the published texts yet."""
+
+    published_at: datetime | None = Field(description="When a text was last published.")
+    started_at: datetime | None = Field(description="When the website's latest build was asked for.")
+    quiet_minutes: int = Field(description="Minutes without a publish after which the build is asked for by itself.")
+
+
 class TextSection(BaseModel):
     """A part of the site's texts: the first part of their keys."""
 

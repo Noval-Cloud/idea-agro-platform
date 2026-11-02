@@ -110,8 +110,11 @@ The `ci` module declares this product's triggers there, all running as `idea-agr
 - **Checks:** `idea-agro-checks` runs `make setup` and `make check` in the CI image (`ci/checks.cloudbuild.yaml`) on every pull request into `main`, and reports the result on it. Pull requests from outside the team run only after a collaborator comments `/gcbrun`.
 - **CI image:** `idea-agro-ci-image` rebuilds it from `ci/` when a pinned tool version changes (`.node-version`, `package.json`, `pyproject.toml`, `.python-version`, `terraform/providers.tf`).
 - **Deploys:** on a push to `main`, `idea-agro-<env>-api`, `-web` and `-jobs` rebuild what changed and update only the image of its service or job in the environment's project.
+- **Website rebuild:** `idea-agro-<env>-web-rebuild` builds the website from `main` when a message reaches its topic, `idea-agro-<env>-web-rebuild`. Editors' published texts start it: the data job's `site` task and the API's "Update the site now" may only publish to that topic.
 
 Checks and the CI image belong to no environment: only the one with `ci.shared = true` declares them.
+
+The rebuild's topic lives in `novalcloud-setup` too, so the operator needs `roles/pubsub.admin` there, which org-setup grants to product operators; apply it before the first plan that declares the topic.
 
 Images go to `<region>-docker.pkg.dev/novalcloud-setup/containers/idea-agro/`. Each environment's Cloud Run pulls them from there, and `idea-agro-build` may update only that environment's services and job; org-setup grants the first, each module's `iam.tf` the second.
 

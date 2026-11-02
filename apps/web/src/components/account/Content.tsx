@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PluralText,
+  SiteRebuildOut,
   SiteTextMatch,
   SiteTextOut,
   TextSection,
@@ -64,10 +65,15 @@ export default function Content({ translator }: { translator: AccountTranslator 
   // Grows after every change, so the lists show what changed.
   const [changed, setChanged] = useState(0);
 
+  // A new query or view shows "loading"; a reload after a change keeps the list, and its scroll, until it arrives.
+  const asked = useRef("");
   useEffect(() => {
     let live = true;
+    const wanted = `${view}|${query}|${section ?? ""}`;
+    const fresh = asked.current !== wanted;
+    asked.current = wanted;
     const load = (call: Run) => {
-      setList("loading");
+      if (fresh) setList("loading");
       void run<SiteTextMatch[]>(call)
         .then((found) => live && setList(found))
         .catch(() => live && setList("failed"));
@@ -108,6 +114,7 @@ export default function Content({ translator }: { translator: AccountTranslator 
         </h2>
         <p className="mt-1 text-sm text-ink-muted">{t("account.content.body")}</p>
       </div>
+      <SiteStatus translator={translator} changed={changed} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="grid content-start gap-3">
           <div role="group" aria-label={t("account.content.title")} className="flex gap-1">
@@ -222,6 +229,93 @@ function Badge({ children, tone = "edited" }: { children: string; tone?: "edited
     >
       {children}
     </span>
+  );
+}
+
+const STALLED_MS = 20 * 60_000;
+
+/** When the site last built: written by each build, absent where the site is not built (local runs). */
+async function builtAt(): Promise<string | null> {
+  try {
+    const response = await fetch("/build.json", { cache: "no-store" });
+    return response.ok ? ((await response.json()) as { built_at: string }).built_at : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether the site shows what editors published: behind, updating, or up to date. Changes accumulate; the site
+ * rebuilds by itself some minutes after the last one, or at once when asked.
+ */
+function SiteStatus({ translator, changed }: { translator: AccountTranslator; changed: number }) {
+  const { t, moment, ago } = translator;
+  const [state, setState] = useState<{ rebuild: SiteRebuildOut; built: string | null } | null>(null);
+  const [asking, setAsking] = useState<"idle" | "busy" | "unavailable" | "failed">("idle");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    void Promise.all([run<SiteRebuildOut>((client, init) => client.getRebuild(init)), builtAt()])
+      .then(([rebuild, built]) => live && setState({ rebuild, built }))
+      .catch(() => live && setState(null));
+    return () => {
+      live = false;
+    };
+  }, [changed, tick]);
+
+  const published = state?.rebuild.published_at ?? null;
+  const started = state?.rebuild.started_at ?? null;
+  const built = state?.built ?? null;
+  const time = (value: string | null) => (value ? new Date(value).getTime() : 0);
+  const behind = Boolean(published && time(published) > time(built));
+  const updating = behind && time(started) >= time(published);
+  // A build takes minutes; one asked for long ago that the site does not show may have failed.
+  const stalled = updating && Date.now() - time(started) > STALLED_MS;
+
+  // While the site is behind, look again every half minute.
+  useEffect(() => {
+    if (!behind) return;
+    const timer = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(timer);
+  }, [behind]);
+
+  if (!state) return null;
+  const updateNow = async () => {
+    setAsking("busy");
+    try {
+      const [{ privately }, client] = await api();
+      const response = await privately((init) => client.startRebuild(init));
+      if (response.status === 503) return setAsking("unavailable");
+      if (response.status !== 200) return setAsking("failed");
+      setState({ ...state, rebuild: response.data });
+      setAsking("idle");
+    } catch {
+      setAsking("failed");
+    }
+  };
+
+  return (
+    <div role="status" className={cn(card, "flex flex-wrap items-center justify-between gap-3 p-4 text-sm")}>
+      <p className="text-ink-muted">
+        {!behind
+          ? built
+            ? t("account.content.site.upToDate", { at: moment(built) })
+            : t("account.content.site.noBuild")
+          : stalled
+            ? t("account.content.site.stalled")
+            : updating
+              ? t("account.content.site.updating", { ago: started ? ago(started) : "" })
+              : t("account.content.site.behind", { minutes: state.rebuild.quiet_minutes })}
+        {asking === "unavailable" && <span className="block text-danger">{t("account.content.site.unavailable")}</span>}
+        {asking === "failed" && <span className="block text-danger">{t("account.content.site.failed")}</span>}
+      </p>
+      {behind && (!updating || stalled) && (
+        <Button size="sm" variant="outline" disabled={asking === "busy"} onClick={() => void updateNow()}>
+          {t("account.content.site.updateNow")}
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -358,6 +452,7 @@ function Editor({
                     {t(form === "one" ? "account.content.forms.singular" : "account.content.forms.plural")}
                     <Input
                       id={form === "one" ? id : undefined}
+                      aria-label={`${t(`account.content.languages.${language}`)}: ${t(form === "one" ? "account.content.forms.singular" : "account.content.forms.plural")}`}
                       value={value[form]}
                       aria-invalid={issue ? true : undefined}
                       aria-describedby={`${id}-help`}

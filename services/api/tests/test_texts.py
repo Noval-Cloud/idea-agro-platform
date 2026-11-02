@@ -175,3 +175,20 @@ def test_a_plain_text_refuses_plural_forms(client: TestClient) -> None:
 
     assert response.status_code == 422
     assert "plain text" in response.json()["detail"]
+
+
+def test_a_publish_puts_the_site_behind_until_a_build_is_asked_for(client: TestClient, services: Services) -> None:
+    assert client.get("/v1/texts/rebuild", headers=ANA).json()["published_at"] is None
+
+    put(client, publish=False, es="{indicator} en {year}")
+    assert client.get("/v1/texts/rebuild", headers=ANA).json()["published_at"] is None
+    put(client, es="{indicator} en {year}")
+    behind = client.get("/v1/texts/rebuild", headers=ANA).json()
+    assert behind["published_at"] is not None
+    assert behind["started_at"] is None
+    assert behind["quiet_minutes"] == 5
+
+    started = client.post("/v1/texts/rebuild", headers=ANA).json()
+
+    assert started["started_at"] >= behind["published_at"]
+    assert client.post("/v1/texts/rebuild", headers=BO).status_code == 403

@@ -192,3 +192,43 @@ variable "series_condition_title" {
   type        = string
   default     = "Saved zones' series only"
 }
+
+variable "records_database" {
+  description = "The API's Firestore database, where the site task reads when texts were published"
+  type        = string
+}
+
+variable "web_rebuild_topic" {
+  description = "Topic whose messages rebuild the website: `projects/<project>/topics/<name>`"
+  type        = string
+}
+
+variable "site_schedule" {
+  description = "When the site task looks for published texts to build, in cron syntax"
+  type        = string
+  default     = "*/5 * * * *"
+}
+
+variable "site_args" {
+  description = "The arguments the site schedule runs the job with"
+  type        = list(string)
+  default     = ["site"]
+}
+
+variable "overrides_role" {
+  description = "Role that lets the site schedule start the job with arguments of its own"
+  type        = string
+  default     = "roles/run.jobsExecutorWithOverrides"
+}
+
+variable "records_role" {
+  description = "Role that lets the site task read and write the publishing state in Firestore"
+  type        = string
+  default     = "roles/datastore.user"
+}
+
+variable "publisher_role" {
+  description = "Role that lets the site task ask for the website's build"
+  type        = string
+  default     = "roles/pubsub.publisher"
+}

@@ -50,3 +50,10 @@ resource "google_cloud_run_v2_job_iam_member" "api_starts_zone_job" {
   role     = var.zone_job_role
   member   = google_service_account.api.member
 }
+
+# "Update the site now" asks for the website's build; the API cannot start builds itself.
+resource "google_pubsub_topic_iam_member" "api_rebuilds_web" {
+  topic  = var.web_rebuild_topic
+  role   = var.publisher_role
+  member = google_service_account.api.member
+}

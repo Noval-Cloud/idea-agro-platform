@@ -3,7 +3,7 @@
 `PUBLIC_DATA` is where the API's public files are (`gs://<bucket>` or a folder), `VALUES_STORE` the BigQuery
 dataset of the zones' values (`bigquery://<project>/<dataset>`), `SAVED_ZONES` where the API keeps the saved zones'
 outlines, `EARTH_ENGINE_PROJECT` the Cloud project registered for Earth Engine, and `MAP_THEME` the website's map
-palettes.
+palettes. The site task reads `RECORDS_DATABASE`, the API's Firestore database, and publishes to `WEB_REBUILD_TOPIC`.
 """
 
 import argparse
@@ -12,7 +12,7 @@ import logging
 import os
 from pathlib import Path
 
-from idea_agro_jobs import maps, outlines, saved, values
+from idea_agro_jobs import maps, outlines, saved, site, values
 from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
@@ -24,6 +24,7 @@ TASKS = {
     "values": "add the periods BigQuery is missing and publish the values",
     "maps": "draw the maps of new years, and the thumbnails of the latest",
     "saved": "add the composites the saved zones' seasonal series lack",
+    "site": "ask for the website's build once the texts editors published have settled",
 }
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
@@ -90,6 +91,11 @@ def main() -> None:
                 files,
                 maps.themes_from(Path(os.environ.get("MAP_THEME", MAP_THEME))),
                 recompute=arguments.recompute,
+            )
+        elif task == "site":
+            site.refresh(
+                site.FirestoreSiteState(os.environ["RECORDS_DATABASE"]),
+                site.PubSubBuilds(os.environ["WEB_REBUILD_TOPIC"]),
             )
         elif task == "saved":
             saved.refresh(

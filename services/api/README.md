@@ -64,6 +64,7 @@ Editors change every text the website shows under `/v1/texts/{key}`, and anyone 
 
 - **Which texts exist:** `site_texts.json` holds each key's format (`plain`, `markdown` or `plural`) and its default in every language. `make generate` exports it from the website's catalogs, and `make contract` fails when it is behind them. A new text is a code change.
 - **What is stored:** the `site_texts` collection keeps, per key, the published edits and any draft. Only languages that differ from their default are kept, so a default the code changes still shows. `site_text_versions` keeps every change, and the audit log records it.
+- **Reaching the site:** a publish records the time in `site_state/texts`. The data job's `site` task asks for the website's build once publishes settle, and `POST /v1/texts/rebuild` asks at once; both publish to `WEB_REBUILD_TOPIC`, which only a Cloud Build trigger listens to. `GET /v1/texts/rebuild` says whether the site is behind, which the website compares with its own `/build.json`.
 - **Rules:** editors (or admins) publish directly, or save a draft that any of them publishes or discards. An edit keeps its default's placeholders, and a plural one both forms. A version can be brought back, or a text returned to its defaults.
 
 ## Emails

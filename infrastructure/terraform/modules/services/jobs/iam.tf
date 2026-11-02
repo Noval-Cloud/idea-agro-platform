@@ -61,3 +61,16 @@ locals {
   # How Cloud Storage names the objects under the outlines' prefix in IAM conditions.
   outlines = "projects/_/buckets/${var.saved_zones_bucket}/objects/${var.outlines_prefix}"
 }
+
+# The site task reads when texts were published and writes when it asked for a build.
+resource "google_project_iam_member" "jobs_records" {
+  project = var.project
+  role    = var.records_role
+  member  = google_service_account.jobs.member
+}
+
+resource "google_pubsub_topic_iam_member" "jobs_rebuild_web" {
+  topic  = var.web_rebuild_topic
+  role   = var.publisher_role
+  member = google_service_account.jobs.member
+}

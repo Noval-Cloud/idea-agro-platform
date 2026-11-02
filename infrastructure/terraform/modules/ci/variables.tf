@@ -120,3 +120,15 @@ variable "external_pull_requests" {
   type        = string
   default     = "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
 }
+
+variable "rebuild_ref" {
+  description = "Git reference the website is rebuilt from when editors publish"
+  type        = string
+  default     = "refs/heads/main"
+}
+
+variable "repository_type" {
+  description = "Kind of host of this repository, as Cloud Build names it"
+  type        = string
+  default     = "GITHUB"
+}
