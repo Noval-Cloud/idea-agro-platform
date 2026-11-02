@@ -2974,6 +2974,14 @@
       "pt": "Editores"
     }
   },
+  "account.users.filters.system": {
+    "format": "plain",
+    "default": {
+      "es": "Cuentas de sistema",
+      "en": "System accounts",
+      "pt": "Contas de sistema"
+    }
+  },
   "account.users.manage": {
     "format": "plain",
     "default": {
@@ -3148,6 +3156,14 @@
       "es": "Cuenta de sistema",
       "en": "System account",
       "pt": "Conta de sistema"
+    }
+  },
+  "account.users.systemChip": {
+    "format": "plain",
+    "default": {
+      "es": "Sistema",
+      "en": "System",
+      "pt": "Sistema"
     }
   },
   "account.users.viewLabel": {

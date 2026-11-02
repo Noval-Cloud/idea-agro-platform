@@ -1434,6 +1434,7 @@ export const en = {
         editor: "Editors",
         client: "Clients only",
         disabled: "Disabled",
+        system: "System accounts",
       },
       sortLabel: "Order",
       sorts: {
@@ -1464,6 +1465,7 @@ export const en = {
       accessDisabled: "This account is disabled and cannot use the platform.",
       recoveryTitle: "Recovery",
       recoveryBody: "Emails them a link to recover their password, if they sign in with one.",
+      systemChip: "System",
     },
     audit: {
       failed: "We couldn't load the log. Try again.",

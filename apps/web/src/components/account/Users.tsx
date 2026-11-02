@@ -16,13 +16,15 @@ type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
 /** An action and what it is called, for the person to recognize when asked to confirm it. */
 type Action = { run: Run; label: string; account: AdminAccount };
 type Sort = "name" | "newest" | "oldest";
-type Filter = "all" | "admin" | "editor" | "client" | "disabled";
+type Filter = "all" | "admin" | "editor" | "client" | "disabled" | "system";
 type View = "table" | "cards";
 
 const sorts: Sort[] = ["name", "newest", "oldest"];
-const filters: Filter[] = ["all", "admin", "editor", "client", "disabled"];
+const filters: Filter[] = ["all", "admin", "editor", "client", "disabled", "system"];
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 const VIEW_KEY = "ia-users-view";
+// People sign in with an email; an account without one is the platform's own, such as the tests'.
+const isSystem = (account: AdminAccount) => !account.email;
 
 const readView = (): View => {
   try {
@@ -51,7 +53,6 @@ export default function Users({ translator, signInPath, me }: Props) {
   const confirm = useRef<(() => Promise<void>) | null>(null);
   const asking = useConfirm(t("account.users.cancel"));
 
-  // Someone without a name or an email is an account the platform itself uses.
   const nameOf = (account: AdminAccount) => account.name || account.email || t("account.users.system");
 
   useEffect(() => {
@@ -193,9 +194,11 @@ export default function Users({ translator, signInPath, me }: Props) {
       },
     });
 
+  // The platform's own accounts show only when asked for.
   const shown = (accounts ?? [])
+    .filter((a) => (filter === "system") === isSystem(a))
     .filter((a) =>
-      filter === "all"
+      filter === "all" || filter === "system"
         ? true
         : filter === "disabled"
           ? a.disabled
@@ -321,6 +324,7 @@ export default function Users({ translator, signInPath, me }: Props) {
                     {roles(account).map((role) => (
                       <RoleChip key={role}>{t(`account.roles.${role}`)}</RoleChip>
                     ))}
+                    {isSystem(account) && <RoleChip>{t("account.users.systemChip")}</RoleChip>}
                     {account.disabled && <RoleChip tone="danger">{t("account.users.disabled")}</RoleChip>}
                     <span>{t("account.users.since", { date: date(account.created_at) })}</span>
                   </span>
@@ -366,8 +370,9 @@ export default function Users({ translator, signInPath, me }: Props) {
                           {roles(account).map((role) => (
                             <RoleChip key={role}>{t(`account.roles.${role}`)}</RoleChip>
                           ))}
+                          {isSystem(account) && <RoleChip>{t("account.users.systemChip")}</RoleChip>}
                           {account.disabled && <RoleChip tone="danger">{t("account.users.disabled")}</RoleChip>}
-                          {roles(account).length === 0 && !account.disabled && (
+                          {roles(account).length === 0 && !account.disabled && !isSystem(account) && (
                             <span className="text-ink-subtle">{t("account.roles.client")}</span>
                           )}
                         </span>

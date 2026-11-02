@@ -1433,6 +1433,7 @@ export const pt = {
         editor: "Editores",
         client: "Só clientes",
         disabled: "Desativadas",
+        system: "Contas de sistema",
       },
       sortLabel: "Ordem",
       sorts: {
@@ -1463,6 +1464,7 @@ export const pt = {
       accessDisabled: "Esta conta está desativada e não pode usar a plataforma.",
       recoveryTitle: "Recuperação",
       recoveryBody: "Envia ao e-mail um link para recuperar a senha, se entra com uma.",
+      systemChip: "Sistema",
     },
     audit: {
       failed: "Não conseguimos carregar o registro. Tente de novo.",

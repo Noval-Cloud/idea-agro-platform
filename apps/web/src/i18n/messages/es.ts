@@ -1434,6 +1434,7 @@ export const es = {
         editor: "Editores",
         client: "Solo clientes",
         disabled: "Deshabilitadas",
+        system: "Cuentas de sistema",
       },
       sortLabel: "Orden",
       sorts: {
@@ -1464,6 +1465,7 @@ export const es = {
       accessDisabled: "Esta cuenta está deshabilitada y no puede usar la plataforma.",
       recoveryTitle: "Recuperación",
       recoveryBody: "Envía a su correo un enlace para recuperar la contraseña, si ingresa con una.",
+      systemChip: "Sistema",
     },
     audit: {
       failed: "No pudimos cargar el registro. Probá de nuevo.",
