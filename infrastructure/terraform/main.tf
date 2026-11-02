@@ -27,18 +27,19 @@ module "identity" {
 module "api" {
   source = "./modules/services/api"
 
-  project          = var.project
-  region           = var.region
-  builder_member   = local.builder_member
-  auth_issuer      = module.identity.issuer
-  auth_audience    = module.identity.audience
-  auth_jwks_url    = module.identity.jwks_url
-  records_database = module.platform.firestore_database
-  values_dataset   = module.platform.values_dataset
-  admin_emails     = var.admin_emails
-  site_url         = local.site_url
-  zone_job         = module.jobs.job
-  domain           = var.domain == "" ? "" : "${var.api_subdomain}.${var.domain}"
+  project           = var.project
+  region            = var.region
+  builder_member    = local.builder_member
+  auth_issuer       = module.identity.issuer
+  auth_audience     = module.identity.audience
+  auth_jwks_url     = module.identity.jwks_url
+  records_database  = module.platform.firestore_database
+  values_dataset    = module.platform.values_dataset
+  admin_emails      = var.admin_emails
+  site_url          = local.site_url
+  zone_job          = module.jobs.job
+  web_rebuild_topic = module.ci.web_rebuild_topic
+  domain            = var.domain == "" ? "" : "${var.api_subdomain}.${var.domain}"
 }
 
 module "jobs" {
@@ -50,6 +51,8 @@ module "jobs" {
   values_dataset = module.platform.values_dataset
   zones_bucket   = module.api.zones_bucket
 
+  records_database   = module.platform.firestore_database
+  web_rebuild_topic  = module.ci.web_rebuild_topic
   saved_zones_bucket = module.api.geometries_bucket
   outlines_prefix    = module.api.outlines_prefix
   series_suffix      = module.api.series_suffix

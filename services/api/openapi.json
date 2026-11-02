@@ -4702,6 +4702,108 @@
         }
       }
     },
+    "/v1/texts/rebuild": {
+      "get": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Whether the site shows the published texts",
+        "description": "When a text was last published and when the website's latest build was asked for. The build is asked for by itself once no text has been published for `quiet_minutes`. For editors.",
+        "operationId": "get_rebuild",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteRebuildOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Texts"
+        ],
+        "summary": "Update the site now",
+        "description": "Asks for the website's build at once, with every text published so far. For editors.",
+        "operationId": "start_rebuild",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteRebuildOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A service it depends on did not answer: try again later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/texts/sections": {
       "get": {
         "tags": [
@@ -8523,6 +8625,49 @@
         ],
         "title": "SharedOut",
         "description": "The project once shared, and whether the person invited was told by email."
+      },
+      "SiteRebuildOut": {
+        "properties": {
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At",
+            "description": "When a text was last published."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "When the website's latest build was asked for."
+          },
+          "quiet_minutes": {
+            "type": "integer",
+            "title": "Quiet Minutes",
+            "description": "Minutes without a publish after which the build is asked for by itself."
+          }
+        },
+        "type": "object",
+        "required": [
+          "published_at",
+          "started_at",
+          "quiet_minutes"
+        ],
+        "title": "SiteRebuildOut",
+        "description": "Whether the website shows the published texts yet."
       },
       "SiteTextMatch": {
         "properties": {

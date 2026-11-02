@@ -1761,6 +1761,28 @@ export const GetPublishedTextsResponse = zod.object({
 
 
 /**
+ * When a text was last published and when the website's latest build was asked for. The build is asked for by itself once no text has been published for `quiet_minutes`. For editors.
+ * @summary Whether the site shows the published texts
+ */
+export const GetRebuildResponse = zod.object({
+  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When a text was last published.'),
+  "started_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the website\'s latest build was asked for.'),
+  "quiet_minutes": zod.int().describe('Minutes without a publish after which the build is asked for by itself.')
+}).describe('Whether the website shows the published texts yet.')
+
+
+/**
+ * Asks for the website's build at once, with every text published so far. For editors.
+ * @summary Update the site now
+ */
+export const StartRebuildResponse = zod.object({
+  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When a text was last published.'),
+  "started_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When the website\'s latest build was asked for.'),
+  "quiet_minutes": zod.int().describe('Minutes without a publish after which the build is asked for by itself.')
+}).describe('Whether the website shows the published texts yet.')
+
+
+/**
  * Each first part of the keys, with how many texts it has, are edited and have a draft. For editors.
  * @summary The parts of the site's texts
  */

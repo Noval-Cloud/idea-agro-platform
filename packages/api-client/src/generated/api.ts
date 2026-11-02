@@ -1090,6 +1090,18 @@ export interface SharedOut {
   invitation_sent: boolean | null;
 }
 
+/**
+ * Whether the website shows the published texts yet.
+ */
+export interface SiteRebuildOut {
+  /** When a text was last published. */
+  published_at: string | null;
+  /** When the website's latest build was asked for. */
+  started_at: string | null;
+  /** Minutes without a publish after which the build is asked for by itself. */
+  quiet_minutes: number;
+}
+
 export type SiteTextMatchFormat = typeof SiteTextMatchFormat[keyof typeof SiteTextMatchFormat];
 
 
@@ -8640,6 +8652,236 @@ export function useGetPublishedTexts<TData = Awaited<ReturnType<typeof getPublis
 
 
 
+
+export type getRebuildResponse200 = {
+  data: SiteRebuildOut
+  status: 200
+}
+
+export type getRebuildResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type getRebuildResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type getRebuildResponseSuccess = (getRebuildResponse200) & {
+  headers: Headers;
+};
+export type getRebuildResponseError = (getRebuildResponse401 | getRebuildResponse403) & {
+  headers: Headers;
+};
+
+export type getRebuildResponse = (getRebuildResponseSuccess | getRebuildResponseError)
+
+export const getGetRebuildUrl = () => {
+
+
+
+
+  return `/v1/texts/rebuild`
+}
+
+/**
+ * When a text was last published and when the website's latest build was asked for. The build is asked for by itself once no text has been published for `quiet_minutes`. For editors.
+ * @summary Whether the site shows the published texts
+ */
+export const getRebuild = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getRebuildResponse> => {
+
+  return apiFetch<getRebuildResponse>(getGetRebuildUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRebuildQueryKey = () => {
+    return [
+    `/v1/texts/rebuild`
+    ] as const;
+    }
+
+
+export const getGetRebuildQueryOptions = <TData = Awaited<ReturnType<typeof getRebuild>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRebuildQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRebuild>>> = ({ signal }) => getRebuild({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRebuildQueryResult = NonNullable<Awaited<ReturnType<typeof getRebuild>>>
+export type GetRebuildQueryError = Problem
+
+
+export function useGetRebuild<TData = Awaited<ReturnType<typeof getRebuild>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRebuild>>,
+          TError,
+          Awaited<ReturnType<typeof getRebuild>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRebuild<TData = Awaited<ReturnType<typeof getRebuild>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRebuild>>,
+          TError,
+          Awaited<ReturnType<typeof getRebuild>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRebuild<TData = Awaited<ReturnType<typeof getRebuild>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Whether the site shows the published texts
+ */
+
+export function useGetRebuild<TData = Awaited<ReturnType<typeof getRebuild>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRebuild>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRebuildQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type startRebuildResponse200 = {
+  data: SiteRebuildOut
+  status: 200
+}
+
+export type startRebuildResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type startRebuildResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type startRebuildResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type startRebuildResponseSuccess = (startRebuildResponse200) & {
+  headers: Headers;
+};
+export type startRebuildResponseError = (startRebuildResponse401 | startRebuildResponse403 | startRebuildResponse503) & {
+  headers: Headers;
+};
+
+export type startRebuildResponse = (startRebuildResponseSuccess | startRebuildResponseError)
+
+export const getStartRebuildUrl = () => {
+
+
+
+
+  return `/v1/texts/rebuild`
+}
+
+/**
+ * Asks for the website's build at once, with every text published so far. For editors.
+ * @summary Update the site now
+ */
+export const startRebuild = async ( options?: Parameters<typeof apiFetch>[1]): Promise<startRebuildResponse> => {
+
+  return apiFetch<startRebuildResponse>(getStartRebuildUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartRebuildMutationKey = () => ['startRebuild'] as const;
+
+export const getStartRebuildMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startRebuild>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startRebuild>>, TError,void, TContext> => {
+
+const mutationKey = getStartRebuildMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startRebuild>>, void> = () => {
+
+
+          return  startRebuild(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartRebuildMutationResult = NonNullable<Awaited<ReturnType<typeof startRebuild>>>
+
+    export type StartRebuildMutationError = Problem
+
+
+    /**
+ * @summary Update the site now
+ */
+export const useStartRebuild = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startRebuild>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startRebuild>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartRebuildMutationOptions(options), queryClient);
+    }
 
 export type listSectionsResponse200 = {
   data: TextSection[]

@@ -50,6 +50,13 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 - **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along. `--recompute <indicator>` computes that indicator again for every version, so a restore does not bring back its replaced values.
 - **Failures:** an outline Earth Engine cannot read is logged as an error, which alerts. The others go on, and the next run tries it again.
 
+## Site
+
+`idea-agro-jobs site` asks for the website's build once the texts editors published have settled: no publish for `QUIET` (5 minutes, `site.py`) since the last one, and no build asked for since. A schedule runs it every 5 minutes (`site_schedule`).
+
+- **State:** the API writes when a text was last published, and this task when it asked for a build, in `site_state/texts` of the API's Firestore database (`RECORDS_DATABASE`).
+- **Asking:** it publishes a message to `WEB_REBUILD_TOPIC`, which a Cloud Build trigger listens to. The job may only publish there, never start builds itself. The API's "Update the site now" publishes the same message.
+
 ## Earth Engine
 
 `earth.py` computes what the prototype computed (`apps/web/scripts/prototype-data/extract.mjs`). It reads the assets as they are, selecting only the bands it needs:

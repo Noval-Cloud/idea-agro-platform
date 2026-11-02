@@ -93,26 +93,45 @@ resource "google_cloudbuild_trigger" "web" {
   filename        = "apps/web/cloudbuild.yaml"
   included_files  = var.web_files
   service_account = local.service_account
-  substitutions = {
-    _CI_IMAGE         = local.ci_image
-    _IMAGE_REPOSITORY = var.image_repository
-    _PROJECT          = var.deploy_project
-    _SERVICE          = var.web_service
-    _REGION           = var.region
-    _SITE_URL         = var.web_settings.site_url
-    _API_URL          = var.web_settings.api_url
-    _AUTH_DOMAIN      = var.web_settings.auth_domain
-    _AUTH_KEY         = var.web_settings.auth_key
-    _CSP_CONNECT      = join(" ", var.web_settings.csp["connect"])
-    _CSP_FRAME        = join(" ", var.web_settings.csp["frame"])
-    _CSP_SCRIPT       = join(" ", var.web_settings.csp["script"])
-    _CSP_IMAGES       = join(" ", var.web_settings.csp["images"])
-  }
+  substitutions   = local.web_substitutions
 
   repository_event_config {
     repository = var.repository
     push {
       branch = var.main_branch
     }
+  }
+}
+
+# Editors' published texts rebuild the website from main: the API and the data job publish to this topic, and only
+# this trigger builds.
+resource "google_pubsub_topic" "web_rebuild" {
+  project = var.project
+  name    = "${local.deploy_prefix}-web-rebuild"
+}
+
+resource "google_cloudbuild_trigger" "web_rebuild" {
+  project         = var.project
+  location        = var.region
+  name            = "${local.deploy_prefix}-web-rebuild"
+  description     = "Rebuilds the website in ${var.environment} with the texts editors published"
+  service_account = local.service_account
+  substitutions   = local.web_substitutions
+
+  pubsub_config {
+    topic = google_pubsub_topic.web_rebuild.id
+  }
+
+  source_to_build {
+    repository = var.repository
+    ref        = var.rebuild_ref
+    repo_type  = var.repository_type
+  }
+
+  git_file_source {
+    path       = "apps/web/cloudbuild.yaml"
+    repository = var.repository
+    revision   = var.rebuild_ref
+    repo_type  = var.repository_type
   }
 }

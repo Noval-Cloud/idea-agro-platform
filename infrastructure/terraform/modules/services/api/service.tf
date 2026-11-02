@@ -62,6 +62,10 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.site_url
       }
       env {
+        name  = "WEB_REBUILD_TOPIC"
+        value = var.web_rebuild_topic
+      }
+      env {
         name  = "ZONE_JOB"
         value = var.zone_job == "" ? "none" : "run://projects/${var.project}/locations/${var.region}/jobs/${var.zone_job}"
       }

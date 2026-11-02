@@ -1165,6 +1165,16 @@ export const es = {
       nothing: "No hay textos que coincidan.",
       listFailed: "No pudimos cargar la lista. Probá de nuevo.",
       saveFailed: "No pudimos guardar el cambio. Revisá el texto y probá de nuevo.",
+      site: {
+        behind:
+          "Hay cambios publicados que el sitio todavía no muestra. Se actualiza solo {minutes} minutos después del último cambio.",
+        updating: "Actualizando el sitio con lo publicado (empezó {ago}). Tarda unos minutos.",
+        upToDate: "El sitio muestra todo lo publicado. Última actualización: {at}.",
+        noBuild: "El sitio muestra todo lo publicado.",
+        updateNow: "Actualizar el sitio ahora",
+        unavailable: "En este entorno el sitio no se actualiza desde acá.",
+        failed: "No pudimos pedir la actualización. Probá de nuevo.",
+      },
       failed: "No pudimos cargar el texto. Probá de nuevo.",
       edited: "Editado",
       draft: "Borrador",

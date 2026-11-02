@@ -35,6 +35,14 @@ resource "google_cloud_run_v2_job" "data" {
           name  = "SAVED_ZONES"
           value = "gs://${var.saved_zones_bucket}"
         }
+        env {
+          name  = "RECORDS_DATABASE"
+          value = var.records_database
+        }
+        env {
+          name  = "WEB_REBUILD_TOPIC"
+          value = var.web_rebuild_topic
+        }
 
         resources {
           limits = {

@@ -1165,6 +1165,16 @@ export const en = {
       nothing: "No text matches.",
       listFailed: "We could not load the list. Try again.",
       saveFailed: "We could not save the change. Check the text and try again.",
+      site: {
+        behind:
+          "There are published changes the site does not show yet. It updates by itself {minutes} minutes after the last change.",
+        updating: "Updating the site with what was published (started {ago}). It takes a few minutes.",
+        upToDate: "The site shows everything published. Last updated: {at}.",
+        noBuild: "The site shows everything published.",
+        updateNow: "Update the site now",
+        unavailable: "In this environment the site does not update from here.",
+        failed: "We could not ask for the update. Try again.",
+      },
       failed: "We could not load the text. Try again.",
       edited: "Edited",
       draft: "Draft",

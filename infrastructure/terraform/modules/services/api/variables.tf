@@ -234,3 +234,15 @@ variable "domain" {
   type        = string
   default     = ""
 }
+
+variable "web_rebuild_topic" {
+  description = "Topic whose messages rebuild the website, which \"Update the site now\" publishes to; empty for none"
+  type        = string
+  default     = ""
+}
+
+variable "publisher_role" {
+  description = "Role that lets the API ask for the website's build"
+  type        = string
+  default     = "roles/pubsub.publisher"
+}
