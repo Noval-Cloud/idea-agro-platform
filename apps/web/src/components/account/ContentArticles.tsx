@@ -25,7 +25,8 @@ function usePublished(changed: number) {
   const [published, setPublished] = useState<PublishedArticles | null | "failed">(null);
   useEffect(() => {
     void import("@idea-agro/api-client")
-      .then((client) => client.listArticles())
+      // The public list is cacheable; an editor needs what was just saved.
+      .then((client) => client.listArticles({ cache: "no-store" }))
       .then((response) => setPublished(response.status === 200 ? response.data : "failed"))
       .catch(() => setPublished("failed"));
   }, [changed]);
