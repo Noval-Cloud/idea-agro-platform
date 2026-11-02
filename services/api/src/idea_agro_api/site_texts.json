@@ -256,6 +256,22 @@
       }
     }
   },
+  "account.audit.citeOne": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} {year}",
+      "en": "{surname} {year}",
+      "pt": "{surname} {year}"
+    }
+  },
+  "account.audit.citeSeveral": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} et al. {year}",
+      "en": "{surname} et al. {year}",
+      "pt": "{surname} et al. {year}"
+    }
+  },
   "account.audit.count": {
     "format": "plural",
     "default": {
@@ -327,14 +343,6 @@
       "es": "Textos",
       "en": "Texts",
       "pt": "Textos"
-    }
-  },
-  "account.audit.noMatch": {
-    "format": "plain",
-    "default": {
-      "es": "Ninguna acción coincide con los filtros.",
-      "en": "No action matches the filters.",
-      "pt": "Nenhuma ação corresponde aos filtros."
     }
   },
   "account.audit.noRoles": {
@@ -425,29 +433,20 @@
       "pt": "Como são citados: \"Paruelo, J. M. & Lauenroth, W. K.\"."
     }
   },
+  "account.content.articles.byline": {
+    "format": "plain",
+    "default": {
+      "es": "{authors} · {year}",
+      "en": "{authors} · {year}",
+      "pt": "{authors} · {year}"
+    }
+  },
   "account.content.articles.citedBy": {
     "format": "plain",
     "default": {
       "es": "Lo citan: {names}.",
       "en": "Cited by {names}.",
       "pt": "Citado por {names}."
-    }
-  },
-  "account.content.articles.citedByCount": {
-    "format": "plural",
-    "default": {
-      "es": {
-        "one": "Lo cita {count} indicador",
-        "other": "Lo citan {count} indicadores"
-      },
-      "en": {
-        "one": "Cited by {count} indicator",
-        "other": "Cited by {count} indicators"
-      },
-      "pt": {
-        "one": "Citado por {count} indicador",
-        "other": "Citado por {count} indicadores"
-      }
     }
   },
   "account.content.articles.citedByLabel": {
@@ -571,12 +570,12 @@
       "pt": "Um código: es, en, pt…"
     }
   },
-  "account.content.articles.noMatch": {
+  "account.content.articles.meta": {
     "format": "plain",
     "default": {
-      "es": "Ningún artículo coincide. Probá con otra palabra o quitá un filtro.",
-      "en": "No article matches. Try another word or remove a filter.",
-      "pt": "Nenhum artigo corresponde. Tente outra palavra ou tire um filtro."
+      "es": "{authors} · {year} · {source}",
+      "en": "{authors} · {year} · {source}",
+      "pt": "{authors} · {year} · {source}"
     }
   },
   "account.content.articles.none": {
@@ -1391,14 +1390,6 @@
       "es": "Este texto todavía no tiene cambios.",
       "en": "This text has no changes yet.",
       "pt": "Este texto ainda não tem alterações."
-    }
-  },
-  "account.content.nothing": {
-    "format": "plain",
-    "default": {
-      "es": "Ningún texto coincide. Probá con otra palabra o quitá un filtro.",
-      "en": "No text matches. Try another word or remove a filter.",
-      "pt": "Nenhum texto corresponde. Tente outra palavra ou tire um filtro."
     }
   },
   "account.content.preview": {
@@ -2902,14 +2893,6 @@
       "pt": "Pronto."
     }
   },
-  "account.users.empty": {
-    "format": "plain",
-    "default": {
-      "es": "Ninguna cuenta coincide. Probá con otro nombre o quitá el filtro.",
-      "en": "No account matches. Try another name or remove the filter.",
-      "pt": "Nenhuma conta corresponde. Tente outro nome ou tire o filtro."
-    }
-  },
   "account.users.enable": {
     "format": "plain",
     "default": {
@@ -2982,12 +2965,28 @@
       "pt": "Contas de sistema"
     }
   },
+  "account.users.leaveBody": {
+    "format": "plain",
+    "default": {
+      "es": "Tildaste roles que todavía no guardaste. Si cerrás, se pierden.",
+      "en": "You ticked roles you have not saved yet. Closing loses them.",
+      "pt": "Você marcou papéis que ainda não salvou. Se fechar, eles se perdem."
+    }
+  },
   "account.users.manage": {
     "format": "plain",
     "default": {
       "es": "Administrar",
       "en": "Manage",
       "pt": "Administrar"
+    }
+  },
+  "account.users.manageName": {
+    "format": "plain",
+    "default": {
+      "es": "Administrar la cuenta de {name}",
+      "en": "Manage {name}'s account",
+      "pt": "Administrar a conta de {name}"
     }
   },
   "account.users.own": {
@@ -3118,36 +3117,20 @@
       "pt": "Desde {date}"
     }
   },
-  "account.users.sortLabel": {
+  "account.users.sorts.joined": {
     "format": "plain",
     "default": {
-      "es": "Orden",
-      "en": "Order",
-      "pt": "Ordem"
+      "es": "Fecha de alta",
+      "en": "Date joined",
+      "pt": "Data de cadastro"
     }
   },
   "account.users.sorts.name": {
     "format": "plain",
     "default": {
-      "es": "Por nombre",
-      "en": "By name",
-      "pt": "Por nome"
-    }
-  },
-  "account.users.sorts.newest": {
-    "format": "plain",
-    "default": {
-      "es": "Más nuevas primero",
-      "en": "Newest first",
-      "pt": "Mais novas primeiro"
-    }
-  },
-  "account.users.sorts.oldest": {
-    "format": "plain",
-    "default": {
-      "es": "Más antiguas primero",
-      "en": "Oldest first",
-      "pt": "Mais antigas primeiro"
+      "es": "Nombre",
+      "en": "Name",
+      "pt": "Nome"
     }
   },
   "account.users.system": {
@@ -3164,30 +3147,6 @@
       "es": "Sistema",
       "en": "System",
       "pt": "Sistema"
-    }
-  },
-  "account.users.viewLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Vista",
-      "en": "View",
-      "pt": "Visualização"
-    }
-  },
-  "account.users.views.cards": {
-    "format": "plain",
-    "default": {
-      "es": "Tarjetas",
-      "en": "Cards",
-      "pt": "Cartões"
-    }
-  },
-  "account.users.views.table": {
-    "format": "plain",
-    "default": {
-      "es": "Tabla",
-      "en": "Table",
-      "pt": "Tabela"
     }
   },
   "account.zones.add": {

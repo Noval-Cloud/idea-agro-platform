@@ -1160,7 +1160,6 @@ export const pt = {
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     content: {
       searchPlaceholder: "Busque pelo que diz ou pela sua chave…",
-      nothing: "Nenhum texto corresponde. Tente outra palavra ou tire um filtro.",
       listFailed: "Não conseguimos carregar a lista. Tente de novo.",
       saveFailed: "Não conseguimos salvar a alteração. Revise o texto e tente de novo.",
       indicator: {
@@ -1231,15 +1230,12 @@ export const pt = {
           one: "{count} artigo",
           other: "{count} artigos",
         },
-        noMatch: "Nenhum artigo corresponde. Tente outra palavra ou tire um filtro.",
-        citedByCount: {
-          one: "Citado por {count} indicador",
-          other: "Citado por {count} indicadores",
-        },
         save: "Salvar",
         create: "Adicionar",
         saved: "Salvo. O site vai mostrá-lo na próxima atualização.",
         pdfReplace: "Substituir o PDF",
+        meta: "{authors} · {year} · {source}",
+        byline: "{authors} · {year}",
       },
       citations: {
         none: "Este indicador ainda não cita nenhum artigo.",
@@ -1402,7 +1398,6 @@ export const pt = {
     users: {
       searchLabel: "Buscar contas",
       searchPlaceholder: "Nome ou e-mail…",
-      empty: "Nenhuma conta corresponde. Tente outro nome ou tire o filtro.",
       disabled: "Desativada",
       manage: "Administrar",
       close: "Fechar",
@@ -1435,16 +1430,9 @@ export const pt = {
         disabled: "Desativadas",
         system: "Contas de sistema",
       },
-      sortLabel: "Ordem",
       sorts: {
-        name: "Por nome",
-        newest: "Mais novas primeiro",
-        oldest: "Mais antigas primeiro",
-      },
-      viewLabel: "Visualização",
-      views: {
-        table: "Tabela",
-        cards: "Cartões",
+        name: "Nome",
+        joined: "Data de cadastro",
       },
       columns: {
         name: "Nome",
@@ -1465,6 +1453,8 @@ export const pt = {
       recoveryTitle: "Recuperação",
       recoveryBody: "Envia ao e-mail um link para recuperar a senha, se entra com uma.",
       systemChip: "Sistema",
+      manageName: "Administrar a conta de {name}",
+      leaveBody: "Você marcou papéis que ainda não salvou. Se fechar, eles se perdem.",
     },
     audit: {
       failed: "Não conseguimos carregar o registro. Tente de novo.",
@@ -1499,7 +1489,6 @@ export const pt = {
       },
       actorLabel: "Pessoa",
       anyone: "Qualquer pessoa",
-      noMatch: "Nenhuma ação corresponde aos filtros.",
       periods: {
         today: "Hoje",
         yesterday: "Ontem",
@@ -1511,6 +1500,8 @@ export const pt = {
         other: "{count} artigos",
       },
       pdf: "Seu PDF",
+      citeOne: "{surname} {year}",
+      citeSeveral: "{surname} et al. {year}",
     },
     sessions: {
       title: "Sessões",

@@ -22,7 +22,6 @@ export const languages = ["es", "en", "pt"] as const;
 export type Language = (typeof languages)[number];
 export type Values = Record<Language, TextValue>;
 
-export const card = "rounded-lg border border-line bg-surface";
 export const field =
   "w-full min-w-0 rounded-sm border border-input bg-surface px-3 py-2 text-base text-ink transition-colors duration-(--ia-motion-fast) hover:border-ink-subtle focus-visible:border-focus aria-invalid:border-danger";
 
@@ -63,6 +62,16 @@ export function Badge({ children, tone = "edited" }: { children: string; tone?: 
       {children}
     </span>
   );
+}
+
+/** Asks before a reload or closing the tab loses unsaved changes. */
+export function useLeaveGuard(dirty: boolean) {
+  useEffect(() => {
+    if (!dirty) return;
+    const ask = (event: BeforeUnloadEvent) => event.preventDefault();
+    addEventListener("beforeunload", ask);
+    return () => removeEventListener("beforeunload", ask);
+  }, [dirty]);
 }
 
 export type Run = (
@@ -142,6 +151,7 @@ export function TextPanel({
   const untouched = Object.keys(edited).length === 0;
   // An untouched draft is published as it is; otherwise the form is what gets published.
   const canPublish = valid && (untouched && text?.draft ? true : Object.keys(toPublish).length > 0);
+  useLeaveGuard(!untouched);
 
   const close = async () => {
     if (!untouched) {

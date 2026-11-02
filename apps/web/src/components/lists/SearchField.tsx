@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react";
 import { iconSize } from "@/design/tokens";
+import { cn } from "@/lib/utils";
 import type { ListsT } from "./i18n";
 
 /** Narrows a list as one types; Escape or the cross clears it. */
@@ -10,8 +11,10 @@ export function SearchField({
   label,
   placeholder,
   onChange,
+  className,
 }: {
   id?: string;
+  className?: string;
   t: ListsT;
   value: string;
   label: string;
@@ -19,7 +22,7 @@ export function SearchField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="relative w-full min-w-0 sm:w-64">
+    <div className={cn("relative w-full min-w-0 sm:w-64", className)}>
       <Search
         size={iconSize.sm}
         aria-hidden="true"

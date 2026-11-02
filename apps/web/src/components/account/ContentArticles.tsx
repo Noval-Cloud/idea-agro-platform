@@ -1,20 +1,26 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronRight, FileText, Plus, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, ChevronRight, FileText, Plus, SearchX, X } from "lucide-react";
 import type { ArticleIn, ArticleOut, ArticlePublic, PublishedArticles } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Modal, Sheet } from "@/components/ui/sheet";
+import { EmptyState } from "@/components/lists/EmptyState";
+import { FilterSelect } from "@/components/lists/FilterSelect";
+import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
+import { SearchField } from "@/components/lists/SearchField";
+import { matches } from "@/components/lists/filter";
+import { useQueryState } from "@/components/lists/state";
 import { indicatorIds, type IndicatorId } from "@/data/indicators";
 import { cn } from "@/lib/utils";
 import type { AccountKey, AccountTranslator } from "./i18n";
+import { useLeaveGuard } from "./TextEditor";
 
 const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
 type Client = Awaited<ReturnType<typeof api>>[1];
 type Props = { translator: AccountTranslator; onChanged: () => void; changed: number };
 const empty: ArticleIn = { authors: "", year: new Date().getFullYear(), title: "", lang: "en", source: "" };
-type Flag = "framework" | "pdf" | "uncited";
-const flags: Flag[] = ["framework", "pdf", "uncited"];
+const flags = ["framework", "pdf", "uncited"] as const;
 
 /** One private call; an answer other than `ok` statuses is an error. */
 async function call<T>(run: (client: Client, init: RequestInit) => Promise<{ status: number; data: unknown }>) {
@@ -28,78 +34,66 @@ async function call<T>(run: (client: Client, init: RequestInit) => Promise<{ sta
 export function usePublished(changed: number) {
   const [published, setPublished] = useState<PublishedArticles | null | "failed">(null);
   useEffect(() => {
+    let live = true;
     void import("@idea-agro/api-client")
       // The public list is cacheable; an editor needs what was just saved.
       .then((client) => client.listArticles({ cache: "no-store" }))
-      .then((response) => setPublished(response.status === 200 ? response.data : "failed"))
-      .catch(() => setPublished("failed"));
+      .then((response) => live && setPublished(response.status === 200 ? response.data : "failed"))
+      .catch(() => live && setPublished("failed"));
+    return () => {
+      live = false;
+    };
   }, [changed]);
   return published;
 }
 
-/** Whether an article matches what was typed: its title, authors, source or year. */
-const matches = (article: ArticlePublic, query: string) => {
-  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const text = `${article.title} ${article.authors} ${article.source} ${article.year}`.toLocaleLowerCase();
-  return words.every((word) => text.includes(word));
-};
-
-function SearchField({
-  value,
-  onChange,
-  label,
-  placeholder,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <div className="relative min-w-60 grow">
-      <Search
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle"
-      />
-      <Input
-        type="search"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        aria-label={label}
-        placeholder={placeholder}
-        className="pl-9"
-      />
-    </div>
-  );
-}
+/** Whether an article has what was typed: in its title, authors, source or year. */
+const found = (article: ArticlePublic, query: string) =>
+  matches(query, article.title, article.authors, article.source, String(article.year));
 
 /**
  * For editors: the scientific articles behind the indicators, found by a search and a few filters, each opened
  * in a side panel. Which indicator cites which is chosen on the indicator's page.
  */
 export function Articles({ translator, onChanged, changed }: Props) {
-  const { t } = translator;
+  const { t, list } = translator;
   const published = usePublished(changed);
-  // An article's id, or "new" for one being added.
+  // An article's id, or "new" for one being added; `session` gives each opening a fresh panel.
   const [open, setOpen] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [on, setOn] = useState<Flag[]>([]);
-  const [citedBy, setCitedBy] = useState<IndicatorId | "">("");
+  const [session, setSession] = useState(0);
+  const [query, setQuery] = useQueryState("q", "");
+  const [citedBy, setCitedBy] = useQueryState("indicator", "all");
+  const [flagsValue, setFlags] = useQueryState("only", "");
+  const on = flags.filter((f) => flagsValue.split(",").includes(f));
   const [seeding, setSeeding] = useState<"idle" | "busy" | "failed">("idle");
 
-  if (published === null) return <p className="text-sm text-ink-muted">{t("account.loading")}</p>;
-  if (published === "failed") return <p className="text-sm text-danger">{t("account.content.listFailed")}</p>;
+  if (published === null)
+    return (
+      <p role="status" className="text-sm text-ink-muted">
+        {t("account.loading")}
+      </p>
+    );
+  if (published === "failed")
+    return (
+      <p role="alert" className="text-sm text-danger">
+        {t("account.content.listFailed")}
+      </p>
+    );
 
   const name = (id: IndicatorId) => t(`indicators.items.${id}.name` as AccountKey);
   const citing = (article: string) => indicatorIds.filter((i) => (published.citations[i] ?? []).includes(article));
   const shown = published.articles.filter(
     (a) =>
-      matches(a, query) &&
+      found(a, query) &&
       (!on.includes("framework") || a.framework) &&
       (!on.includes("pdf") || a.pdf) &&
       (!on.includes("uncited") || citing(a.id).length === 0) &&
-      (!citedBy || citing(a.id).includes(citedBy)),
+      (citedBy === "all" || citing(a.id).includes(citedBy as IndicatorId)),
   );
+  const openPanel = (id: string) => {
+    setSession((n) => n + 1);
+    setOpen(id);
+  };
   const seed = async () => {
     setSeeding("busy");
     try {
@@ -112,7 +106,7 @@ export function Articles({ translator, onChanged, changed }: Props) {
   };
   const panel = open && (
     <ArticlePanel
-      key={open}
+      key={session}
       id={open === "new" ? null : open}
       citedBy={open === "new" ? [] : citing(open).map(name)}
       translator={translator}
@@ -123,120 +117,139 @@ export function Articles({ translator, onChanged, changed }: Props) {
       onClose={() => setOpen(null)}
     />
   );
+  const add = (
+    <Button size="sm" onClick={() => openPanel("new")}>
+      <Plus aria-hidden="true" />
+      {t("account.content.articles.add")}
+    </Button>
+  );
 
   if (published.articles.length === 0)
     return (
-      <div className="grid justify-items-start gap-3 rounded-lg border border-dashed border-line p-6 text-sm text-ink-muted">
-        <p className="max-w-prose">{t("account.content.articles.none")}</p>
-        <div className="flex flex-wrap gap-2">
-          <Button disabled={seeding === "busy"} onClick={() => void seed()}>
+      <>
+        <EmptyState icon={<BookOpen />} title={t("account.content.articles.none")}>
+          <Button size="sm" disabled={seeding === "busy"} onClick={() => void seed()}>
             {t("account.content.articles.seed")}
           </Button>
-          <Button variant="outline" onClick={() => setOpen("new")}>
+          <Button size="sm" variant="outline" onClick={() => openPanel("new")}>
             <Plus aria-hidden="true" />
             {t("account.content.articles.add")}
           </Button>
-        </div>
-        {seeding === "failed" && <p className="text-danger">{t("account.content.saveFailed")}</p>}
+        </EmptyState>
+        {seeding === "failed" && (
+          <p role="alert" className="text-sm text-danger">
+            {t("account.content.saveFailed")}
+          </p>
+        )}
         {panel}
-      </div>
+      </>
     );
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <ListToolbar end={add}>
         <SearchField
+          t={t}
           value={query}
-          onChange={setQuery}
           label={t("account.content.articles.searchLabel")}
           placeholder={t("account.content.articles.searchPlaceholder")}
+          onChange={setQuery}
         />
-        <select
-          className="h-11 rounded-sm border border-input bg-surface px-3 text-sm text-ink"
+        <FilterSelect
+          label={t("account.content.articles.citedByLabel")}
           value={citedBy}
-          onChange={(event) => setCitedBy(event.target.value as IndicatorId | "")}
-          aria-label={t("account.content.articles.citedByLabel")}
-        >
-          <option value="">{t("account.content.articles.anyIndicator")}</option>
-          {indicatorIds.map((id) => (
-            <option key={id} value={id}>
-              {name(id)}
-            </option>
-          ))}
-        </select>
-        <Button onClick={() => setOpen("new")}>
-          <Plus aria-hidden="true" />
-          {t("account.content.articles.add")}
-        </Button>
-      </div>
-      <div role="group" aria-label={t("account.content.articles.filtersLabel")} className="flex flex-wrap gap-2">
-        {flags.map((flag) => {
-          const pressed = on.includes(flag);
-          return (
-            <button
-              key={flag}
-              type="button"
-              aria-pressed={pressed}
-              onClick={() => setOn(pressed ? on.filter((f) => f !== flag) : [...on, flag])}
-              className={cn(
-                "h-8 rounded-pill border px-3 text-sm transition-colors duration-(--ia-motion-fast)",
-                pressed
-                  ? "border-transparent bg-surface-selected font-medium text-ink"
-                  : "border-line text-ink-muted hover:text-ink",
-              )}
-            >
-              {t(`account.content.articles.flags.${flag}`)}
-            </button>
-          );
-        })}
-      </div>
-      <p role="status" className="text-sm text-ink-muted">
-        {t("account.content.articles.count", { count: shown.length })}
-      </p>
-      {shown.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line p-6 text-sm text-ink-muted">
-          {t("account.content.articles.noMatch")}
-        </p>
-      ) : (
-        <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
-          {shown.map((article) => {
-            const by = citing(article.id);
+          all={t("account.content.articles.anyIndicator")}
+          options={[...indicatorIds]}
+          labelOf={(id) => name(id as IndicatorId)}
+          onChange={setCitedBy}
+        />
+        <div role="group" aria-label={t("account.content.articles.filtersLabel")} className="flex flex-wrap gap-2">
+          {flags.map((flag) => {
+            const pressed = on.includes(flag);
             return (
-              <li key={article.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(article.id)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
-                >
-                  <span className="grid min-w-0 grow gap-1">
-                    <span lang={article.lang} className="line-clamp-2 text-sm text-ink">
-                      {article.title}
-                    </span>
-                    <span className="line-clamp-1 text-xs text-ink-subtle">
-                      {article.authors} · {article.year} · {article.source}
-                    </span>
-                    <span className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                      {article.framework && <Chip>{t("account.content.articles.flags.framework")}</Chip>}
-                      {article.pdf && (
-                        <Chip>
-                          <FileText aria-hidden="true" className="size-3" />
-                          PDF
-                        </Chip>
-                      )}
-                      <span>
-                        {by.length > 0
-                          ? t("account.content.articles.citedByCount", { count: by.length })
-                          : t("account.content.articles.citedByNone")}
-                      </span>
-                    </span>
-                  </span>
-                  <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
-                </button>
-              </li>
+              <button
+                key={flag}
+                type="button"
+                aria-pressed={pressed}
+                onClick={() => setFlags((pressed ? on.filter((f) => f !== flag) : [...on, flag]).join(","))}
+                className={cn(
+                  "h-9 rounded-sm border px-3 text-sm transition-colors duration-(--ia-motion-fast)",
+                  pressed
+                    ? "border-ink-subtle bg-action-soft text-ink"
+                    : "border-input text-ink-muted hover:border-ink-subtle hover:text-ink",
+                )}
+              >
+                {t(`account.content.articles.flags.${flag}`)}
+              </button>
             );
           })}
-        </ul>
-      )}
+        </div>
+        <ListCount>
+          {shown.length === published.articles.length
+            ? t("account.content.articles.count", { count: shown.length })
+            : t("lists.showing", { shown: shown.length, total: published.articles.length })}
+        </ListCount>
+      </ListToolbar>
+      <div className={underToolbar}>
+        {shown.length === 0 ? (
+          <EmptyState icon={<SearchX />} title={t("lists.noResults.title")} body={t("lists.noResults.body")}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setCitedBy("all");
+                setFlags("");
+              }}
+            >
+              {t("lists.clearFilters")}
+            </Button>
+          </EmptyState>
+        ) : (
+          <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
+            {shown.map((article) => {
+              const by = citing(article.id);
+              return (
+                <li key={article.id}>
+                  <button
+                    type="button"
+                    onClick={() => openPanel(article.id)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
+                  >
+                    <span className="grid min-w-0 grow gap-1">
+                      <span lang={article.lang} className="line-clamp-2 text-sm text-ink">
+                        {article.title}
+                      </span>
+                      <span className="line-clamp-1 text-xs text-ink-subtle">
+                        {t("account.content.articles.meta", {
+                          authors: article.authors,
+                          year: article.year,
+                          source: article.source,
+                        })}
+                      </span>
+                      <span className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                        {article.framework && <Chip>{t("account.content.articles.flags.framework")}</Chip>}
+                        {article.pdf && (
+                          <Chip>
+                            <FileText aria-hidden="true" className="size-3" />
+                            {t("account.content.articles.pdf")}
+                          </Chip>
+                        )}
+                        <span>
+                          {by.length > 0
+                            ? t("account.content.articles.citedBy", { names: list(by.map(name)) })
+                            : t("account.content.articles.citedByNone")}
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
       {panel}
     </div>
   );
@@ -314,6 +327,7 @@ function ArticlePanel({
     (!body.doi || /^10\.\d{4,9}\/\S+$/.test(body.doi)) &&
     (!body.url || /^https?:\/\/\S+$/.test(body.url));
   const dirty = form !== null && JSON.stringify(form) !== JSON.stringify(article ? fromArticle(article) : empty);
+  useLeaveGuard(dirty);
 
   const close = async () => {
     if (dirty) {
@@ -326,14 +340,14 @@ function ArticlePanel({
     }
     onClose();
   };
-  const act = async (run: () => Promise<ArticleOut | null>, done: AccountKey) => {
+  const act = async (run: () => Promise<ArticleOut | null>, done: AccountKey, reset = false) => {
     setBusy(true);
     setNotice(null);
     try {
       const saved = await run();
       if (saved) {
         setArticle(saved);
-        setForm(fromArticle(saved));
+        if (reset) setForm(fromArticle(saved));
       }
       setNotice({ tone: "done", key: done });
       onSaved(saved ? saved.id : null);
@@ -351,6 +365,7 @@ function ArticlePanel({
           ? call<ArticleOut>((client, init) => client.putArticle(id, body, init))
           : call<ArticleOut>((client, init) => client.addArticle(body, init)),
       "account.content.articles.saved",
+      true,
     );
   const upload = (file: File) =>
     act(
@@ -519,7 +534,7 @@ function ArticlePanel({
         cancel={t("account.content.cancel")}
         onConfirm={() => {
           setConfirming(false);
-          void remove().then(onClose);
+          void remove();
         }}
         onCancel={() => setConfirming(false)}
       />
@@ -566,6 +581,8 @@ export function IndicatorArticles({
     try {
       await call((client, init) => client.citeArticles(indicator, { articles: next }, init));
       setNotice({ tone: "done", text: done, undo });
+      // A removal takes the focused button with it: focus goes to its undo.
+      if (undo) requestAnimationFrame(() => document.getElementById("citation-undo")?.focus());
       onChanged();
     } catch {
       setChosen(before);
@@ -611,7 +628,9 @@ export function IndicatorArticles({
                     {title}
                   </span>
                   <span className="text-xs text-ink-subtle">
-                    {article ? `${article.authors} · ${article.year}` : ""}
+                    {article
+                      ? t("account.content.articles.byline", { authors: article.authors, year: article.year })
+                      : ""}
                   </span>
                 </span>
                 <span className="flex shrink-0">
@@ -667,6 +686,7 @@ export function IndicatorArticles({
         {notice?.text}
         {notice?.undo && (
           <Button
+            id="citation-undo"
             variant="link"
             size="sm"
             className="h-auto px-0"
@@ -707,7 +727,7 @@ function ArticlePicker({
   const { t } = translator;
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
-  const shown = articles.filter((a) => matches(a, query));
+  const shown = articles.filter((a) => found(a, query));
   const toggle = (id: string) => setPicked(picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id]);
 
   return (
@@ -735,16 +755,19 @@ function ArticlePicker({
     >
       <div className="sticky top-0 z-1 bg-surface pb-3">
         <SearchField
+          id="picker-search"
+          t={t}
           value={query}
           onChange={setQuery}
           label={t("account.content.articles.searchLabel")}
           placeholder={t("account.content.articles.searchPlaceholder")}
+          className="sm:w-full"
         />
       </div>
       {articles.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("account.content.citations.allCited")}</p>
       ) : shown.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t("account.content.articles.noMatch")}</p>
+        <p className="text-sm text-ink-muted">{t("lists.noResults.title")}</p>
       ) : (
         <ul className="grid gap-1">
           {shown.map((article) => (
@@ -766,7 +789,7 @@ function ArticlePicker({
                     {article.title}
                   </span>
                   <span className="text-xs text-ink-subtle">
-                    {article.authors} · {article.year}
+                    {t("account.content.articles.byline", { authors: article.authors, year: article.year })}
                   </span>
                 </span>
               </label>

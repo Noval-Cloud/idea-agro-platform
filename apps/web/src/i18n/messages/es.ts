@@ -1161,7 +1161,6 @@ export const es = {
     roles: { client: "Cliente", editor: "Editor", admin: "Administrador" },
     content: {
       searchPlaceholder: "Buscá por lo que dice o por su clave…",
-      nothing: "Ningún texto coincide. Probá con otra palabra o quitá un filtro.",
       listFailed: "No pudimos cargar la lista. Probá de nuevo.",
       saveFailed: "No pudimos guardar el cambio. Revisá el texto y probá de nuevo.",
       indicator: {
@@ -1232,15 +1231,12 @@ export const es = {
           one: "{count} artículo",
           other: "{count} artículos",
         },
-        noMatch: "Ningún artículo coincide. Probá con otra palabra o quitá un filtro.",
-        citedByCount: {
-          one: "Lo cita {count} indicador",
-          other: "Lo citan {count} indicadores",
-        },
         save: "Guardar",
         create: "Agregar",
         saved: "Guardado. El sitio lo va a mostrar en su próxima actualización.",
         pdfReplace: "Reemplazar el PDF",
+        meta: "{authors} · {year} · {source}",
+        byline: "{authors} · {year}",
       },
       citations: {
         none: "Este indicador todavía no cita ningún artículo.",
@@ -1403,7 +1399,6 @@ export const es = {
     users: {
       searchLabel: "Buscar cuentas",
       searchPlaceholder: "Nombre o correo…",
-      empty: "Ninguna cuenta coincide. Probá con otro nombre o quitá el filtro.",
       disabled: "Deshabilitada",
       manage: "Administrar",
       close: "Cerrar",
@@ -1436,16 +1431,9 @@ export const es = {
         disabled: "Deshabilitadas",
         system: "Cuentas de sistema",
       },
-      sortLabel: "Orden",
       sorts: {
-        name: "Por nombre",
-        newest: "Más nuevas primero",
-        oldest: "Más antiguas primero",
-      },
-      viewLabel: "Vista",
-      views: {
-        table: "Tabla",
-        cards: "Tarjetas",
+        name: "Nombre",
+        joined: "Fecha de alta",
       },
       columns: {
         name: "Nombre",
@@ -1466,6 +1454,8 @@ export const es = {
       recoveryTitle: "Recuperación",
       recoveryBody: "Envía a su correo un enlace para recuperar la contraseña, si ingresa con una.",
       systemChip: "Sistema",
+      manageName: "Administrar la cuenta de {name}",
+      leaveBody: "Tildaste roles que todavía no guardaste. Si cerrás, se pierden.",
     },
     audit: {
       failed: "No pudimos cargar el registro. Probá de nuevo.",
@@ -1500,7 +1490,6 @@ export const es = {
       },
       actorLabel: "Persona",
       anyone: "Cualquier persona",
-      noMatch: "Ninguna acción coincide con los filtros.",
       periods: {
         today: "Hoy",
         yesterday: "Ayer",
@@ -1512,6 +1501,8 @@ export const es = {
         other: "{count} artículos",
       },
       pdf: "Su PDF",
+      citeOne: "{surname} {year}",
+      citeSeveral: "{surname} et al. {year}",
     },
     sessions: {
       title: "Sesiones",

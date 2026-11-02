@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,17 +17,34 @@ type Props = {
   children: ReactNode;
 };
 
+/** What had focus when a dialog opened, to give it back on closing: the dialogs here open from code. */
+function useOpener(open: boolean) {
+  const opener = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const active = document.activeElement;
+    opener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+  }, [open]);
+  return (event: Event) => {
+    if (!opener.current?.isConnected) return;
+    event.preventDefault();
+    opener.current.focus();
+  };
+}
+
 /**
  * A panel over the right of the page, the whole screen on phones, for working on one thing while the list it
  * came from stays behind. Focus returns to what opened it.
  */
 export function Sheet({ open, onClose, title, description, close, footer, children }: Props) {
+  const giveBack = useOpener(open);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="ia-fade fixed inset-0 z-(--ia-layer-modal) bg-scrim/40" />
         <Dialog.Content
           {...(description ? {} : { "aria-describedby": undefined })}
+          onCloseAutoFocus={giveBack}
           className="ia-sheet fixed inset-y-0 right-0 z-(--ia-layer-modal) flex w-full flex-col bg-surface text-ink shadow-overlay sm:w-[min(42rem,100vw)] sm:border-l sm:border-line"
         >
           <header className="flex items-start gap-3 border-b border-line py-3 pr-3 pl-5 sm:pl-6">
@@ -60,12 +77,14 @@ export function Modal({
   children,
   className,
 }: Props & { className?: string }) {
+  const giveBack = useOpener(open);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="ia-fade fixed inset-0 z-(--ia-layer-modal) bg-scrim/50" />
         <Dialog.Content
           {...(description ? {} : { "aria-describedby": undefined })}
+          onCloseAutoFocus={giveBack}
           className={cn(
             "ia-pop fixed top-1/2 left-1/2 z-(--ia-layer-modal) flex max-h-[min(40rem,calc(100dvh-2rem))] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded-md border border-line bg-surface text-ink shadow-overlay",
             className,

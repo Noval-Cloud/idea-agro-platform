@@ -1161,7 +1161,6 @@ export const en = {
     roles: { client: "Client", editor: "Editor", admin: "Administrator" },
     content: {
       searchPlaceholder: "Search by what it says or by its key…",
-      nothing: "No text matches. Try another word or remove a filter.",
       listFailed: "We could not load the list. Try again.",
       saveFailed: "We could not save the change. Check the text and try again.",
       indicator: {
@@ -1232,15 +1231,12 @@ export const en = {
           one: "{count} article",
           other: "{count} articles",
         },
-        noMatch: "No article matches. Try another word or remove a filter.",
-        citedByCount: {
-          one: "Cited by {count} indicator",
-          other: "Cited by {count} indicators",
-        },
         save: "Save",
         create: "Add",
         saved: "Saved. The site will show it when it next updates.",
         pdfReplace: "Replace the PDF",
+        meta: "{authors} · {year} · {source}",
+        byline: "{authors} · {year}",
       },
       citations: {
         none: "This indicator cites no article yet.",
@@ -1403,7 +1399,6 @@ export const en = {
     users: {
       searchLabel: "Search accounts",
       searchPlaceholder: "Name or email…",
-      empty: "No account matches. Try another name or remove the filter.",
       disabled: "Disabled",
       manage: "Manage",
       close: "Close",
@@ -1436,16 +1431,9 @@ export const en = {
         disabled: "Disabled",
         system: "System accounts",
       },
-      sortLabel: "Order",
       sorts: {
-        name: "By name",
-        newest: "Newest first",
-        oldest: "Oldest first",
-      },
-      viewLabel: "View",
-      views: {
-        table: "Table",
-        cards: "Cards",
+        name: "Name",
+        joined: "Date joined",
       },
       columns: {
         name: "Name",
@@ -1466,6 +1454,8 @@ export const en = {
       recoveryTitle: "Recovery",
       recoveryBody: "Emails them a link to recover their password, if they sign in with one.",
       systemChip: "System",
+      manageName: "Manage {name}'s account",
+      leaveBody: "You ticked roles you have not saved yet. Closing loses them.",
     },
     audit: {
       failed: "We couldn't load the log. Try again.",
@@ -1500,7 +1490,6 @@ export const en = {
       },
       actorLabel: "Person",
       anyone: "Anyone",
-      noMatch: "No action matches the filters.",
       periods: {
         today: "Today",
         yesterday: "Yesterday",
@@ -1512,6 +1501,8 @@ export const en = {
         other: "{count} articles",
       },
       pdf: "Its PDF",
+      citeOne: "{surname} {year}",
+      citeSeveral: "{surname} et al. {year}",
     },
     sessions: {
       title: "Sessions",

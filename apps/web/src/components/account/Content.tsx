@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clock, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clock, RefreshCw, SearchX } from "lucide-react";
 import type { SiteRebuildOut, SiteTextMatch, TextSection } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
+import { EmptyState } from "@/components/lists/EmptyState";
+import { FilterSelect } from "@/components/lists/FilterSelect";
+import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
+import { SearchField } from "@/components/lists/SearchField";
+import { useQueryState } from "@/components/lists/state";
 import { cn } from "@/lib/utils";
 import { Articles } from "./ContentArticles";
 import { Indicators } from "./ContentIndicators";
 import { type AccountKey, type AccountTranslator } from "./i18n";
+import { PageHeader } from "./PageHeader";
 import { accountSubpages } from "./paths";
 import { api, Badge, preview, run, TextPanel, type Run } from "./TextEditor";
 
 type ContentPage = (typeof accountSubpages.content)[number];
-type Status = "all" | "edited" | "draft";
-const statuses: Status[] = ["all", "edited", "draft"];
+const statuses = ["all", "edited", "draft"] as const;
+type Status = (typeof statuses)[number];
 
 /**
  * The Content section's pages, for editors and admins: the site's texts, the articles, and each indicator. Each
@@ -24,8 +30,8 @@ export default function Content({ translator, page }: { translator: AccountTrans
   const [changed, setChanged] = useState(0);
   const onChanged = () => setChanged((n) => n + 1);
   return (
-    <section id="content" aria-labelledby="content-title" className="grid gap-6 pt-8">
-      <PageHeader title={t(`account.subpages.${page}`)}>
+    <section id="content" aria-labelledby="content-title" className="grid max-w-(--ia-layout-page) gap-6">
+      <PageHeader id="content-title" title={t(`account.subpages.${page}`)}>
         <SiteStatus translator={translator} changed={changed} />
       </PageHeader>
       {page === "texts" && <Texts translator={translator} changed={changed} onChanged={onChanged} />}
@@ -35,32 +41,9 @@ export default function Content({ translator, page }: { translator: AccountTrans
   );
 }
 
-/** A page's title, with what it says about itself beside it. */
-export function PageHeader({ title, children }: { title: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-      <h2 id="content-title" className="text-xl font-medium text-ink">
-        {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-/** The filters in the address, so a reload or a shared link opens the same list. */
-function readFilters() {
-  const params = new URLSearchParams(location.search);
-  const status = params.get("status");
-  return {
-    query: params.get("q") ?? "",
-    section: params.get("section"),
-    status: statuses.find((s) => s === status) ?? "all",
-  };
-}
-
 /**
  * Every text the site shows. It opens on the site's sections; a search, a section or a state lists texts, and
- * each opens in a side panel.
+ * each opens in a side panel. The filters live in the address.
  */
 function Texts({
   translator,
@@ -72,33 +55,26 @@ function Texts({
   onChanged: () => void;
 }) {
   const { t } = translator;
-  const [{ query, section, status }, setFilters] = useState(readFilters);
+  const [query, setQuery] = useQueryState("q", "");
+  const [section, setSection] = useQueryState("section", "all");
+  const [statusValue, setStatus] = useQueryState("status", "all");
+  const status: Status = statuses.find((s) => s === statusValue) ?? "all";
   const [sections, setSections] = useState<TextSection[] | null>(null);
   // null: no filter, the sections show; "loading" and "failed" while and when a list does not arrive.
   const [list, setList] = useState<SiteTextMatch[] | null | "loading" | "failed">(null);
   const [open, setOpen] = useState<string | null>(null);
-  const filter = (patch: Partial<ReturnType<typeof readFilters>>) => setFilters((now) => ({ ...now, ...patch }));
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (section) params.set("section", section);
-    if (status !== "all") params.set("status", status);
-    const search = params.size ? `?${params}` : "";
-    if (search !== location.search) history.replaceState(history.state, "", `${location.pathname}${search}`);
-  }, [query, section, status]);
 
   // A new filter shows "loading"; a reload after a change keeps the list, and its scroll, until it arrives.
   const asked = useRef("");
   useEffect(() => {
     let live = true;
-    const wanted = `${query}|${section ?? ""}|${status}`;
+    const wanted = `${query}|${section}|${status}`;
     const fresh = asked.current !== wanted;
     asked.current = wanted;
     const q = query.trim();
     const call: Run | null = q
       ? (client, init) => client.searchTexts({ q }, init)
-      : section
+      : section !== "all"
         ? (client, init) => client.listSection(section, init)
         : status !== "all"
           ? (client, init) => client.listChanges(init)
@@ -117,10 +93,14 @@ function Texts({
   }, [query, section, status, changed]);
 
   useEffect(() => {
+    let live = true;
     void api()
       .then(([{ privately }, client]) => privately((init) => client.listSections(init)))
-      .then((response) => setSections(response.status === 200 ? response.data : []))
-      .catch(() => setSections([]));
+      .then((response) => live && setSections(response.status === 200 ? response.data : []))
+      .catch(() => live && setSections([]));
+    return () => {
+      live = false;
+    };
   }, [changed]);
 
   const sectionName = (name: string) => {
@@ -130,7 +110,7 @@ function Texts({
   const shown = Array.isArray(list)
     ? list.filter(
         (m) =>
-          (!section || m.key.startsWith(`${section}.`)) &&
+          (section === "all" || m.key.startsWith(`${section}.`)) &&
           (status === "all" || (status === "draft" ? m.draft : m.edited)),
       )
     : list;
@@ -138,114 +118,101 @@ function Texts({
     edited: 0,
     draft: 0,
   });
+  const clear = () => {
+    setQuery("");
+    setSection("all");
+    setStatus("all");
+  };
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-60 grow">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle"
-          />
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => filter({ query: event.target.value })}
-            placeholder={t("account.content.searchPlaceholder")}
-            aria-label={t("account.content.searchLabel")}
-            className="pl-9"
-          />
-        </div>
-        <select
-          className="h-11 rounded-sm border border-input bg-surface px-3 text-sm text-ink"
-          value={section ?? ""}
-          onChange={(event) => filter({ section: event.target.value || null })}
-          aria-label={t("account.content.sectionLabel")}
-        >
-          <option value="">{t("account.content.allSections")}</option>
-          {sections?.map((s) => (
-            <option key={s.name} value={s.name}>
-              {sectionName(s.name)}
-            </option>
-          ))}
-        </select>
-        <div
-          role="group"
-          aria-label={t("account.content.statusLabel")}
-          className="flex rounded-sm border border-line p-0.5"
-        >
-          {statuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={status === s}
-              onClick={() => filter({ status: s })}
-              className={cn(
-                "h-9 rounded-xs px-3 text-sm whitespace-nowrap transition-colors duration-(--ia-motion-fast)",
-                status === s ? "bg-surface-selected font-medium text-ink" : "text-ink-muted hover:text-ink",
-              )}
-            >
-              {t(`account.content.statuses.${s}`)}
-              {s !== "all" && totals[s] > 0 && <span className="ml-1.5 text-xs text-ink-subtle">{totals[s]}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {shown === null ? (
-        <SectionGrid
-          sections={sections}
-          name={sectionName}
-          translator={translator}
-          onPick={(s) => filter({ section: s })}
+      <ListToolbar
+        end={
+          <Segmented value={status} onValueChange={setStatus} aria-label={t("account.content.statusLabel")}>
+            {statuses.map((s) => (
+              <SegmentedItem key={s} value={s}>
+                {t(`account.content.statuses.${s}`)}
+                {s !== "all" && totals[s] > 0 && <span className="text-xs text-ink-subtle">{totals[s]}</span>}
+              </SegmentedItem>
+            ))}
+          </Segmented>
+        }
+      >
+        <SearchField
+          t={t}
+          value={query}
+          label={t("account.content.searchLabel")}
+          placeholder={t("account.content.searchPlaceholder")}
+          onChange={setQuery}
+          className="sm:w-80"
         />
-      ) : (
-        <div className="grid gap-2">
-          <div className="flex min-h-9 items-center gap-2 text-sm text-ink-muted">
-            {section && !query && (
-              <Button variant="ghost" size="sm" className="-ml-3" onClick={() => filter({ section: null })}>
+        <FilterSelect
+          label={t("account.content.sectionLabel")}
+          value={section}
+          all={t("account.content.allSections")}
+          options={(sections ?? []).map((s) => s.name)}
+          labelOf={sectionName}
+          onChange={setSection}
+        />
+        {Array.isArray(shown) && <ListCount>{t("account.content.textCount", { count: shown.length })}</ListCount>}
+      </ListToolbar>
+
+      <div className={cn("grid gap-2", underToolbar)}>
+        {shown === null ? (
+          <SectionGrid sections={sections} name={sectionName} translator={translator} onPick={setSection} />
+        ) : (
+          <>
+            {section !== "all" && !query && (
+              <Button variant="ghost" size="sm" className="-ml-3 justify-self-start" onClick={() => setSection("all")}>
                 <ChevronLeft aria-hidden="true" />
                 {t("account.content.allSections")}
               </Button>
             )}
-            <span role="status">
-              {shown === "loading"
-                ? t("account.loading")
-                : shown === "failed"
-                  ? t("account.content.listFailed")
-                  : t("account.content.textCount", { count: shown.length })}
-            </span>
-          </div>
-          {Array.isArray(shown) && shown.length === 0 && (
-            <p className="rounded-lg border border-dashed border-line p-6 text-sm text-ink-muted">
-              {t("account.content.nothing")}
-            </p>
-          )}
-          {Array.isArray(shown) && shown.length > 0 && (
-            <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
-              {shown.map((match) => (
-                <li key={match.key}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(match.key)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
-                  >
-                    <span className="grid min-w-0 grow gap-1">
-                      <span className="line-clamp-2 text-sm text-ink">{preview(match.current.es)}</span>
-                      <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
-                        <code className="break-all">{match.key}</code>
-                        {match.edited && <Badge>{t("account.content.edited")}</Badge>}
-                        {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
+            {shown === "loading" && (
+              <p role="status" className="text-sm text-ink-muted">
+                {t("account.loading")}
+              </p>
+            )}
+            {shown === "failed" && (
+              <p role="alert" className="text-sm text-danger">
+                {t("account.content.listFailed")}
+              </p>
+            )}
+            {Array.isArray(shown) && shown.length === 0 && (
+              <EmptyState icon={<SearchX />} title={t("lists.noResults.title")} body={t("lists.noResults.body")}>
+                <Button size="sm" variant="outline" onClick={clear}>
+                  {t("lists.clearFilters")}
+                </Button>
+              </EmptyState>
+            )}
+            {Array.isArray(shown) && shown.length > 0 && (
+              <ul className="grid divide-y divide-line rounded-lg border border-line bg-surface">
+                {shown.map((match) => (
+                  <li key={match.key}>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(match.key)}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--ia-motion-fast) hover:bg-action-soft"
+                    >
+                      <span className="grid min-w-0 grow gap-1">
+                        <span lang="es" className="line-clamp-2 text-sm text-ink">
+                          {preview(match.current.es)}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                          <code className="break-all">{match.key}</code>
+                          {match.edited && <Badge>{t("account.content.edited")}</Badge>}
+                          {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
+                        </span>
                       </span>
-                    </span>
-                    <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                      <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
       {open && (
         <TextPanel
           key={open}
@@ -272,7 +239,12 @@ function SectionGrid({
   onPick: (section: string) => void;
 }) {
   const { t } = translator;
-  if (sections === null) return <p className="text-sm text-ink-muted">{t("account.loading")}</p>;
+  if (sections === null)
+    return (
+      <p role="status" className="text-sm text-ink-muted">
+        {t("account.loading")}
+      </p>
+    );
   const sorted = [...sections].sort((a, b) => translator.collator.compare(name(a.name), name(b.name)));
   return (
     <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">

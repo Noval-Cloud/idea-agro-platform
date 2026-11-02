@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, ExternalLink, Search } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import type { SiteTextMatch } from "@idea-agro/api-client";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SearchField } from "@/components/lists/SearchField";
+import { matches } from "@/components/lists/filter";
 import { earthEngineLink, earthEngineSources } from "@/data/earth-engine";
 import { indicatorIds, type IndicatorId } from "@/data/indicators";
 import { cn } from "@/lib/utils";
@@ -77,10 +78,7 @@ export function Indicators({ translator, changed, onChanged }: Props) {
   const own = (id: IndicatorId) => (Array.isArray(texts) ? texts.filter((m) => m.key.startsWith(prefix(id))) : []);
   const cited = (id: IndicatorId) =>
     published && published !== "failed" ? (published.citations[id] ?? []).length : null;
-  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const listed = indicatorIds.filter((id) =>
-    words.every((w) => `${name(id)} ${short(id)}`.toLocaleLowerCase().includes(w)),
-  );
+  const listed = indicatorIds.filter((id) => matches(query, name(id), short(id)));
   const meta = (id: IndicatorId) => {
     const mine = own(id);
     const edited = mine.filter((m) => m.edited).length;
@@ -112,18 +110,15 @@ export function Indicators({ translator, changed, onChanged }: Props) {
             ))}
           </select>
         </label>
-        <div className="relative hidden lg:block">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle"
-          />
-          <Input
-            type="search"
+        <div className="hidden lg:block">
+          <SearchField
+            id="indicator-search"
+            t={t}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label={t("account.content.indicator.search")}
+            onChange={setQuery}
+            label={t("account.content.indicator.search")}
             placeholder={t("account.content.indicator.search")}
-            className="h-10 pl-9 text-sm"
+            className="sm:w-full"
           />
         </div>
         <nav aria-label={t("account.subpages.indicators")} className="hidden lg:block">
@@ -151,9 +146,7 @@ export function Indicators({ translator, changed, onChanged }: Props) {
                 </a>
               </li>
             ))}
-            {listed.length === 0 && (
-              <li className="px-3 py-2 text-sm text-ink-muted">{t("account.content.nothing")}</li>
-            )}
+            {listed.length === 0 && <li className="px-3 py-2 text-sm text-ink-muted">{t("lists.noResults.title")}</li>}
           </ul>
         </nav>
       </div>
@@ -168,7 +161,7 @@ export function Indicators({ translator, changed, onChanged }: Props) {
         <Tabs value={tab} onValueChange={(value) => go({ indicator, tab: value as Tab })}>
           <div className="border-b border-line">
             <TabsList aria-label={t("account.content.indicator.tabsLabel")}>
-              <TabsTrigger value="texts" count={String(own(indicator).length || fieldOrder.length)}>
+              <TabsTrigger value="texts" count={Array.isArray(texts) ? String(own(indicator).length) : undefined}>
                 {t("account.content.indicator.texts")}
               </TabsTrigger>
               <TabsTrigger value="articles" count={cited(indicator) === null ? undefined : String(cited(indicator))}>
@@ -242,7 +235,7 @@ function IndicatorTexts({
                 {match.edited && <Badge>{t("account.content.edited")}</Badge>}
                 {match.draft && <Badge tone="draft">{t("account.content.draft")}</Badge>}
               </span>
-              <span className="col-start-1 line-clamp-3 text-sm text-ink sm:col-start-2 sm:row-start-1">
+              <span lang="es" className="col-start-1 line-clamp-3 text-sm text-ink sm:col-start-2 sm:row-start-1">
                 {preview(match.current.es)}
               </span>
               <ChevronRight
