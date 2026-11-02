@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import {
   DropdownMenu,
@@ -9,30 +10,9 @@ import {
 import { iconSize } from "@/design/tokens";
 import { cn } from "@/lib/utils";
 import type { ListsT } from "./i18n";
+import { chooseSort, naturallyDescending, type Sort, type SortKind, type SortOption } from "./sort";
 
-export type Sort<K extends string> = { key: K; descending: boolean };
-
-/** Rows in the sort's order: text by the locale's collation, numbers and times by value. */
-export function sortRows<T, K extends string>(
-  rows: T[],
-  sort: Sort<K>,
-  value: (row: T, key: K) => string | number,
-  collator: Intl.Collator,
-): T[] {
-  return [...rows].sort((a, b) => {
-    const x = value(a, sort.key);
-    const y = value(b, sort.key);
-    const order = typeof x === "string" && typeof y === "string" ? collator.compare(x, y) : Number(x) - Number(y);
-    return sort.descending ? -order : order;
-  });
-}
-
-/** What a sort key holds, which names its two directions and decides the one it starts with. */
-export type SortKind = "text" | "date" | "number";
-export type SortOption<K extends string> = { key: K; label: string; kind: SortKind };
-
-/** Text starts from A, dates from the newest, numbers from the largest. */
-export const naturallyDescending = (kind: SortKind) => kind !== "text";
+export * from "./sort";
 
 /**
  * The sort as a menu, in every view: each key on its row with the arrow of its direction. Choosing another key sorts
@@ -53,15 +33,20 @@ export function SortMenu<K extends string>({
   // The arrow shows the direction; readers hear it in words.
   const direction = (kind: SortKind, descending: boolean) => t(`lists.order.${kind}.${descending ? "desc" : "asc"}`);
   const Arrow = sort.descending ? ArrowDown : ArrowUp;
+  // Said once the arrow turns, since the item keeps focus and a changed label alone may go unheard.
+  const [turned, setTurned] = useState("");
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={() => setTurned("")}>
       <DropdownMenuTrigger
         aria-label={`${t("lists.sort")}: ${current.label}, ${direction(current.kind, sort.descending)}`}
         className="inline-flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-sm text-ink-muted hover:bg-action-soft hover:text-ink data-[state=open]:bg-action-soft"
       >
-        {current.label}
-        <Arrow size={iconSize.sm} aria-hidden="true" />
+        <span className="max-w-32 truncate sm:max-w-none">{current.label}</span>
+        <Arrow size={iconSize.sm} aria-hidden="true" className="shrink-0" />
       </DropdownMenuTrigger>
+      <span aria-live="polite" className="sr-only">
+        {turned}
+      </span>
       <DropdownMenuContent className="min-w-48">
         <DropdownMenuRadioGroup value={current.key}>
           {options.map((option) => {
@@ -74,16 +59,17 @@ export function SortMenu<K extends string>({
                 value={option.key}
                 aria-label={`${option.label}, ${direction(option.kind, descending)}`}
                 onSelect={(event) => {
+                  const next = chooseSort(sort, option.key, descending);
                   // The menu stays open while the arrow turns, so the change shows where it was made.
-                  if (active) event.preventDefault();
-                  onSort({ key: option.key, descending: active ? !sort.descending : descending });
+                  if (active) {
+                    event.preventDefault();
+                    setTurned(direction(option.kind, next.descending));
+                  }
+                  onSort(next);
                 }}
               >
                 <span className="grow">{option.label}</span>
-                <Shown
-                  aria-hidden="true"
-                  className={active ? "text-ink!" : "opacity-0 group-data-highlighted:opacity-100"}
-                />
+                <Shown aria-hidden="true" className={active ? "text-ink!" : "opacity-50"} />
               </DropdownMenuRadioItem>
             );
           })}
@@ -91,14 +77,6 @@ export function SortMenu<K extends string>({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-/** A sort as it goes in the address: the key, after a minus when descending. */
-export const encodeSort = <K extends string>(sort: Sort<K>) => `${sort.descending ? "-" : ""}${sort.key}`;
-
-export function decodeSort<K extends string>(value: string, keys: readonly K[], fallback: Sort<K>): Sort<K> {
-  const key = value.replace(/^-/, "") as K;
-  return keys.includes(key) ? { key, descending: value.startsWith("-") } : fallback;
 }
 
 /** A table header that sorts by its column: once by the column's natural order, again to reverse it. */
@@ -127,7 +105,7 @@ export function SortHeader<K extends string>({
     >
       <button
         type="button"
-        onClick={() => onSort({ key: column, descending: active ? !sort.descending : natural })}
+        onClick={() => onSort(chooseSort(sort, column, natural))}
         className={cn(
           "-mx-1.5 inline-flex h-10 items-center gap-1 rounded-xs px-1.5 hover:text-ink",
           active && "text-ink",
