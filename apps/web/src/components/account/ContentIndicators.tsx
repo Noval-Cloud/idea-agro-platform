@@ -57,6 +57,8 @@ export function Indicators({ translator, changed, onChanged }: Props) {
                 href={`?id=${id}`}
                 aria-current={indicator === id ? "page" : undefined}
                 onClick={(event) => {
+                  // A click meant for a new tab or window stays the browser's.
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   event.preventDefault();
                   choose(id);
                 }}
