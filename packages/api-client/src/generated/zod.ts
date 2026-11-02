@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.14.0
+ * OpenAPI spec version: 1.15.0
  */
 import * as zod from 'zod';
 
@@ -2317,7 +2317,7 @@ export const ListArticlesResponse = zod.object({
   "url": zod.union([zod.string().max(listArticlesResponseArticlesItemUrlOneMax).regex(listArticlesResponseArticlesItemUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(listArticlesResponseArticlesItemFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.')
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.')
 }).describe('An article as the site shows it.')),
   "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
 }).describe('The articles behind the indicators, newest first, and which each indicator cites.')
@@ -2388,7 +2388,7 @@ export const AddArticleResponse = zod.object({
   "url": zod.union([zod.string().max(addArticleResponseUrlOneMax).regex(addArticleResponseUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(addArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),
@@ -2432,7 +2432,7 @@ export const SeedArticlesResponse = zod.object({
   "url": zod.union([zod.string().max(seedArticlesResponseArticlesItemUrlOneMax).regex(seedArticlesResponseArticlesItemUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(seedArticlesResponseArticlesItemFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.')
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.')
 }).describe('An article as the site shows it.')),
   "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
 }).describe('The articles behind the indicators, newest first, and which each indicator cites.')
@@ -2479,7 +2479,7 @@ export const GetArticleResponse = zod.object({
   "url": zod.union([zod.string().max(getArticleResponseUrlOneMax).regex(getArticleResponseUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(getArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),
@@ -2559,7 +2559,7 @@ export const PutArticleResponse = zod.object({
   "url": zod.union([zod.string().max(putArticleResponseUrlOneMax).regex(putArticleResponseUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(putArticleResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),
@@ -2583,6 +2583,8 @@ export const DeleteArticleResponse = zod.void()
 
 
 /**
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
+ * @deprecated
  * @summary An article's PDF
  */
 export const getArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
@@ -2596,7 +2598,8 @@ export const GetArticlePdfResponse = zod.unknown()
 
 
 /**
- * Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02. Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * @deprecated
  * @summary Attach an article's PDF
  */
 export const putArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
@@ -2640,7 +2643,7 @@ export const PutArticlePdfResponse = zod.object({
   "url": zod.union([zod.string().max(putArticlePdfResponseUrlOneMax).regex(putArticlePdfResponseUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(putArticlePdfResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),
@@ -2650,6 +2653,8 @@ export const PutArticlePdfResponse = zod.object({
 
 
 /**
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
+ * @deprecated
  * @summary Remove an article's PDF
  */
 export const deleteArticlePdfPathArticleIdRegExp = new RegExp('^[a-z0-9]{1,60}$');
@@ -2689,7 +2694,7 @@ export const DeleteArticlePdfResponse = zod.object({
   "url": zod.union([zod.string().max(deleteArticlePdfResponseUrlOneMax).regex(deleteArticlePdfResponseUrlOneRegExp),zod.null()]).optional(),
   "framework": zod.boolean().default(deleteArticlePdfResponseFrameworkDefault).describe('The reference framework the indicators follow.'),
   "id": zod.string(),
-  "pdf": zod.boolean().describe('Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.'),
+  "pdf": zod.boolean().describe('Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it last changed.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),

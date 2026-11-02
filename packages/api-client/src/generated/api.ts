@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.14.0
+ * OpenAPI spec version: 1.15.0
  */
 import {
   useMutation,
@@ -193,7 +193,10 @@ export interface ArticleOut {
   /** The reference framework the indicators follow. */
   framework?: boolean;
   id: string;
-  /** Whether a PDF goes with it, at `/v1/articles/{id}/pdf`. */
+  /**
+     * Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.
+     * @deprecated
+     */
   pdf: boolean;
   /** When it last changed. */
   updated_at: string | null;
@@ -236,7 +239,10 @@ export interface ArticlePublic {
   /** The reference framework the indicators follow. */
   framework?: boolean;
   id: string;
-  /** Whether a PDF goes with it, at `/v1/articles/{id}/pdf`. */
+  /**
+     * Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.
+     * @deprecated
+     */
   pdf: boolean;
 }
 
@@ -11045,6 +11051,8 @@ export const getGetArticlePdfUrl = (articleId: string,) => {
 }
 
 /**
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
+ * @deprecated
  * @summary An article's PDF
  */
 export const getArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getArticlePdfResponse> => {
@@ -11116,6 +11124,7 @@ export function useGetArticlePdf<TData = Awaited<ReturnType<typeof getArticlePdf
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary An article's PDF
  */
 
@@ -11190,7 +11199,8 @@ export const getPutArticlePdfUrl = (articleId: string,) => {
 }
 
 /**
- * Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02. Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.
+ * @deprecated
  * @summary Attach an article's PDF
  */
 export const putArticlePdf = async (articleId: string,
@@ -11246,6 +11256,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type PutArticlePdfMutationVariables = {articleId: string;data: BodyPutArticlePdf}
 
     /**
+ * @deprecated
  * @summary Attach an article's PDF
  */
 export const usePutArticlePdf = <TError = Problem,
@@ -11302,6 +11313,8 @@ export const getDeleteArticlePdfUrl = (articleId: string,) => {
 }
 
 /**
+ * Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.
+ * @deprecated
  * @summary Remove an article's PDF
  */
 export const deleteArticlePdf = async (articleId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteArticlePdfResponse> => {
@@ -11354,6 +11367,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteArticlePdfMutationVariables = {articleId: string}
 
     /**
+ * @deprecated
  * @summary Remove an article's PDF
  */
 export const useDeleteArticlePdf = <TError = Problem,

@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from email.utils import format_datetime
 from typing import Annotated
 
 from fastapi import APIRouter, File, Response, UploadFile
@@ -24,6 +25,16 @@ IndicatorParam = Annotated[Indicator, PathParam(description="The indicator.")]
 # The site reads them when it is built; a minute keeps a rebuild from serving what an editor just replaced.
 CACHE_CONTROL = "public, max-age=60"
 PDF: dict[int | str, dict[str, object]] = {200: {"description": "The PDF.", "content": {"application/pdf": {}}}}
+# Articles are read at their link or DOI, so their PDFs go: these routes answer until the sunset, then are removed.
+PDF_DEPRECATED = datetime(2026, 11, 2, tzinfo=UTC)
+PDF_SUNSET = datetime(2026, 12, 2, tzinfo=UTC)
+PDF_GONE = f"Deprecated: articles are read at their link or DOI. Removed on {PDF_SUNSET:%Y-%m-%d}."
+
+
+def deprecated(response: Response) -> None:
+    """The headers that announce a route's end (RFC 9745 and RFC 8594)."""
+    response.headers["Deprecation"] = f"@{int(PDF_DEPRECATED.timestamp())}"
+    response.headers["Sunset"] = format_datetime(PDF_SUNSET, usegmt=True)
 
 
 def public(article: Article) -> ArticlePublic:
@@ -164,6 +175,8 @@ def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesD
 @router.get(
     "/v1/articles/{article_id}/pdf",
     summary="An article's PDF",
+    description=PDF_GONE,
+    deprecated=True,
     response_class=Response,
     responses=PDF | problems(404, 422),
 )
@@ -172,17 +185,20 @@ def get_article_pdf(article_id: ArticleId, services: ServicesDep) -> Response:
     content = services.document_files.get(pdf_name(article_id)) if article.pdf else None
     if content is None:
         raise HTTPException(404, "The article has no PDF.")
-    return Response(
+    response = Response(
         content,
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{article_id}.pdf"', "Cache-Control": CACHE_CONTROL},
     )
+    deprecated(response)
+    return response
 
 
 @router.put(
     "/v1/articles/{article_id}/pdf",
     summary="Attach an article's PDF",
-    description="Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+    description=f"{PDF_GONE} Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+    deprecated=True,
     responses=problems(401, 403, 404, 413, 415, 422),
 )
 def put_article_pdf(
@@ -190,6 +206,7 @@ def put_article_pdf(
     file: Annotated[UploadFile, File(description="The PDF.")],
     caller: EditorDep,
     services: ServicesDep,
+    response: Response,
 ) -> ArticleOut:
     article = found(services, article_id)
     limit = services.limits.document_bytes
@@ -204,20 +221,26 @@ def put_article_pdf(
     updated = replace(article, pdf=True, updated_at=datetime.now(UTC), updated_by=author(caller))
     services.articles.put(updated)
     changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
+    deprecated(response)
     return out(updated)
 
 
 @router.delete(
     "/v1/articles/{article_id}/pdf",
     summary="Remove an article's PDF",
+    description=PDF_GONE,
+    deprecated=True,
     responses=problems(401, 403, 404, 422),
 )
-def delete_article_pdf(article_id: ArticleId, caller: EditorDep, services: ServicesDep) -> ArticleOut:
+def delete_article_pdf(
+    article_id: ArticleId, caller: EditorDep, services: ServicesDep, response: Response
+) -> ArticleOut:
     article = found(services, article_id)
     services.document_files.delete(pdf_name(article_id))
     updated = replace(article, pdf=False, updated_at=datetime.now(UTC), updated_by=author(caller))
     services.articles.put(updated)
     changed(services, caller, AuditAction.ARTICLE_SAVED, article_id, "pdf")
+    deprecated(response)
     return out(updated)
 
 

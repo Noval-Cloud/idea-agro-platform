@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, ChevronRight, FileText, Plus, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, ChevronRight, Plus, SearchX, X } from "lucide-react";
 import type { ArticleIn, ArticleOut, ArticlePublic, PublishedArticles } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
@@ -20,7 +20,7 @@ const api = () => Promise.all([import("@/lib/account"), import("@idea-agro/api-c
 type Client = Awaited<ReturnType<typeof api>>[1];
 type Props = { translator: AccountTranslator; onChanged: () => void; changed: number };
 const empty: ArticleIn = { authors: "", year: new Date().getFullYear(), title: "", lang: "en", source: "" };
-const flags = ["framework", "pdf", "uncited"] as const;
+const flags = ["framework", "uncited"] as const;
 
 /** One private call; an answer other than `ok` statuses is an error. */
 async function call<T>(run: (client: Client, init: RequestInit) => Promise<{ status: number; data: unknown }>) {
@@ -86,7 +86,6 @@ export function Articles({ translator, onChanged, changed }: Props) {
     (a) =>
       found(a, query) &&
       (!on.includes("framework") || a.framework) &&
-      (!on.includes("pdf") || a.pdf) &&
       (!on.includes("uncited") || citing(a.id).length === 0) &&
       (citedBy === "all" || citing(a.id).includes(citedBy as IndicatorId)),
   );
@@ -231,12 +230,6 @@ export function Articles({ translator, onChanged, changed }: Props) {
                       </span>
                       <span className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                         {article.framework && <Chip>{t("account.content.articles.flags.framework")}</Chip>}
-                        {article.pdf && (
-                          <Chip>
-                            <FileText aria-hidden="true" className="size-3" />
-                            {t("account.content.articles.pdf")}
-                          </Chip>
-                        )}
                         <span>
                           {by.length > 0
                             ? t("account.content.articles.citedBy", { names: list(by.map(name)) })
@@ -276,7 +269,7 @@ const fromArticle = (found: ArticleOut): ArticleIn => ({
   framework: found.framework,
 });
 
-/** One article in a side panel: its data, its PDF and its removal. `id` is null for one being added. */
+/** One article in a side panel: its data and its removal. `id` is null for one being added. */
 function ArticlePanel({
   id,
   citedBy,
@@ -368,16 +361,6 @@ function ArticlePanel({
           : call<ArticleOut>((client, init) => client.addArticle(body, init)),
       "account.content.articles.saved",
       true,
-    );
-  const upload = (file: File) =>
-    act(
-      () => call<ArticleOut>((client, init) => client.putArticlePdf(id ?? "", { file }, init)),
-      "account.content.articles.saved",
-    );
-  const removePdf = () =>
-    act(
-      () => call<ArticleOut>((client, init) => client.deleteArticlePdf(id ?? "", init)),
-      "account.content.articles.saved",
     );
   const remove = () =>
     act(async () => {
@@ -486,7 +469,7 @@ function ArticlePanel({
           </div>
           {field("source", "account.content.articles.source", "account.content.articles.sourceHint")}
           {field("doi", "account.content.articles.doi", "account.content.articles.doiHint")}
-          {field("url", "account.content.articles.url")}
+          {field("url", "account.content.articles.url", "account.content.articles.urlHint")}
           <label className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
@@ -495,37 +478,6 @@ function ArticlePanel({
             />
             {t("account.content.articles.frameworkLabel")}
           </label>
-
-          {id && (
-            <div className="grid gap-2 border-t border-line pt-5 text-sm">
-              <p className="font-medium text-ink">{t("account.content.articles.pdf")}</p>
-              {article?.pdf ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="inline-flex items-center gap-1.5 text-ink-muted">
-                    <FileText aria-hidden="true" className="size-4" />
-                    {t("account.content.articles.pdfAttached")}
-                  </span>
-                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => void removePdf()}>
-                    {t("account.content.articles.pdfRemove")}
-                  </Button>
-                </div>
-              ) : null}
-              <label className="grid gap-1 text-ink-muted">
-                {article?.pdf ? t("account.content.articles.pdfReplace") : t("account.content.articles.pdfUpload")}
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  disabled={busy}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void upload(file);
-                    event.target.value = "";
-                  }}
-                  className="text-sm text-ink-muted"
-                />
-              </label>
-            </div>
-          )}
         </div>
       )}
       <ConfirmDialog

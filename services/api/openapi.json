@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.14.0"
+    "version": "1.15.0"
   },
   "paths": {
     "/health": {
@@ -6011,7 +6011,9 @@
           "Articles"
         ],
         "summary": "An article's PDF",
+        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.",
         "operationId": "get_article_pdf",
+        "deprecated": true,
         "parameters": [
           {
             "name": "article_id",
@@ -6060,8 +6062,9 @@
           "Articles"
         ],
         "summary": "Attach an article's PDF",
-        "description": "Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
+        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02. Replaces any PDF it had; up to `DOCUMENT_MAX_BYTES` (10 MB). For editors.",
         "operationId": "put_article_pdf",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -6169,7 +6172,9 @@
           "Articles"
         ],
         "summary": "Remove an article's PDF",
+        "description": "Deprecated: articles are read at their link or DOI. Removed on 2026-12-02.",
         "operationId": "delete_article_pdf",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -7213,7 +7218,8 @@
           "pdf": {
             "type": "boolean",
             "title": "Pdf",
-            "description": "Whether a PDF goes with it, at `/v1/articles/{id}/pdf`."
+            "description": "Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.",
+            "deprecated": true
           },
           "updated_at": {
             "anyOf": [
@@ -7339,7 +7345,8 @@
           "pdf": {
             "type": "boolean",
             "title": "Pdf",
-            "description": "Whether a PDF goes with it, at `/v1/articles/{id}/pdf`."
+            "description": "Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.",
+            "deprecated": true
           }
         },
         "type": "object",

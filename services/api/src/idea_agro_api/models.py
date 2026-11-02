@@ -684,7 +684,10 @@ class ArticlePublic(ArticleBase):
     """An article as the site shows it."""
 
     id: str = Field(examples=["paruelo2016"])
-    pdf: bool = Field(description="Whether a PDF goes with it, at `/v1/articles/{id}/pdf`.")
+    pdf: bool = Field(
+        description="Deprecated: articles are read at their link or DOI. Whether a PDF goes with it.",
+        json_schema_extra={"deprecated": True},
+    )
 
 
 class ArticleOut(ArticlePublic):

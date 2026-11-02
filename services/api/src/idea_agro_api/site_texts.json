@@ -501,9 +501,9 @@
   "account.content.articles.doiHint": {
     "format": "plain",
     "default": {
-      "es": "Por ejemplo 10.1007/s10021-005-0013-x. Si lo tiene, es el link principal.",
-      "en": "For example 10.1007/s10021-005-0013-x. When there is one, it is the main link.",
-      "pt": "Por exemplo 10.1007/s10021-005-0013-x. Quando houver, é o link principal."
+      "es": "Por ejemplo 10.1007/s10021-005-0013-x.",
+      "en": "For example 10.1007/s10021-005-0013-x.",
+      "pt": "Por exemplo 10.1007/s10021-005-0013-x."
     }
   },
   "account.content.articles.editTitle": {
@@ -528,14 +528,6 @@
       "es": "Marco de referencia",
       "en": "Reference framework",
       "pt": "Marco de referência"
-    }
-  },
-  "account.content.articles.flags.pdf": {
-    "format": "plain",
-    "default": {
-      "es": "Con PDF",
-      "en": "With PDF",
-      "pt": "Com PDF"
     }
   },
   "account.content.articles.flags.uncited": {
@@ -584,46 +576,6 @@
       "es": "Todavía no hay artículos. Cargá los que tenía el sitio o agregá uno.",
       "en": "There are no articles yet. Load the ones the site had or add one.",
       "pt": "Ainda não há artigos. Carregue os que o site tinha ou adicione um."
-    }
-  },
-  "account.content.articles.pdf": {
-    "format": "plain",
-    "default": {
-      "es": "PDF",
-      "en": "PDF",
-      "pt": "PDF"
-    }
-  },
-  "account.content.articles.pdfAttached": {
-    "format": "plain",
-    "default": {
-      "es": "Tiene un PDF adjunto.",
-      "en": "A PDF is attached.",
-      "pt": "Tem um PDF anexado."
-    }
-  },
-  "account.content.articles.pdfRemove": {
-    "format": "plain",
-    "default": {
-      "es": "Quitar el PDF",
-      "en": "Remove the PDF",
-      "pt": "Remover o PDF"
-    }
-  },
-  "account.content.articles.pdfReplace": {
-    "format": "plain",
-    "default": {
-      "es": "Reemplazar el PDF",
-      "en": "Replace the PDF",
-      "pt": "Substituir o PDF"
-    }
-  },
-  "account.content.articles.pdfUpload": {
-    "format": "plain",
-    "default": {
-      "es": "Subir un PDF",
-      "en": "Upload a PDF",
-      "pt": "Enviar um PDF"
     }
   },
   "account.content.articles.remove": {
@@ -733,9 +685,17 @@
   "account.content.articles.url": {
     "format": "plain",
     "default": {
-      "es": "Link (si no tiene DOI)",
-      "en": "Link (without a DOI)",
-      "pt": "Link (sem DOI)"
+      "es": "Link para leerlo",
+      "en": "Link to read it",
+      "pt": "Link para lê-lo"
+    }
+  },
+  "account.content.articles.urlHint": {
+    "format": "plain",
+    "default": {
+      "es": "Una página o un PDF abierto en otro sitio. Sin link, el sitio enlaza el DOI.",
+      "en": "A page or an open PDF on another site. Without a link, the site links the DOI.",
+      "pt": "Uma página ou um PDF aberto em outro site. Sem link, o site aponta para o DOI."
     }
   },
   "account.content.articles.year": {
@@ -8955,14 +8915,6 @@
       "es": "Artículos que respaldan los indicadores",
       "en": "Papers behind the indicators",
       "pt": "Artigos que respaldam os indicadores"
-    }
-  },
-  "science.pdf": {
-    "format": "plain",
-    "default": {
-      "es": "PDF",
-      "en": "PDF",
-      "pt": "PDF"
     }
   },
   "science.title": {
