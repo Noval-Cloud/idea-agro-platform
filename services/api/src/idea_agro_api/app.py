@@ -32,7 +32,7 @@ from idea_agro_api.security import BodyLimit, security_headers
 from idea_agro_api.services import Services
 
 # The version of the contract, not of the code: see "Versions" in the description.
-API_VERSION = "1.15.0"
+API_VERSION = "1.16.0"
 
 DESCRIPTION = """
 Environmental and productive indicators of Uruguay's agricultural land, measured from satellite imagery
@@ -98,7 +98,6 @@ def create_app(services: Services) -> FastAPI:
         expose_headers=["Deprecation", "Sunset"],
     )
     app.middleware("http")(security_headers)
-    app.middleware("http")(articles.announce_pdf_sunset)
     # Geometries and indexes are megabytes of text; Cloud Run does not compress by itself.
     app.add_middleware(
         GZipMiddleware, minimum_size=1024, exclude_content_types=DEFAULT_EXCLUDED_CONTENT_TYPES + COMPRESSED

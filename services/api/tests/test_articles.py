@@ -77,55 +77,8 @@ def test_an_indicator_cites_known_articles_in_order(client: TestClient) -> None:
     assert client.get("/v1/articles").json()["citations"]["ppna"] == ["baeza2010", "pineiro2006"]
 
 
-def test_an_article_takes_a_pdf_that_anyone_reads(client: TestClient) -> None:
-    article = client.post("/v1/articles", headers=ANA, json=PAPER).json()["id"]
-    not_pdf = client.put(
-        f"/v1/articles/{article}/pdf", headers=ANA, files={"file": ("a.pdf", b"hello", "application/pdf")}
-    )
-    assert not_pdf.status_code == 415
-
-    with_pdf = client.put(
-        f"/v1/articles/{article}/pdf", headers=ANA, files={"file": ("a.pdf", b"%PDF-1.7 body", "application/pdf")}
-    ).json()
-
-    assert with_pdf["pdf"] is True
-    response = client.get(f"/v1/articles/{article}/pdf")
-    assert response.content == b"%PDF-1.7 body"
-    assert response.headers["content-type"] == "application/pdf"
-    client.delete(f"/v1/articles/{article}/pdf", headers=ANA)
-    assert client.get(f"/v1/articles/{article}/pdf").status_code == 404
-
-
-def test_the_pdf_routes_announce_their_end(client: TestClient) -> None:
-    article = client.post("/v1/articles", headers=ANA, json=PAPER).json()["id"]
-    pdf = {"file": ("a.pdf", b"%PDF-1.7 body", "application/pdf")}
-
-    answers = [
-        client.put(f"/v1/articles/{article}/pdf", headers=ANA, files=pdf),
-        client.get(f"/v1/articles/{article}/pdf"),
-        client.delete(f"/v1/articles/{article}/pdf", headers=ANA),
-        client.get(f"/v1/articles/{article}/pdf"),
-        client.put(f"/v1/articles/{article}/pdf", files=pdf),
-    ]
-
-    assert [answer.status_code for answer in answers] == [200, 200, 200, 404, 401]
-    for answer in answers:
-        assert answer.headers["Deprecation"] == "@1793577600"
-        assert answer.headers["Sunset"] == "Wed, 02 Dec 2026 00:00:00 GMT"
-    operations = client.get("/openapi.json").json()["paths"]["/v1/articles/{article_id}/pdf"]
-    assert all(op["deprecated"] and op["x-sunset"] == "2026-12-02" for op in operations.values())
-
-
 def test_every_loaded_article_is_reachable_by_its_id(client: TestClient) -> None:
     loaded = client.post("/v1/articles/seed", headers=ANA).json()
 
     for article in loaded["articles"]:
         assert client.get(f"/v1/articles/{article['id']}", headers=ANA).status_code == 200
-
-
-def test_a_pdf_is_replaced_by_a_new_one(client: TestClient) -> None:
-    article = client.post("/v1/articles", headers=ANA, json=PAPER).json()["id"]
-    for body in (b"%PDF-1.7 first", b"%PDF-1.7 second"):
-        client.put(f"/v1/articles/{article}/pdf", headers=ANA, files={"file": ("a.pdf", body, "application/pdf")})
-
-    assert client.get(f"/v1/articles/{article}/pdf").content == b"%PDF-1.7 second"

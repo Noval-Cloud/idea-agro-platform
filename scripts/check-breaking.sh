@@ -15,4 +15,5 @@ fi
 # A new kind of value in a response is compatible here (services/api/README.md, "Versions"): a warning, not an error.
 levels=scripts/oasdiff-levels.txt
 scripts/oasdiff.sh changelog "$main" "$document" --severity-levels "$levels"
-scripts/oasdiff.sh breaking "$main" "$document" --severity-levels "$levels" --fail-on ERR
+# A break listed in the accepted file was agreed on (same section).
+scripts/oasdiff.sh breaking "$main" "$document" --severity-levels "$levels" --err-ignore scripts/oasdiff-accepted.txt --fail-on ERR

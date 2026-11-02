@@ -28,17 +28,10 @@ class Article:
     source: str
     doi: str | None = None
     url: str | None = None
-    # Whether an uploaded PDF goes with it.
-    pdf: bool = False
     # The reference framework the indicators follow, shown apart from the rest.
     framework: bool = False
     updated_at: datetime | None = None
     updated_by: Author | None = None
-
-
-def pdf_name(article: str) -> str:
-    """Kept beside the saved zones' files, under its own prefix."""
-    return f"articles/{article}.pdf"
 
 
 def new_article_id(authors: str, year: int, taken: set[str]) -> str:
@@ -135,7 +128,6 @@ class FirestoreArticles:
             source=r["source"],
             doi=r.get("doi"),
             url=r.get("url"),
-            pdf=r.get("pdf", False),
             framework=r.get("framework", False),
             updated_at=r.get("updated_at"),
             updated_by=_author(r.get("updated_by")),
@@ -161,7 +153,6 @@ class FirestoreArticles:
                 "source": article.source,
                 "doi": article.doi,
                 "url": article.url,
-                "pdf": article.pdf,
                 "framework": article.framework,
                 "updated_at": article.updated_at,
                 "updated_by": {"id": author.id, "name": author.name} if author else None,
