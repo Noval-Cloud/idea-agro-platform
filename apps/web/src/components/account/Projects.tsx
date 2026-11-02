@@ -123,7 +123,7 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
         )}
       </ListToolbar>
 
-      <div className={cn("grid max-w-(--ia-layout-page) gap-6 pt-6", underToolbar)}>
+      <div className={cn("grid gap-6 pt-6", underToolbar)}>
         {failed && (
           <p role="alert" className="text-sm text-danger">
             {t("account.projects.changeFailed")}

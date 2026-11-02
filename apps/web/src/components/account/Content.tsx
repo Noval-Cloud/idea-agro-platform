@@ -3,6 +3,7 @@ import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clock, RefreshCw, Sear
 import type { SiteRebuildOut, SiteTextMatch, TextSection } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
@@ -30,7 +31,7 @@ export default function Content({ translator, page }: { translator: AccountTrans
   const [changed, setChanged] = useState(0);
   const onChanged = () => setChanged((n) => n + 1);
   return (
-    <section id="content" aria-labelledby="content-title" className="grid max-w-(--ia-layout-page) gap-6">
+    <section id="content" aria-labelledby="content-title" className="grid gap-6">
       <PageHeader id="content-title" title={t(`account.subpages.${page}`)}>
         <SiteStatus translator={translator} changed={changed} />
       </PageHeader>
@@ -325,39 +326,68 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
       if (response.status !== 200) return setAsking("failed");
       setState({ ...state, rebuild: response.data });
       setAsking("idle");
+      // The button goes once the update starts; focus moves to the page's title, which the state sits beside.
+      requestAnimationFrame(() => document.getElementById("content-title")?.focus());
     } catch {
       setAsking("failed");
     }
   };
   const Icon = !behind ? Check : stalled ? AlertTriangle : updating ? RefreshCw : Clock;
+  const words = !behind
+    ? built
+      ? t("account.content.site.upToDate", { ago: ago(built) })
+      : t("account.content.site.noBuild")
+    : stalled
+      ? t("account.content.site.stalled")
+      : updating
+        ? t("account.content.site.updating")
+        : t("account.content.site.behind");
+  const hint = t("account.content.site.behindHint", { minutes: state.rebuild.quiet_minutes });
 
   return (
-    <div role="status" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
-      <Icon aria-hidden="true" className={cn("size-4 shrink-0", stalled ? "text-danger" : "text-ink-subtle")} />
-      <span>
-        {!behind
-          ? built
-            ? t("account.content.site.upToDate", { ago: ago(built) })
-            : t("account.content.site.noBuild")
-          : stalled
-            ? t("account.content.site.stalled")
-            : updating
-              ? t("account.content.site.updating", { ago: started ? ago(started) : "" })
-              : t("account.content.site.behind", { minutes: state.rebuild.quiet_minutes })}
-      </span>
-      {behind && (!updating || stalled) && (
-        <Button
-          variant="link"
-          size="sm"
-          className="h-auto px-0"
-          disabled={asking === "busy"}
-          onClick={() => void updateNow()}
-        >
-          {t("account.content.site.updateNow")}
-        </Button>
-      )}
-      {asking === "unavailable" && <span className="text-danger">{t("account.content.site.unavailable")}</span>}
-      {asking === "failed" && <span className="text-danger">{t("account.content.site.failed")}</span>}
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div role="status" className="inline-flex items-center gap-1.5 text-sm text-ink-subtle">
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            "size-3.5 shrink-0",
+            stalled && "text-danger",
+            updating && !stalled && "animate-spin motion-reduce:animate-none",
+          )}
+        />
+        {/* The rule behind the wait goes in a tooltip; the state itself is a few words. */}
+        {behind && !updating ? (
+          <Tooltip label={hint}>
+            {/* Focusable, so the hint opens from the keyboard too. */}
+            <span tabIndex={0} className="rounded-xs">
+              {words}
+            </span>
+          </Tooltip>
+        ) : (
+          <span>{words}</span>
+        )}
+        {behind && (!updating || stalled) && (
+          <span id="site-hint" className="sr-only">
+            {hint}
+          </span>
+        )}
+        {behind && (!updating || stalled) && (
+          <Tooltip label={t("account.content.site.updateNow")}>
+            <button
+              type="button"
+              aria-label={t("account.content.site.updateNow")}
+              aria-describedby="site-hint"
+              disabled={asking === "busy"}
+              onClick={() => void updateNow()}
+              className="grid size-7 place-items-center rounded-sm text-ink-muted hover:bg-action-soft hover:text-ink disabled:opacity-50"
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
+        )}
+        {asking === "unavailable" && <span className="text-danger">{t("account.content.site.unavailable")}</span>}
+        {asking === "failed" && <span className="text-danger">{t("account.content.site.failed")}</span>}
+      </div>
+    </TooltipProvider>
   );
 }

@@ -219,7 +219,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
         )}
       </ListToolbar>
 
-      <div className={cn("grid max-w-(--ia-layout-page) gap-6 pt-6", underToolbar)}>
+      <div className={cn("grid gap-6 pt-6", underToolbar)}>
         <ImportZones
           t={t}
           number={translator.number}

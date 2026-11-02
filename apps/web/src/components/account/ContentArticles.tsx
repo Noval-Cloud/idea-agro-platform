@@ -4,11 +4,12 @@ import type { ArticleIn, ArticleOut, ArticlePublic, PublishedArticles } from "@i
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Modal, Sheet } from "@/components/ui/sheet";
+import { Sheet } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { SearchField } from "@/components/lists/SearchField";
+import { Tick } from "@/components/lists/Tick";
 import { matches } from "@/components/lists/filter";
 import { useQueryState } from "@/components/lists/state";
 import { indicatorIds, type IndicatorId } from "@/data/indicators";
@@ -682,12 +683,11 @@ function ArticlePicker({
   const toggle = (id: string) => setPicked(picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id]);
 
   return (
-    <Modal
+    <Sheet
       open
       onClose={onClose}
       title={t("account.content.citations.pickTitle")}
       close={t("account.content.close")}
-      className="h-[min(40rem,calc(100dvh-2rem))]"
       footer={
         <div className="flex items-center justify-end gap-2">
           <span className="mr-auto text-sm text-ink-muted">
@@ -704,7 +704,8 @@ function ArticlePicker({
         </div>
       }
     >
-      <div className="sticky top-0 z-1 bg-surface pb-3">
+      {/* The search stays at the panel's top while the articles scroll; the offsets undo the Sheet body's py-5. */}
+      <div className="sticky -top-5 z-1 -mt-5 bg-surface pt-5 pb-3">
         <SearchField
           id="picker-search"
           collapsible={false}
@@ -720,21 +721,17 @@ function ArticlePicker({
       ) : shown.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("lists.noResults.title")}</p>
       ) : (
-        <ul className="grid gap-1">
+        // A focused tick clears the pinned search when going back up.
+        <ul className="grid gap-1 [&_input]:scroll-mt-20">
           {shown.map((article) => (
             <li key={article.id}>
               <label
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-sm p-2.5 text-sm transition-colors duration-(--ia-motion-fast) hover:bg-action-soft",
+                  "flex cursor-pointer items-start gap-3 rounded-sm p-2.5 text-sm transition-colors duration-(--ia-motion-fast) hover:bg-action-soft has-focus-visible:bg-action-soft",
                   picked.includes(article.id) && "bg-surface-selected",
                 )}
               >
-                <input
-                  type="checkbox"
-                  className="mt-0.5 size-4 shrink-0"
-                  checked={picked.includes(article.id)}
-                  onChange={() => toggle(article.id)}
-                />
+                <Tick checked={picked.includes(article.id)} onChange={() => toggle(article.id)} />
                 <span className="grid min-w-0 gap-0.5">
                   <span lang={article.lang} className="text-ink">
                     {article.title}
@@ -748,6 +745,6 @@ function ArticlePicker({
           ))}
         </ul>
       )}
-    </Modal>
+    </Sheet>
   );
 }

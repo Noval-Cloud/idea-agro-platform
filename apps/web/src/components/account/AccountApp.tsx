@@ -117,14 +117,10 @@ export default function AccountApp({
   if (section === "content")
     return <Content translator={translator} page={accountSubpages.content.find((p) => p === subpage) ?? "texts"} />;
   if (section === "admin")
-    return (
-      <div className="max-w-(--ia-layout-page)">
-        {subpage === "audit" ? (
-          <Audit translator={translator} signInPath={signInPath} />
-        ) : (
-          <Users translator={translator} signInPath={signInPath} me={me.id} />
-        )}
-      </div>
+    return subpage === "audit" ? (
+      <Audit translator={translator} signInPath={signInPath} />
+    ) : (
+      <Users translator={translator} signInPath={signInPath} me={me.id} />
     );
 
   return (
