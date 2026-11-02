@@ -430,6 +430,7 @@ class AuditOut(BaseModel):
     """One admin action."""
 
     at: datetime
+    actor_id: str = Field(description="The account that acted.")
     actor_name: str = Field(description="The admin who acted, by their name at the time.")
     action: AuditAction
     target: str = Field(description="The account acted on.")

@@ -180,18 +180,24 @@ def send_account_recovery(account_id: AccountId, caller: AdminDep, services: Ser
 @router.get(
     "/v1/admin/audit",
     summary="What admins and editors did",
-    description="For admins: the latest actions of admins and editors, newest first.",
-    responses=problems(401, 403, 429),
+    description="For admins: the latest 200 actions of admins and editors, newest first, within the times given.",
+    responses=problems(401, 403, 422, 429),
 )
-def list_audit(caller: AdminDep, services: ServicesDep) -> list[AuditOut]:
+def list_audit(
+    caller: AdminDep,
+    services: ServicesDep,
+    since: Annotated[datetime | None, Query(description="Only actions at or after this time.")] = None,
+    until: Annotated[datetime | None, Query(description="Only actions before this time.")] = None,
+) -> list[AuditOut]:
     return [
         AuditOut(
             at=e.at,
+            actor_id=e.actor,
             actor_name=e.actor_name,
             action=e.action,
             target=e.target,
             target_email=e.target_email,
             detail=e.detail,
         )
-        for e in services.audit.latest(200)
+        for e in services.audit.latest(200, since, until)
     ]

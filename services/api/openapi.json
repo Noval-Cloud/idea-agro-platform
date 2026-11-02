@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.16.0"
+    "version": "1.17.0"
   },
   "paths": {
     "/health": {
@@ -6596,18 +6596,63 @@
           "Admin"
         ],
         "summary": "What admins and editors did",
-        "description": "For admins: the latest actions of admins and editors, newest first.",
+        "description": "For admins: the latest 200 actions of admins and editors, newest first, within the times given.",
         "operationId": "list_audit",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only actions at or after this time.",
+              "title": "Since"
+            },
+            "description": "Only actions at or after this time."
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only actions before this time.",
+              "title": "Until"
+            },
+            "description": "Only actions before this time."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/AuditOut"
                   },
-                  "type": "array",
                   "title": "Response List Audit"
                 }
               }
@@ -6633,6 +6678,16 @@
               }
             }
           },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too many requests: wait the seconds in `Retry-After`.",
             "content": {
@@ -6643,12 +6698,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     }
   },
@@ -7132,6 +7182,11 @@
             "format": "date-time",
             "title": "At"
           },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id",
+            "description": "The account that acted."
+          },
           "actor_name": {
             "type": "string",
             "title": "Actor Name",
@@ -7159,6 +7214,7 @@
         "type": "object",
         "required": [
           "at",
+          "actor_id",
           "actor_name",
           "action",
           "target",

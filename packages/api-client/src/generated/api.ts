@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.16.0
+ * OpenAPI spec version: 1.17.0
  */
 import {
   useMutation,
@@ -261,6 +261,8 @@ export const AuditAction = {
  */
 export interface AuditOut {
   at: string;
+  /** The account that acted. */
+  actor_id: string;
   /** The admin who acted, by their name at the time. */
   actor_name: string;
   action: AuditAction;
@@ -1508,6 +1510,17 @@ export type ListAccountsParams = {
  * @maxLength 100
  */
 q?: string;
+};
+
+export type ListAuditParams = {
+/**
+ * Only actions at or after this time.
+ */
+since?: string | null;
+/**
+ * Only actions before this time.
+ */
+until?: string | null;
 };
 
 type AwaitedInput<T> = PromiseLike<T> | T;
@@ -11791,6 +11804,11 @@ export type listAuditResponse403 = {
   status: 403
 }
 
+export type listAuditResponse422 = {
+  data: Problem
+  status: 422
+}
+
 export type listAuditResponse429 = {
   data: Problem
   status: 429
@@ -11799,27 +11817,34 @@ export type listAuditResponse429 = {
 export type listAuditResponseSuccess = (listAuditResponse200) & {
   headers: Headers;
 };
-export type listAuditResponseError = (listAuditResponse401 | listAuditResponse403 | listAuditResponse429) & {
+export type listAuditResponseError = (listAuditResponse401 | listAuditResponse403 | listAuditResponse422 | listAuditResponse429) & {
   headers: Headers;
 };
 
 export type listAuditResponse = (listAuditResponseSuccess | listAuditResponseError)
 
-export const getListAuditUrl = () => {
+export const getListAuditUrl = (params?: ListAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/admin/audit`
+  return stringifiedParams.length > 0 ? `/v1/admin/audit?${stringifiedParams}` : `/v1/admin/audit`
 }
 
 /**
- * For admins: the latest actions of admins and editors, newest first.
+ * For admins: the latest 200 actions of admins and editors, newest first, within the times given.
  * @summary What admins and editors did
  */
-export const listAudit = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listAuditResponse> => {
+export const listAudit = async (params?: ListAuditParams, options?: Parameters<typeof apiFetch>[1]): Promise<listAuditResponse> => {
 
-  return apiFetch<listAuditResponse>(getListAuditUrl(),
+  return apiFetch<listAuditResponse>(getListAuditUrl(params),
   {
     ...options,
     method: 'GET'
@@ -11832,23 +11857,23 @@ export const listAudit = async ( options?: Parameters<typeof apiFetch>[1]): Prom
 
 
 
-export const getListAuditQueryKey = () => {
+export const getListAuditQueryKey = (params?: ListAuditParams,) => {
     return [
-    `/v1/admin/audit`
+    `/v1/admin/audit`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAuditQueryOptions = <TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getListAuditQueryOptions = <TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(params?: ListAuditParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAuditQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListAuditQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAudit>>> = ({ signal }) => listAudit({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAudit>>> = ({ signal }) => listAudit(params, { signal, ...requestOptions });
 
 
 
@@ -11862,7 +11887,7 @@ export type ListAuditQueryError = Problem
 
 
 export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
+ params: undefined |  ListAuditParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAudit>>,
           TError,
@@ -11872,7 +11897,7 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
+ params?: ListAuditParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAudit>>,
           TError,
@@ -11882,7 +11907,7 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ params?: ListAuditParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -11890,11 +11915,11 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  */
 
 export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ params?: ListAuditParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAudit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListAuditQueryOptions(options)
+  const queryOptions = getListAuditQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
