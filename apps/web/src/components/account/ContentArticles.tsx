@@ -721,7 +721,8 @@ function ArticlePicker({
       ) : shown.length === 0 ? (
         <p className="text-sm text-ink-muted">{t("lists.noResults.title")}</p>
       ) : (
-        <ul className="grid gap-1">
+        // A focused tick clears the pinned search when going back up.
+        <ul className="grid gap-1 [&_input]:scroll-mt-20">
           {shown.map((article) => (
             <li key={article.id}>
               <label

@@ -366,7 +366,7 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
         ) : (
           <span>{words}</span>
         )}
-        {behind && (
+        {behind && (!updating || stalled) && (
           <span id="site-hint" className="sr-only">
             {hint}
           </span>
