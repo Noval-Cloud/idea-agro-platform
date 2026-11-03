@@ -27,7 +27,7 @@ from idea_agro_jobs.frame import BOUNDS
 log = logging.getLogger(__name__)
 
 ASSETS = "projects/pastizalesrou/assets/"
-MAPBIOMAS = "projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1"
+MAPBIOMAS = "projects/mapbiomas-public/assets/uruguay/lulc/collection4/mapbiomas_uruguay_collection4_coverage_v1"
 SCOPES = ["https://www.googleapis.com/auth/earthengine", "https://www.googleapis.com/auth/cloud-platform"]
 
 

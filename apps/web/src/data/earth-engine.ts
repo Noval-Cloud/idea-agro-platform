@@ -13,7 +13,7 @@ export const earthEngineSources: Record<IndicatorId, EarthEngineSource[]> = {
   apar: [{ asset: own("apar/apar-16"), bands: "b<year>-<day>", cadence: "days16" }],
   cob: [
     {
-      asset: "projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1",
+      asset: "projects/mapbiomas-public/assets/uruguay/lulc/collection4/mapbiomas_uruguay_collection4_coverage_v1",
       bands: "classification_<year>",
       cadence: "yearly",
     },

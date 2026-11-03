@@ -77,7 +77,7 @@ export const etAnnual = yearly("et");
 /** Water yield of each complete growing year (mm). */
 export const rhAnnual = yearly("rh");
 export const ioseAnnual = yearly("iose").map((d) => ({ year: d.start, value: d.value }));
-/** Natural grassland as a share of the mapped country, per year of MapBiomas Pampa. */
+/** Natural grassland as a share of the mapped country, per year of MapBiomas Uruguay. */
 export const grasslandShare = yearly("cob").map((d) => ({ year: d.start, value: d.value }));
 export const firstYearStart = ppnaAnnual[0]?.start ?? lastCompleteYearStart;
 

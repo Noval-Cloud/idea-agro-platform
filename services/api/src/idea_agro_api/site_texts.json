@@ -5111,9 +5111,9 @@
   "footer.dataSources": {
     "format": "plain",
     "default": {
-      "es": "Datos: MODIS y GLDAS (NASA), CHIRPS, MapBiomas Pampa e INIA.",
-      "en": "Data: MODIS and GLDAS (NASA), CHIRPS, MapBiomas Pampa and INIA.",
-      "pt": "Dados: MODIS e GLDAS (NASA), CHIRPS, MapBiomas Pampa e INIA."
+      "es": "Datos: MODIS y GLDAS (NASA), CHIRPS, MapBiomas Uruguay e INIA.",
+      "en": "Data: MODIS and GLDAS (NASA), CHIRPS, MapBiomas Uruguay and INIA.",
+      "pt": "Dados: MODIS e GLDAS (NASA), CHIRPS, MapBiomas Uruguay e INIA."
     }
   },
   "footer.license": {
@@ -5511,9 +5511,9 @@
   "indicators.items.cob.method": {
     "format": "markdown",
     "default": {
-      "es": "Clasificación anual de imágenes Landsat del proyecto MapBiomas Pampa, con 30 m de detalle.",
-      "en": "Yearly classification of Landsat imagery by the MapBiomas Pampa project, at 30 m detail.",
-      "pt": "Classificação anual de imagens Landsat do projeto MapBiomas Pampa, com 30 m de detalhe."
+      "es": "Clasificación anual de imágenes Landsat del proyecto MapBiomas Uruguay, con 30 m de detalle.",
+      "en": "Yearly classification of Landsat imagery by the MapBiomas Uruguay project, at 30 m detail.",
+      "pt": "Classificação anual de imagens Landsat do projeto MapBiomas Uruguay, com 30 m de detalhe."
     }
   },
   "indicators.items.cob.name": {
@@ -5527,9 +5527,9 @@
   "indicators.items.cob.period": {
     "format": "plain",
     "default": {
-      "es": "1985–2021",
-      "en": "1985–2021",
-      "pt": "1985–2021"
+      "es": "1985–2025",
+      "en": "1985–2025",
+      "pt": "1985–2025"
     }
   },
   "indicators.items.cob.resolution": {
@@ -6759,9 +6759,9 @@
   "journey.scenes.grassland.source": {
     "format": "plain",
     "default": {
-      "es": "MapBiomas Pampa, {year}",
-      "en": "MapBiomas Pampa, {year}",
-      "pt": "MapBiomas Pampa, {year}"
+      "es": "MapBiomas Uruguay, {year}",
+      "en": "MapBiomas Uruguay, {year}",
+      "pt": "MapBiomas Uruguay, {year}"
     }
   },
   "journey.scenes.grassland.species.affinis.common": {

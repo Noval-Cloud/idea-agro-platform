@@ -102,10 +102,10 @@ export const en = {
         longName: "Land cover",
         measures:
           "What covers each place in the country: natural grassland, crops, tree plantations, native forest or water.",
-        method: "Yearly classification of Landsat imagery by the MapBiomas Pampa project, at 30 m detail.",
+        method: "Yearly classification of Landsat imagery by the MapBiomas Uruguay project, at 30 m detail.",
         unit: "Hectares per cover type",
         cadence: "Yearly",
-        period: "1985–2021",
+        period: "1985–2025",
         resolution: "30 m",
         mapShows: "Natural grassland in {year}",
         chartTitle: "Natural grassland, as a share of the country",
@@ -313,7 +313,7 @@ export const en = {
   },
   footer: {
     tagline: "Open platform of environmental and productive indicators for Uruguay.",
-    dataSources: "Data: MODIS and GLDAS (NASA), CHIRPS, MapBiomas Pampa and INIA.",
+    dataSources: "Data: MODIS and GLDAS (NASA), CHIRPS, MapBiomas Uruguay and INIA.",
     license: "Being built as free and open-source software.",
     updated: "Data as of {date}.",
   },
@@ -341,7 +341,7 @@ export const en = {
         name: "Grassland",
         title: "The natural grassland",
         text: "Natural grassland covers {now} of Uruguay; in 1985 it covered {before}. It supports livestock and much of the country's water and biodiversity.",
-        source: "MapBiomas Pampa, {year}",
+        source: "MapBiomas Uruguay, {year}",
         link: "See the grassland communities",
         species: {
           notatum: { latin: "Paspalum notatum", common: "bahiagrass" },
