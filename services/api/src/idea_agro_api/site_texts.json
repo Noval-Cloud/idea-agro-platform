@@ -3985,6 +3985,14 @@
       "pt": "Campo nativo"
     }
   },
+  "explorer.legend.grasslandLost": {
+    "format": "plain",
+    "default": {
+      "es": "Pastizal perdido desde {year}",
+      "en": "Grassland lost since {year}",
+      "pt": "Campo nativo perdido desde {year}"
+    }
+  },
   "explorer.legend.label": {
     "format": "plain",
     "default": {
@@ -4826,6 +4834,14 @@
       "es": "Seccional o departamento",
       "en": "District or department",
       "pt": "Seccional ou departamento"
+    }
+  },
+  "explorer.time.countryShare": {
+    "format": "plain",
+    "default": {
+      "es": "{value} del país",
+      "en": "{value} of the country",
+      "pt": "{value} do país"
     }
   },
   "explorer.time.label": {

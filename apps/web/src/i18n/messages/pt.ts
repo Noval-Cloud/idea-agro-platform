@@ -562,11 +562,13 @@ export const pt = {
       period: "Período {period}",
       noSeries: "Sem série anual",
       playing: "Mostrando {year}",
+      countryShare: "{value} do país",
     },
     legend: {
       label: "Legenda",
       grassland: "Campo nativo",
       otherUses: "Outros usos",
+      grasslandLost: "Campo nativo perdido desde {year}",
       community: "Comunidade",
       communityPick: "Comunidade a destacar",
       noData: "Sem dados",

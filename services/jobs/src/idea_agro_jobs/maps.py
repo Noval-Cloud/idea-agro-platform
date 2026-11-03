@@ -103,7 +103,7 @@ def colors(map_kind: Kind, ramp: list[Color], land: Color, neutral: Color) -> It
         if map_kind == "continuous":
             yield ramp[half_up(gray / 255 * last)]
         elif map_kind == "binary":
-            yield ramp[half_up(0.72 * last)] if gray >= 128 else neutral
+            yield ramp[half_up(0.55 * last)] if gray >= 128 else neutral
         else:
             found = half_up(gray / 51)
             yield ramp[half_up((0.35 + found * 0.12) * last)] if found > 0 else land
@@ -112,7 +112,9 @@ def colors(map_kind: Kind, ramp: list[Color], land: Color, neutral: Color) -> It
 def colored(lite: bytes, indicator: Indicator, theme: Theme, framed: bool) -> Image.Image:
     """The map in the website's colors; `framed` fills where there is no value with the land's color."""
     image = Image.open(io.BytesIO(lite)).convert("RGBA")
-    ramp = [rgb(c) for c in cast(list[str], theme["luts"][FAMILIES[indicator]])]
+    # A land-cover map reads grassland as green, as the website paints it.
+    family = "productivity" if kind(indicator) == "binary" else FAMILIES[indicator]
+    ramp = [rgb(c) for c in cast(list[str], theme["luts"][family])]
     land, neutral = rgb(theme["chrome"]["land"]), rgb(theme["chrome"]["line-strong"])
     palette = [channel for color in colors(kind(indicator), ramp, land, neutral) for channel in color]
     gray = image.getchannel("R")

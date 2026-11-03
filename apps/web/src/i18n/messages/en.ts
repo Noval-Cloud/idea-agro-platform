@@ -564,11 +564,13 @@ export const en = {
       period: "Period {period}",
       noSeries: "No yearly series",
       playing: "Showing {year}",
+      countryShare: "{value} of the country",
     },
     legend: {
       label: "Legend",
       grassland: "Natural grassland",
       otherUses: "Other uses",
+      grasslandLost: "Grassland lost since {year}",
       community: "Community",
       communityPick: "Community to highlight",
       noData: "No data",
