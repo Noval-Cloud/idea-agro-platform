@@ -19,7 +19,7 @@ export const earthEngineSources: Record<IndicatorId, EarthEngineSource[]> = {
     },
   ],
   ppna: [{ asset: own("ppna/ppna-16"), bands: "b<year>-<day>", cadence: "days16" }],
-  compn: [{ asset: "users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal", cadence: "fixed" }],
+  compn: [{ asset: own("comunidades/ComunidadesPastizal"), cadence: "fixed" }],
   rh: [{ asset: own("rh/rh-16"), bands: "b<year>-<day>", cadence: "days16" }],
   et: [{ asset: own("et/et-8"), bands: "b<year>-<day>", cadence: "days8" }],
   iose: [{ asset: own("iose/iose_Historica"), bands: "b<year>", cadence: "yearly" }],

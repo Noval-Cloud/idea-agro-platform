@@ -28,7 +28,6 @@ log = logging.getLogger(__name__)
 
 ASSETS = "projects/pastizalesrou/assets/"
 MAPBIOMAS = "projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1"
-COMMUNITIES = "users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal"
 SCOPES = ["https://www.googleapis.com/auth/earthengine", "https://www.googleapis.com/auth/cloud-platform"]
 
 
@@ -63,6 +62,7 @@ COMPOSITED = {
     Indicator.RH: ("rh/rh-16", 23),
 }
 IOSE = "iose/iose_Historica"
+COMMUNITIES = "comunidades/ComunidadesPastizal"
 # Pixel size of each indicator's reductions, in meters.
 SCALE = {Indicator.RH: 1000, Indicator.COMPN: 250}
 COMPOSITE_SCALE = 1000
@@ -263,7 +263,7 @@ class EarthEngine:
 
     def summary(self, division: Division, indicator: Indicator) -> ZoneValues:
         if indicator == Indicator.COMPN:
-            communities = ee.Image(COMMUNITIES)
+            communities = ee.Image(ASSETS + COMMUNITIES)
             image = communities.updateMask(communities.gt(0))
             zones, id_property = self._zones(division)
             reduced = image.reduceRegions(
@@ -329,7 +329,7 @@ class EarthEngine:
         elif year is not None:
             image = self._year_image(indicator, year)
         elif indicator == Indicator.COMPN:
-            communities = ee.Image(COMMUNITIES)
+            communities = ee.Image(ASSETS + COMMUNITIES)
             image = communities.updateMask(communities.gt(0))
         else:
             image = self._summarized_image(indicator)

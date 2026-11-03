@@ -68,7 +68,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 | rh            | `rh/rh-16`                                                                               | `b<year>-<day>`, one per 16-day composite                                     |
 | iose          | `iose/iose_Historica`                                                                    | `b<year>`                                                                     |
 | cob           | `projects/MapBiomas_Pampa/public/collection2/mapbiomas_pampa_collection2_integration_v1` | `classification_<year>`, class 12                                             |
-| compn         | `users/bagnato/PronosticoForrajero/ComunidadesDePastizal/ComunidadesPastizal`            | one map of classes 1 to 5                                                     |
+| compn         | `comunidades/ComunidadesPastizal`                                                        | one map of classes 1 to 5                                                     |
 | divtfe        | `EFT/TFE_17-19`                                                                          | one map of functional types                                                   |
 | csue, ahppn   | `Soil/RUSLE_agricola_17-19`, `AHPPN/AHPPN_17-19_sin0`                                    | one map                                                                       |
 | The divisions | `Seccionales_Policiales` (id `CODIGOSECC`), `cuencas/Cuencas_G1` to `G5` (`codcuenca`)   | outlines                                                                      |
