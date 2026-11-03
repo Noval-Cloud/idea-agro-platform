@@ -82,7 +82,11 @@ export default function TimeBar(props: Props) {
           </li>
         )}
         <li className="flex items-center gap-2">
-          <span className="size-3 rounded-xs" style={{ background: cover.other }} aria-hidden="true" />
+          <span
+            className="size-3 rounded-xs border border-ink-subtle"
+            style={{ background: cover.other }}
+            aria-hidden="true"
+          />
           {t("explorer.legend.otherUses")}
         </li>
         <li>

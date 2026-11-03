@@ -45,19 +45,22 @@ export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Fra
     return cached;
   }
   const { kind, years } = manifest.indicators[request.indicator];
-  const first = years?.[0];
+  const first = kind === "binary" ? years?.[0] : undefined;
+  const isFirst = first !== undefined && request.year === first;
+  const gray = isFirst
+    ? firstYear(request.indicator, first, request.lite)
+    : decodeGray(rasterUrl(request.indicator, request.year, request.lite));
+  // Without its first year, a year is still painted, only without the lost grassland.
   const since =
-    kind === "binary" && first !== undefined && request.year !== null && request.year !== first
-      ? firstYear(request.indicator, first, request.lite)
+    first !== undefined && request.year !== null && !isFirst
+      ? firstYear(request.indicator, first, request.lite).catch(() => undefined)
       : undefined;
-  const frame = Promise.all([decodeGray(rasterUrl(request.indicator, request.year, request.lite)), since]).then(
-    async ([gray, before]) => ({
-      key,
-      gray,
-      lite: request.lite,
-      url: await paint(gray, kind, indicators[request.indicator].family, request.theme, request.community, before),
-    }),
-  );
+  const frame = Promise.all([gray, since]).then(async ([gray, before]) => ({
+    key,
+    gray,
+    lite: request.lite,
+    url: await paint(gray, kind, indicators[request.indicator].family, request.theme, request.community, before),
+  }));
   frame.catch(() => frames.delete(key));
   frames.set(key, frame);
   while (frames.size > LIMIT) {

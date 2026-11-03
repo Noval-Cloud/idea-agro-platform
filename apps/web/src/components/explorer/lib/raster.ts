@@ -117,11 +117,14 @@ export async function paint(
   const out = new ImageData(raster.width, raster.height);
   const src = raster.data;
   const dst = out.data;
-  const before = since?.data;
+  const before = since && since.width === raster.width && since.height === raster.height ? since.data : undefined;
   for (let i = 0; i < src.length; i += 4) {
     if (src[i + 3] < 128) continue;
     if (before && src[i] < 128 && before[i] >= 128 && before[i + 3] >= 128) {
-      dst.set([lost[0], lost[1], lost[2], 255], i);
+      dst[i] = lost[0];
+      dst[i + 1] = lost[1];
+      dst[i + 2] = lost[2];
+      dst[i + 3] = 255;
       continue;
     }
     const p = src[i] * 4;
