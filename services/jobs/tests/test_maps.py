@@ -136,9 +136,18 @@ def test_thumbnails_color_grays_as_the_website_does() -> None:
     land, neutral = (1, 1, 1), (2, 2, 2)
 
     continuous = list(maps.colors("continuous", ramp, land, neutral))
-    binary = list(maps.colors("binary", ramp, land, neutral))
     classes = list(maps.colors("categorical", ramp, land, neutral))
+    steps = [(i, i, i) for i in range(11)]
+    binary = list(maps.colors("binary", steps, land, neutral))
 
     assert (continuous[0], continuous[128], continuous[255]) == ((0, 0, 0), (128, 128, 128), (255, 255, 255))
-    assert (binary[0], binary[255]) == (neutral, (128, 128, 128))
     assert (classes[0], classes[51], classes[255]) == (land, (128, 128, 128), (255, 255, 255))
+    assert (binary[0], binary[255]) == (neutral, (6, 6, 6))
+
+
+def test_land_cover_is_green_whatever_its_family() -> None:
+    theme = {**THEME, "luts": {**THEME["luts"], "productivity": ["#00ff00"] * 3}}
+
+    cover = maps.colored(png(4, 2), Indicator.COB, theme, False)
+
+    assert cover.getpixel((0, 0)) == (0, 255, 0, 255)

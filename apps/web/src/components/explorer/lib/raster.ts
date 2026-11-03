@@ -41,6 +41,23 @@ export function rampColors(family: DataFamily, theme: MapThemeName) {
 /** Where on the ramp a categorical "this class" mark sits: strong but not the darkest step. */
 const HIGHLIGHT = 0.72;
 
+const rampAt = (family: DataFamily, theme: MapThemeName, at: number) => {
+  const i = Math.round(at * 255) * 3;
+  return rampColors(family, theme).subarray(i, i + 3);
+};
+
+/**
+ * A land-cover map's colors, whatever the indicator's family: grassland reads as green, and the grassland lost
+ * since the first year takes the human ramp. They stay apart under the three color deficiencies, in both themes.
+ */
+export function coverColors(theme: MapThemeName) {
+  const hex = (rgb: ArrayLike<number>) => `#${Array.from(rgb, (c) => c.toString(16).padStart(2, "0")).join("")}`;
+  const present = rampAt("productivity", theme, 0.55);
+  const lost = rampAt("human", theme, 0.95);
+  const other = hexToRgb(mapTheme[theme].chrome["line-strong"]);
+  return { present, lost, other, hex: { present: hex(present), lost: hex(lost), other: hex(other) } };
+}
+
 /** RGBA for each gray level of a raster of this kind. */
 function palette(
   kind: IndicatorManifest["kind"],
@@ -51,13 +68,14 @@ function palette(
   const lut = rampColors(family, theme);
   const out = new Uint8ClampedArray(256 * 4);
   const strong = Math.round(HIGHLIGHT * 255) * 3;
-  // "Other uses" and the communities not highlighted: the legend's neutral swatch.
+  // The communities not highlighted: the legend's neutral swatch.
   const neutral = hexToRgb(mapTheme[theme].chrome["ink-subtle"]);
+  const cover = coverColors(theme);
   for (let g = 0; g < 256; g++) {
     let rgb: ArrayLike<number> = neutral;
     let alpha = 255;
     if (kind === "continuous") rgb = lut.subarray(g * 3, g * 3 + 3);
-    else if (kind === "binary") rgb = g >= 128 ? lut.subarray(strong, strong + 3) : neutral;
+    else if (kind === "binary") rgb = g >= 128 ? cover.present : cover.other;
     else {
       // Categorical: classes are stored as class × 51; only the highlighted one wears the family color.
       const cls = Math.round(g / 51);
@@ -82,20 +100,33 @@ export async function decodeGray(url: string, signal?: AbortSignal): Promise<Gra
   return { width: canvas.width, height: canvas.height, data };
 }
 
-/** Paints a gray raster and returns an object URL of the colored PNG (the caller revokes it). */
+/**
+ * Paints a gray raster and returns an object URL of the colored PNG (the caller revokes it). With `since`, the
+ * same raster's first year, a binary map also marks what was there then and is gone now.
+ */
 export async function paint(
   raster: GrayRaster,
   kind: IndicatorManifest["kind"],
   family: DataFamily,
   theme: MapThemeName,
   highlight?: number,
+  since?: GrayRaster,
 ): Promise<string> {
   const colors = palette(kind, family, theme, highlight);
+  const { lost } = coverColors(theme);
   const out = new ImageData(raster.width, raster.height);
   const src = raster.data;
   const dst = out.data;
+  const before = since && since.width === raster.width && since.height === raster.height ? since.data : undefined;
   for (let i = 0; i < src.length; i += 4) {
     if (src[i + 3] < 128) continue;
+    if (before && src[i] < 128 && before[i] >= 128 && before[i + 3] >= 128) {
+      dst[i] = lost[0];
+      dst[i + 1] = lost[1];
+      dst[i + 2] = lost[2];
+      dst[i + 3] = 255;
+      continue;
+    }
     const p = src[i] * 4;
     dst[i] = colors[p];
     dst[i + 1] = colors[p + 1];

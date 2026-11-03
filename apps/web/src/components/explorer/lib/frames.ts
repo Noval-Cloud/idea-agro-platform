@@ -23,6 +23,19 @@ const frames = new Map<string, Promise<Frame>>();
 const keyOf = (r: FrameRequest) =>
   `${r.indicator}:${r.year ?? "static"}:${r.lite ? "lite" : "full"}:${r.theme}:${r.indicator === "compn" ? r.community : ""}`;
 
+/** A binary map's first year, at each size, which later years are painted against. */
+const firsts = new Map<string, Promise<GrayRaster>>();
+function firstYear(indicator: IndicatorId, year: number, lite: boolean) {
+  const key = `${indicator}:${year}:${lite}`;
+  let first = firsts.get(key);
+  if (!first) {
+    first = decodeGray(rasterUrl(indicator, year, lite));
+    first.catch(() => firsts.delete(key));
+    firsts.set(key, first);
+  }
+  return first;
+}
+
 export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Frame> {
   const key = keyOf(request);
   const cached = frames.get(key);
@@ -31,12 +44,22 @@ export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Fra
     frames.set(key, cached);
     return cached;
   }
-  const { kind } = manifest.indicators[request.indicator];
-  const frame = decodeGray(rasterUrl(request.indicator, request.year, request.lite)).then(async (gray) => ({
+  const { kind, years } = manifest.indicators[request.indicator];
+  const first = kind === "binary" ? years?.[0] : undefined;
+  const isFirst = first !== undefined && request.year === first;
+  const gray = isFirst
+    ? firstYear(request.indicator, first, request.lite)
+    : decodeGray(rasterUrl(request.indicator, request.year, request.lite));
+  // Without its first year, a year is still painted, only without the lost grassland.
+  const since =
+    first !== undefined && request.year !== null && !isFirst
+      ? firstYear(request.indicator, first, request.lite).catch(() => undefined)
+      : undefined;
+  const frame = Promise.all([gray, since]).then(async ([gray, before]) => ({
     key,
     gray,
     lite: request.lite,
-    url: await paint(gray, kind, indicators[request.indicator].family, request.theme, request.community),
+    url: await paint(gray, kind, indicators[request.indicator].family, request.theme, request.community, before),
   }));
   frame.catch(() => frames.delete(key));
   frames.set(key, frame);

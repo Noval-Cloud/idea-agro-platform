@@ -5,6 +5,8 @@ import { indicators, type IndicatorId } from "@/data/indicators";
 import { familyBackground } from "@/design/family-classes";
 import type { IndicatorManifest } from "./lib/data";
 import { useI18n, type AppKey } from "./lib/i18n";
+import { coverColors } from "./lib/raster";
+import { useTheme } from "./lib/theme";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -13,6 +15,8 @@ interface Props {
   year: number | null;
   playing: boolean;
   community: number;
+  /** The country's share of the year, for a binary indicator. */
+  share?: number | null;
   compact: boolean;
   onYear: (year: number) => void;
   onPlay: (playing: boolean) => void;
@@ -42,6 +46,7 @@ export default function TimeBar(props: Props) {
   const family = indicators[indicator].family;
   const index = years && year !== null ? years.indexOf(year) : -1;
   const unit = t(`indicators.items.${indicator}.unit` as AppKey);
+  const cover = coverColors(useTheme()).hex;
 
   const legend =
     manifest.kind === "continuous" ? (
@@ -67,11 +72,21 @@ export default function TimeBar(props: Props) {
     ) : manifest.kind === "binary" ? (
       <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
         <li className="flex items-center gap-2">
-          <span className={cn("size-3 rounded-xs", familyBackground[family])} aria-hidden="true" />
+          <span className="size-3 rounded-xs" style={{ background: cover.present }} aria-hidden="true" />
           {t("explorer.legend.grassland")}
         </li>
+        {years && (
+          <li className="flex items-center gap-2">
+            <span className="size-3 rounded-xs" style={{ background: cover.lost }} aria-hidden="true" />
+            {t("explorer.legend.grasslandLost", { year: years[0] })}
+          </li>
+        )}
         <li className="flex items-center gap-2">
-          <span className="size-3 rounded-xs bg-ink-subtle" aria-hidden="true" />
+          <span
+            className="size-3 rounded-xs border border-ink-subtle"
+            style={{ background: cover.other }}
+            aria-hidden="true"
+          />
           {t("explorer.legend.otherUses")}
         </li>
         <li>
@@ -141,8 +156,15 @@ export default function TimeBar(props: Props) {
         <span className="font-medium text-ink">{t(`indicators.items.${indicator}.name` as AppKey)}</span>
         {" · "}
         {t(`explorer.mapShows.${indicator}` as AppKey, { year: year !== null ? i18n.yearLabel(indicator, year) : "" })}
+        {props.share != null && ` · ${t("explorer.time.countryShare", { value: i18n.percent(props.share) })}`}
       </p>
-      <div className={cn("flex min-w-0 gap-3", compact ? "flex-col" : "flex-col sm:flex-row sm:items-center")}>
+      {/* A binary legend has three entries, so it takes its own row. */}
+      <div
+        className={cn(
+          "flex min-w-0 gap-3",
+          compact || manifest.kind === "binary" ? "flex-col" : "flex-col sm:flex-row sm:items-center",
+        )}
+      >
         {years && index >= 0 ? (
           <div className="flex min-w-0 grow items-center gap-1">
             <button

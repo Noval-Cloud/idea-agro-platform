@@ -24,6 +24,7 @@ import {
   type DivisionId,
   type Manifest,
   type PadronCollection,
+  type SeriesStats,
   type ZoneGeometry,
   type ZoneCollection,
 } from "./lib/data";
@@ -198,6 +199,25 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     return () => clearTimeout(timer);
   }, [playing, year, years, indicatorId, manifest, theme, state.community, update]);
   useEffect(() => setPlaying(false), [state.indicator]);
+
+  // The country's share of a binary indicator, which the time bar shows for each year.
+  const [national, setNational] = useState<{ indicator: string; stats: SeriesStats } | null>(null);
+  const binary = indicatorManifest?.kind === "binary";
+  useEffect(() => {
+    if (!indicatorId || !binary) return;
+    let live = true;
+    loadSeriesStats("uruguay", indicatorId).then(
+      (stats) => live && setNational({ indicator: indicatorId, stats }),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [indicatorId, binary]);
+  const share =
+    national?.indicator === indicatorId && year !== null
+      ? (national.stats.values["1"]?.[national.stats.years.indexOf(year)] ?? null)
+      : null;
 
   // Regions: the division outlines, the parcels in view, or the reader's own layer.
   const division = activeDivision(state);
@@ -1044,6 +1064,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
                         year={year}
                         playing={playing}
                         community={state.community}
+                        share={share}
                         compact={!wide}
                         onYear={(y) => update({ year: y })}
                         onPlay={(on) => {

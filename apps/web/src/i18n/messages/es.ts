@@ -556,11 +556,13 @@ export const es = {
       period: "Período {period}",
       noSeries: "Sin serie anual",
       playing: "Mostrando {year}",
+      countryShare: "{value} del país",
     },
     legend: {
       label: "Leyenda",
       grassland: "Pastizal natural",
       otherUses: "Otros usos",
+      grasslandLost: "Pastizal perdido desde {year}",
       community: "Comunidad",
       communityPick: "Comunidad a resaltar",
       noData: "Sin dato",
