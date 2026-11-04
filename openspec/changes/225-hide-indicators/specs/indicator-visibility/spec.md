@@ -26,6 +26,15 @@ Each indicator's panel in Content → Indicators SHALL have a "Shown on the site
 - **WHEN** an indicator is hidden
 - **THEN** editors still see and change its texts, and see and change the articles it cites
 
+### Requirement: Each indicator explains why it is unavailable
+
+Each indicator SHALL have an editable text, in Spanish, English and Portuguese, that explains why it is unavailable. By default it SHALL say the indicator is temporarily unavailable while its data is reviewed.
+
+#### Scenario: An editor explains a hidden indicator
+
+- **WHEN** an editor opens an indicator's texts in Content → Indicators
+- **THEN** its text on why it is unavailable is listed with its other texts, and is edited and published like them
+
 ### Requirement: Changing the switch rebuilds the site
 
 A change of an indicator's switch SHALL reach the site the way a published text does.
@@ -40,48 +49,67 @@ A change of an indicator's switch SHALL reach the site the way a published text 
 - **WHEN** an editor changes a switch and then chooses "Update now"
 - **THEN** the site's build is asked for at once
 
-### Requirement: The site leaves hidden indicators out
+### Requirement: The site keeps a hidden indicator, disabled
 
-The site SHALL read which indicators are shown when it is built, and SHALL leave a hidden indicator out of every page in Spanish, English and Portuguese: the landing's journey, the indicators page's atlas, the explorer's picker, the zone page and the menus. A journey chapter drawn from a hidden indicator's data SHALL be left out with it.
+The site SHALL read which indicators are hidden, and their texts, when it is built. It SHALL keep a hidden indicator wherever it lists it, in Spanish, English and Portuguese (the menus, the indicators page, the explorer's picker, the zone page and the landing), grayed out as disabled, with an info button beside it that opens a dialog with the indicator's text.
 
 #### Scenario: A page built while an indicator is hidden
 
 - **WHEN** the site is built while an indicator is hidden
-- **THEN** no page lists it, links to it or shows its map or values
-- **AND** no page shows it first and hides it after
+- **THEN** every page that lists it shows it disabled, with an info button
+
+#### Scenario: Someone asks why it is unavailable
+
+- **WHEN** someone activates the info button beside a hidden indicator
+- **THEN** a dialog opens with the indicator's name and its text on why it is unavailable
+- **AND** closing it returns the focus to the info button
+
+#### Scenario: A disabled indicator is not picked
+
+- **WHEN** someone moves through a list of indicators with the keyboard
+- **THEN** the hidden indicator cannot be picked, and its info button is reachable as a button of its own
+
+### Requirement: The site shows none of a hidden indicator's data
+
+The site SHALL show no map, chart or value of a hidden indicator. Where they would be, it SHALL show the same disabled state and info button.
+
+#### Scenario: A page that draws the indicator's data
+
+- **WHEN** a page that draws a hidden indicator's map, chart or values is built
+- **THEN** it shows the disabled state and the info button in their place
+- **AND** no page shows them first and hides them after
+
+### Requirement: The explorer and the zone page open on a shown indicator
+
+The explorer and the zone page SHALL open on the default indicator: productivity (PPNA), or the first shown indicator while PPNA is hidden.
 
 #### Scenario: A link to the explorer names a hidden indicator
 
 - **WHEN** someone opens the explorer with a link that names a hidden indicator
-- **THEN** the explorer opens with the default indicator: productivity (PPNA), or the first shown indicator while PPNA is hidden
+- **THEN** the explorer opens with the default indicator, and the hidden one is disabled in its picker
 
 #### Scenario: A link to a zone names a hidden indicator
 
 - **WHEN** someone opens a zone's page with a link that names a hidden indicator
-- **THEN** the zone page opens on the default indicator
+- **THEN** the zone page opens on the default indicator, and the hidden one is disabled in its list
 
-### Requirement: The public API leaves hidden indicators out of every list
+### Requirement: The public API withholds a hidden indicator's data
 
-The public API SHALL leave a hidden indicator out of the catalog and of every response that lists indicators.
+The public API SHALL keep a hidden indicator in the catalog, marked as unavailable, and SHALL leave its values out of the responses that hold several indicators.
 
 #### Scenario: The catalog
 
 - **WHEN** a client reads the catalog while an indicator is hidden
-- **THEN** neither its indicators nor its seasonal calendars hold the hidden indicator
+- **THEN** the indicator is in it, marked as unavailable
 
 #### Scenario: Seasonal series
 
 - **WHEN** a client reads a zone's seasonal series, or a member reads a saved or project zone's series, while a seasonal indicator is hidden
 - **THEN** the series leave that indicator out
 
-#### Scenario: The indicators shown and the articles' citations
+### Requirement: A hidden indicator's data routes say it is temporarily unavailable
 
-- **WHEN** a client reads the shown indicators or the published articles while an indicator is hidden
-- **THEN** the hidden indicator is neither among the shown indicators nor among the articles' citations
-
-### Requirement: A hidden indicator's routes say it is temporarily unavailable
-
-The API routes of a hidden indicator (its maps, thumbnails, previews and division values) SHALL answer 404 with a problem of type `urn:idea-agro:problem:indicator-temporarily-unavailable`, whose detail says the indicator is temporarily unavailable while its data is reviewed, and SHALL send `Cache-Control: no-store`. 404 says it is temporary; the problem type tells it from a wrong route.
+The API routes of a hidden indicator's data (its maps, thumbnails, previews and division values) SHALL answer 404 with a problem of type `urn:idea-agro:problem:indicator-temporarily-unavailable`, whose detail says the indicator is temporarily unavailable while its data is reviewed, and SHALL send `Cache-Control: no-store`. 404 says it is temporary; the problem type tells it from a wrong route.
 
 #### Scenario: A client asks for a hidden indicator's map
 

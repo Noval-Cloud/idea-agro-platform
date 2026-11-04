@@ -13,6 +13,14 @@
 - [x] 2.4 Add the "Shown on the site" switch to Content → Indicators, mark hidden indicators, and name the changes in Actions
 - [x] 2.5 Document the build's reading of the switch in the website's README
 
-## 3. Wrap-up
+## 3. Keep a hidden indicator on the site, as unavailable
 
-- [ ] 3.1 Archive the change
+- [ ] 3.1 Keep a hidden indicator in the catalog, marked unavailable, and drop the routes and filters the site no longer needs
+- [ ] 3.2 Give each indicator an editable text on why it is unavailable
+- [ ] 3.3 Show a hidden indicator disabled, with an info button and its dialog, on the indicators page, the landing, the resources page and the menus
+- [ ] 3.4 Show a hidden indicator disabled in the explorer's picker and the zone page, with its info button and dialog
+- [ ] 3.5 Update the READMEs and the contract
+
+## 4. Wrap-up
+
+- [ ] 4.1 Archive the change
