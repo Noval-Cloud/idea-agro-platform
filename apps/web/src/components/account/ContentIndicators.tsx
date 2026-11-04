@@ -30,6 +30,7 @@ const fieldOrder = [
   "mapShows",
   "chartTitle",
   "chartUnit",
+  "unavailable",
 ];
 const rank = (field: string) => {
   const found = fieldOrder.indexOf(field);

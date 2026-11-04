@@ -1219,9 +1219,9 @@
   "account.content.indicator.shownHint": {
     "format": "plain",
     "default": {
-      "es": "Oculto, el sitio lo deja fuera cuando se reconstruye, y la API responde que no está disponible por ahora. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
-      "en": "Hidden, it is left out of the site once it is rebuilt, and the API answers that it is temporarily unavailable. Its data keeps being computed, and its texts and articles can still be edited.",
-      "pt": "Oculto, o site o deixa de fora quando é reconstruído, e a API responde que está temporariamente indisponível. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados."
+      "es": "Oculto, el sitio lo muestra como no disponible por ahora cuando se reconstruye, con su texto sobre el porqué, y sin ninguno de sus datos. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
+      "en": "Hidden, the site shows it as temporarily unavailable once it is rebuilt, with its text on why, and none of its data. Its data keeps being computed, and its texts and articles can still be edited.",
+      "pt": "Oculto, o site o mostra como temporariamente indisponível quando é reconstruído, com seu texto sobre o motivo, e sem nenhum de seus dados. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados."
     }
   },
   "account.content.indicator.switchFailed": {
@@ -1334,6 +1334,14 @@
       "es": "Sigla",
       "en": "Abbreviation",
       "pt": "Sigla"
+    }
+  },
+  "account.content.indicatorFields.unavailable": {
+    "format": "plain",
+    "default": {
+      "es": "Por qué no está disponible",
+      "en": "Why it is unavailable",
+      "pt": "Por que está indisponível"
     }
   },
   "account.content.indicatorFields.unit": {
@@ -5420,6 +5428,14 @@
       "pt": "AHPPL"
     }
   },
+  "indicators.items.ahppn.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.ahppn.unit": {
     "format": "plain",
     "default": {
@@ -5514,6 +5530,14 @@
       "es": "RFAA",
       "en": "APAR",
       "pt": "RFAA"
+    }
+  },
+  "indicators.items.apar.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
     }
   },
   "indicators.items.apar.unit": {
@@ -5612,6 +5636,14 @@
       "pt": "COB"
     }
   },
+  "indicators.items.cob.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.cob.unit": {
     "format": "plain",
     "default": {
@@ -5706,6 +5738,14 @@
       "es": "ComPN",
       "en": "ComPN",
       "pt": "ComPN"
+    }
+  },
+  "indicators.items.compn.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
     }
   },
   "indicators.items.compn.unit": {
@@ -5804,6 +5844,14 @@
       "pt": "CSUE"
     }
   },
+  "indicators.items.csue.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.csue.unit": {
     "format": "plain",
     "default": {
@@ -5898,6 +5946,14 @@
       "es": "DivTFE",
       "en": "DivTFE",
       "pt": "DivTFE"
+    }
+  },
+  "indicators.items.divtfe.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
     }
   },
   "indicators.items.divtfe.unit": {
@@ -5996,6 +6052,14 @@
       "pt": "ET"
     }
   },
+  "indicators.items.et.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.et.unit": {
     "format": "plain",
     "default": {
@@ -6090,6 +6154,14 @@
       "es": "IOSE",
       "en": "ESPI",
       "pt": "IOSE"
+    }
+  },
+  "indicators.items.iose.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
     }
   },
   "indicators.items.iose.unit": {
@@ -6188,6 +6260,14 @@
       "pt": "PPLA"
     }
   },
+  "indicators.items.ppna.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.ppna.unit": {
     "format": "plain",
     "default": {
@@ -6284,6 +6364,14 @@
       "pt": "RH"
     }
   },
+  "indicators.items.rh.unavailable": {
+    "format": "markdown",
+    "default": {
+      "es": "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
+      "en": "This indicator is temporarily unavailable while its data is reviewed.",
+      "pt": "Este indicador está temporariamente indisponível enquanto seus dados são revisados."
+    }
+  },
   "indicators.items.rh.unit": {
     "format": "plain",
     "default": {
@@ -6322,6 +6410,30 @@
       "es": "Diez indicadores, un mismo territorio",
       "en": "Ten indicators, one landscape",
       "pt": "Dez indicadores, um mesmo território"
+    }
+  },
+  "indicators.unavailable.close": {
+    "format": "plain",
+    "default": {
+      "es": "Cerrar",
+      "en": "Close",
+      "pt": "Fechar"
+    }
+  },
+  "indicators.unavailable.info": {
+    "format": "plain",
+    "default": {
+      "es": "Por qué {name} no está disponible",
+      "en": "Why {name} is unavailable",
+      "pt": "Por que {name} está indisponível"
+    }
+  },
+  "indicators.unavailable.label": {
+    "format": "plain",
+    "default": {
+      "es": "No disponible por ahora",
+      "en": "Temporarily unavailable",
+      "pt": "Temporariamente indisponível"
     }
   },
   "indicators.yearHeader": {

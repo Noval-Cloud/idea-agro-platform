@@ -80,6 +80,11 @@ export const pt = {
       chartFor: "Gráfico de {name}",
       mean: "Média nacional",
     },
+    unavailable: {
+      label: "Temporariamente indisponível",
+      info: "Por que {name} está indisponível",
+      close: "Fechar",
+    },
     items: {
       apar: {
         short: "RFAA",
@@ -95,6 +100,7 @@ export const pt = {
         mapShows: "Total do ano produtivo {from}–{to}",
         chartTitle: "Radiação absorvida ao longo do ano",
         chartUnit: "MJ/m² a cada 16 dias",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       cob: {
         short: "COB",
@@ -109,6 +115,7 @@ export const pt = {
         mapShows: "Campo nativo em {year}",
         chartTitle: "Campo nativo, em porcentagem do país",
         chartUnit: "% da superfície do país",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       ppna: {
         short: "PPLA",
@@ -124,6 +131,7 @@ export const pt = {
         mapShows: "Total do ano produtivo {from}–{to}",
         chartTitle: "Produção total de cada ano produtivo",
         chartUnit: "kg MS/ha por ano",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       compn: {
         short: "ComPN",
@@ -139,6 +147,7 @@ export const pt = {
         mapShows: "Onde se encontra cada comunidade",
         chartTitle: "Área de cada comunidade",
         chartUnit: "% da área de campo nativo mapeada",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       rh: {
         short: "RH",
@@ -153,6 +162,7 @@ export const pt = {
         mapShows: "Total do ano produtivo {from}–{to}",
         chartTitle: "Rendimento hídrico de cada ano",
         chartUnit: "mm por ano",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       et: {
         short: "ET",
@@ -168,6 +178,7 @@ export const pt = {
         mapShows: "Total do ano produtivo {from}–{to}",
         chartTitle: "Evapotranspiração de cada ano produtivo",
         chartUnit: "mm por ano",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       iose: {
         short: "IOSE",
@@ -183,6 +194,7 @@ export const pt = {
         mapShows: "Ano produtivo {from}–{to}",
         chartTitle: "Índice médio do país",
         chartUnit: "Índice de 0 a 1",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       divtfe: {
         short: "DivTFE",
@@ -199,6 +211,7 @@ export const pt = {
         mapShows: "Diversidade em janelas de 2 km",
         chartTitle: "Como se distribui no território",
         chartUnit: "Índice de Shannon",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       csue: {
         short: "CSUE",
@@ -214,6 +227,7 @@ export const pt = {
         mapShows: "Perda estimada 2017–2019",
         chartTitle: "Como se distribui no território",
         chartUnit: "t/ha por ano",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
       ahppn: {
         short: "AHPPL",
@@ -229,6 +243,7 @@ export const pt = {
         mapShows: "Apropriação 2017–2019",
         chartTitle: "Como se distribui no território",
         chartUnit: "% da produtividade potencial",
+        unavailable: "Este indicador está temporariamente indisponível enquanto seus dados são revisados.",
       },
     },
   },
@@ -1197,7 +1212,7 @@ export const pt = {
         tabsLabel: "Partes do indicador",
         shown: "Visível no site",
         shownHint:
-          "Oculto, o site o deixa de fora quando é reconstruído, e a API responde que está temporariamente indisponível. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados.",
+          "Oculto, o site o mostra como temporariamente indisponível quando é reconstruído, com seu texto sobre o motivo, e sem nenhum de seus dados. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados.",
         hidden: "Oculto",
         switchFailed: "Não conseguimos salvar a alteração. Tente de novo.",
       },
@@ -1214,6 +1229,7 @@ export const pt = {
         mapShows: "O que o mapa mostra",
         chartTitle: "Título do gráfico",
         chartUnit: "Unidade do gráfico",
+        unavailable: "Por que está indisponível",
       },
       articles: {
         add: "Adicionar artigo",
