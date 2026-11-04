@@ -23,4 +23,4 @@
 
 ## 4. Wrap-up
 
-- [ ] 4.1 Archive the change
+- [x] 4.1 Archive the change
