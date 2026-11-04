@@ -11,7 +11,7 @@
 - [x] 2.2 Leave hidden indicators out of the indicators page, the landing's journey, the resources page and the menus
 - [x] 2.3 Leave hidden indicators out of the explorer and the zone page, and open the default for a link that names one
 - [x] 2.4 Add the "Shown on the site" switch to Content → Indicators, mark hidden indicators, and name the changes in Actions
-- [ ] 2.5 Document the build's reading of the switch in the website's README
+- [x] 2.5 Document the build's reading of the switch in the website's README
 
 ## 3. Wrap-up
 
