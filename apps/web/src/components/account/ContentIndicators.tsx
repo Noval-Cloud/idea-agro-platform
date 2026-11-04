@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, ExternalLink } from "lucide-react";
-import type { SiteTextMatch } from "@idea-agro/api-client";
+import type { IndicatorVisibilityOut, SiteTextMatch } from "@idea-agro/api-client";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchField } from "@/components/lists/SearchField";
 import { matches } from "@/components/lists/filter";
@@ -46,8 +47,8 @@ const fromAddress = () => {
 };
 
 /**
- * For editors: each indicator in one place, in tabs: its texts, the articles it cites, and the Earth Engine
- * assets it is computed from.
+ * For editors: each indicator in one place, with whether the site shows it, and in tabs: its texts, the articles it
+ * cites, and the Earth Engine assets it is computed from.
  */
 export function Indicators({ translator, changed, onChanged }: Props) {
   const { t } = translator;
@@ -56,6 +57,8 @@ export function Indicators({ translator, changed, onChanged }: Props) {
   const [query, setQuery] = useState("");
   const [texts, setTexts] = useState<SiteTextMatch[] | null | "failed">(null);
   const published = usePublished(changed);
+  // Indicators editors hid; null until known.
+  const [hidden, setHidden] = useState<Set<IndicatorId> | null>(null);
 
   const go = (next: { indicator: IndicatorId; tab: Tab }) => {
     setPlace(next);
@@ -73,7 +76,18 @@ export function Indicators({ translator, changed, onChanged }: Props) {
     };
   }, [changed]);
 
+  useEffect(() => {
+    let live = true;
+    run<IndicatorVisibilityOut[]>((client, init) => client.listVisibility(init))
+      .then((found) => live && setHidden(new Set(found.filter((v) => !v.shown).map((v) => v.indicator))))
+      .catch(() => live && setHidden(null));
+    return () => {
+      live = false;
+    };
+  }, [changed]);
+
   const name = (id: IndicatorId) => t(`indicators.items.${id}.name` as AccountKey);
+  const isHidden = (id: IndicatorId) => hidden?.has(id) ?? false;
   const short = (id: IndicatorId) => t(`indicators.items.${id}.short` as AccountKey);
   const own = (id: IndicatorId) => (Array.isArray(texts) ? texts.filter((m) => m.key.startsWith(prefix(id))) : []);
   const cited = (id: IndicatorId) =>
@@ -105,7 +119,7 @@ export function Indicators({ translator, changed, onChanged }: Props) {
           >
             {indicatorIds.map((id) => (
               <option key={id} value={id}>
-                {name(id)}
+                {isHidden(id) ? `${name(id)} · ${t("account.content.indicator.hidden")}` : name(id)}
               </option>
             ))}
           </select>
@@ -139,8 +153,14 @@ export function Indicators({ translator, changed, onChanged }: Props) {
                     indicator === id ? "bg-surface-selected" : "hover:bg-action-soft",
                   )}
                 >
-                  <span className={cn("text-sm", indicator === id ? "font-medium text-ink" : "text-ink")}>
+                  <span
+                    className={cn(
+                      "flex items-center gap-2 text-sm",
+                      indicator === id ? "font-medium text-ink" : isHidden(id) ? "text-ink-muted" : "text-ink",
+                    )}
+                  >
                     {name(id)}
+                    {isHidden(id) && <Badge tone="off">{t("account.content.indicator.hidden")}</Badge>}
                   </span>
                   <span className="text-xs text-ink-subtle">{meta(id) || short(id)}</span>
                 </a>
@@ -152,11 +172,27 @@ export function Indicators({ translator, changed, onChanged }: Props) {
       </div>
 
       <div key={indicator} className="grid min-w-0 content-start gap-4">
-        <div className="grid gap-0.5">
-          <h3 className="text-lg font-medium text-ink">{name(indicator)}</h3>
-          <p className="text-sm text-ink-muted">
-            {short(indicator)} · {t(`indicators.items.${indicator}.longName` as AccountKey)}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
+          <div className="grid gap-0.5">
+            <h3 className="text-lg font-medium text-ink">{name(indicator)}</h3>
+            <p className="text-sm text-ink-muted">
+              {short(indicator)} · {t(`indicators.items.${indicator}.longName` as AccountKey)}
+            </p>
+          </div>
+          <ShownSwitch
+            translator={translator}
+            indicator={indicator}
+            shown={hidden === null ? null : !hidden.has(indicator)}
+            onSwitched={(shown) => {
+              setHidden((before) => {
+                const next = new Set(before);
+                if (shown) next.delete(indicator);
+                else next.add(indicator);
+                return next;
+              });
+              onChanged();
+            }}
+          />
         </div>
         <Tabs value={tab} onValueChange={(value) => go({ indicator, tab: value as Tab })}>
           <div className="border-b border-line">
@@ -191,6 +227,64 @@ export function Indicators({ translator, changed, onChanged }: Props) {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Whether the site and the public API show the indicator. A change is saved at once, and reaches the site when it is
+ * rebuilt, as a published text does.
+ */
+function ShownSwitch({
+  translator,
+  indicator,
+  shown,
+  onSwitched,
+}: {
+  translator: AccountTranslator;
+  indicator: IndicatorId;
+  /** null until known. */
+  shown: boolean | null;
+  onSwitched: (shown: boolean) => void;
+}) {
+  const { t } = translator;
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const id = `shown-${indicator}`;
+  const change = async (next: boolean) => {
+    setBusy(true);
+    setFailed(false);
+    try {
+      await run<IndicatorVisibilityOut>((client, init) => client.putVisibility(indicator, { shown: next }, init));
+      onSwitched(next);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="grid max-w-sm gap-1.5">
+      <div className="flex items-center gap-3">
+        <Switch
+          id={id}
+          checked={shown ?? true}
+          disabled={shown === null || busy}
+          onCheckedChange={(next) => void change(next)}
+          aria-describedby={`${id}-hint`}
+        />
+        <label htmlFor={id} className="text-sm font-medium text-ink">
+          {t("account.content.indicator.shown")}
+        </label>
+      </div>
+      <p id={`${id}-hint`} className="text-xs text-ink-subtle">
+        {t("account.content.indicator.shownHint")}
+      </p>
+      {failed && (
+        <p role="alert" className="text-xs text-danger">
+          {t("account.content.indicator.switchFailed")}
+        </p>
+      )}
     </div>
   );
 }

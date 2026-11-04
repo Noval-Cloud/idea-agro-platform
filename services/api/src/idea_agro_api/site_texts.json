@@ -167,6 +167,22 @@
       "pt": "{actor} ativou a conta de {target}"
     }
   },
+  "account.audit.actions.indicator_hidden": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} ocultó {target} del sitio",
+      "en": "{actor} hid {target} from the site",
+      "pt": "{actor} ocultou {target} do site"
+    }
+  },
+  "account.audit.actions.indicator_shown": {
+    "format": "plain",
+    "default": {
+      "es": "{actor} volvió a mostrar {target} en el sitio",
+      "en": "{actor} showed {target} on the site again",
+      "pt": "{actor} voltou a mostrar {target} no site"
+    }
+  },
   "account.audit.actions.recovery_sent": {
     "format": "plain",
     "default": {
@@ -1168,6 +1184,14 @@
       "pt": "GEE"
     }
   },
+  "account.content.indicator.hidden": {
+    "format": "plain",
+    "default": {
+      "es": "Oculto",
+      "en": "Hidden",
+      "pt": "Oculto"
+    }
+  },
   "account.content.indicator.pick": {
     "format": "plain",
     "default": {
@@ -1182,6 +1206,30 @@
       "es": "Buscar indicador…",
       "en": "Search indicators…",
       "pt": "Buscar indicador…"
+    }
+  },
+  "account.content.indicator.shown": {
+    "format": "plain",
+    "default": {
+      "es": "Visible en el sitio",
+      "en": "Shown on the site",
+      "pt": "Visível no site"
+    }
+  },
+  "account.content.indicator.shownHint": {
+    "format": "plain",
+    "default": {
+      "es": "Oculto, el sitio lo deja fuera cuando se reconstruye, y la API responde que no está disponible por ahora. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
+      "en": "Hidden, it is left out of the site once it is rebuilt, and the API answers that it is temporarily unavailable. Its data keeps being computed, and its texts and articles can still be edited.",
+      "pt": "Oculto, o site o deixa de fora quando é reconstruído, e a API responde que está temporariamente indisponível. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados."
+    }
+  },
+  "account.content.indicator.switchFailed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos guardar el cambio. Probá de nuevo.",
+      "en": "We could not save the change. Try again.",
+      "pt": "Não conseguimos salvar a alteração. Tente de novo."
     }
   },
   "account.content.indicator.tabsLabel": {

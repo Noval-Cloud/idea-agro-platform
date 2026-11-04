@@ -51,12 +51,16 @@ function problem(value: TextValue, fallback: TextValue): { kind: "empty" | "miss
   return null;
 }
 
-export function Badge({ children, tone = "edited" }: { children: string; tone?: "edited" | "draft" }) {
+export function Badge({ children, tone = "edited" }: { children: string; tone?: "edited" | "draft" | "off" }) {
   return (
     <span
       className={cn(
         "rounded-pill px-2 py-0.5 text-2xs font-medium",
-        tone === "draft" ? "bg-family-soil/20 text-ink" : "bg-action-soft text-ink",
+        tone === "draft"
+          ? "bg-family-soil/20 text-ink"
+          : tone === "off"
+            ? "border border-line-strong text-ink-muted"
+            : "bg-action-soft text-ink",
       )}
     >
       {children}

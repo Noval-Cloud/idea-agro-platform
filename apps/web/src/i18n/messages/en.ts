@@ -1191,6 +1191,11 @@ export const en = {
         pick: "Indicator",
         search: "Search indicators…",
         tabsLabel: "Parts of the indicator",
+        shown: "Shown on the site",
+        shownHint:
+          "Hidden, it is left out of the site once it is rebuilt, and the API answers that it is temporarily unavailable. Its data keeps being computed, and its texts and articles can still be edited.",
+        hidden: "Hidden",
+        switchFailed: "We could not save the change. Try again.",
       },
       indicatorFields: {
         short: "Abbreviation",
@@ -1478,6 +1483,8 @@ export const en = {
         article_deleted: "{actor} deleted the article {target}",
         citations_changed: "{actor} changed the articles of {target}",
         articles_seeded: "{actor} loaded the articles the site had",
+        indicator_hidden: "{actor} hid {target} from the site",
+        indicator_shown: "{actor} showed {target} on the site again",
       },
       count: {
         one: "{count} action",

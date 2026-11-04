@@ -1195,6 +1195,11 @@ export const pt = {
         pick: "Indicador",
         search: "Buscar indicador…",
         tabsLabel: "Partes do indicador",
+        shown: "Visível no site",
+        shownHint:
+          "Oculto, o site o deixa de fora quando é reconstruído, e a API responde que está temporariamente indisponível. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados.",
+        hidden: "Oculto",
+        switchFailed: "Não conseguimos salvar a alteração. Tente de novo.",
       },
       indicatorFields: {
         short: "Sigla",
@@ -1482,6 +1487,8 @@ export const pt = {
         article_deleted: "{actor} excluiu o artigo {target}",
         citations_changed: "{actor} mudou os artigos de {target}",
         articles_seeded: "{actor} carregou os artigos que o site tinha",
+        indicator_hidden: "{actor} ocultou {target} do site",
+        indicator_shown: "{actor} voltou a mostrar {target} no site",
       },
       count: {
         one: "{count} ação",

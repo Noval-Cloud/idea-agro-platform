@@ -1196,6 +1196,11 @@ export const es = {
         pick: "Indicador",
         search: "Buscar indicador…",
         tabsLabel: "Partes del indicador",
+        shown: "Visible en el sitio",
+        shownHint:
+          "Oculto, el sitio lo deja fuera cuando se reconstruye, y la API responde que no está disponible por ahora. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
+        hidden: "Oculto",
+        switchFailed: "No pudimos guardar el cambio. Probá de nuevo.",
       },
       indicatorFields: {
         short: "Sigla",
@@ -1483,6 +1488,8 @@ export const es = {
         article_deleted: "{actor} eliminó el artículo {target}",
         citations_changed: "{actor} cambió los artículos de {target}",
         articles_seeded: "{actor} cargó los artículos que tenía el sitio",
+        indicator_hidden: "{actor} ocultó {target} del sitio",
+        indicator_shown: "{actor} volvió a mostrar {target} en el sitio",
       },
       count: {
         one: "{count} acción",
