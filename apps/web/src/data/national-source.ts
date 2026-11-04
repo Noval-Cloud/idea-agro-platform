@@ -26,12 +26,19 @@ export interface National {
 type Json = Record<string, unknown>;
 const UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable";
 
-export async function fetchNational(base: string): Promise<National> {
+/**
+ * With `strict`, a hidden indicator fails the read, naming the paths the API withheld, instead of coming back empty.
+ */
+export async function fetchNational(base: string, { strict = false } = {}): Promise<National> {
+  const withheld: string[] = [];
   /** The answer, or null for a hidden indicator: the API withholds its data until editors show it again. */
   const get = async (path: string): Promise<Json | null> => {
     // A deploy build that waits on an API that does not answer would hang until Cloud Build gives up.
     const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(30_000) });
-    if (response.status === 404 && ((await response.json()) as Json).type === UNAVAILABLE) return null;
+    if (response.status === 404 && ((await response.json()) as Json).type === UNAVAILABLE) {
+      withheld.push(path);
+      return null;
+    }
     if (!response.ok) throw new Error(`${response.status} ${path}`);
     return (await response.json()) as Json;
   };
@@ -40,6 +47,7 @@ export async function fetchNational(base: string): Promise<National> {
     get("/v1/zones/uruguay/1/seasonal"),
     ...nationalIds.map((id) => get(`/v1/divisions/uruguay/values/${id}`)),
   ]);
+  if (strict && withheld.length > 0) throw new Error(`Indicators temporarily unavailable: ${withheld.join(", ")}`);
   const maps = (catalog?.indicators ?? {}) as Record<string, { years: number[] | null; min?: number; max?: number }>;
   return {
     seasonal: Object.fromEntries(
