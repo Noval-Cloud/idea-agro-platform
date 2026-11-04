@@ -13,8 +13,8 @@ interface Props {
 const { t } = createTranslator(Astro.props.locale);
 const withPeriod = (text: string) => (text.endsWith(".") ? text : `${text}.`);
 const cite = (article: Article) => {
-  const { several, values } = shortCitation(article);
-  return several ? t("science.citeSeveral", values) : t("science.citeOne", values);
+  const { key, values } = shortCitation(article);
+  return t(`science.${key}`, values);
 };
 
 // Each article with the indicators it backs, newest first, as the store keeps them.

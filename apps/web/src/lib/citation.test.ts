@@ -4,20 +4,35 @@ import { shortCitation } from "./citation";
 describe("shortCitation", () => {
   it("cites one author by surname and year", () => {
     expect(shortCitation({ authors: "Monteith, J. L.", year: 1972 })).toEqual({
-      several: false,
+      key: "citeOne",
       values: { surname: "Monteith", year: 1972 },
     });
+    expect(shortCitation({ authors: "INIA", year: 2020 })).toEqual({
+      key: "citeOne",
+      values: { surname: "INIA", year: 2020 },
+    });
   });
 
-  it("marks several authors, joined or abbreviated", () => {
-    expect(shortCitation({ authors: "Paruelo, J. M., Staiano, L. & Repetto, J.", year: 2025 })).toEqual({
-      several: true,
+  it("cites two authors by both surnames", () => {
+    expect(shortCitation({ authors: "Cazzuli, F. & Paruelo, J. M. (eds.)", year: 2023 })).toEqual({
+      key: "citeTwo",
+      values: { surname: "Cazzuli", secondSurname: "Paruelo", year: 2023 },
+    });
+    expect(shortCitation({ authors: "Baeza, S., & Paruelo, J. M.", year: 2018 }).values).toEqual({
+      surname: "Baeza",
+      secondSurname: "Paruelo",
+      year: 2018,
+    });
+  });
+
+  it("cites three or more authors by the first one, et al.", () => {
+    expect(shortCitation({ authors: "Paruelo, J. M., Staiano, L. & Repetto, J. M.", year: 2025 })).toEqual({
+      key: "citeSeveral",
       values: { surname: "Paruelo", year: 2025 },
     });
-    expect(shortCitation({ authors: "Baeza, S. et al.", year: 2022 }).several).toBe(true);
-  });
-
-  it("keeps an author without initials whole", () => {
-    expect(shortCitation({ authors: "INIA", year: 2020 }).values.surname).toBe("INIA");
+    expect(shortCitation({ authors: "Baeza, S. et al.", year: 2022 })).toEqual({
+      key: "citeSeveral",
+      values: { surname: "Baeza", year: 2022 },
+    });
   });
 });

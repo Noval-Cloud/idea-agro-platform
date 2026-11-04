@@ -112,8 +112,8 @@ export default function Audit({ translator, signInPath }: Props) {
 
   useEffect(() => {
     const cite = (article: ArticlePublic) => {
-      const { several, values } = shortCitation(article);
-      return several ? t("account.audit.citeSeveral", values) : t("account.audit.citeOne", values);
+      const { key, values } = shortCitation(article);
+      return t(`account.audit.${key}`, values);
     };
     void import("@idea-agro/api-client")
       .then((client) => client.listArticles())

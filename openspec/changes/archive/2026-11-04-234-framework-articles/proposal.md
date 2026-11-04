@@ -6,7 +6,7 @@ The team's reference framework is three documents, but the Resources page shows 
 
 - **Card:** the "Reference framework" card on the Resources page lists every article marked as framework, newest first. With none, the card is not shown.
 - **Entries:** each shows its title at body size, a short citation on one line ("Paruelo et al. 2024", as the audit log cites articles) and its link, so five fit in the card on a 1280×720 screen.
-- **Short citation:** the audit log and the card share one way to cite an article in short, each with its own editable texts.
+- **Short citation:** the audit log and the card share one way to cite an article in short, each with its own editable texts: both surnames for two authors ("Cazzuli & Paruelo 2023"), and "et al." only from three.
 - **Backing list:** framework articles stay out of the list of articles that back the indicators.
 - **Form:** the article form's framework checkbox has a hint, "Shown on Resources, under Reference framework", in every locale and editable as a site text.
 

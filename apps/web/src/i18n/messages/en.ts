@@ -306,6 +306,7 @@ export const en = {
     link: "Read the article",
     backsLabel: "Indicators it supports",
     citeOne: "{surname} {year}",
+    citeTwo: "{surname} & {secondSurname} {year}",
     citeSeveral: "{surname} et al. {year}",
   },
   open: {
@@ -1533,6 +1534,7 @@ export const en = {
         other: "{count} articles",
       },
       citeOne: "{surname} {year}",
+      citeTwo: "{surname} & {secondSurname} {year}",
       citeSeveral: "{surname} et al. {year}",
     },
     sessions: {

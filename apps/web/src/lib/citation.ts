@@ -1,8 +1,20 @@
+export type ShortCitation =
+  | { key: "citeOne" | "citeSeveral"; values: { surname: string; year: number } }
+  | { key: "citeTwo"; values: { surname: string; secondSurname: string; year: number } };
+
+const surname = (author: string) => author.split(",")[0].trim();
+
 /**
- * What an article's short citation ("Paruelo et al. 2024") says: its first author's surname and its year, and whether
- * it has several authors, which adds "et al.". Each place cites with its own texts.
+ * An article's short citation: "Monteith 1972", "Cazzuli & Paruelo 2023" or, from three authors, "Paruelo et al. 2025".
+ * `key` names the text it takes in each place that cites. Authors are written as cited: "Surname, I.", the last one
+ * after "&", or ending in "et al.".
  */
-export const shortCitation = ({ authors, year }: { authors: string; year: number }) => ({
-  several: authors.includes("&") || authors.includes("et al."),
-  values: { surname: authors.split(",")[0].trim(), year },
-});
+export function shortCitation({ authors, year }: { authors: string; year: number }): ShortCitation {
+  const [first, ...after] = authors.split("&");
+  const firstNames = first.split(",").filter((part) => part.trim()).length;
+  if (authors.includes("et al.") || after.length > 1 || (after.length === 1 && firstNames > 2))
+    return { key: "citeSeveral", values: { surname: surname(authors), year } };
+  if (after.length === 1)
+    return { key: "citeTwo", values: { surname: surname(first), secondSurname: surname(after[0]), year } };
+  return { key: "citeOne", values: { surname: surname(authors), year } };
+}
