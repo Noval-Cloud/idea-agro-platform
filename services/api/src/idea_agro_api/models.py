@@ -458,6 +458,13 @@ class IndicatorRange(BaseModel):
     min: float | None = Field(default=None, description="The lowest value on the map, for its color scale.")
     max: float | None = Field(default=None, description="The highest value on the map, for its color scale.")
     classes: list[int] | None = Field(default=None, description="The classes of a categorical indicator.")
+    unavailable: bool = Field(
+        default=False,
+        description=(
+            "True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the "
+            "series leave it out."
+        ),
+    )
 
 
 class PadronDepartment(BaseModel):
@@ -704,22 +711,10 @@ class PublishedArticles(BaseModel):
     citations: dict[str, list[str]] = Field(description="By indicator, the ids of the articles it cites, in order.")
 
 
-class EveryCitation(BaseModel):
-    """Which articles each indicator cites, hidden indicators too."""
-
-    citations: dict[str, list[str]] = Field(description="By indicator, the ids of the articles it cites, in order.")
-
-
 class Citations(BaseModel):
     """The articles an indicator cites, in order."""
 
     articles: list[str] = Field(max_length=50)
-
-
-class ShownIndicators(BaseModel):
-    """The indicators the site and the public API show."""
-
-    indicators: list[Indicator] = Field(description="In the site's order; a hidden indicator is left out.")
 
 
 class IndicatorVisibilityOut(BaseModel):
@@ -727,7 +722,7 @@ class IndicatorVisibilityOut(BaseModel):
 
     indicator: Indicator
     shown: bool = Field(
-        description="False while editors hide it: the site leaves it out, and the public API makes it unavailable."
+        description="False while editors hide it: the site shows it as unavailable, and the API withholds its data."
     )
     updated_at: datetime | None = Field(description="When it was last shown or hidden; null if never.")
     updated_by: TextAuthor | None = Field(description="Who did it; null if never.")

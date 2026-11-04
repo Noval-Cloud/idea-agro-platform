@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, BookOpen, ChevronRight, Plus, SearchX, X } from "lucide-react";
-import type { ArticleIn, ArticleOut, ArticlePublic, EveryCitation, PublishedArticles } from "@idea-agro/api-client";
+import type { ArticleIn, ArticleOut, ArticlePublic, PublishedArticles } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -31,24 +31,15 @@ async function call<T>(run: (client: Client, init: RequestInit) => Promise<{ sta
   return response.data as T;
 }
 
-/** The articles and what every indicator cites, hidden ones too: loaded again after every change. */
+/** The published articles and citations, loaded again after every change. */
 export function usePublished(changed: number) {
   const [published, setPublished] = useState<PublishedArticles | null | "failed">(null);
   useEffect(() => {
     let live = true;
-    void Promise.all([
+    void import("@idea-agro/api-client")
       // The public list is cacheable; an editor needs what was just saved.
-      import("@idea-agro/api-client").then((client) => client.listArticles({ cache: "no-store" })),
-      // The public citations leave hidden indicators out; editors keep working on them.
-      call<EveryCitation>((client, init) => client.listEveryCitation(init)),
-    ])
-      .then(
-        ([response, every]) =>
-          live &&
-          setPublished(
-            response.status === 200 ? { articles: response.data.articles, citations: every.citations } : "failed",
-          ),
-      )
+      .then((client) => client.listArticles({ cache: "no-store" }))
+      .then((response) => live && setPublished(response.status === 200 ? response.data : "failed"))
       .catch(() => live && setPublished("failed"));
     return () => {
       live = false;

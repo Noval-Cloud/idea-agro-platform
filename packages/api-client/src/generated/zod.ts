@@ -41,7 +41,7 @@ export const GetHealthResponse = zod.object({
 
 
 /**
- * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden.
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide while its data is reviewed is marked `unavailable`. Cacheable for an hour, or a minute while an indicator is hidden.
  * @summary What data exists
  */
 export const getCatalogResponseBoundsMin = 4;
@@ -53,6 +53,7 @@ export const getCatalogResponseSizeMax = 2;
 export const getCatalogResponseLiteSizeMin = 2;
 export const getCatalogResponseLiteSizeMax = 2;
 
+export const getCatalogResponseIndicatorsUnavailableDefault = false;
 export const getCatalogResponsePadronesBboxMin = 4;
 export const getCatalogResponsePadronesBboxMax = 4;
 
@@ -67,7 +68,8 @@ export const GetCatalogResponse = zod.object({
   "years": zod.union([zod.array(zod.int()),zod.null()]).describe('The years with a value, or null for an indicator measured once.'),
   "min": zod.union([zod.number(),zod.null()]).optional().describe('The lowest value on the map, for its color scale.'),
   "max": zod.union([zod.number(),zod.null()]).optional().describe('The highest value on the map, for its color scale.'),
-  "classes": zod.union([zod.array(zod.int()),zod.null()]).optional().describe('The classes of a categorical indicator.')
+  "classes": zod.union([zod.array(zod.int()),zod.null()]).optional().describe('The classes of a categorical indicator.'),
+  "unavailable": zod.boolean().default(getCatalogResponseIndicatorsUnavailableDefault).describe('True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the series leave it out.')
 }).describe('What an indicator holds.')),
   "seasonal": zod.record(zod.string(), zod.array(zod.iso.date())).describe('The first day of each seasonal indicator\'s composites, in the order zone series list them.'),
   "divisions": zod.record(zod.string(), zod.int()).describe('How many zones each predefined division has.'),
@@ -2283,7 +2285,7 @@ export const RestoreTextResponse = zod.object({
 
 
 /**
- * Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the citations. Cacheable for a minute.
+ * Every article, newest first, and which each indicator cites. Cacheable for a minute.
  * @summary The articles behind the indicators
  */
 export const listArticlesResponseArticlesItemAuthorsMax = 500;
@@ -2393,15 +2395,6 @@ export const AddArticleResponse = zod.object({
   "name": zod.string().describe('Their name at the time.')
 }),zod.null()]).describe('Who changed it.')
 }).describe('An article as an editor works on it.')
-
-
-/**
- * Hidden indicators too, so editors keep working on them. For editors.
- * @summary Which articles every indicator cites
- */
-export const ListEveryCitationResponse = zod.object({
-  "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
-}).describe('Which articles each indicator cites, hidden indicators too.')
 
 
 /**
@@ -2612,21 +2605,12 @@ export const CiteArticlesResponse = zod.object({
 
 
 /**
- * The indicators the site and the public API show, in the site's order. An indicator editors hide while its data is reviewed is left out. The website reads it when it is built. Cacheable for a minute.
- * @summary The indicators shown
- */
-export const ListShownIndicatorsResponse = zod.object({
-  "indicators": zod.array(zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.')).describe('In the site\'s order; a hidden indicator is left out.')
-}).describe('The indicators the site and the public API show.')
-
-
-/**
  * Every indicator, hidden ones too, with who last showed or hid it. For editors.
  * @summary Whether each indicator is shown
  */
 export const ListVisibilityResponseItem = zod.object({
   "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.'),
-  "shown": zod.boolean().describe('False while editors hide it: the site leaves it out, and the public API makes it unavailable.'),
+  "shown": zod.boolean().describe('False while editors hide it: the site shows it as unavailable, and the API withholds its data.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was last shown or hidden; null if never.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),
@@ -2637,7 +2621,7 @@ export const ListVisibilityResponse = zod.array(ListVisibilityResponseItem)
 
 
 /**
- * A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors.
+ * Once the site is rebuilt, it shows a hidden indicator as temporarily unavailable, with none of its data. The catalog marks it `unavailable`, the series leave it out, and its maps and values answer 404. Its data keeps being computed. For editors.
  * @summary Show or hide an indicator
  */
 export const PutVisibilityParams = zod.object({
@@ -2650,7 +2634,7 @@ export const PutVisibilityBody = zod.object({
 
 export const PutVisibilityResponse = zod.object({
   "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.'),
-  "shown": zod.boolean().describe('False while editors hide it: the site leaves it out, and the public API makes it unavailable.'),
+  "shown": zod.boolean().describe('False while editors hide it: the site shows it as unavailable, and the API withholds its data.'),
   "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was last shown or hidden; null if never.'),
   "updated_by": zod.union([zod.object({
   "id": zod.string().describe('The editor\'s account id.'),

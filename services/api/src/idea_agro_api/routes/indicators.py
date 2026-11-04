@@ -1,16 +1,16 @@
-"""Which indicators the site and the public API show: read by anyone, switched by editors."""
+"""Which indicators the site and the public API show, switched by editors; the catalog marks the hidden ones."""
 
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter
 from fastapi import Path as PathParam
 
 from idea_agro_api.audit import AuditAction
 from idea_agro_api.deps import EditorDep, ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.indicator_visibility import Visibility
-from idea_agro_api.models import IndicatorVisibilityOut, ShownIndicators, TextAuthor, VisibilityChange
+from idea_agro_api.models import IndicatorVisibilityOut, TextAuthor, VisibilityChange
 from idea_agro_api.public_data import Indicator
 from idea_agro_api.routes.articles import changed
 from idea_agro_api.routes.texts import author
@@ -19,8 +19,6 @@ from idea_agro_api.services import Services
 router = APIRouter(tags=["Indicators"])
 
 IndicatorParam = Annotated[Indicator, PathParam(description="The indicator.")]
-# The site reads them when it is built; a minute keeps a rebuild from serving what an editor just switched.
-CACHE_CONTROL = "public, max-age=60"
 
 
 def out(services: Services, indicator: Indicator) -> IndicatorVisibilityOut:
@@ -32,20 +30,6 @@ def out(services: Services, indicator: Indicator) -> IndicatorVisibilityOut:
         updated_at=found.updated_at,
         updated_by=TextAuthor(id=by.id, name=by.name) if by else None,
     )
-
-
-@router.get(
-    "/v1/indicators",
-    summary="The indicators shown",
-    description=(
-        "The indicators the site and the public API show, in the site's order. An indicator editors hide while its "
-        "data is reviewed is left out. The website reads it when it is built. Cacheable for a minute."
-    ),
-)
-def list_shown_indicators(services: ServicesDep, response: Response) -> ShownIndicators:
-    response.headers["Cache-Control"] = CACHE_CONTROL
-    hidden = services.visibility.hidden()
-    return ShownIndicators(indicators=[i for i in Indicator if i not in hidden])
 
 
 @router.get(
@@ -62,8 +46,9 @@ def list_visibility(caller: EditorDep, services: ServicesDep) -> list[IndicatorV
     "/v1/indicators/{indicator}/visibility",
     summary="Show or hide an indicator",
     description=(
-        "A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its "
-        "own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors."
+        "Once the site is rebuilt, it shows a hidden indicator as temporarily unavailable, with none of its data. "
+        "The catalog marks it `unavailable`, the series leave it out, and its maps and values answer 404. Its data "
+        "keeps being computed. For editors."
     ),
     responses=problems(401, 403, 422),
 )

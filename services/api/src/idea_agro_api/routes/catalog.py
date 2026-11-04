@@ -18,8 +18,8 @@ router = APIRouter(tags=["Catalog"])
     summary="What data exists",
     description=(
         "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with "
-        "rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators "
-        "and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden."
+        "rural parcels, and the frame of the map images. An indicator editors hide while its data is reviewed is "
+        "marked `unavailable`. Cacheable for an hour, or a minute while an indicator is hidden."
     ),
     response_class=Response,
     responses=documented(Catalog, "The catalog.") | problems(404),
@@ -33,9 +33,9 @@ def get_catalog(services: ServicesDep) -> Response:
     if content is None:
         raise HTTPException(404, missing)
     catalog = cast(dict[str, Any], json.loads(content))
-    for part in ("indicators", "seasonal"):
-        if part in catalog:
-            catalog[part] = {k: v for k, v in cast(dict[str, Any], catalog[part]).items() if k not in hidden}
+    for indicator, info in cast(dict[str, dict[str, Any]], catalog.get("indicators", {})).items():
+        if indicator in hidden:
+            info["unavailable"] = True
     return Response(
         json.dumps(catalog, separators=(",", ":")),
         media_type="application/json",

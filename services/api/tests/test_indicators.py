@@ -57,21 +57,18 @@ def client(services: Services) -> TestClient:
 
 
 def test_every_indicator_is_shown_until_an_editor_hides_it(client: TestClient) -> None:
-    shown = client.get("/v1/indicators")
+    listed = client.get("/v1/indicators/visibility", headers=ANA).json()
 
-    assert shown.json() == {"indicators": EVERY}
-    assert shown.headers["cache-control"] == "public, max-age=60"
-    assert all(
-        v["shown"] and v["updated_by"] is None for v in client.get("/v1/indicators/visibility", headers=ANA).json()
-    )
+    assert [v["indicator"] for v in listed] == EVERY
+    assert all(v["shown"] and v["updated_by"] is None for v in listed)
+    assert "unavailable" not in json.dumps(client.get("/v1/catalog").json())
 
 
-def test_a_hidden_indicator_leaves_the_shown_ones(client: TestClient, services: Services) -> None:
+def test_an_editor_hides_an_indicator(client: TestClient) -> None:
     hidden = client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False}).json()
 
     assert hidden["shown"] is False
     assert hidden["updated_by"]["name"] == "Ana"
-    assert "rh" not in client.get("/v1/indicators").json()["indicators"]
     listed = {v["indicator"]: v["shown"] for v in client.get("/v1/indicators/visibility", headers=ANA).json()}
     assert listed["rh"] is False
     assert listed["ppna"] is True
@@ -85,7 +82,7 @@ def test_every_switch_is_audited_and_marks_the_site_behind(client: TestClient, s
     actions = [(e.action, e.target) for e in services.audit.latest(10)]
     assert actions == [(AuditAction.INDICATOR_SHOWN, "apar"), (AuditAction.INDICATOR_HIDDEN, "apar")]
     assert behind is not None
-    assert client.get("/v1/indicators").json()["indicators"] == EVERY
+    assert client.get("/v1/catalog").json()["indicators"]["ppna"].get("unavailable") is None
 
 
 def test_switching_to_the_same_state_changes_nothing(client: TestClient, services: Services) -> None:
@@ -101,17 +98,18 @@ def test_only_editors_see_and_switch_indicators(client: TestClient) -> None:
     assert client.get("/v1/indicators/visibility", headers=BO).status_code == 403
     assert client.put("/v1/indicators/rh/visibility", headers=BO, json={"shown": False}).status_code == 403
     assert client.put("/v1/indicators/nothing/visibility", headers=ANA, json={"shown": False}).status_code == 422
-    assert "rh" in client.get("/v1/indicators").json()["indicators"]
+    assert client.get("/v1/divisions/seccionales/values/rh").status_code == 200
 
 
-def test_the_catalog_leaves_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+def test_the_catalog_marks_a_hidden_indicator_unavailable(client: TestClient, services: Services) -> None:
     services.visibility.put(Visibility("rh", False))
 
     response = client.get("/v1/catalog")
     catalog = response.json()
 
-    assert list(catalog["indicators"]) == ["ppna"]
-    assert list(catalog["seasonal"]) == ["ppna"]
+    assert catalog["indicators"]["rh"] == {"kind": "continuous", "years": [2024], "unavailable": True}
+    assert "unavailable" not in catalog["indicators"]["ppna"]
+    assert list(catalog["seasonal"]) == ["ppna", "rh"]
     assert catalog["divisions"] == {"seccionales": 1}
     assert response.headers["cache-control"] == "public, max-age=60"
 
@@ -127,16 +125,15 @@ def test_a_zone_s_series_leave_a_hidden_indicator_out(client: TestClient, servic
     assert response.headers["cache-control"] == "public, max-age=60"
 
 
-def test_the_published_citations_leave_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+def test_a_hidden_indicator_s_articles_stay_published_and_editable(client: TestClient) -> None:
     client.post("/v1/articles/seed", headers=ANA)
     client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False})
 
-    assert "rh" not in client.get("/v1/articles").json()["citations"]
-    every = client.get("/v1/indicators/articles", headers=ANA).json()["citations"]
-    assert every["rh"] == services.articles.citations()["rh"]
-    cited = client.put("/v1/indicators/rh/articles", headers=ANA, json={"articles": every["rh"][:1]})
-    assert cited.status_code == 200
-    assert client.get("/v1/indicators/articles", headers=BO).status_code == 403
+    cited = client.get("/v1/articles").json()["citations"]["rh"]
+    changed = client.put("/v1/indicators/rh/articles", headers=ANA, json={"articles": cited[:1]})
+
+    assert changed.status_code == 200
+    assert client.get("/v1/articles").json()["citations"]["rh"] == cited[:1]
 
 
 @pytest.mark.parametrize("path", ROUTES)

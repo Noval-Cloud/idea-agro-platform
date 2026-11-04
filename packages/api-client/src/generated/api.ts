@@ -328,6 +328,8 @@ export interface IndicatorRange {
   max?: number | null;
   /** The classes of a categorical indicator. */
   classes?: number[] | null;
+  /** True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the series leave it out. */
+  unavailable?: boolean;
 }
 
 /**
@@ -511,19 +513,6 @@ export interface DocumentOut {
   uploaded_by: string | null;
 }
 
-/**
- * By indicator, the ids of the articles it cites, in order.
- */
-export type EveryCitationCitations = {[key: string]: string[]};
-
-/**
- * Which articles each indicator cites, hidden indicators too.
- */
-export interface EveryCitation {
-  /** By indicator, the ids of the articles it cites, in order. */
-  citations: EveryCitationCitations;
-}
-
 export type ValidationErrorCtx = { [key: string]: unknown };
 
 export interface ValidationError {
@@ -548,7 +537,7 @@ export interface Health {
  */
 export interface IndicatorVisibilityOut {
   indicator: Indicator;
-  /** False while editors hide it: the site leaves it out, and the public API makes it unavailable. */
+  /** False while editors hide it: the site shows it as unavailable, and the API withholds its data. */
   shown: boolean;
   /** When it was last shown or hidden; null if never. */
   updated_at: string | null;
@@ -1270,14 +1259,6 @@ export interface SharedOut {
 }
 
 /**
- * The indicators the site and the public API show.
- */
-export interface ShownIndicators {
-  /** In the site's order; a hidden indicator is left out. */
-  indicators: Indicator[];
-}
-
-/**
  * Whether the website shows the published texts yet.
  */
 export interface SiteRebuildOut {
@@ -1734,7 +1715,7 @@ export const getGetCatalogUrl = () => {
 }
 
 /**
- * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden.
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide while its data is reviewed is marked `unavailable`. Cacheable for an hour, or a minute while an indicator is hidden.
  * @summary What data exists
  */
 export const getCatalog = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getCatalogResponse> => {
@@ -10379,7 +10360,7 @@ export const getListArticlesUrl = () => {
 }
 
 /**
- * Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the citations. Cacheable for a minute.
+ * Every article, newest first, and which each indicator cites. Cacheable for a minute.
  * @summary The articles behind the indicators
  */
 export const listArticles = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listArticlesResponse> => {
@@ -10589,132 +10570,6 @@ export const useAddArticle = <TError = Problem,
       > => {
       return useMutation(getAddArticleMutationOptions(options), queryClient);
     }
-
-export type listEveryCitationResponse200 = {
-  data: EveryCitation
-  status: 200
-}
-
-export type listEveryCitationResponse401 = {
-  data: Problem
-  status: 401
-}
-
-export type listEveryCitationResponse403 = {
-  data: Problem
-  status: 403
-}
-
-export type listEveryCitationResponseSuccess = (listEveryCitationResponse200) & {
-  headers: Headers;
-};
-export type listEveryCitationResponseError = (listEveryCitationResponse401 | listEveryCitationResponse403) & {
-  headers: Headers;
-};
-
-export type listEveryCitationResponse = (listEveryCitationResponseSuccess | listEveryCitationResponseError)
-
-export const getListEveryCitationUrl = () => {
-
-
-
-
-  return `/v1/indicators/articles`
-}
-
-/**
- * Hidden indicators too, so editors keep working on them. For editors.
- * @summary Which articles every indicator cites
- */
-export const listEveryCitation = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listEveryCitationResponse> => {
-
-  return apiFetch<listEveryCitationResponse>(getListEveryCitationUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListEveryCitationQueryKey = () => {
-    return [
-    `/v1/indicators/articles`
-    ] as const;
-    }
-
-
-export const getListEveryCitationQueryOptions = <TData = Awaited<ReturnType<typeof listEveryCitation>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListEveryCitationQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEveryCitation>>> = ({ signal }) => listEveryCitation({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListEveryCitationQueryResult = NonNullable<Awaited<ReturnType<typeof listEveryCitation>>>
-export type ListEveryCitationQueryError = Problem
-
-
-export function useListEveryCitation<TData = Awaited<ReturnType<typeof listEveryCitation>>, TError = Problem>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listEveryCitation>>,
-          TError,
-          Awaited<ReturnType<typeof listEveryCitation>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListEveryCitation<TData = Awaited<ReturnType<typeof listEveryCitation>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listEveryCitation>>,
-          TError,
-          Awaited<ReturnType<typeof listEveryCitation>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListEveryCitation<TData = Awaited<ReturnType<typeof listEveryCitation>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Which articles every indicator cites
- */
-
-export function useListEveryCitation<TData = Awaited<ReturnType<typeof listEveryCitation>>, TError = Problem>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listEveryCitation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListEveryCitationQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
 
 export type seedArticlesResponse200 = {
   data: PublishedArticles
@@ -11307,120 +11162,6 @@ export const useCiteArticles = <TError = Problem,
       return useMutation(getCiteArticlesMutationOptions(options), queryClient);
     }
 
-export type listShownIndicatorsResponse200 = {
-  data: ShownIndicators
-  status: 200
-}
-
-export type listShownIndicatorsResponseSuccess = (listShownIndicatorsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listShownIndicatorsResponse = (listShownIndicatorsResponseSuccess)
-
-export const getListShownIndicatorsUrl = () => {
-
-
-
-
-  return `/v1/indicators`
-}
-
-/**
- * The indicators the site and the public API show, in the site's order. An indicator editors hide while its data is reviewed is left out. The website reads it when it is built. Cacheable for a minute.
- * @summary The indicators shown
- */
-export const listShownIndicators = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listShownIndicatorsResponse> => {
-
-  return apiFetch<listShownIndicatorsResponse>(getListShownIndicatorsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListShownIndicatorsQueryKey = () => {
-    return [
-    `/v1/indicators`
-    ] as const;
-    }
-
-
-export const getListShownIndicatorsQueryOptions = <TData = Awaited<ReturnType<typeof listShownIndicators>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListShownIndicatorsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShownIndicators>>> = ({ signal }) => listShownIndicators({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListShownIndicatorsQueryResult = NonNullable<Awaited<ReturnType<typeof listShownIndicators>>>
-export type ListShownIndicatorsQueryError = unknown
-
-
-export function useListShownIndicators<TData = Awaited<ReturnType<typeof listShownIndicators>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listShownIndicators>>,
-          TError,
-          Awaited<ReturnType<typeof listShownIndicators>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListShownIndicators<TData = Awaited<ReturnType<typeof listShownIndicators>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listShownIndicators>>,
-          TError,
-          Awaited<ReturnType<typeof listShownIndicators>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListShownIndicators<TData = Awaited<ReturnType<typeof listShownIndicators>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary The indicators shown
- */
-
-export function useListShownIndicators<TData = Awaited<ReturnType<typeof listShownIndicators>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listShownIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListShownIndicatorsQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listVisibilityResponse200 = {
   data: IndicatorVisibilityOut[]
   status: 200
@@ -11585,7 +11326,7 @@ export const getPutVisibilityUrl = (indicator: Indicator,) => {
 }
 
 /**
- * A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors.
+ * Once the site is rebuilt, it shows a hidden indicator as temporarily unavailable, with none of its data. The catalog marks it `unavailable`, the series leave it out, and its maps and values answer 404. Its data keeps being computed. For editors.
  * @summary Show or hide an indicator
  */
 export const putVisibility = async (indicator: Indicator,

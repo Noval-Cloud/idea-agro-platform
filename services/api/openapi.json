@@ -37,7 +37,7 @@
           "Catalog"
         ],
         "summary": "What data exists",
-        "description": "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden.",
+        "description": "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide while its data is reviewed is marked `unavailable`. Cacheable for an hour, or a minute while an indicator is hidden.",
         "operationId": "get_catalog",
         "responses": {
           "200": {
@@ -5626,7 +5626,7 @@
           "Articles"
         ],
         "summary": "The articles behind the indicators",
-        "description": "Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the citations. Cacheable for a minute.",
+        "description": "Every article, newest first, and which each indicator cites. Cacheable for a minute.",
         "operationId": "list_articles",
         "responses": {
           "200": {
@@ -5691,53 +5691,6 @@
           },
           "422": {
             "description": "A parameter is not valid.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/indicators/articles": {
-      "get": {
-        "tags": [
-          "Articles"
-        ],
-        "summary": "Which articles every indicator cites",
-        "description": "Hidden indicators too, so editors keep working on them. For editors.",
-        "operationId": "list_every_citation",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EveryCitation"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No valid token: sign in again.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The account may not do this.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6131,28 +6084,6 @@
         }
       }
     },
-    "/v1/indicators": {
-      "get": {
-        "tags": [
-          "Indicators"
-        ],
-        "summary": "The indicators shown",
-        "description": "The indicators the site and the public API show, in the site's order. An indicator editors hide while its data is reviewed is left out. The website reads it when it is built. Cacheable for a minute.",
-        "operationId": "list_shown_indicators",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ShownIndicators"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/indicators/visibility": {
       "get": {
         "tags": [
@@ -6210,7 +6141,7 @@
           "Indicators"
         ],
         "summary": "Show or hide an indicator",
-        "description": "A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors.",
+        "description": "Once the site is rebuilt, it shows a hidden indicator as temporarily unavailable, with none of its data. The catalog marks it `unavailable`, the series leave it out, and its maps and values answer 404. Its data keeps being computed. For editors.",
         "operationId": "put_visibility",
         "security": [
           {
@@ -7778,27 +7709,6 @@
         "title": "DocumentOut",
         "description": "A document kept with a saved zone."
       },
-      "EveryCitation": {
-        "properties": {
-          "citations": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object",
-            "title": "Citations",
-            "description": "By indicator, the ids of the articles it cites, in order."
-          }
-        },
-        "type": "object",
-        "required": [
-          "citations"
-        ],
-        "title": "EveryCitation",
-        "description": "Which articles each indicator cites, hidden indicators too."
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -7911,6 +7821,12 @@
             ],
             "title": "Classes",
             "description": "The classes of a categorical indicator."
+          },
+          "unavailable": {
+            "type": "boolean",
+            "title": "Unavailable",
+            "description": "True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the series leave it out.",
+            "default": false
           }
         },
         "type": "object",
@@ -7929,7 +7845,7 @@
           "shown": {
             "type": "boolean",
             "title": "Shown",
-            "description": "False while editors hide it: the site leaves it out, and the public API makes it unavailable."
+            "description": "False while editors hide it: the site shows it as unavailable, and the API withholds its data."
           },
           "updated_at": {
             "anyOf": [
@@ -9772,24 +9688,6 @@
         ],
         "title": "SharedOut",
         "description": "The project once shared, and whether the person invited was told by email."
-      },
-      "ShownIndicators": {
-        "properties": {
-          "indicators": {
-            "items": {
-              "$ref": "#/components/schemas/Indicator"
-            },
-            "type": "array",
-            "title": "Indicators",
-            "description": "In the site's order; a hidden indicator is left out."
-          }
-        },
-        "type": "object",
-        "required": [
-          "indicators"
-        ],
-        "title": "ShownIndicators",
-        "description": "The indicators the site and the public API show."
       },
       "SiteRebuildOut": {
         "properties": {
