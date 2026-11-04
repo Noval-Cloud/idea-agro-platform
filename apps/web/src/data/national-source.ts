@@ -24,7 +24,7 @@ export interface National {
 }
 
 type Json = Record<string, unknown>;
-const UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable";
+export const UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable";
 
 /**
  * With `strict`, a hidden indicator fails the read, naming the paths the API withheld, instead of coming back empty.

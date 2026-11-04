@@ -3,6 +3,7 @@ import { indicators, type IndicatorId } from "@/data/indicators";
 import { rasterUrl, type Manifest } from "./data";
 import { decodeGray, paint, type GrayRaster } from "./raster";
 import type { MapThemeName } from "./theme";
+import { reportUnavailable } from "./unavailable";
 
 export type Frame = { key: string; url: string; gray: GrayRaster; lite: boolean };
 export type FrameRequest = {
@@ -61,7 +62,10 @@ export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Fra
     lite: request.lite,
     url: await paint(gray, kind, indicators[request.indicator].family, request.theme, request.community, before),
   }));
-  frame.catch(() => frames.delete(key));
+  frame.catch((error) => {
+    frames.delete(key);
+    reportUnavailable(request.indicator, error);
+  });
   frames.set(key, frame);
   while (frames.size > LIMIT) {
     const [oldest, evicted] = frames.entries().next().value as [string, Promise<Frame>];

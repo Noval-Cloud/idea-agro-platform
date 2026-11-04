@@ -1,5 +1,6 @@
 import * as api from "@idea-agro/api-client";
 import type { IndicatorId } from "@/data/indicators";
+import { isUnavailableAnswer, markUnavailable } from "./unavailable";
 
 /*
  * Data access, all through the API's generated client. The API speaks snake_case and ISO dates; the loaders
@@ -22,6 +23,8 @@ export type IndicatorManifest = {
   min?: number;
   max?: number;
   classes?: number[];
+  /** Editors hid it: its data answers 404. */
+  unavailable?: boolean;
 };
 
 export type Manifest = {
@@ -99,10 +102,17 @@ function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
 }
 
 /** One API call's data, kept for the page's life; any answer but 200 is an error. */
-const once = <T>(key: string, call: () => Promise<{ status: number; data: unknown }>): Promise<T> =>
+const once = <T>(
+  key: string,
+  call: () => Promise<{ status: number; data: unknown }>,
+  indicator?: IndicatorId,
+): Promise<T> =>
   cached(key, async () => {
     const response = await call();
-    if (response.status !== 200) throw new Error(`${response.status} ${key}`);
+    if (response.status !== 200) {
+      if (indicator && isUnavailableAnswer(response.status, response.data)) markUnavailable(indicator);
+      throw new Error(`${response.status} ${key}`);
+    }
     return response.data as T;
   });
 
@@ -139,6 +149,7 @@ export const loadManifest = () =>
             ...(info.min != null ? { min: info.min } : {}),
             ...(info.max != null ? { max: info.max } : {}),
             ...(info.classes ? { classes: info.classes } : {}),
+            ...(info.unavailable ? { unavailable: true } : {}),
           },
         ]),
       ) as Manifest["indicators"],
@@ -167,7 +178,7 @@ export const loadZones = (division: DivisionId) =>
   });
 
 const loadValues = <T>(division: DivisionId, indicator: IndicatorId) =>
-  once<T>(`values:${division}:${indicator}`, () => api.getDivisionValues(division, indicator));
+  once<T>(`values:${division}:${indicator}`, () => api.getDivisionValues(division, indicator), indicator);
 export const loadSeriesStats = (division: DivisionId, indicator: IndicatorId) =>
   loadValues<SeriesStats>(division, indicator);
 export const loadSummaryStats = (division: DivisionId, indicator: IndicatorId) =>

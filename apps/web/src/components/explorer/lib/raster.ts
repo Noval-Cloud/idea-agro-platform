@@ -1,6 +1,7 @@
 import type { DataFamily } from "@/design/tokens";
 import type { IndicatorManifest, ZoneGeometry } from "./data";
 import { ringsOf } from "./geo";
+import { failure } from "./unavailable";
 import { mapTheme, type MapThemeName } from "./theme";
 
 /*
@@ -89,7 +90,7 @@ function palette(
 
 export async function decodeGray(url: string, signal?: AbortSignal): Promise<GrayRaster> {
   const response = await fetch(url, { signal });
-  if (!response.ok) throw new Error(`${response.status} ${url}`);
+  if (!response.ok) throw await failure(response, url);
   const bitmap = await createImageBitmap(await response.blob());
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
   const context = canvas.getContext("2d", { willReadFrequently: true });
