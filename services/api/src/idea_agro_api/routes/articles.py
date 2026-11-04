@@ -12,7 +12,15 @@ from idea_agro_api.articles import Article, new_article_id, seed
 from idea_agro_api.audit import AuditAction, AuditEntry
 from idea_agro_api.deps import Caller, EditorDep, ServicesDep
 from idea_agro_api.errors import problems
-from idea_agro_api.models import ArticleIn, ArticleOut, ArticlePublic, Citations, PublishedArticles, TextAuthor
+from idea_agro_api.models import (
+    ArticleIn,
+    ArticleOut,
+    ArticlePublic,
+    Citations,
+    EveryCitation,
+    PublishedArticles,
+    TextAuthor,
+)
 from idea_agro_api.public_data import Indicator
 from idea_agro_api.routes.texts import author
 from idea_agro_api.services import Services
@@ -63,19 +71,33 @@ def changed(services: Services, caller: Caller, action: AuditAction, target: str
     services.site_rebuild.published(at)
 
 
-def published(services: Services) -> PublishedArticles:
+def published(services: Services, hidden: frozenset[str] = frozenset()) -> PublishedArticles:
     articles = sorted(services.articles.all(), key=lambda a: (-a.year, a.authors))
-    return PublishedArticles(articles=[public(a) for a in articles], citations=services.articles.citations())
+    citations = {i: ids for i, ids in services.articles.citations().items() if i not in hidden}
+    return PublishedArticles(articles=[public(a) for a in articles], citations=citations)
 
 
 @router.get(
     "/v1/articles",
     summary="The articles behind the indicators",
-    description="Every article, newest first, and which each indicator cites. Cacheable for a minute.",
+    description=(
+        "Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the "
+        "citations. Cacheable for a minute."
+    ),
 )
 def list_articles(services: ServicesDep, response: Response) -> PublishedArticles:
     response.headers["Cache-Control"] = CACHE_CONTROL
-    return published(services)
+    return published(services, services.visibility.hidden())
+
+
+@router.get(
+    "/v1/indicators/articles",
+    summary="Which articles every indicator cites",
+    description="Hidden indicators too, so editors keep working on them. For editors.",
+    responses=problems(401, 403),
+)
+def list_every_citation(caller: EditorDep, services: ServicesDep) -> EveryCitation:
+    return EveryCitation(citations=services.articles.citations())
 
 
 @router.post(
@@ -160,7 +182,7 @@ def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesD
 @router.put(
     "/v1/indicators/{indicator}/articles",
     summary="Choose the articles an indicator cites",
-    description="In the order the site lists them. For editors.",
+    description="In the order the site lists them. For editors, a hidden indicator's too.",
     responses=problems(401, 403, 422),
 )
 def cite_articles(

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from idea_agro_api.app import create_app
 from idea_agro_api.auth import OidcVerifier
 from idea_agro_api.geometries import MemoryGeometries
+from idea_agro_api.indicator_visibility import Visibility
 from idea_agro_api.saved_series import series_file
 from idea_agro_api.services import services_for_tests
 from idea_agro_api.zone_jobs import MemoryZoneJobs
@@ -37,6 +38,7 @@ class Setup:
         services = services_for_tests(
             files=LocalFiles(tmp_path), verifier=verifier, geometries=self.geometries, zone_jobs=self.jobs
         )
+        self.services = services
         self.client = TestClient(create_app(services))
 
     def save(self) -> dict[str, Any]:
@@ -115,3 +117,18 @@ def test_a_restored_outline_brings_its_series_along(setup: Setup) -> None:
     assert restored.status_code == 200
     found = setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=ANA).json()
     assert found["ppna"]["values"] == [120.5, None]
+
+
+def test_a_hidden_indicator_is_left_out_of_a_zones_series(setup: Setup) -> None:
+    zone = setup.save()
+    setup.computed(zone, {"ppna": {"2025-01-01": 120.5}, "et": {"2025-01-01": 1.2}})
+    project = setup.client.post("/v1/projects", json={"name": "Campo"}, headers=ANA).json()["id"]
+    setup.client.post(f"/v1/projects/{project}/items", json={"kind": "saved", "zone_id": zone["id"]}, headers=ANA)
+
+    setup.services.visibility.put(Visibility("et", False))
+
+    own = setup.client.get(f"/v1/saved-zones/{zone['id']}/seasonal", headers=ANA).json()
+    through = setup.client.get(f"/v1/projects/{project}/zones/{zone['id']}/seasonal", headers=ANA).json()
+    assert "et" not in own
+    assert "et" not in through
+    assert through["ppna"]["values"] == [120.5, None]

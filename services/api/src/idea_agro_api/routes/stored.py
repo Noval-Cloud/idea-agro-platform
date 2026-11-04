@@ -5,6 +5,12 @@ from idea_agro_api.services import Services
 
 JSON_SECONDS = 3600
 IMAGE_SECONDS = 86400
+# While an indicator is hidden, the lists that leave it out are kept briefly, so it returns soon after it is shown.
+LIST_SECONDS = 60
+
+
+def list_seconds(services: Services) -> int:
+    return LIST_SECONDS if services.visibility.hidden() else JSON_SECONDS
 
 
 def stored(services: Services, name: str, media_type: str, missing: str, seconds: int = JSON_SECONDS) -> Response:

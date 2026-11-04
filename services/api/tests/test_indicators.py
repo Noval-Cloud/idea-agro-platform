@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 from auth_tokens import bearer, make_token
 from fastapi.testclient import TestClient
@@ -7,15 +10,28 @@ from idea_agro_api.audit import AuditAction
 from idea_agro_api.auth import OidcVerifier
 from idea_agro_api.indicator_visibility import IndicatorVisibility, MemoryVisibility, Visibility
 from idea_agro_api.services import Services, services_for_tests
+from idea_agro_api.zones import LocalFiles
 
 ANA = bearer(make_token("ana"))
 BO = bearer(make_token("bo"))
 EVERY = ["apar", "cob", "ppna", "compn", "rh", "et", "iose", "divtfe", "csue", "ahppn"]
+DAYS = ["2025-01-01", "2025-01-17"]
+FILES = {
+    "catalog.json": {
+        "indicators": {"ppna": {"kind": "continuous", "years": [2024]}, "rh": {"kind": "continuous", "years": [2024]}},
+        "seasonal": {"ppna": DAYS, "rh": DAYS},
+        "divisions": {"seccionales": 1},
+    },
+    "series/seccionales/1406.json": {"ppna": [1.0, 2.0], "rh": [3.0, 4.0]},
+}
 
 
 @pytest.fixture
-def services(verifier: OidcVerifier) -> Services:
-    return services_for_tests(verifier=verifier)
+def services(tmp_path: Path, verifier: OidcVerifier) -> Services:
+    for name, content in FILES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(json.dumps(content))
+    return services_for_tests(files=LocalFiles(tmp_path), verifier=verifier)
 
 
 @pytest.fixture
@@ -73,6 +89,41 @@ def test_only_editors_see_and_switch_indicators(client: TestClient) -> None:
     assert client.put("/v1/indicators/rh/visibility", headers=BO, json={"shown": False}).status_code == 403
     assert client.put("/v1/indicators/nothing/visibility", headers=ANA, json={"shown": False}).status_code == 422
     assert "rh" in client.get("/v1/indicators").json()["indicators"]
+
+
+def test_the_catalog_leaves_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+    services.visibility.put(Visibility("rh", False))
+
+    response = client.get("/v1/catalog")
+    catalog = response.json()
+
+    assert list(catalog["indicators"]) == ["ppna"]
+    assert list(catalog["seasonal"]) == ["ppna"]
+    assert catalog["divisions"] == {"seccionales": 1}
+    assert response.headers["cache-control"] == "public, max-age=60"
+
+
+def test_a_zone_s_series_leave_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+    assert set(client.get("/v1/zones/seccionales/1406/seasonal").json()) >= {"ppna", "rh"}
+
+    services.visibility.put(Visibility("rh", False))
+    response = client.get("/v1/zones/seccionales/1406/seasonal")
+
+    assert "rh" not in response.json()
+    assert response.json()["ppna"]["values"] == [1.0, 2.0]
+    assert response.headers["cache-control"] == "public, max-age=60"
+
+
+def test_the_published_citations_leave_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+    client.post("/v1/articles/seed", headers=ANA)
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False})
+
+    assert "rh" not in client.get("/v1/articles").json()["citations"]
+    every = client.get("/v1/indicators/articles", headers=ANA).json()["citations"]
+    assert every["rh"] == services.articles.citations()["rh"]
+    cited = client.put("/v1/indicators/rh/articles", headers=ANA, json={"articles": every["rh"][:1]})
+    assert cited.status_code == 200
+    assert client.get("/v1/indicators/articles", headers=BO).status_code == 403
 
 
 def test_the_hidden_ones_are_kept_for_a_few_seconds() -> None:

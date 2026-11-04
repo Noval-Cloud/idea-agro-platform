@@ -1,10 +1,14 @@
+import json
+from typing import Any, cast
+
 from fastapi import APIRouter, Response
+from starlette.exceptions import HTTPException
 
 from idea_agro_api import public_data
 from idea_agro_api.deps import ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.models import Catalog, ZoneIndexEntry
-from idea_agro_api.routes.stored import documented, stored
+from idea_agro_api.routes.stored import LIST_SECONDS, documented, stored
 
 router = APIRouter(tags=["Catalog"])
 
@@ -14,13 +18,29 @@ router = APIRouter(tags=["Catalog"])
     summary="What data exists",
     description=(
         "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with "
-        "rural parcels, and the frame of the map images. Cacheable for an hour."
+        "rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators "
+        "and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden."
     ),
     response_class=Response,
     responses=documented(Catalog, "The catalog.") | problems(404),
 )
 def get_catalog(services: ServicesDep) -> Response:
-    return stored(services, public_data.CATALOG, "application/json", "The catalog is not published yet.")
+    missing = "The catalog is not published yet."
+    hidden = services.visibility.hidden()
+    if not hidden:
+        return stored(services, public_data.CATALOG, "application/json", missing)
+    content = services.public_data.read(public_data.CATALOG)
+    if content is None:
+        raise HTTPException(404, missing)
+    catalog = cast(dict[str, Any], json.loads(content))
+    for part in ("indicators", "seasonal"):
+        if part in catalog:
+            catalog[part] = {k: v for k, v in cast(dict[str, Any], catalog[part]).items() if k not in hidden}
+    return Response(
+        json.dumps(catalog, separators=(",", ":")),
+        media_type="application/json",
+        headers={"Cache-Control": f"public, max-age={LIST_SECONDS}"},
+    )
 
 
 @router.get(

@@ -704,6 +704,12 @@ class PublishedArticles(BaseModel):
     citations: dict[str, list[str]] = Field(description="By indicator, the ids of the articles it cites, in order.")
 
 
+class EveryCitation(BaseModel):
+    """Which articles each indicator cites, hidden indicators too."""
+
+    citations: dict[str, list[str]] = Field(description="By indicator, the ids of the articles it cites, in order.")
+
+
 class Citations(BaseModel):
     """The articles an indicator cites, in order."""
 
