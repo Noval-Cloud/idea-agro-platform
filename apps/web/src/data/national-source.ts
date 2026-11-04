@@ -1,7 +1,7 @@
 /**
  * The country's indicators as the platform computes them: the API's `uruguay` zone and its catalog. A deploy build
  * reads them from the API; checks and local builds read `national.json`, which `node scripts/national.ts` writes
- * from the same calls.
+ * from the same calls. A hidden indicator has no data.
  */
 
 export const seasonalIds = ["ppna", "apar", "et", "rh"] as const;
@@ -24,11 +24,14 @@ export interface National {
 }
 
 type Json = Record<string, unknown>;
+const UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable";
 
 export async function fetchNational(base: string): Promise<National> {
-  const get = async (path: string): Promise<Json> => {
+  /** The answer, or null for a hidden indicator: the API leaves it out until editors show it again. */
+  const get = async (path: string): Promise<Json | null> => {
     // A deploy build that waits on an API that does not answer would hang until Cloud Build gives up.
     const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(30_000) });
+    if (response.status === 404 && ((await response.json()) as Json).type === UNAVAILABLE) return null;
     if (!response.ok) throw new Error(`${response.status} ${path}`);
     return (await response.json()) as Json;
   };
@@ -37,18 +40,18 @@ export async function fetchNational(base: string): Promise<National> {
     get("/v1/zones/uruguay/1/seasonal"),
     ...nationalIds.map((id) => get(`/v1/divisions/uruguay/values/${id}`)),
   ]);
-  const maps = catalog.indicators as Record<string, { years: number[] | null; min?: number; max?: number }>;
+  const maps = (catalog?.indicators ?? {}) as Record<string, { years: number[] | null; min?: number; max?: number }>;
   return {
     seasonal: Object.fromEntries(
       seasonalIds.map((id) => {
-        const series = seasonal[id] as Series | undefined;
+        const series = seasonal?.[id] as Series | undefined;
         return [id, { dates: series?.dates ?? [], values: series?.values ?? [] }];
       }),
     ) as National["seasonal"],
     values: Object.fromEntries(
       nationalIds.map((id, i) => {
-        const file = values[i] as { years: number[] | null; values: Record<string, unknown> };
-        return [id, { years: file.years, value: file.values["1"] ?? null }];
+        const file = values[i] as { years: number[] | null; values: Record<string, unknown> } | null;
+        return [id, { years: file?.years ?? null, value: file?.values["1"] ?? null }];
       }),
     ) as National["values"],
     maps: Object.fromEntries(

@@ -77,3 +77,7 @@ export const indicators: Record<IndicatorId, Indicator> = {
 };
 
 export const indicatorsByGroup = (group: IndicatorGroup) => indicatorIds.filter((id) => indicators[id].group === group);
+
+/** The indicator the explorer and the zone page open on: productivity, or the first shown one while it is hidden. */
+export const defaultIndicator = (shown: readonly IndicatorId[]): IndicatorId | undefined =>
+  shown.includes("ppna") ? "ppna" : shown[0];

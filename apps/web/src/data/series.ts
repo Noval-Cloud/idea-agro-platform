@@ -29,6 +29,11 @@ function bands(series: Series): BandRecord {
 
 export const ppnaRecord = bands(national.seasonal.ppna);
 const aparRecord = bands(national.seasonal.apar);
+// PPNA's latest composite dates the data; while it is hidden, the next seasonal series with data does.
+const datedBy = [ppnaRecord, aparRecord, bands(national.seasonal.et), bands(national.seasonal.rh)].find(
+  (record) => Object.keys(record).length > 0,
+);
+if (!datedBy) throw new Error("No seasonal series to date the data: every one is hidden or empty.");
 
 const doysEvery = (step: number) => Array.from({ length: Math.ceil(365 / step) }, (_, i) => 1 + i * step);
 
@@ -47,7 +52,7 @@ export function productiveYear(step: 16 | 8) {
 
 const ppnaYear = productiveYear(16);
 
-export const latestBand = Object.keys(ppnaRecord).reduce((latest, band) => {
+export const latestBand = Object.keys(datedBy).reduce((latest, band) => {
   const [y, d] = band.slice(1).split("-").map(Number);
   const [ly, ld] = latest.slice(1).split("-").map(Number);
   return y > ly || (y === ly && d > ld) ? band : latest;
@@ -88,9 +93,12 @@ function yearValues(record: BandRecord, start: number, layout: { doy: number; ye
   });
 }
 
+// The complete growing years the averages run over: PPNA's, or APAR's while PPNA is hidden.
+const averaged = ppnaAnnual.length ? ppnaAnnual : yearly("apar");
+
 /** Each composite's mean over the complete growing years. */
 function average(record: BandRecord, layout: { doy: number; yearOffset: number }[]) {
-  const years = ppnaAnnual.map((d) => yearValues(record, d.start, layout));
+  const years = averaged.map((d) => yearValues(record, d.start, layout));
   return layout.map((_, i) => {
     const values = years.map((year) => year[i]).filter((v): v is number => v !== null);
     return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
