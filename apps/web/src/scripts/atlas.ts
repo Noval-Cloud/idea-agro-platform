@@ -16,7 +16,8 @@ export function initAtlas() {
     const match = /^#indicator-([a-z]+)$/.exec(location.hash);
     if (!match) return;
     const input = document.getElementById(`indicator-${match[1]}`) as HTMLInputElement | null;
-    if (!input) return;
+    // A hidden indicator stays unpicked: the page keeps the one it opened on.
+    if (!input || input.disabled) return;
     input.checked = true;
     reveal("auto");
     document.getElementById("indicators")?.scrollIntoView({ block: "start" });

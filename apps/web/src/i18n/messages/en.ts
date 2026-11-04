@@ -1225,7 +1225,6 @@ export const en = {
         mapShows: "What the map shows",
         chartTitle: "Chart title",
         chartUnit: "Chart unit",
-        chartUnit: "Chart unit",
         unavailable: "Why it is unavailable",
       },
       articles: {

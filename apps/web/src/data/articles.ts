@@ -1,11 +1,10 @@
 import copy from "./articles.json";
 import type { IndicatorId } from "./indicators";
-import { isShown } from "./shown";
 
 /*
  * The scientific articles behind the indicators, and which each indicator cites, as editors keep them. A deploy build
  * reads them from the API; checks, local builds and an API never loaded with them read the committed copy, which
- * `node scripts/articles.ts` refreshes. Hidden indicators cite none.
+ * `node scripts/articles.ts` refreshes.
  */
 
 export type Article = {
@@ -41,15 +40,13 @@ const byId = new Map(published.articles.map((a) => [a.id, a]));
 export const articles = published.articles;
 /** The reference framework the indicators follow. */
 export const framework = articles.find((a) => a.framework);
-/** The articles a shown indicator cites, in its order. */
+/** The articles an indicator cites, in its order. */
 export const citations = (indicator: IndicatorId): Article[] =>
-  isShown(indicator)
-    ? (published.citations[indicator] ?? []).map((id) => byId.get(id)).filter((a): a is Article => a !== undefined)
-    : [];
-/** The shown indicators that cite an article. */
+  (published.citations[indicator] ?? []).map((id) => byId.get(id)).filter((a): a is Article => a !== undefined);
+/** The indicators that cite an article. */
 export const citedBy = (article: string): IndicatorId[] =>
   Object.entries(published.citations)
-    .filter(([indicator, ids]) => isShown(indicator as IndicatorId) && ids.includes(article))
+    .filter(([, ids]) => ids.includes(article))
     .map(([indicator]) => indicator as IndicatorId);
 
 export const doiUrl = (doi: string) => `https://doi.org/${doi}`;

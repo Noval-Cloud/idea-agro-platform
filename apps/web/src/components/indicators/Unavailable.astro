@@ -1,0 +1,31 @@
+---
+import type { IndicatorId } from "@/data/indicators";
+import { indicators } from "@/data/indicators";
+import { familyBackground } from "@/design/family-classes";
+import { createTranslator, type Locale, type MessageKey } from "@/i18n";
+import UnavailableInfo from "./UnavailableInfo.astro";
+
+interface Props {
+  locale: Locale;
+  indicator: IndicatorId;
+  /** `area`: in place of a map or a chart, framed to keep its room. */
+  variant?: "inline" | "area";
+  class?: string;
+}
+const { locale, indicator, variant = "inline", class: className } = Astro.props;
+const { t } = createTranslator(locale);
+---
+
+<div
+  class:list={[
+    "flex items-center gap-2 text-sm text-ink-subtle",
+    variant === "area" && "justify-center rounded-md border border-dashed border-line p-4",
+    className,
+  ]}
+>
+  <span class:list={["size-2.5 shrink-0 rounded-xs opacity-40", familyBackground[indicators[indicator].family]]} aria-hidden="true" />
+  <span>
+    {t(`indicators.items.${indicator}.name` as MessageKey)} · {t("indicators.unavailable.label")}
+  </span>
+  <UnavailableInfo locale={locale} indicator={indicator} />
+</div>

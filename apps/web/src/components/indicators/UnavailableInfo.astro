@@ -1,0 +1,64 @@
+---
+import Info from "@lucide/astro/icons/info";
+import X from "@lucide/astro/icons/x";
+import { iconSize } from "@/design/tokens";
+import type { IndicatorId } from "@/data/indicators";
+import { createTranslator, type Locale, type MessageKey } from "@/i18n";
+import { uniqueId } from "@/lib/unique-id";
+
+interface Props {
+  locale: Locale;
+  indicator: IndicatorId;
+  /** `sm` beside small text, such as a chip. */
+  size?: "sm" | "md";
+  class?: string;
+}
+const { locale, indicator, size = "md", class: className } = Astro.props;
+const i18n = createTranslator(locale);
+const { t } = i18n;
+const name = t(`indicators.items.${indicator}.name` as MessageKey);
+const id = uniqueId(`unavailable-${indicator}`);
+---
+
+<!-- The hidden indicator is not focusable; this button is, and says why it is unavailable. -->
+<button
+  type="button"
+  class:list={[
+    "inline-flex shrink-0 items-center justify-center rounded-sm text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink focus-visible:outline-2 focus-visible:outline-focus",
+    size === "sm" ? "size-6" : "size-8",
+    className,
+  ]}
+  aria-label={t("indicators.unavailable.info", { name })}
+  aria-haspopup="dialog"
+  data-unavailable-open={id}
+>
+  <Info size={iconSize.sm} aria-hidden="true" />
+</button>
+<dialog
+  id={id}
+  aria-labelledby={`${id}-title`}
+  class="unavailable-dialog m-auto w-[min(28rem,calc(100vw-2rem))] rounded-md border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-scrim/50"
+>
+  <div class="grid gap-3 p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 id={`${id}-title`} class="font-display text-lg">{name}</h2>
+        <p class="mt-1 text-sm text-ink-subtle">{t("indicators.unavailable.label")}</p>
+      </div>
+      <button
+        type="button"
+        class="-mt-1 -mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-ink-muted hover:bg-action-soft hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        aria-label={t("indicators.unavailable.close")}
+        data-unavailable-close
+      >
+        <X size={iconSize.sm} aria-hidden="true" />
+      </button>
+    </div>
+    <div class="rich-text text-sm text-ink-muted" set:html={i18n.md(`indicators.items.${indicator}.unavailable` as MessageKey)} />
+  </div>
+</dialog>
+
+<script>
+  import { initUnavailable } from "@/scripts/unavailable";
+  initUnavailable();
+</script>

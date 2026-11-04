@@ -7,8 +7,9 @@ import LineChart from "@/components/charts/LineChart.astro";
 import RangeStrip from "@/components/charts/RangeStrip.astro";
 import { monthTicks } from "@/components/charts/month-ticks";
 import { createTranslator, localizePath, type Locale, type MessageKey } from "@/i18n";
-import { indicators, type IndicatorId } from "@/data/indicators";
-import { openingIndicator, shownByGroup, shownIds } from "@/data/shown";
+import { indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
+import { isHidden, openingIndicator, shownIds } from "@/data/shown";
+import UnavailableInfo from "@/components/indicators/UnavailableInfo.astro";
 import { articleUrl, citations } from "@/data/articles";
 import {
   aparSeasonal,
@@ -78,10 +79,7 @@ const yearTicks = (years: number[]) =>
     .map((year, index) => ({ index, label: String(year) }))
     .filter((d, i, all) => i === 0 || i === all.length - 1 || (Number(d.label) % 10 === 0 && all.length - 1 - i > 3));
 
-// Hidden indicators are left out; a group left empty goes with them.
-const groups = (["structure", "environment"] as const)
-  .map((group) => ({ group, ids: shownByGroup(group) }))
-  .filter(({ ids }) => ids.length > 0);
+const groups = (["structure", "environment"] as const).map((group) => ({ group, ids: indicatorsByGroup(group) }));
 const initial = openingIndicator;
 
 ---
@@ -128,22 +126,37 @@ const initial = openingIndicator;
               <p class="mb-2 hidden px-3 text-xs font-medium text-ink-subtle lg:block">{t(`nav.groups.${group}`)}</p>
               <div class="contents lg:grid lg:gap-0.5">
                 {ids.map((id) => (
-                  <label class="atlas-option relative flex shrink-0 cursor-pointer items-center gap-2.5 rounded-pill border border-line px-3 py-1.5 text-sm whitespace-nowrap text-ink-muted transition-colors duration-(--ia-motion-fast) hover:bg-action-soft hover:text-ink lg:gap-3 lg:rounded-sm lg:border-transparent lg:py-2 lg:whitespace-normal">
-                    <input
-                      type="radio"
-                      name="indicator"
-                      id={`indicator-${id}`}
-                      value={id}
-                      checked={id === initial}
-                      class="sr-only"
-                    />
-                    <span
-                      class:list={["size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family]]}
-                      aria-hidden="true"
-                    />
-                    <span class="grow">{item(id, "name")}</span>
-                    <span class="hidden text-xs text-ink-subtle lg:inline">{item(id, "short")}</span>
-                  </label>
+                  <div class="flex shrink-0 items-center gap-1">
+                    <label
+                      class:list={[
+                        "atlas-option relative flex min-w-0 grow items-center gap-2.5 rounded-pill border border-line px-3 py-1.5 text-sm whitespace-nowrap transition-colors duration-(--ia-motion-fast) lg:gap-3 lg:rounded-sm lg:border-transparent lg:py-2 lg:whitespace-normal",
+                        isHidden(id)
+                          ? "cursor-not-allowed border-dashed text-ink-subtle"
+                          : "cursor-pointer text-ink-muted hover:bg-action-soft hover:text-ink",
+                      ]}
+                    >
+                      <input
+                        type="radio"
+                        name="indicator"
+                        id={`indicator-${id}`}
+                        value={id}
+                        checked={id === initial}
+                        disabled={isHidden(id)}
+                        class="sr-only"
+                      />
+                      <span
+                        class:list={[
+                          "size-2.5 shrink-0 rounded-xs",
+                          familyBackground[indicators[id].family],
+                          isHidden(id) && "opacity-40",
+                        ]}
+                        aria-hidden="true"
+                      />
+                      <span class="grow">{item(id, "name")}</span>
+                      <span class="hidden text-xs text-ink-subtle lg:inline">{item(id, "short")}</span>
+                    </label>
+                    {isHidden(id) && <UnavailableInfo locale={Astro.props.locale} indicator={id} />}
+                  </div>
                 ))}
               </div>
             </div>

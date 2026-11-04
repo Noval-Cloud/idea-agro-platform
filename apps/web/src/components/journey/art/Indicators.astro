@@ -2,9 +2,10 @@
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
 import { createTranslator, localizePath, type Locale } from "@/i18n";
-import { indicators } from "@/data/indicators";
-import { isShown, shownIds } from "@/data/shown";
+import { indicatorIds, indicators } from "@/data/indicators";
+import { isShown } from "@/data/shown";
 import { familyBackground } from "@/design/family-classes";
+import UnavailableInfo from "@/components/indicators/UnavailableInfo.astro";
 
 interface Props {
   locale: Locale;
@@ -38,16 +39,26 @@ const explore = localizePath("/explore/", locale);
   </div>
   <ul class="col-span-2 grid content-center gap-1">
     {
-      shownIds.map((id, i) => (
+      indicatorIds.map((id, i) => (
         <li class="j-rise" style={`--d: ${i / 2}`}>
-          <a
-            href={`${explore}?ind=${id}`}
-            class:list={["j-chip flex items-center gap-2 rounded-sm px-2 py-1 text-sm text-ink hover:bg-action-soft", cycle.includes(id as never) && "j-cycle-chip"]}
-            style={`--i: ${cycle.indexOf(id as (typeof cycle)[number])}`}
-          >
-            <span class:list={["size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family]]} aria-hidden="true" />
-            {t(`indicators.items.${id}.name`)}
-          </a>
+          {isShown(id) ? (
+            <a
+              href={`${explore}?ind=${id}`}
+              class:list={["j-chip flex items-center gap-2 rounded-sm px-2 py-1 text-sm text-ink hover:bg-action-soft", cycle.includes(id as never) && "j-cycle-chip"]}
+              style={`--i: ${cycle.indexOf(id as (typeof cycle)[number])}`}
+            >
+              <span class:list={["size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family]]} aria-hidden="true" />
+              {t(`indicators.items.${id}.name`)}
+            </a>
+          ) : (
+            <span class="flex items-center gap-2 text-sm text-ink-subtle">
+              <span class="flex items-center gap-2 px-2 py-1">
+                <span class:list={["size-2.5 shrink-0 rounded-xs opacity-40", familyBackground[indicators[id].family]]} aria-hidden="true" />
+                {t(`indicators.items.${id}.name`)}
+              </span>
+              <UnavailableInfo locale={locale} indicator={id} class="-my-1.5" />
+            </span>
+          )}
         </li>
       ))
     }

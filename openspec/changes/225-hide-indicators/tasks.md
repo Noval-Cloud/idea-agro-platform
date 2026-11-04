@@ -17,7 +17,7 @@
 
 - [x] 3.1 Keep a hidden indicator in the catalog, marked unavailable, and drop the routes and filters the site no longer needs
 - [x] 3.2 Give each indicator an editable text on why it is unavailable
-- [ ] 3.3 Show a hidden indicator disabled, with an info button and its dialog, on the indicators page, the landing, the resources page and the menus
+- [x] 3.3 Show a hidden indicator disabled, with an info button and its dialog, on the indicators page, the landing, the resources page and the menus
 - [ ] 3.4 Show a hidden indicator disabled in the explorer's picker and the zone page, with its info button and dialog
 - [ ] 3.5 Update the READMEs and the contract
 

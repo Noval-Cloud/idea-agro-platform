@@ -95,6 +95,8 @@ function yearValues(record: BandRecord, start: number, layout: { doy: number; ye
 
 // The complete growing years the averages run over: PPNA's, or APAR's while PPNA is hidden.
 const averaged = ppnaAnnual.length ? ppnaAnnual : yearly("apar");
+/** How many complete growing years the satellite record holds. */
+export const processedYears = averaged.length;
 
 /** Each composite's mean over the complete growing years. */
 function average(record: BandRecord, layout: { doy: number; yearOffset: number }[]) {
