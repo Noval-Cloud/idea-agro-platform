@@ -15,4 +15,4 @@
 
 ## 3. Wrap-up
 
-- [ ] 3.1 Archive the change
+- [x] 3.1 Archive the change
