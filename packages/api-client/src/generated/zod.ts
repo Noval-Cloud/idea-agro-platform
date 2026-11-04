@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.17.0
+ * OpenAPI spec version: 1.18.0
  */
 import * as zod from 'zod';
 
@@ -41,7 +41,7 @@ export const GetHealthResponse = zod.object({
 
 
 /**
- * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden.
  * @summary What data exists
  */
 export const getCatalogResponseBoundsMin = 4;
@@ -183,7 +183,7 @@ export const GetZoneResponse = zod.object({
 
 
 /**
- * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.
+ * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). An indicator editors hide is left out. The response can be cached for an hour, or a minute while an indicator is hidden.
  * @summary Seasonal series of a zone
  */
 export const getZoneSeasonalPathZoneRegExp = new RegExp('^[0-9]{1,8}$');
@@ -671,7 +671,7 @@ export const ChangeSavedZoneGeometryResponse = zod.object({
 
 
 /**
- * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.
+ * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true. An indicator editors hide is left out.
  * @summary Seasonal series of a saved zone
  */
 export const GetSavedZoneSeasonalParams = zod.object({
@@ -1508,7 +1508,7 @@ export const ChangeProjectZoneGeometryResponse = zod.object({
 
 
 /**
- * For every member. The same series as the zone's owner sees: `computing` is true until it is ready.
+ * For every member. The same series as the zone's owner sees: `computing` is true until it is ready. An indicator editors hide is left out.
  * @summary Seasonal series of a saved zone of a project
  */
 export const GetProjectZoneSeasonalParams = zod.object({
@@ -2283,7 +2283,7 @@ export const RestoreTextResponse = zod.object({
 
 
 /**
- * Every article, newest first, and which each indicator cites. Cacheable for a minute.
+ * Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the citations. Cacheable for a minute.
  * @summary The articles behind the indicators
  */
 export const listArticlesResponseArticlesItemAuthorsMax = 500;
@@ -2393,6 +2393,15 @@ export const AddArticleResponse = zod.object({
   "name": zod.string().describe('Their name at the time.')
 }),zod.null()]).describe('Who changed it.')
 }).describe('An article as an editor works on it.')
+
+
+/**
+ * Hidden indicators too, so editors keep working on them. For editors.
+ * @summary Which articles every indicator cites
+ */
+export const ListEveryCitationResponse = zod.object({
+  "citations": zod.record(zod.string(), zod.array(zod.string())).describe('By indicator, the ids of the articles it cites, in order.')
+}).describe('Which articles each indicator cites, hidden indicators too.')
 
 
 /**
@@ -2578,7 +2587,7 @@ export const DeleteArticleResponse = zod.void()
 
 
 /**
- * In the order the site lists them. For editors.
+ * In the order the site lists them. For editors, a hidden indicator's too.
  * @summary Choose the articles an indicator cites
  */
 export const CiteArticlesParams = zod.object({
@@ -2600,6 +2609,54 @@ export const citeArticlesResponseArticlesMax = 50;
 export const CiteArticlesResponse = zod.object({
   "articles": zod.array(zod.string()).max(citeArticlesResponseArticlesMax)
 }).describe('The articles an indicator cites, in order.')
+
+
+/**
+ * The indicators the site and the public API show, in the site's order. An indicator editors hide while its data is reviewed is left out. The website reads it when it is built. Cacheable for a minute.
+ * @summary The indicators shown
+ */
+export const ListShownIndicatorsResponse = zod.object({
+  "indicators": zod.array(zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.')).describe('In the site\'s order; a hidden indicator is left out.')
+}).describe('The indicators the site and the public API show.')
+
+
+/**
+ * Every indicator, hidden ones too, with who last showed or hid it. For editors.
+ * @summary Whether each indicator is shown
+ */
+export const ListVisibilityResponseItem = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.'),
+  "shown": zod.boolean().describe('False while editors hide it: the site leaves it out, and the public API makes it unavailable.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was last shown or hidden; null if never.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who did it; null if never.')
+}).describe('Whether an indicator is shown on the site and in the public API.')
+export const ListVisibilityResponse = zod.array(ListVisibilityResponseItem)
+
+
+/**
+ * A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors.
+ * @summary Show or hide an indicator
+ */
+export const PutVisibilityParams = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('The indicator.')
+})
+
+export const PutVisibilityBody = zod.object({
+  "shown": zod.boolean().describe('True shows the indicator; false hides it while its data is reviewed.')
+}).describe('Whether an indicator is to be shown.')
+
+export const PutVisibilityResponse = zod.object({
+  "indicator": zod.enum(['apar', 'cob', 'ppna', 'compn', 'rh', 'et', 'iose', 'divtfe', 'csue', 'ahppn']).describe('An indicator with a map and values per zone.'),
+  "shown": zod.boolean().describe('False while editors hide it: the site leaves it out, and the public API makes it unavailable.'),
+  "updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).describe('When it was last shown or hidden; null if never.'),
+  "updated_by": zod.union([zod.object({
+  "id": zod.string().describe('The editor\'s account id.'),
+  "name": zod.string().describe('Their name at the time.')
+}),zod.null()]).describe('Who did it; null if never.')
+}).describe('Whether an indicator is shown on the site and in the public API.')
 
 
 /**
@@ -2713,7 +2770,7 @@ export const ListAuditResponseItem = zod.object({
   "actor_id": zod.string().describe('The account that acted.'),
   "actor_roles": zod.array(zod.enum(['client', 'editor', 'admin']).describe('`client` is every account; `editor` manages content and `admin` manages accounts. They combine.')).describe('Its roles now, to group actions by who does them; empty if the account is gone.'),
   "actor_name": zod.string().describe('The admin who acted, by their name at the time.'),
-  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored', 'article_saved', 'article_deleted', 'citations_changed', 'articles_seeded']),
+  "action": zod.enum(['admin_bootstrapped', 'roles_changed', 'sessions_revoked', 'disabled', 'enabled', 'recovery_sent', 'text_published', 'text_drafted', 'text_draft_discarded', 'text_restored', 'article_saved', 'article_deleted', 'citations_changed', 'articles_seeded', 'indicator_hidden', 'indicator_shown']),
   "target": zod.string().describe('The account acted on.'),
   "target_email": zod.string().describe('Its email at the time.'),
   "detail": zod.string().describe('The roles given, for a role change; `provider_failed` when the sign-in provider did not take it.')

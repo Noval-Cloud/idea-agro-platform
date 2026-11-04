@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "1.17.0"
+    "version": "1.18.0"
   },
   "paths": {
     "/health": {
@@ -37,7 +37,7 @@
           "Catalog"
         ],
         "summary": "What data exists",
-        "description": "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.",
+        "description": "The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide is left out of its indicators and seasonal calendars. Cacheable for an hour, or a minute while an indicator is hidden.",
         "operationId": "get_catalog",
         "responses": {
           "200": {
@@ -196,7 +196,7 @@
             }
           },
           "404": {
-            "description": "It does not exist, or it is not yours to see.",
+            "description": "Not published, or the indicator is hidden while its data is reviewed: then the problem's type is `urn:idea-agro:problem:indicator-temporarily-unavailable`, and the answer is not to be kept.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -292,7 +292,7 @@
           "Zones"
         ],
         "summary": "Seasonal series of a zone",
-        "description": "Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.",
+        "description": "Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). An indicator editors hide is left out. The response can be cached for an hour, or a minute while an indicator is hidden.",
         "operationId": "get_zone_seasonal",
         "parameters": [
           {
@@ -393,7 +393,7 @@
             }
           },
           "404": {
-            "description": "It does not exist, or it is not yours to see.",
+            "description": "Not published, or the indicator is hidden while its data is reviewed: then the problem's type is `urn:idea-agro:problem:indicator-temporarily-unavailable`, and the answer is not to be kept.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -454,7 +454,7 @@
             }
           },
           "404": {
-            "description": "It does not exist, or it is not yours to see.",
+            "description": "Not published, or the indicator is hidden while its data is reviewed: then the problem's type is `urn:idea-agro:problem:indicator-temporarily-unavailable`, and the answer is not to be kept.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -530,7 +530,7 @@
             }
           },
           "404": {
-            "description": "It does not exist, or it is not yours to see.",
+            "description": "Not published, or the indicator is hidden while its data is reviewed: then the problem's type is `urn:idea-agro:problem:indicator-temporarily-unavailable`, and the answer is not to be kept.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1571,7 +1571,7 @@
           "Saved zones"
         ],
         "summary": "Seasonal series of a saved zone",
-        "description": "Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.",
+        "description": "Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true. An indicator editors hide is left out.",
         "operationId": "get_saved_zone_seasonal",
         "security": [
           {
@@ -3978,7 +3978,7 @@
           "Projects"
         ],
         "summary": "Seasonal series of a saved zone of a project",
-        "description": "For every member. The same series as the zone's owner sees: `computing` is true until it is ready.",
+        "description": "For every member. The same series as the zone's owner sees: `computing` is true until it is ready. An indicator editors hide is left out.",
         "operationId": "get_project_zone_seasonal",
         "security": [
           {
@@ -5626,7 +5626,7 @@
           "Articles"
         ],
         "summary": "The articles behind the indicators",
-        "description": "Every article, newest first, and which each indicator cites. Cacheable for a minute.",
+        "description": "Every article, newest first, and which each indicator cites; an indicator editors hide is left out of the citations. Cacheable for a minute.",
         "operationId": "list_articles",
         "responses": {
           "200": {
@@ -5691,6 +5691,53 @@
           },
           "422": {
             "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/indicators/articles": {
+      "get": {
+        "tags": [
+          "Articles"
+        ],
+        "summary": "Which articles every indicator cites",
+        "description": "Hidden indicators too, so editors keep working on them. For editors.",
+        "operationId": "list_every_citation",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveryCitation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6011,7 +6058,7 @@
           "Articles"
         ],
         "summary": "Choose the articles an indicator cites",
-        "description": "In the order the site lists them. For editors.",
+        "description": "In the order the site lists them. For editors, a hidden indicator's too.",
         "operationId": "cite_articles",
         "security": [
           {
@@ -6047,6 +6094,158 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Citations"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter is not valid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/indicators": {
+      "get": {
+        "tags": [
+          "Indicators"
+        ],
+        "summary": "The indicators shown",
+        "description": "The indicators the site and the public API show, in the site's order. An indicator editors hide while its data is reviewed is left out. The website reads it when it is built. Cacheable for a minute.",
+        "operationId": "list_shown_indicators",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShownIndicators"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/indicators/visibility": {
+      "get": {
+        "tags": [
+          "Indicators"
+        ],
+        "summary": "Whether each indicator is shown",
+        "description": "Every indicator, hidden ones too, with who last showed or hid it. For editors.",
+        "operationId": "list_visibility",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IndicatorVisibilityOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Visibility"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account may not do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/indicators/{indicator}/visibility": {
+      "put": {
+        "tags": [
+          "Indicators"
+        ],
+        "summary": "Show or hide an indicator",
+        "description": "A hidden indicator is left out of the site once it is rebuilt, and of every list of the public API; its own routes answer 404 as temporarily unavailable. Its data keeps being computed. For editors.",
+        "operationId": "put_visibility",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indicator",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Indicator",
+              "description": "The indicator."
+            },
+            "description": "The indicator."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilityChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicatorVisibilityOut"
                 }
               }
             }
@@ -7171,7 +7370,9 @@
           "article_saved",
           "article_deleted",
           "citations_changed",
-          "articles_seeded"
+          "articles_seeded",
+          "indicator_hidden",
+          "indicator_shown"
         ],
         "title": "AuditAction"
       },
@@ -7577,6 +7778,27 @@
         "title": "DocumentOut",
         "description": "A document kept with a saved zone."
       },
+      "EveryCitation": {
+        "properties": {
+          "citations": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Citations",
+            "description": "By indicator, the ids of the articles it cites, in order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "citations"
+        ],
+        "title": "EveryCitation",
+        "description": "Which articles each indicator cites, hidden indicators too."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -7698,6 +7920,51 @@
         ],
         "title": "IndicatorRange",
         "description": "What an indicator holds."
+      },
+      "IndicatorVisibilityOut": {
+        "properties": {
+          "indicator": {
+            "$ref": "#/components/schemas/Indicator"
+          },
+          "shown": {
+            "type": "boolean",
+            "title": "Shown",
+            "description": "False while editors hide it: the site leaves it out, and the public API makes it unavailable."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "When it was last shown or hidden; null if never."
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who did it; null if never."
+          }
+        },
+        "type": "object",
+        "required": [
+          "indicator",
+          "shown",
+          "updated_at",
+          "updated_by"
+        ],
+        "title": "IndicatorVisibilityOut",
+        "description": "Whether an indicator is shown on the site and in the public API."
       },
       "InvitationAgain": {
         "properties": {
@@ -9506,6 +9773,24 @@
         "title": "SharedOut",
         "description": "The project once shared, and whether the person invited was told by email."
       },
+      "ShownIndicators": {
+        "properties": {
+          "indicators": {
+            "items": {
+              "$ref": "#/components/schemas/Indicator"
+            },
+            "type": "array",
+            "title": "Indicators",
+            "description": "In the site's order; a hidden indicator is left out."
+          }
+        },
+        "type": "object",
+        "required": [
+          "indicators"
+        ],
+        "title": "ShownIndicators",
+        "description": "The indicators the site and the public API show."
+      },
       "SiteRebuildOut": {
         "properties": {
           "published_at": {
@@ -10013,6 +10298,21 @@
           "p75"
         ],
         "title": "ValueSummary"
+      },
+      "VisibilityChange": {
+        "properties": {
+          "shown": {
+            "type": "boolean",
+            "title": "Shown",
+            "description": "True shows the indicator; false hides it while its data is reviewed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "shown"
+        ],
+        "title": "VisibilityChange",
+        "description": "Whether an indicator is to be shown."
       },
       "ZoneCollection": {
         "properties": {
