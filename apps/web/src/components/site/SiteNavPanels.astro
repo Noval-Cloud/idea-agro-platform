@@ -5,7 +5,8 @@ import Check from "@lucide/astro/icons/check";
 import { createTranslator, htmlLang, languageSwitchPath, locales, localizePath, type Locale } from "@/i18n";
 import { iconSize } from "@/design/tokens";
 import { flags, flagSize } from "./flags";
-import { indicators, indicatorsByGroup } from "@/data/indicators";
+import { indicators } from "@/data/indicators";
+import { isShown, shownByGroup } from "@/data/shown";
 import { familyBackground } from "@/design/family-classes";
 import { basinCounts } from "@/data/geo";
 
@@ -19,17 +20,17 @@ const switchPath = languageSwitchPath(Astro.url.pathname);
 const explore = localizePath("/explore/", locale);
 const resources = localizePath("/resources/", locale);
 
-// Every indicator and every kind of zone opens the map already set to it.
+// Every shown indicator and every kind of zone opens the map already set to it.
 const groups = (["structure", "environment"] as const).map((group) => ({
   label: t(`nav.groups.${group}`),
-  items: indicatorsByGroup(group).map((id) => ({
+  items: shownByGroup(group).map((id) => ({
     id,
     href: `${explore}?ind=${id}`,
     name: t(`indicators.items.${id}.name`),
     short: t(`indicators.items.${id}.short`),
     swatch: familyBackground[indicators[id].family],
   })),
-}));
+})).filter((group) => group.items.length > 0);
 
 const zoneItems = [
   { href: `${explore}?reg=seccionales`, name: t("explorer.regions.seccionales"), detail: t("zones.seccionales.detail") },
@@ -39,7 +40,9 @@ const zoneItems = [
     detail: t("zones.basins.detail", { count: number(basinCounts[5]) }),
   },
   { href: `${explore}?reg=padrones`, name: t("explorer.regions.padrones"), detail: t("zones.padrones.detail") },
-  { href: `${explore}?ind=compn`, name: t("zones.communities.name"), detail: t("zones.communities.detail") },
+  ...(isShown("compn")
+    ? [{ href: `${explore}?ind=compn`, name: t("zones.communities.name"), detail: t("zones.communities.detail") }]
+    : []),
   { href: `${explore}?reg=mine`, name: t("zones.custom.name"), detail: t("zones.custom.detail") },
 ];
 

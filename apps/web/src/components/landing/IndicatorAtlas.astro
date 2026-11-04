@@ -7,7 +7,8 @@ import LineChart from "@/components/charts/LineChart.astro";
 import RangeStrip from "@/components/charts/RangeStrip.astro";
 import { monthTicks } from "@/components/charts/month-ticks";
 import { createTranslator, localizePath, type Locale, type MessageKey } from "@/i18n";
-import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
+import { indicators, type IndicatorId } from "@/data/indicators";
+import { openingIndicator, shownByGroup, shownIds } from "@/data/shown";
 import { articleUrl, citations } from "@/data/articles";
 import {
   aparSeasonal,
@@ -77,8 +78,11 @@ const yearTicks = (years: number[]) =>
     .map((year, index) => ({ index, label: String(year) }))
     .filter((d, i, all) => i === 0 || i === all.length - 1 || (Number(d.label) % 10 === 0 && all.length - 1 - i > 3));
 
-const groups = (["structure", "environment"] as const).map((group) => ({ group, ids: indicatorsByGroup(group) }));
-const initial: IndicatorId = "ppna";
+// Hidden indicators are left out; a group left empty goes with them.
+const groups = (["structure", "environment"] as const)
+  .map((group) => ({ group, ids: shownByGroup(group) }))
+  .filter(({ ids }) => ids.length > 0);
+const initial = openingIndicator;
 
 ---
 
@@ -149,7 +153,7 @@ const initial: IndicatorId = "ppna";
 
       <div class="min-w-0 lg:col-span-9">
         {
-          indicatorIds.map((id) => {
+          shownIds.map((id) => {
             const config = indicators[id];
             const range = mapRange(id);
             const spread = config.chart === "range" ? nationalSummary(id as "divtfe" | "csue" | "ahppn") : null;

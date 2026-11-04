@@ -5,7 +5,9 @@ import Play from "@lucide/astro/icons/play";
 import { iconSize } from "@/design/tokens";
 import { createTranslator, localizePath, type Locale } from "@/i18n";
 import { sectionals } from "@/data/geo";
+import type { IndicatorId } from "@/data/indicators";
 import { grasslandShare, ppnaAnnual } from "@/data/series";
+import { isShown } from "@/data/shown";
 import Grassland from "./art/Grassland.astro";
 import Field from "./art/Field.astro";
 import Science from "./art/Science.astro";
@@ -24,24 +26,27 @@ const i18n = createTranslator(locale);
 const { t } = i18n;
 const path = (p: string) => localizePath(p, locale);
 
-// Natural grassland share of the mapped country, first and last year of MapBiomas Uruguay.
-const first = grasslandShare[0];
-const last = grasslandShare[grasslandShare.length - 1];
+// Natural grassland share of the mapped country, first and last year of MapBiomas Uruguay; none while COB is hidden.
+const first = grasslandShare.at(0);
+const last = grasslandShare.at(-1);
 
-const scenes = [
+// A chapter drawn from an indicator `needs` it: while editors hide it, the chapter is left out with it.
+const chapters = [
   {
     key: "grassland",
     Art: Grassland,
-    values: { now: i18n.percent(last.value), before: i18n.percent(first.value) },
-    source: t("journey.scenes.grassland.source", { year: last.year }),
-    links: [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link") }],
+    needs: "cob",
+    values: { now: last ? i18n.percent(last.value) : "", before: first ? i18n.percent(first.value) : "" },
+    source: t("journey.scenes.grassland.source", { year: last?.year ?? "" }),
+    links: isShown("compn") ? [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link") }] : [],
   },
   { key: "field", Art: Field },
   { key: "science", Art: Science, links: [{ href: `${path("/resources/")}#science`, label: t("journey.scenes.science.link") }] },
-  { key: "satellites", Art: Satellites },
+  { key: "satellites", Art: Satellites, needs: "ppna" },
   {
     key: "processing",
     Art: Processing,
+    needs: "ppna",
     values: { years: i18n.number(ppnaAnnual.length) },
     links: [{ href: path("/indicators/"), label: t("journey.scenes.processing.link") }],
   },
@@ -50,18 +55,22 @@ const scenes = [
   {
     key: "decisions",
     Art: Decisions,
+    needs: "ppna",
     links: [{ href: `${path("/zone/")}?d=seccionales&id=1806&ind=ppna`, label: t("journey.scenes.decisions.link") }],
   },
   { key: "open", Art: Open, links: [{ href: `${path("/resources/")}#open`, label: t("journey.scenes.open.link") }] },
 ] as const satisfies readonly {
   key: string;
   Art: unknown;
+  needs?: IndicatorId;
   values?: Record<string, string>;
   source?: string;
   links?: { href: string; label: string }[];
 }[];
 
-type SceneKey = (typeof scenes)[number]["key"];
+const scenes = chapters.filter((scene) => !("needs" in scene) || isShown(scene.needs));
+
+type SceneKey = (typeof chapters)[number]["key"];
 const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<string, string>) =>
   t(`journey.scenes.${key}.${field}`, values);
 ---
@@ -120,7 +129,7 @@ const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<strin
                 set:html={i18n.md(`journey.scenes.${scene.key}.text`, "values" in scene ? scene.values : undefined)}
               />
               {"source" in scene && <p class="mt-2 text-2xs text-ink-subtle">{scene.source}</p>}
-              {"links" in scene && (
+              {"links" in scene && scene.links.length > 0 && (
                 <ul class="mt-5 grid gap-2">
                   {scene.links.map((link) => (
                     <li>

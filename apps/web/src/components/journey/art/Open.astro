@@ -5,6 +5,7 @@ import SquareCode from "@lucide/astro/icons/square-code";
 import Bot from "@lucide/astro/icons/bot";
 import { iconSize } from "@/design/tokens";
 import { createTranslator, type Locale } from "@/i18n";
+import { openingIndicator } from "@/data/shown";
 import { STAGE } from "./ground";
 
 interface Props {
@@ -51,7 +52,7 @@ const nodes = [
   }
   <pre
     class="j-rise absolute overflow-hidden rounded-md border border-line bg-surface-sunken px-4 py-3 font-mono text-2xs text-ink-muted max-sm:hidden"
-    style="left: 8%; right: 8%; bottom: 4%; --d: 7"><span class="text-ink">GET</span> /v1/zones/seccionales/1806/indicators/ppna?years=2001-2025
-<span class="text-ink-subtle">{"{"} "zone": "seccionales/1806", "indicator": "ppna", "years": [2001, …, 2025], "values": [ … ] {"}"}</span></pre>
+    style="left: 8%; right: 8%; bottom: 4%; --d: 7"><span class="text-ink">GET</span> /v1/zones/seccionales/1806/indicators/{openingIndicator}?years=2001-2025
+<span class="text-ink-subtle">{"{"} "zone": "seccionales/1806", "indicator": "{openingIndicator}", "years": [2001, …, 2025], "values": [ … ] {"}"}</span></pre>
   <span class="j-rise j-tag absolute" style="top: 3%; right: 3%; --d: 8">{t("journey.inDevelopment")}</span>
 </div>
