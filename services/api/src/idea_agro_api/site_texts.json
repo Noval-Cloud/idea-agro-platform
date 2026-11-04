@@ -1192,6 +1192,14 @@
       "pt": "Oculto"
     }
   },
+  "account.content.indicator.loadFailed": {
+    "format": "plain",
+    "default": {
+      "es": "No pudimos cargar si el sitio muestra cada indicador. Recargá la página.",
+      "en": "We could not load whether the site shows each indicator. Reload the page.",
+      "pt": "Não conseguimos carregar se o site mostra cada indicador. Recarregue a página."
+    }
+  },
   "account.content.indicator.pick": {
     "format": "plain",
     "default": {

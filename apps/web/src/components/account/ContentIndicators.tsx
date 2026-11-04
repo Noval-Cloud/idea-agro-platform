@@ -59,7 +59,7 @@ export function Indicators({ translator, changed, onChanged }: Props) {
   const [texts, setTexts] = useState<SiteTextMatch[] | null | "failed">(null);
   const published = usePublished(changed);
   // Indicators editors hid; null until known.
-  const [hidden, setHidden] = useState<Set<IndicatorId> | null>(null);
+  const [hidden, setHidden] = useState<Set<IndicatorId> | null | "failed">(null);
 
   const go = (next: { indicator: IndicatorId; tab: Tab }) => {
     setPlace(next);
@@ -81,14 +81,14 @@ export function Indicators({ translator, changed, onChanged }: Props) {
     let live = true;
     run<IndicatorVisibilityOut[]>((client, init) => client.listVisibility(init))
       .then((found) => live && setHidden(new Set(found.filter((v) => !v.shown).map((v) => v.indicator))))
-      .catch(() => live && setHidden(null));
+      .catch(() => live && setHidden("failed"));
     return () => {
       live = false;
     };
   }, [changed]);
 
   const name = (id: IndicatorId) => t(`indicators.items.${id}.name` as AccountKey);
-  const isHidden = (id: IndicatorId) => hidden?.has(id) ?? false;
+  const isHidden = (id: IndicatorId) => (hidden instanceof Set ? hidden.has(id) : false);
   const short = (id: IndicatorId) => t(`indicators.items.${id}.short` as AccountKey);
   const own = (id: IndicatorId) => (Array.isArray(texts) ? texts.filter((m) => m.key.startsWith(prefix(id))) : []);
   const cited = (id: IndicatorId) =>
@@ -183,10 +183,11 @@ export function Indicators({ translator, changed, onChanged }: Props) {
           <ShownSwitch
             translator={translator}
             indicator={indicator}
-            shown={hidden === null ? null : !hidden.has(indicator)}
+            shown={hidden instanceof Set ? !hidden.has(indicator) : null}
+            loadFailed={hidden === "failed"}
             onSwitched={(shown) => {
               setHidden((before) => {
-                const next = new Set(before);
+                const next = new Set(before instanceof Set ? before : []);
                 if (shown) next.delete(indicator);
                 else next.add(indicator);
                 return next;
@@ -240,12 +241,15 @@ function ShownSwitch({
   translator,
   indicator,
   shown,
+  loadFailed,
   onSwitched,
 }: {
   translator: AccountTranslator;
   indicator: IndicatorId;
   /** null until known. */
   shown: boolean | null;
+  /** The switches could not be loaded. */
+  loadFailed: boolean;
   onSwitched: (shown: boolean) => void;
 }) {
   const { t } = translator;
@@ -284,6 +288,11 @@ function ShownSwitch({
       {failed && (
         <p role="alert" className="text-xs text-danger">
           {t("account.content.indicator.switchFailed")}
+        </p>
+      )}
+      {loadFailed && (
+        <p role="alert" className="text-xs text-danger">
+          {t("account.content.indicator.loadFailed")}
         </p>
       )}
     </div>

@@ -1211,6 +1211,7 @@ export const en = {
           "Hidden, the site shows it as temporarily unavailable once it is rebuilt, with its text on why, and none of its data. Its data keeps being computed, and its texts and articles can still be edited.",
         hidden: "Hidden",
         switchFailed: "We could not save the change. Try again.",
+        loadFailed: "We could not load whether the site shows each indicator. Reload the page.",
       },
       indicatorFields: {
         short: "Abbreviation",

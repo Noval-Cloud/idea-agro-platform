@@ -1215,6 +1215,7 @@ export const pt = {
           "Oculto, o site o mostra como temporariamente indisponível quando é reconstruído, com seu texto sobre o motivo, e sem nenhum de seus dados. Seus dados continuam sendo calculados, e seus textos e artigos podem continuar sendo editados.",
         hidden: "Oculto",
         switchFailed: "Não conseguimos salvar a alteração. Tente de novo.",
+        loadFailed: "Não conseguimos carregar se o site mostra cada indicador. Recarregue a página.",
       },
       indicatorFields: {
         short: "Sigla",

@@ -1216,6 +1216,7 @@ export const es = {
           "Oculto, el sitio lo muestra como no disponible por ahora cuando se reconstruye, con su texto sobre el porqué, y sin ninguno de sus datos. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
         hidden: "Oculto",
         switchFailed: "No pudimos guardar el cambio. Probá de nuevo.",
+        loadFailed: "No pudimos cargar si el sitio muestra cada indicador. Recargá la página.",
       },
       indicatorFields: {
         short: "Sigla",
