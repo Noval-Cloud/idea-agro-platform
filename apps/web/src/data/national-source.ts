@@ -27,7 +27,7 @@ type Json = Record<string, unknown>;
 const UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable";
 
 export async function fetchNational(base: string): Promise<National> {
-  /** The answer, or null for a hidden indicator: the API leaves it out until editors show it again. */
+  /** The answer, or null for a hidden indicator: the API withholds its data until editors show it again. */
   const get = async (path: string): Promise<Json | null> => {
     // A deploy build that waits on an API that does not answer would hang until Cloud Build gives up.
     const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(30_000) });

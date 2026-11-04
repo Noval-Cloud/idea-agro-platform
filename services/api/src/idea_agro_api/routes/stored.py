@@ -6,7 +6,7 @@ from idea_agro_api.services import Services
 
 JSON_SECONDS = 3600
 IMAGE_SECONDS = 86400
-# While an indicator is hidden, the lists that leave it out are kept briefly, so it returns soon after it is shown.
+# While an indicator is hidden, the catalog and the series are kept briefly, so it returns soon after it is shown.
 LIST_SECONDS = 60
 
 
