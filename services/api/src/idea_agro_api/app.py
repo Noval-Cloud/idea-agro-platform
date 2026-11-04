@@ -17,6 +17,7 @@ from idea_agro_api.routes import (
     articles,
     catalog,
     documents,
+    indicators,
     invitations,
     maps,
     me,
@@ -118,6 +119,7 @@ def create_app(services: Services) -> FastAPI:
         platform_invitations,
         texts,
         articles,
+        indicators,
         admin,
     ):
         app.include_router(module.router)

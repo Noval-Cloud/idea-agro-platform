@@ -1,4 +1,4 @@
-"""What admins did to accounts, and editors to the site's texts: who, what, to whom or which, and when."""
+"""What admins did to accounts, and editors to the site's content: who, what, to whom or which, and when."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,6 +23,8 @@ class AuditAction(StrEnum):
     ARTICLE_DELETED = "article_deleted"
     CITATIONS_CHANGED = "citations_changed"
     ARTICLES_SEEDED = "articles_seeded"
+    INDICATOR_HIDDEN = "indicator_hidden"
+    INDICATOR_SHOWN = "indicator_shown"
 
 
 @dataclass(frozen=True)

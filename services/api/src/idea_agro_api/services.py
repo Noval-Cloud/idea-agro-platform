@@ -21,6 +21,7 @@ from idea_agro_api.emails.templates import Templates
 from idea_agro_api.emails.words import BuiltInTemplates
 from idea_agro_api.geometries import GeometryStore, MemoryGeometries, geometries_from
 from idea_agro_api.identity_admin import IdentityAdmin, NoIdentityAdmin, identity_admin_from
+from idea_agro_api.indicator_visibility import IndicatorVisibility, MemoryVisibility, visibility_from
 from idea_agro_api.mail import Mailer, NoMailer, mailer_from
 from idea_agro_api.platform_invitations import (
     MemoryPlatformInvitations,
@@ -127,6 +128,8 @@ class Services:
     site_rebuild: SiteRebuild = field(default_factory=MemorySiteRebuild)
     # The scientific articles, and which each indicator cites.
     articles: ArticleStore = field(default_factory=MemoryArticles)
+    # Which indicators the site and the public API show.
+    visibility: IndicatorVisibility = field(default_factory=lambda: IndicatorVisibility(MemoryVisibility()))
     # Computes saved zones' series when their outline changes.
     zone_jobs: ZoneJobs = field(default_factory=NoZoneJobs)
     # The website's address, which emails link to.
@@ -170,6 +173,7 @@ class Services:
             site_texts=site_texts_from(records),
             site_rebuild=site_rebuild_from(records, env.get("WEB_REBUILD_TOPIC", "")),
             articles=articles_from(records),
+            visibility=IndicatorVisibility(visibility_from(records)),
             document_files=document_files_from(outlines),
             departments=Departments(files),
             verifier=verifier,

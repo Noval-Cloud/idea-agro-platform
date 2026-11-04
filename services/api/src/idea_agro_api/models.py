@@ -708,3 +708,26 @@ class Citations(BaseModel):
     """The articles an indicator cites, in order."""
 
     articles: list[str] = Field(max_length=50)
+
+
+class ShownIndicators(BaseModel):
+    """The indicators the site and the public API show."""
+
+    indicators: list[Indicator] = Field(description="In the site's order; a hidden indicator is left out.")
+
+
+class IndicatorVisibilityOut(BaseModel):
+    """Whether an indicator is shown on the site and in the public API."""
+
+    indicator: Indicator
+    shown: bool = Field(
+        description="False while editors hide it: the site leaves it out, and the public API makes it unavailable."
+    )
+    updated_at: datetime | None = Field(description="When it was last shown or hidden; null if never.")
+    updated_by: TextAuthor | None = Field(description="Who did it; null if never.")
+
+
+class VisibilityChange(BaseModel):
+    """Whether an indicator is to be shown."""
+
+    shown: bool = Field(description="True shows the indicator; false hides it while its data is reviewed.")
