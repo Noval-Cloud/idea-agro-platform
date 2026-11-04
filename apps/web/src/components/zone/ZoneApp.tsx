@@ -558,7 +558,7 @@ function GrasslandFact({ division, id, year }: { division: DivisionId; id: strin
 function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIndicator: (id: IndicatorId) => void }) {
   const { t } = useI18n();
   const shown = useContext(ShownContext);
-  const list = useRef<HTMLFieldSetElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   // On small screens the choices scroll sideways: keep the selected one in view.
   useEffect(() => {
     const choice = document.getElementById(`tab-${indicator}`);
@@ -568,11 +568,12 @@ function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIn
     box.scrollTo({ left: box.scrollLeft + offset - (box.clientWidth - choice.offsetWidth) / 2 });
   }, [indicator]);
   return (
-    <fieldset
+    <div
       ref={list}
-      className="-mx-gutter flex min-w-0 gap-1 overflow-x-auto px-gutter pb-2 lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0"
+      role="radiogroup"
+      aria-label={t("zone.tabs")}
+      className="-mx-gutter flex gap-1 overflow-x-auto px-gutter pb-2 lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0"
     >
-      <legend className="sr-only">{t("zone.tabs")}</legend>
       {(["structure", "environment"] as const).map((group, i) => (
         <Fragment key={group}>
           <p aria-hidden="true" className={cn("mb-1.5 hidden px-3 text-2xs text-ink-subtle lg:block", i > 0 && "mt-5")}>
@@ -585,7 +586,7 @@ function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIn
               <div key={ind} id={`tab-${ind}`} className="flex shrink-0 items-center gap-1">
                 <label
                   className={cn(
-                    "inline-flex h-9 min-w-0 grow items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap has-focus-visible:outline-2 has-focus-visible:outline-focus lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
+                    "relative inline-flex h-9 min-w-0 grow items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap has-focus-visible:outline-2 has-focus-visible:outline-focus lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
                     hidden
                       ? "cursor-not-allowed border-dashed border-line text-ink-subtle lg:border-transparent"
                       : selected
@@ -621,7 +622,7 @@ function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIn
           })}
         </Fragment>
       ))}
-    </fieldset>
+    </div>
   );
 }
 
