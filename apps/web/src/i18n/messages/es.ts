@@ -295,6 +295,7 @@ export const es = {
     frameworkLabel: "Marco de referencia",
     papersLabel: "Artículos que respaldan los indicadores",
     doi: "DOI {doi}",
+    frameworkDoi: "DOI",
     link: "Leer el artículo",
     backsLabel: "Indicadores que respalda",
     citeOne: "{surname} {year}",

@@ -298,6 +298,7 @@ export const pt = {
     frameworkLabel: "Marco de referência",
     papersLabel: "Artigos que respaldam os indicadores",
     doi: "DOI {doi}",
+    frameworkDoi: "DOI",
     link: "Ler o artigo",
     backsLabel: "Indicadores que este artigo respalda",
     citeOne: "{surname} {year}",

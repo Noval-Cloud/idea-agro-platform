@@ -9246,6 +9246,14 @@
       "pt": "DOI {doi}"
     }
   },
+  "science.frameworkDoi": {
+    "format": "plain",
+    "default": {
+      "es": "DOI",
+      "en": "DOI",
+      "pt": "DOI"
+    }
+  },
   "science.frameworkLabel": {
     "format": "plain",
     "default": {

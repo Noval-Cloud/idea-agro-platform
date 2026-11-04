@@ -23,6 +23,16 @@ describe("shortCitation", () => {
       secondSurname: "Paruelo",
       year: 2018,
     });
+    expect(shortCitation({ authors: "Camba Sans, G. & Dupont, J.-M.", year: 2020 }).values).toEqual({
+      surname: "Camba Sans",
+      secondSurname: "Dupont",
+      year: 2020,
+    });
+    expect(shortCitation({ authors: "MGAP & INIA", year: 2021 }).values).toEqual({
+      surname: "MGAP",
+      secondSurname: "INIA",
+      year: 2021,
+    });
   });
 
   it("cites three or more authors by the first one, et al.", () => {
@@ -34,5 +44,10 @@ describe("shortCitation", () => {
       key: "citeSeveral",
       values: { surname: "Baeza", year: 2022 },
     });
+    expect(shortCitation({ authors: "MGAP, DIEA & INIA", year: 2021 })).toEqual({
+      key: "citeSeveral",
+      values: { surname: "MGAP", year: 2021 },
+    });
+    expect(shortCitation({ authors: "Lezama, Pereira & Paruelo", year: 2019 }).key).toBe("citeSeveral");
   });
 });

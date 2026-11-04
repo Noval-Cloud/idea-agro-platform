@@ -303,6 +303,7 @@ export const en = {
     frameworkLabel: "Reference framework",
     papersLabel: "Papers behind the indicators",
     doi: "DOI {doi}",
+    frameworkDoi: "DOI",
     link: "Read the article",
     backsLabel: "Indicators it supports",
     citeOne: "{surname} {year}",

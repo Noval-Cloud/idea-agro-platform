@@ -36,11 +36,12 @@ const backed = articles
               {frameworkArticles.map((a) => (
                 <li>
                   <p class="text-base leading-snug text-ink" lang={a.lang}>{a.title}</p>
-                  <p class="mt-1 text-sm text-ink-muted">
-                    <span class="whitespace-nowrap">{cite(a)}.</span>
+                  {/* One line, so five entries fit the sticky card: the link truncates first. */}
+                  <p class="mt-1 flex gap-1 text-sm text-ink-muted">
+                    <span class="max-w-full shrink-0 truncate">{cite(a)}.</span>
                     {articleUrl(a) && (
-                      <a class="ml-1 text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(a)} rel="noopener" target="_blank">
-                        {a.url ? t("science.link") : t("science.doi", { doi: a.doi ?? "" })}
+                      <a class="min-w-0 truncate text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(a)} rel="noopener" target="_blank">
+                        {a.url ? t("science.link") : t("science.frameworkDoi")}
                         <span class="sr-only"> {t("a11y.externalLink")}</span>
                       </a>
                     )}
