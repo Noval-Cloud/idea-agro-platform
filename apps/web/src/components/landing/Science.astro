@@ -32,15 +32,15 @@ const backed = articles
         frameworkArticles.length > 0 && (
           <div class="mt-8 rounded-lg border border-line bg-surface p-6 lg:sticky lg:top-24">
             <h3 class="text-xs font-medium text-ink-subtle">{t("science.frameworkLabel")}</h3>
-            <ol class="mt-3 grid gap-4">
+            <ol class="mt-3 grid grid-cols-1 gap-4">
               {frameworkArticles.map((a) => (
                 <li>
                   <p class="text-base leading-snug text-ink" lang={a.lang}>{a.title}</p>
-                  {/* One line, so five entries fit the sticky card: the link truncates first. */}
-                  <p class="mt-1 flex gap-1 text-sm text-ink-muted">
-                    <span class="max-w-full shrink-0 truncate">{cite(a)}.</span>
+                  {/* Citation and link share a line, so five entries fit the sticky card; a long pair wraps. */}
+                  <p class="mt-1 flex flex-wrap gap-x-1 text-sm text-ink-muted">
+                    <span>{cite(a)}.</span>
                     {articleUrl(a) && (
-                      <a class="min-w-0 truncate text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(a)} rel="noopener" target="_blank">
+                      <a class="text-link underline-offset-(--ia-link-underline-offset) hover:underline" href={articleUrl(a)} rel="noopener" target="_blank">
                         {a.url ? t("science.link") : t("science.frameworkDoi")}
                         <span class="sr-only"> {t("a11y.externalLink")}</span>
                       </a>

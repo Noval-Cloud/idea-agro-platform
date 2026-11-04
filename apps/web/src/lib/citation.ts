@@ -2,7 +2,11 @@ export type ShortCitation =
   | { key: "citeOne" | "citeSeveral"; values: { surname: string; year: number } }
   | { key: "citeTwo"; values: { surname: string; secondSurname: string; year: number } };
 
-const surname = (author: string) => author.split(",")[0].trim();
+const surname = (author: string) =>
+  author
+    .split(",")[0]
+    .replace(/\s*et al\.\s*$/, "")
+    .trim();
 const initials = /^(\p{Lu}\.[\s-]*)+$/u;
 
 /**

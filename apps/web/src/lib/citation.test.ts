@@ -49,5 +49,9 @@ describe("shortCitation", () => {
       values: { surname: "MGAP", year: 2021 },
     });
     expect(shortCitation({ authors: "Lezama, Pereira & Paruelo", year: 2019 }).key).toBe("citeSeveral");
+    expect(shortCitation({ authors: "Baeza et al.", year: 2022 })).toEqual({
+      key: "citeSeveral",
+      values: { surname: "Baeza", year: 2022 },
+    });
   });
 });
