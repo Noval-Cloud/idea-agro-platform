@@ -28,8 +28,7 @@ export type Manifest = {
   bounds: Bounds;
   size: [number, number];
   liteSize: [number, number];
-  /** A hidden indicator is left out. */
-  indicators: Partial<Record<IndicatorId, IndicatorManifest>>;
+  indicators: Record<IndicatorId, IndicatorManifest>;
   padrones: Record<string, { name: string; count: number; bbox: Bounds }>;
   seasonal: Record<SeasonalId, string[]>;
   /** Number of zones in each predefined division. */

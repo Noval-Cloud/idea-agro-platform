@@ -8,7 +8,6 @@ import {
   useState,
   type ComponentProps,
   type Dispatch,
-  type KeyboardEvent,
   type ReactNode,
   type SetStateAction,
 } from "react";
@@ -18,6 +17,7 @@ import { iconSize } from "@/design/tokens";
 import { defaultIndicator, indicators, indicatorsByGroup, linkedIndicator, type IndicatorId } from "@/data/indicators";
 import type { Article } from "@/data/articles";
 import { familyBackground } from "@/design/family-classes";
+import { UnavailableInfo } from "@/components/indicators/UnavailableInfo";
 import { cn } from "@/lib/utils";
 import { intlLocale, type Locale } from "@/i18n/core";
 import XYChart, { type ChartSeries } from "@/components/charts/react/XYChart";
@@ -36,7 +36,6 @@ import {
   rasterUrl,
   seasonalIds,
   type DivisionId,
-  type IndicatorManifest,
   type Manifest,
   type ZoneGeometry,
   type ZoneSeasonal,
@@ -433,13 +432,24 @@ export default function ZoneApp({
                           <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
                         )}
                         {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
-                        {zone.target.kind === "division" && shownIndicators.includes("cob") && (
-                          <GrasslandFact
-                            division={zone.target.division}
-                            id={zone.target.id}
-                            year={manifest?.indicators.cob?.years?.at(-1)}
-                          />
-                        )}
+                        {zone.target.kind === "division" &&
+                          (shownIndicators.includes("cob") ? (
+                            <GrasslandFact
+                              division={zone.target.division}
+                              id={zone.target.id}
+                              year={manifest?.indicators.cob.years?.at(-1)}
+                            />
+                          ) : (
+                            <Fact
+                              label={t("zone.facts.grassland")}
+                              value={
+                                <span className="inline-flex items-center gap-1 text-sm font-normal text-ink-subtle">
+                                  {t("indicators.unavailable.label")}
+                                  <UnavailableInfo indicator="cob" className="-my-1.5" />
+                                </span>
+                              }
+                            />
+                          ))}
                       </dl>
                       {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
                         <a
@@ -541,79 +551,77 @@ function GrasslandFact({ division, id, year }: { division: DivisionId; id: strin
   return <Fact label={label} value={i18n.percent(last)} />;
 }
 
-/** The shown indicators, as tabs: a fixed list on the left on wide screens, a scrolling row on small ones. */
+/**
+ * The indicators, as one choice: a fixed list on the left on wide screens, a scrolling row on small ones. A hidden
+ * indicator stays in its place, disabled, with a button of its own that says why; arrow keys pass over it.
+ */
 function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIndicator: (id: IndicatorId) => void }) {
   const { t } = useI18n();
   const shown = useContext(ShownContext);
-  const list = useRef<HTMLDivElement>(null);
-  const groups = (["structure", "environment"] as const)
-    .map((group) => ({ group, ids: indicatorsByGroup(group).filter((id) => shown.includes(id)) }))
-    .filter(({ ids }) => ids.length > 0);
-  const order = groups.flatMap((g) => g.ids);
-  // On small screens the tabs scroll sideways: keep the selected one in view.
+  const list = useRef<HTMLFieldSetElement>(null);
+  // On small screens the choices scroll sideways: keep the selected one in view.
   useEffect(() => {
-    const tab = document.getElementById(`tab-${indicator}`);
+    const choice = document.getElementById(`tab-${indicator}`);
     const box = list.current;
-    if (!tab || !box || box.scrollWidth <= box.clientWidth) return;
-    const offset = tab.getBoundingClientRect().left - box.getBoundingClientRect().left;
-    box.scrollTo({ left: box.scrollLeft + offset - (box.clientWidth - tab.offsetWidth) / 2 });
+    if (!choice || !box || box.scrollWidth <= box.clientWidth) return;
+    const offset = choice.getBoundingClientRect().left - box.getBoundingClientRect().left;
+    box.scrollTo({ left: box.scrollLeft + offset - (box.clientWidth - choice.offsetWidth) / 2 });
   }, [indicator]);
-  const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
-    const i = order.indexOf(indicator);
-    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
-    const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
-    if (!forward && !backward) return;
-    event.preventDefault();
-    const next = order[(i + (forward ? 1 : -1) + order.length) % order.length];
-    onIndicator(next);
-    document.getElementById(`tab-${next}`)?.focus();
-  };
   return (
-    <div
+    <fieldset
       ref={list}
-      role="tablist"
-      aria-label={t("zone.tabs")}
-      className="-mx-gutter flex gap-1 overflow-x-auto px-gutter pb-2 lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0"
-      onKeyDown={onKey}
+      className="-mx-gutter flex min-w-0 gap-1 overflow-x-auto px-gutter pb-2 lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0"
     >
-      {groups.map(({ group, ids }) => (
+      <legend className="sr-only">{t("zone.tabs")}</legend>
+      {(["structure", "environment"] as const).map((group, i) => (
         <Fragment key={group}>
-          <p aria-hidden="true" className="mt-5 mb-1.5 hidden px-3 text-2xs text-ink-subtle first:mt-0 lg:block">
+          <p aria-hidden="true" className={cn("mb-1.5 hidden px-3 text-2xs text-ink-subtle lg:block", i > 0 && "mt-5")}>
             {t(`explorer.groups.${group}`)}
           </p>
-          {ids.map((ind) => {
+          {indicatorsByGroup(group).map((ind) => {
             const selected = ind === indicator;
+            const hidden = !shown.includes(ind);
             return (
-              <button
-                key={ind}
-                id={`tab-${ind}`}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                aria-controls="indicator-panel"
-                tabIndex={selected ? 0 : -1}
-                onClick={() => onIndicator(ind)}
-                className={cn(
-                  "inline-flex h-9 shrink-0 items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
-                  selected
-                    ? "border-ink-subtle bg-surface-sunken text-ink"
-                    : "border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
-                )}
-              >
-                <span
-                  className={cn("size-2.5 shrink-0 rounded-xs", familyBackground[indicators[ind].family])}
-                  aria-hidden="true"
-                />
-                <span className="lg:grow">{t(`indicators.items.${ind}.name` as AppKey)}</span>
-                <span className="hidden text-2xs text-ink-subtle lg:inline">
-                  {t(`indicators.items.${ind}.short` as AppKey)}
-                </span>
-              </button>
+              <div key={ind} id={`tab-${ind}`} className="flex shrink-0 items-center gap-1">
+                <label
+                  className={cn(
+                    "inline-flex h-9 min-w-0 grow items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap has-focus-visible:outline-2 has-focus-visible:outline-focus lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
+                    hidden
+                      ? "cursor-not-allowed border-dashed border-line text-ink-subtle lg:border-transparent"
+                      : selected
+                        ? "cursor-pointer border-ink-subtle bg-surface-sunken text-ink"
+                        : "cursor-pointer border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="zone-indicator"
+                    value={ind}
+                    checked={selected}
+                    disabled={hidden}
+                    onChange={() => onIndicator(ind)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={cn(
+                      "size-2.5 shrink-0 rounded-xs",
+                      familyBackground[indicators[ind].family],
+                      hidden && "opacity-40",
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="lg:grow">{t(`indicators.items.${ind}.name` as AppKey)}</span>
+                  <span className="hidden text-2xs text-ink-subtle lg:inline">
+                    {t(`indicators.items.${ind}.short` as AppKey)}
+                  </span>
+                </label>
+                {hidden && <UnavailableInfo indicator={ind} />}
+              </div>
             );
           })}
         </Fragment>
       ))}
-    </div>
+    </fieldset>
   );
 }
 
@@ -637,7 +645,7 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear, compared, onC
   // Loaded here, outside the views each indicator remounts, so switching indicators does not ask again.
   const saved = useSavedSeasonal(zone);
   return (
-    <section id="indicator-panel" role="tabpanel" aria-labelledby={`tab-${indicator}`} className="grid gap-8">
+    <section id="indicator-panel" aria-labelledby={`tab-${indicator}`} className="grid gap-8">
       <div className="min-h-120 min-w-0 rounded-lg border border-line bg-surface p-5 sm:p-6">
         {target.kind === "division" ? (
           <IndicatorView
@@ -1465,31 +1473,21 @@ function SavedSeasonView({
  * Parcels and the reader's own zones have no precomputed stats yet: their indicators are estimated
  * in the browser from the map's rasters (the same pixels the explorer shows), year by year.
  */
-type EstimatedProps = {
+function EstimatedView({
+  manifest,
+  zone,
+  indicator,
+  seasonShown = false,
+}: {
   manifest: Manifest;
   zone: Zone;
   indicator: IndicatorId;
   /** Whether the zone has its season view too, so the note need not say it is missing. */
   seasonShown?: boolean;
-};
-
-function EstimatedView(props: EstimatedProps) {
-  const { t } = useI18n();
-  const info = props.manifest.indicators[props.indicator];
-  // Hidden while the page was open: the catalog no longer has it.
-  if (!info) return <p className="text-sm text-ink-muted">{t("explorer.zone.noValue")}</p>;
-  return <Estimated {...props} info={info} />;
-}
-
-function Estimated({
-  manifest,
-  zone,
-  indicator,
-  seasonShown = false,
-  info,
-}: EstimatedProps & { info: IndicatorManifest }) {
+}) {
   const i18n = useI18n();
   const { t } = i18n;
+  const info = manifest.indicators[indicator];
   const years = info.years;
   const [done, setDone] = useState(0);
   const [values, setValues] = useState<(number | null)[] | null>(null);
