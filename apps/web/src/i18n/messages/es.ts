@@ -297,6 +297,8 @@ export const es = {
     doi: "DOI {doi}",
     link: "Leer el artículo",
     backsLabel: "Indicadores que respalda",
+    citeOne: "{surname} {year}",
+    citeSeveral: "{surname} et al. {year}",
   },
   open: {
     title: "Abierta por diseño",

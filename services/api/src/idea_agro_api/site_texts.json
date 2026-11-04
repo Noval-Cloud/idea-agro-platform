@@ -9198,6 +9198,22 @@
       "pt": "Indicadores que este artigo respalda"
     }
   },
+  "science.citeOne": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} {year}",
+      "en": "{surname} {year}",
+      "pt": "{surname} {year}"
+    }
+  },
+  "science.citeSeveral": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} et al. {year}",
+      "en": "{surname} et al. {year}",
+      "pt": "{surname} et al. {year}"
+    }
+  },
   "science.doi": {
     "format": "plain",
     "default": {

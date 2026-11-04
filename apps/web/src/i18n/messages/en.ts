@@ -305,6 +305,8 @@ export const en = {
     doi: "DOI {doi}",
     link: "Read the article",
     backsLabel: "Indicators it supports",
+    citeOne: "{surname} {year}",
+    citeSeveral: "{surname} et al. {year}",
   },
   open: {
     title: "Open by design",

@@ -18,6 +18,7 @@ import { MultiFilter, chosenLabels, type ChoiceSection } from "@/components/list
 import { SearchField } from "@/components/lists/SearchField";
 import { dateBounds, decodeDates, encodeDates } from "@/components/lists/dates";
 import { useQueryList, useQueryState } from "@/components/lists/state";
+import { shortCitation } from "@/lib/citation";
 import type { AccountKey, AccountTranslator } from "./i18n";
 import { PageHeader } from "./PageHeader";
 import { periodKey, periodOf } from "./periods";
@@ -111,8 +112,7 @@ export default function Audit({ translator, signInPath }: Props) {
 
   useEffect(() => {
     const cite = (article: ArticlePublic) => {
-      const values = { surname: article.authors.split(",")[0], year: article.year };
-      const several = article.authors.includes("&") || article.authors.includes("et al.");
+      const { several, values } = shortCitation(article);
       return several ? t("account.audit.citeSeveral", values) : t("account.audit.citeOne", values);
     };
     void import("@idea-agro/api-client")

@@ -300,6 +300,8 @@ export const pt = {
     doi: "DOI {doi}",
     link: "Ler o artigo",
     backsLabel: "Indicadores que este artigo respalda",
+    citeOne: "{surname} {year}",
+    citeSeveral: "{surname} et al. {year}",
   },
   open: {
     title: "Aberta desde a concepção",
