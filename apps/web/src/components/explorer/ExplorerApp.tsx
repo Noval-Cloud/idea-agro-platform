@@ -4,7 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { iconSize, minWidth, motion } from "@/design/tokens";
 import { cssTime } from "@/lib/css-time";
 import { cn } from "@/lib/utils";
-import type { IndicatorId } from "@/data/indicators";
+import { defaultIndicator, type IndicatorId } from "@/data/indicators";
 import type { Locale } from "@/i18n/core";
 import MapView, { type MapPointer, type RegionFeature } from "./MapView";
 import TimeBar from "./TimeBar";
@@ -30,6 +30,7 @@ import {
   type ZoneCollection,
 } from "./lib/data";
 import { getFrame, useFrame } from "./lib/frames";
+import { shownWithout, unavailableIn, useWithheld } from "./lib/unavailable";
 import { readZoneFile } from "./lib/files";
 import { anchorOf, areaKm2, bboxOf, unionBounds } from "./lib/geo";
 import { createAppTranslator, I18nContext, type AppCatalog, type AppKey } from "./lib/i18n";
@@ -186,7 +187,18 @@ export default function ExplorerApp({
     document.documentElement.dataset.explorerView = state.view;
   }, [state.view]);
 
-  const indicatorId = state.indicator === "none" ? null : state.indicator;
+  // Hidden since the build: the catalog says so, or the API has answered so.
+  const withheld = useWithheld();
+  const shownList = useMemo(
+    () => shownWithout(shownIndicators, unavailableIn(manifest), withheld),
+    [shownIndicators, manifest, withheld],
+  );
+  const indicatorId = state.indicator === "none" || !shownList.includes(state.indicator) ? null : state.indicator;
+  // A link or a choice that names an indicator now hidden opens the default one.
+  useEffect(() => {
+    if (state.indicator !== "none" && !shownList.includes(state.indicator))
+      update({ indicator: defaultIndicator(shownList) ?? "none" });
+  }, [state.indicator, shownList, update]);
   const indicatorManifest = manifest && indicatorId ? manifest.indicators[indicatorId] : null;
   const years = indicatorManifest?.years ?? null;
   const year = years
@@ -871,7 +883,7 @@ export default function ExplorerApp({
         variant={variant}
         theme={theme}
         name={`${prefix}-indicator`}
-        shown={shownIndicators}
+        shown={shownList}
       />
     </>
   );

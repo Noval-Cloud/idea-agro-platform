@@ -53,6 +53,7 @@ import {
 } from "@/components/explorer/lib/i18n";
 import { decodeGray, zonalCounts, zonalMean } from "@/components/explorer/lib/raster";
 import { findMyZone } from "@/components/explorer/lib/my-zones";
+import { shownWithout, unavailableIn, useWithheld } from "@/components/explorer/lib/unavailable";
 import AddToProject from "./AddToProject";
 import Locator from "./Locator";
 import OutlineVersions from "./OutlineVersions";
@@ -212,6 +213,16 @@ export default function ZoneApp({
   const [zone, setZone] = useState<Zone | null | undefined>(undefined);
   const [signedOut, setSignedOut] = useState(false);
   const manifest = useData(() => loadManifest(), []);
+  // Hidden since the build: the catalog says so, or the API has answered so.
+  const withheld = useWithheld();
+  const shownList = useMemo(
+    () => shownWithout(shownIndicators, unavailableIn(manifest ?? null), withheld),
+    [shownIndicators, manifest, withheld],
+  );
+  // A link or a choice that names an indicator now hidden opens the default one.
+  useEffect(() => {
+    if (!shownList.includes(indicator)) setIndicator(opening(shownList));
+  }, [indicator, shownList]);
 
   useEffect(() => {
     const read = readTarget(location.search, shownIndicators);
@@ -382,7 +393,7 @@ export default function ZoneApp({
   return (
     <I18nContext.Provider value={i18n}>
       <CitationsContext.Provider value={citations}>
-        <ShownContext.Provider value={shownIndicators}>
+        <ShownContext.Provider value={shownList}>
           <div className="px-gutter py-8 lg:py-10">
             {zone === undefined || target === undefined ? (
               <>
@@ -433,7 +444,7 @@ export default function ZoneApp({
                         )}
                         {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
                         {zone.target.kind === "division" &&
-                          (shownIndicators.includes("cob") ? (
+                          (shownList.includes("cob") ? (
                             <GrasslandFact
                               division={zone.target.division}
                               id={zone.target.id}
