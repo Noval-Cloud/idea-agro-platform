@@ -86,7 +86,7 @@ Editors hide an indicator while its data is reviewed, and show it again, at `/v1
   - is left out of the seasonal series of zones, saved zones and project zones;
   - has its maps and division values answer 404 with the problem type `urn:idea-agro:problem:indicator-temporarily-unavailable` and `Cache-Control: no-store`.
 
-  While one is hidden, the catalog and the series are cacheable for a minute instead of an hour.
+- **Caching:** while one is hidden, the catalog and the series are cacheable for a minute instead of an hour.
 - **Editors** keep working on it: its texts and the articles it cites.
 - **The data jobs** never read the switch: a hidden indicator keeps being computed.
 - Each instance keeps the hidden indicators for 10 seconds, so maps do not read the database on every request.
