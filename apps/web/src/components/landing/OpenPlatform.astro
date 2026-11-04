@@ -18,10 +18,10 @@ const { t } = createTranslator(Astro.props.locale);
       <p class="font-display text-2xl leading-snug text-ink">{t("open.lead")}</p>
       {
         isHidden("ppna") ? (
-          <p class="mt-6 flex items-center gap-1 text-base text-ink-subtle">
+          <div class="mt-6 flex items-center gap-1 text-base text-ink-subtle">
             {t("open.now")}
             <UnavailableInfo locale={Astro.props.locale} indicator="ppna" />
-          </p>
+          </div>
         ) : (
           <p class="mt-6 text-base text-ink-muted">
             <a href="/data/sectionals-ppna.csv" download class="text-link underline-offset-(--ia-link-underline-offset) hover:underline">{t("open.now")}</a>
