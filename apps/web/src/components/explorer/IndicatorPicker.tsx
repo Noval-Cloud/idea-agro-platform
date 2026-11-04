@@ -12,78 +12,85 @@ interface Props {
   variant: "list" | "tiles";
   theme: MapThemeName;
   name: string;
+  /** The indicators the site shows, in its order. */
+  shown: readonly IndicatorId[];
 }
 
 const groups: IndicatorGroup[] = ["structure", "environment"];
 
 /** Choose the indicator painted under the regions. */
-export default function IndicatorPicker({ value, onChange, variant, theme, name }: Props) {
+export default function IndicatorPicker({ value, onChange, variant, theme, name, shown }: Props) {
   const { t } = useI18n();
   const label = (id: IndicatorId, field: "name" | "short") => t(`indicators.items.${id}.${field}` as AppKey);
 
   return (
     <fieldset className="min-w-0">
       <legend className="mb-2 text-xs font-medium text-ink-subtle">{t("explorer.indicator.label")}</legend>
-      {groups.map((group) => (
-        <div key={group} className="mb-4 last:mb-0">
-          <p className="mb-1.5 text-2xs text-ink-subtle">{t(`explorer.groups.${group}`)}</p>
-          <div className={variant === "tiles" ? "grid grid-cols-3 gap-2" : "grid gap-0.5"}>
-            {indicatorsByGroup(group).map((id) => {
-              const checked = value === id;
-              const input = (
-                <input
-                  type="radio"
-                  name={name}
-                  value={id}
-                  checked={checked}
-                  onChange={() => onChange(id)}
-                  className="sr-only"
-                />
-              );
-              return variant === "tiles" ? (
-                <label
-                  key={id}
-                  className="group relative grid cursor-pointer gap-1 rounded-sm p-1 text-center has-focus-visible:outline-2 has-focus-visible:outline-focus"
-                >
-                  {input}
-                  <img
-                    src={thumbnailUrl(id, theme)}
-                    alt=""
-                    width={160}
-                    height={120}
-                    loading="lazy"
+      {groups.map((group) => {
+        const ids = indicatorsByGroup(group).filter((id) => shown.includes(id));
+        return ids.length === 0 ? null : (
+          <div key={group} className="mb-4 last:mb-0">
+            <p className="mb-1.5 text-2xs text-ink-subtle">{t(`explorer.groups.${group}`)}</p>
+            <div className={variant === "tiles" ? "grid grid-cols-3 gap-2" : "grid gap-0.5"}>
+              {ids.map((id) => {
+                const checked = value === id;
+                const input = (
+                  <input
+                    type="radio"
+                    name={name}
+                    value={id}
+                    checked={checked}
+                    onChange={() => onChange(id)}
+                    className="sr-only"
+                  />
+                );
+                return variant === "tiles" ? (
+                  <label
+                    key={id}
+                    className="group relative grid cursor-pointer gap-1 rounded-sm p-1 text-center has-focus-visible:outline-2 has-focus-visible:outline-focus"
+                  >
+                    {input}
+                    <img
+                      src={thumbnailUrl(id, theme)}
+                      alt=""
+                      width={160}
+                      height={120}
+                      loading="lazy"
+                      className={cn(
+                        "aspect-4/3 w-full rounded-xs border object-cover",
+                        checked
+                          ? "border-action outline-2 outline-action"
+                          : "border-line group-hover:border-line-strong",
+                      )}
+                    />
+                    <span className={cn("truncate text-2xs", checked ? "font-medium text-ink" : "text-ink-muted")}>
+                      {label(id, "short")}
+                    </span>
+                  </label>
+                ) : (
+                  <label
+                    key={id}
                     className={cn(
-                      "aspect-4/3 w-full rounded-xs border object-cover",
-                      checked ? "border-action outline-2 outline-action" : "border-line group-hover:border-line-strong",
+                      "relative flex cursor-pointer items-center gap-3 rounded-sm border px-3 py-2 text-sm transition-colors duration-(--ia-motion-fast) has-focus-visible:outline-2 has-focus-visible:outline-focus",
+                      checked
+                        ? "border-ink-subtle bg-surface-sunken text-ink"
+                        : "border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
                     )}
-                  />
-                  <span className={cn("truncate text-2xs", checked ? "font-medium text-ink" : "text-ink-muted")}>
-                    {label(id, "short")}
-                  </span>
-                </label>
-              ) : (
-                <label
-                  key={id}
-                  className={cn(
-                    "relative flex cursor-pointer items-center gap-3 rounded-sm border px-3 py-2 text-sm transition-colors duration-(--ia-motion-fast) has-focus-visible:outline-2 has-focus-visible:outline-focus",
-                    checked
-                      ? "border-ink-subtle bg-surface-sunken text-ink"
-                      : "border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
-                  )}
-                >
-                  {input}
-                  <span
-                    className={cn("size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family])}
-                    aria-hidden="true"
-                  />
-                  <span className="grow">{label(id, "name")}</span>
-                  <span className="text-2xs text-ink-subtle">{label(id, "short")}</span>
-                </label>
-              );
-            })}
+                  >
+                    {input}
+                    <span
+                      className={cn("size-2.5 shrink-0 rounded-xs", familyBackground[indicators[id].family])}
+                      aria-hidden="true"
+                    />
+                    <span className="grow">{label(id, "name")}</span>
+                    <span className="text-2xs text-ink-subtle">{label(id, "short")}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       <label
         className={cn(
           "relative mt-2 flex cursor-pointer items-center gap-3 rounded-sm border px-3 py-2 text-sm has-focus-visible:outline-2 has-focus-visible:outline-focus",

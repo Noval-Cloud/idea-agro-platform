@@ -44,7 +44,10 @@ export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Fra
     frames.set(key, cached);
     return cached;
   }
-  const { kind, years } = manifest.indicators[request.indicator];
+  const info = manifest.indicators[request.indicator];
+  // Hidden while the page was open: the API has no map for it.
+  if (!info) return Promise.reject(new Error(`${request.indicator} is not in the catalog`));
+  const { kind, years } = info;
   const first = kind === "binary" ? years?.[0] : undefined;
   const isFirst = first !== undefined && request.year === first;
   const gray = isFirst

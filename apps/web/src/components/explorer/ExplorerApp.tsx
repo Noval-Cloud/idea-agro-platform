@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { iconSize, minWidth, motion } from "@/design/tokens";
 import { cssTime } from "@/lib/css-time";
 import { cn } from "@/lib/utils";
+import type { IndicatorId } from "@/data/indicators";
 import type { Locale } from "@/i18n/core";
 import MapView, { type MapPointer, type RegionFeature } from "./MapView";
 import TimeBar from "./TimeBar";
@@ -37,7 +38,7 @@ import { sampleGray, zonalMean } from "./lib/raster";
 import type { SearchResult } from "./lib/search";
 import {
   activeDivision,
-  defaultState,
+  openingState,
   readState,
   writeState,
   type ExplorerState,
@@ -71,6 +72,8 @@ interface Props {
   zonePath: string;
   signInPath: string;
   indicatorsPath: string;
+  /** The indicators the site shows, in its order, as read when it was built. */
+  shownIndicators: IndicatorId[];
   /** A static picture of the default background, shown until the map has drawn it. */
   children?: ReactNode;
 }
@@ -111,13 +114,22 @@ type ZoneRecord = {
   selection: Selection;
 };
 
-export default function ExplorerApp({ locale, catalog, zonePath, signInPath, indicatorsPath, children }: Props) {
+export default function ExplorerApp({
+  locale,
+  catalog,
+  zonePath,
+  signInPath,
+  indicatorsPath,
+  shownIndicators,
+  children,
+}: Props) {
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const theme = useTheme();
   const wide = useWide();
 
-  const [state, setState] = useState<ExplorerState>(defaultState);
+  const opening = useMemo(() => openingState(shownIndicators), [shownIndicators]);
+  const [state, setState] = useState<ExplorerState>(opening);
   const [hydrated, setHydrated] = useState(false);
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [error, setError] = useState<"webgl" | "load" | null>(null);
@@ -153,7 +165,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
 
   // The address bar holds the state, so a view can be shared; it is read after hydration.
   useEffect(() => {
-    const initial = readState(location.search);
+    const initial = readState(location.search, shownIndicators);
     // The zone selected among the reader's own is kept by the browser, not the address.
     const kept = useMyZones.getState().selected;
     if (initial.regions === "mine" && !initial.selection && kept) initial.selection = { kind: "custom", key: kept };
@@ -163,6 +175,8 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
     loadManifest()
       .then(setManifest)
       .catch(() => setError("load"));
+    // Once, on hydration: `shownIndicators` is fixed when the site is built.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (!hydrated) return;
@@ -857,6 +871,7 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
         variant={variant}
         theme={theme}
         name={`${prefix}-indicator`}
+        shown={shownIndicators}
       />
     </>
   );
@@ -1117,7 +1132,9 @@ export default function ExplorerApp({ locale, catalog, zonePath, signInPath, ind
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 pt-(--ia-map-fit-top) pr-(--ia-map-fit-controls) pb-(--ia-map-fit-bottom) pl-(--ia-map-fit-side) transition-opacity duration-(--ia-motion-base)",
-                (hydrated && state.indicator !== "ppna") || (mapReady && frame) ? "opacity-0" : "opacity-100",
+                (hydrated && state.indicator !== opening.indicator) || (mapReady && frame)
+                  ? "opacity-0"
+                  : "opacity-100",
               )}
               aria-hidden="true"
             >

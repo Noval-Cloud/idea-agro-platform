@@ -1,4 +1,4 @@
-import { indicatorIds, type IndicatorId } from "@/data/indicators";
+import { defaultIndicator, indicatorIds, linkedIndicator, type IndicatorId } from "@/data/indicators";
 import { basinGrades, isDivision, type BasinGrade, type DivisionId } from "./data";
 import { bases, type Base } from "./map-style";
 
@@ -45,8 +45,6 @@ export const defaultState: ExplorerState = {
   view: "panel",
 };
 
-const isIndicator = (value: string | null): value is IndicatorId => indicatorIds.includes(value as IndicatorId);
-
 export function encodeSelection(selection: Selection | null): string | null {
   if (!selection) return null;
   if (selection.kind === "division") return `${selection.division}:${selection.id}`;
@@ -62,8 +60,14 @@ export function decodeSelection(value: string | null): Selection | null {
   return null;
 }
 
-/** State from the address bar, so a view can be shared or bookmarked. */
-export function readState(search: string): ExplorerState {
+/** The state the explorer opens on: the default indicator among the shown ones, or none. */
+export const openingState = (shown: readonly IndicatorId[]): ExplorerState => ({
+  ...defaultState,
+  indicator: defaultIndicator(shown) ?? "none",
+});
+
+/** State from the address bar, so a view can be shared or bookmarked; a hidden indicator opens the default one. */
+export function readState(search: string, shown: readonly IndicatorId[] = indicatorIds): ExplorerState {
   const params = new URLSearchParams(search);
   const indicator = params.get("ind");
   const year = Number(params.get("year"));
@@ -73,7 +77,7 @@ export function readState(search: string): ExplorerState {
   const base = params.get("base") as Base | null;
   return {
     base: base && bases.includes(base) ? base : defaultState.base,
-    indicator: indicator === "none" ? "none" : isIndicator(indicator) ? indicator : defaultState.indicator,
+    indicator: indicator === "none" ? "none" : (linkedIndicator(indicator, shown) ?? "none"),
     year: Number.isInteger(year) && year > 1900 ? year : null,
     regions: regions && regionKinds.includes(regions) ? regions : defaultState.regions,
     grade: basinGrades.includes(grade) ? grade : defaultState.grade,
