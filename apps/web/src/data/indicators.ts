@@ -77,3 +77,11 @@ export const indicators: Record<IndicatorId, Indicator> = {
 };
 
 export const indicatorsByGroup = (group: IndicatorGroup) => indicatorIds.filter((id) => indicators[id].group === group);
+
+/** The indicator the explorer and the zone page open on: productivity, or the first shown one while it is hidden. */
+export const defaultIndicator = (shown: readonly IndicatorId[]): IndicatorId | undefined =>
+  shown.includes("ppna") ? "ppna" : shown[0];
+
+/** The indicator a link that names `wanted` opens: that one while it is shown, else the default. */
+export const linkedIndicator = (wanted: string | null, shown: readonly IndicatorId[]): IndicatorId | undefined =>
+  shown.find((id) => id === wanted) ?? defaultIndicator(shown);

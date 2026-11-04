@@ -8,16 +8,16 @@ import {
   useState,
   type ComponentProps,
   type Dispatch,
-  type KeyboardEvent,
   type ReactNode,
   type SetStateAction,
 } from "react";
 import type { Department } from "@idea-agro/api-client";
 import { ArrowLeft, Download, LoaderCircle } from "lucide-react";
 import { iconSize } from "@/design/tokens";
-import { indicatorIds, indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
+import { defaultIndicator, indicators, indicatorsByGroup, linkedIndicator, type IndicatorId } from "@/data/indicators";
 import type { Article } from "@/data/articles";
 import { familyBackground } from "@/design/family-classes";
+import { UnavailableInfo } from "@/components/indicators/UnavailableInfo";
 import { cn } from "@/lib/utils";
 import { intlLocale, type Locale } from "@/i18n/core";
 import XYChart, { type ChartSeries } from "@/components/charts/react/XYChart";
@@ -63,11 +63,14 @@ import SeasonLegend from "./SeasonLegend";
 export type Citation = Article & { href?: string };
 /** By indicator, the articles it cites: resolved when the site is built, so the island reads no store. */
 const CitationsContext = createContext<Partial<Record<IndicatorId, Citation[]>>>({});
+/** The indicators the site shows, in its order, as read when it was built. */
+const ShownContext = createContext<readonly IndicatorId[]>([]);
 
 interface Props {
   locale: Locale;
   catalog: AppCatalog;
   citations: Partial<Record<IndicatorId, Citation[]>>;
+  shownIndicators: IndicatorId[];
   explorePath: string;
   signInPath: string;
   projectsPath: string;
@@ -92,7 +95,10 @@ type Zone = {
   access?: { own: boolean; editable: boolean };
 };
 
-function readTarget(search: string): {
+function readTarget(
+  search: string,
+  shown: readonly IndicatorId[],
+): {
   target: Target | null;
   indicator: IndicatorId;
   year: number | null;
@@ -100,8 +106,8 @@ function readTarget(search: string): {
   map: number | null;
 } {
   const params = new URLSearchParams(search);
-  const ind = params.get("ind") as IndicatorId | null;
-  const indicator = ind && indicatorIds.includes(ind) ? ind : "ppna";
+  // A hidden indicator opens the default one.
+  const indicator = linkedIndicator(params.get("ind"), shown) ?? opening(shown);
   const { main: year, compared, map } = readYears(params);
   const d = params.get("d");
   const id = params.get("id");
@@ -162,6 +168,8 @@ function useData<T>(load: (() => Promise<T>) | null, deps: unknown[]): T | null 
   return value;
 }
 
+/** The indicator the page opens on; with none shown, the default still names one. */
+const opening = (shown: readonly IndicatorId[]): IndicatorId => defaultIndicator(shown) ?? "ppna";
 const isSeasonal = (id: IndicatorId): id is SeasonalId => (seasonalIds as readonly string[]).includes(id);
 /** 16-day totals (PPNA, APAR, RH) become daily rates; ET composites already are mm per day. */
 const perDay: Record<SeasonalId, number> = { ppna: 16, apar: 16, et: 1, rh: 16 };
@@ -188,6 +196,7 @@ export default function ZoneApp({
   locale,
   catalog,
   citations,
+  shownIndicators,
   explorePath,
   signInPath,
   projectsPath,
@@ -196,7 +205,7 @@ export default function ZoneApp({
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
-  const [indicator, setIndicator] = useState<IndicatorId>("ppna");
+  const [indicator, setIndicator] = useState<IndicatorId>(() => opening(shownIndicators));
   const [year, setYear] = useState<number | null>(null);
   const [compared, setCompared] = useState<Compared[]>([]);
   const [mapYear, setMapYear] = useState<number | null>(null);
@@ -205,12 +214,14 @@ export default function ZoneApp({
   const manifest = useData(() => loadManifest(), []);
 
   useEffect(() => {
-    const read = readTarget(location.search);
+    const read = readTarget(location.search, shownIndicators);
     setTarget(read.target);
     setIndicator(read.indicator);
     setYear(read.year);
     setCompared(read.compared);
     setMapYear(read.map);
+    // Once, on hydration: `shownIndicators` is fixed when the site is built.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -371,136 +382,149 @@ export default function ZoneApp({
   return (
     <I18nContext.Provider value={i18n}>
       <CitationsContext.Provider value={citations}>
-        <div className="px-gutter py-8 lg:py-10">
-          {zone === undefined || target === undefined ? (
-            <>
-              {back}
-              <p role="status" className="mt-10 text-sm text-ink-muted">
-                {t("zone.loading")}
-              </p>
-            </>
-          ) : zone === null ? (
-            <>
-              {back}
-              <p role="status" className="mt-10 max-w-prose text-base text-ink">
-                {signedOut ? t("zone.signInToSee") : t("zone.notFound")}
-              </p>
-              {signedOut && (
-                <a
-                  href={`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`}
-                  className="mt-4 inline-block text-link underline underline-offset-(--ia-link-underline-offset)"
-                >
-                  {t("zone.signIn")}
-                </a>
-              )}
-            </>
-          ) : (
-            // The indicator list stays put on the left (as on the map); the zone and its charts on the right.
-            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
-              <div className="min-w-0 lg:col-span-9 lg:col-start-4 lg:row-start-1">
+        <ShownContext.Provider value={shownIndicators}>
+          <div className="px-gutter py-8 lg:py-10">
+            {zone === undefined || target === undefined ? (
+              <>
                 {back}
-                <header className="mt-6 flex flex-wrap items-start justify-between gap-8 border-b border-line pb-8">
-                  <div className="min-w-0">
-                    <p className="text-sm text-ink-subtle">{zone.kind}</p>
-                    <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
-                    {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
-                    <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-                      {zone.geometry.type === "Point" ? (
-                        <>
-                          <Fact
-                            label={t("explorer.zone.latitude")}
-                            value={i18n.degrees(zone.geometry.coordinates[1])}
-                          />
-                          <Fact
-                            label={t("explorer.zone.longitude")}
-                            value={i18n.degrees(zone.geometry.coordinates[0])}
-                          />
-                        </>
-                      ) : (
-                        <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
-                      )}
-                      {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
-                      {zone.target.kind === "division" && (
-                        <GrasslandFact
-                          division={zone.target.division}
-                          id={zone.target.id}
-                          year={manifest?.indicators.cob.years?.at(-1)}
-                        />
-                      )}
-                    </dl>
-                    {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
-                      <a
-                        href={`${outlinePath}?${new URLSearchParams({
-                          saved: zone.target.id,
-                          // Owners change their zones through their library, whatever their role in the project.
-                          ...(zone.target.project && !zone.access.own ? { project: zone.target.project } : {}),
-                        })}`}
-                        className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
-                      >
-                        {t("zone.outline.edit")}
-                      </a>
-                    )}
-                    {zone.target.kind !== "custom" &&
-                      (zone.target.kind !== "saved" || zone.access?.own) &&
-                      // The whole country has no layer on the map, where projects show their zones.
-                      (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
-                        <AddToProject
-                          t={t}
-                          item={projectItem(zone.target)}
-                          projectsPath={projectsPath}
-                          signInPath={signInPath}
-                        />
-                      )}
-                  </div>
-                  {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
+                <p role="status" className="mt-10 text-sm text-ink-muted">
+                  {t("zone.loading")}
+                </p>
+              </>
+            ) : zone === null ? (
+              <>
+                {back}
+                <p role="status" className="mt-10 max-w-prose text-base text-ink">
+                  {signedOut ? t("zone.signInToSee") : t("zone.notFound")}
+                </p>
+                {signedOut && (
                   <a
-                    href={mapHref}
-                    className="block w-32 shrink-0 rounded-sm"
-                    style={
-                      manifest ? { aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` } : undefined
-                    }
-                    aria-label={t("zone.viewOnMap")}
+                    href={`${signInPath}?next=${encodeURIComponent(location.pathname + location.search)}`}
+                    className="mt-4 inline-block text-link underline underline-offset-(--ia-link-underline-offset)"
                   >
-                    {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
+                    {t("zone.signIn")}
                   </a>
-                </header>
-                {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
-                  <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
                 )}
-                {zone.target.kind === "saved" && (
-                  <ZoneDocuments
-                    t={t}
-                    locale={locale}
-                    zoneId={zone.target.id}
-                    project={zone.target.project}
-                    own={zone.access?.own ?? false}
-                  />
-                )}
-              </div>
-              <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">
-                <div className="lg:sticky lg:top-(--ia-layout-header) lg:pt-6">
-                  <IndicatorNav indicator={indicator} onIndicator={setIndicator} />
+              </>
+            ) : (
+              // The indicator list stays put on the left (as on the map); the zone and its charts on the right.
+              <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
+                <div className="min-w-0 lg:col-span-9 lg:col-start-4 lg:row-start-1">
+                  {back}
+                  <header className="mt-6 flex flex-wrap items-start justify-between gap-8 border-b border-line pb-8">
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink-subtle">{zone.kind}</p>
+                      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink">{zone.title}</h1>
+                      {zone.subtitle && <p className="mt-2 text-lg text-ink-muted">{zone.subtitle}</p>}
+                      <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 text-sm">
+                        {zone.geometry.type === "Point" ? (
+                          <>
+                            <Fact
+                              label={t("explorer.zone.latitude")}
+                              value={i18n.degrees(zone.geometry.coordinates[1])}
+                            />
+                            <Fact
+                              label={t("explorer.zone.longitude")}
+                              value={i18n.degrees(zone.geometry.coordinates[0])}
+                            />
+                          </>
+                        ) : (
+                          <Fact label={t("zone.facts.area")} value={area(zone.areaKm2)} />
+                        )}
+                        {zone.department && <Fact label={t("zone.facts.department")} value={zone.department} />}
+                        {zone.target.kind === "division" &&
+                          (shownIndicators.includes("cob") ? (
+                            <GrasslandFact
+                              division={zone.target.division}
+                              id={zone.target.id}
+                              year={manifest?.indicators.cob.years?.at(-1)}
+                            />
+                          ) : (
+                            <Fact
+                              label={t("zone.facts.grassland")}
+                              value={
+                                <span className="inline-flex items-center gap-1 text-sm font-normal text-ink-subtle">
+                                  {t("indicators.unavailable.label")}
+                                  <UnavailableInfo indicator="cob" className="-my-1.5" />
+                                </span>
+                              }
+                            />
+                          ))}
+                      </dl>
+                      {zone.target.kind === "saved" && zone.access?.editable && zone.geometry.type !== "Point" && (
+                        <a
+                          href={`${outlinePath}?${new URLSearchParams({
+                            saved: zone.target.id,
+                            // Owners change their zones through their library, whatever their role in the project.
+                            ...(zone.target.project && !zone.access.own ? { project: zone.target.project } : {}),
+                          })}`}
+                          className="mt-6 inline-block text-sm text-link underline underline-offset-(--ia-link-underline-offset)"
+                        >
+                          {t("zone.outline.edit")}
+                        </a>
+                      )}
+                      {zone.target.kind !== "custom" &&
+                        (zone.target.kind !== "saved" || zone.access?.own) &&
+                        // The whole country has no layer on the map, where projects show their zones.
+                        (zone.target.kind !== "division" || isDivision(zone.target.division)) && (
+                          <AddToProject
+                            t={t}
+                            item={projectItem(zone.target)}
+                            projectsPath={projectsPath}
+                            signInPath={signInPath}
+                          />
+                        )}
+                    </div>
+                    {/* The locator is the way back to the map; its box keeps its size while the manifest loads. */}
+                    <a
+                      href={mapHref}
+                      className="block w-32 shrink-0 rounded-sm"
+                      style={
+                        manifest ? { aspectRatio: `${manifest.outline.width} / ${manifest.outline.height}` } : undefined
+                      }
+                      aria-label={t("zone.viewOnMap")}
+                    >
+                      {manifest && <Locator manifest={manifest} geometry={zone.geometry} />}
+                    </a>
+                  </header>
+                  {zone.target.kind === "saved" && zone.access?.own && zone.geometry.type !== "Point" && (
+                    <OutlineVersions t={t} locale={locale} zoneId={zone.target.id} />
+                  )}
+                  {zone.target.kind === "saved" && (
+                    <ZoneDocuments
+                      t={t}
+                      locale={locale}
+                      zoneId={zone.target.id}
+                      project={zone.target.project}
+                      own={zone.access?.own ?? false}
+                    />
+                  )}
                 </div>
-              </aside>
-              <div className="min-w-0 lg:col-span-9 lg:col-start-4">
-                {manifest ? (
-                  <IndicatorPanel
-                    manifest={manifest}
-                    zone={zone}
-                    indicator={indicator}
-                    year={year}
-                    onYear={setYear}
-                    compared={compared}
-                    onCompared={setCompared}
-                  />
-                ) : (
-                  // Same footprint as the panel while the manifest loads.
-                  <div className="min-h-120" />
-                )}
+                <aside className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+                  <div className="lg:sticky lg:top-(--ia-layout-header) lg:pt-6">
+                    <IndicatorNav indicator={indicator} onIndicator={setIndicator} />
+                  </div>
+                </aside>
+                <div className="min-w-0 lg:col-span-9 lg:col-start-4">
+                  {manifest ? (
+                    <IndicatorPanel
+                      manifest={manifest}
+                      zone={zone}
+                      indicator={indicator}
+                      year={year}
+                      onYear={setYear}
+                      compared={compared}
+                      onCompared={setCompared}
+                    />
+                  ) : (
+                    // Same footprint as the panel while the manifest loads.
+                    <div className="min-h-120" />
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </ShownContext.Provider>
       </CitationsContext.Provider>
     </I18nContext.Provider>
   );
@@ -527,72 +551,73 @@ function GrasslandFact({ division, id, year }: { division: DivisionId; id: strin
   return <Fact label={label} value={i18n.percent(last)} />;
 }
 
-const groups = (["structure", "environment"] as const).map((group) => ({ group, ids: indicatorsByGroup(group) }));
-
-/** The indicators, as tabs: a fixed list on the left on wide screens, a scrolling row on small ones. */
+/**
+ * The indicators, as one choice: a fixed list on the left on wide screens, a scrolling row on small ones. A hidden
+ * indicator stays in its place, disabled, with a button of its own that says why; arrow keys pass over it.
+ */
 function IndicatorNav({ indicator, onIndicator }: { indicator: IndicatorId; onIndicator: (id: IndicatorId) => void }) {
   const { t } = useI18n();
+  const shown = useContext(ShownContext);
   const list = useRef<HTMLDivElement>(null);
-  const order = groups.flatMap((g) => g.ids);
-  // On small screens the tabs scroll sideways: keep the selected one in view.
+  // On small screens the choices scroll sideways: keep the selected one in view.
   useEffect(() => {
-    const tab = document.getElementById(`tab-${indicator}`);
+    const choice = document.getElementById(`tab-${indicator}`);
     const box = list.current;
-    if (!tab || !box || box.scrollWidth <= box.clientWidth) return;
-    const offset = tab.getBoundingClientRect().left - box.getBoundingClientRect().left;
-    box.scrollTo({ left: box.scrollLeft + offset - (box.clientWidth - tab.offsetWidth) / 2 });
+    if (!choice || !box || box.scrollWidth <= box.clientWidth) return;
+    const offset = choice.getBoundingClientRect().left - box.getBoundingClientRect().left;
+    box.scrollTo({ left: box.scrollLeft + offset - (box.clientWidth - choice.offsetWidth) / 2 });
   }, [indicator]);
-  const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
-    const i = order.indexOf(indicator);
-    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
-    const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
-    if (!forward && !backward) return;
-    event.preventDefault();
-    const next = order[(i + (forward ? 1 : -1) + order.length) % order.length];
-    onIndicator(next);
-    document.getElementById(`tab-${next}`)?.focus();
-  };
   return (
     <div
       ref={list}
-      role="tablist"
+      role="radiogroup"
       aria-label={t("zone.tabs")}
       className="-mx-gutter flex gap-1 overflow-x-auto px-gutter pb-2 lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0"
-      onKeyDown={onKey}
     >
-      {groups.map(({ group, ids }) => (
+      {(["structure", "environment"] as const).map((group, i) => (
         <Fragment key={group}>
-          <p aria-hidden="true" className="mt-5 mb-1.5 hidden px-3 text-2xs text-ink-subtle first:mt-0 lg:block">
+          <p aria-hidden="true" className={cn("mb-1.5 hidden px-3 text-2xs text-ink-subtle lg:block", i > 0 && "mt-5")}>
             {t(`explorer.groups.${group}`)}
           </p>
-          {ids.map((ind) => {
+          {indicatorsByGroup(group).map((ind) => {
             const selected = ind === indicator;
+            const hidden = !shown.includes(ind);
             return (
-              <button
-                key={ind}
-                id={`tab-${ind}`}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                aria-controls="indicator-panel"
-                tabIndex={selected ? 0 : -1}
-                onClick={() => onIndicator(ind)}
-                className={cn(
-                  "inline-flex h-9 shrink-0 items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
-                  selected
-                    ? "border-ink-subtle bg-surface-sunken text-ink"
-                    : "border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
-                )}
-              >
-                <span
-                  className={cn("size-2.5 shrink-0 rounded-xs", familyBackground[indicators[ind].family])}
-                  aria-hidden="true"
-                />
-                <span className="lg:grow">{t(`indicators.items.${ind}.name` as AppKey)}</span>
-                <span className="hidden text-2xs text-ink-subtle lg:inline">
-                  {t(`indicators.items.${ind}.short` as AppKey)}
-                </span>
-              </button>
+              <div key={ind} id={`tab-${ind}`} className="flex shrink-0 items-center gap-1">
+                <label
+                  className={cn(
+                    "relative inline-flex h-9 min-w-0 grow items-center gap-2 rounded-pill border px-3 text-sm whitespace-nowrap has-focus-visible:outline-2 has-focus-visible:outline-focus lg:h-auto lg:gap-3 lg:rounded-sm lg:py-2 lg:text-left lg:whitespace-normal",
+                    hidden
+                      ? "cursor-not-allowed border-dashed border-line text-ink-subtle lg:border-transparent"
+                      : selected
+                        ? "cursor-pointer border-ink-subtle bg-surface-sunken text-ink"
+                        : "cursor-pointer border-transparent text-ink-muted hover:bg-action-soft hover:text-ink",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="zone-indicator"
+                    value={ind}
+                    checked={selected}
+                    disabled={hidden}
+                    onChange={() => onIndicator(ind)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={cn(
+                      "size-2.5 shrink-0 rounded-xs",
+                      familyBackground[indicators[ind].family],
+                      hidden && "opacity-40",
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="lg:grow">{t(`indicators.items.${ind}.name` as AppKey)}</span>
+                  <span className="hidden text-2xs text-ink-subtle lg:inline">
+                    {t(`indicators.items.${ind}.short` as AppKey)}
+                  </span>
+                </label>
+                {hidden && <UnavailableInfo indicator={ind} />}
+              </div>
             );
           })}
         </Fragment>
@@ -621,7 +646,7 @@ function IndicatorPanel({ manifest, zone, indicator, year, onYear, compared, onC
   // Loaded here, outside the views each indicator remounts, so switching indicators does not ask again.
   const saved = useSavedSeasonal(zone);
   return (
-    <section id="indicator-panel" role="tabpanel" aria-labelledby={`tab-${indicator}`} className="grid gap-8">
+    <section id="indicator-panel" aria-labelledby={`tab-${indicator}`} className="grid gap-8">
       <div className="min-h-120 min-w-0 rounded-lg border border-line bg-surface p-5 sm:p-6">
         {target.kind === "division" ? (
           <IndicatorView

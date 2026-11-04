@@ -1,0 +1,179 @@
+import json
+from pathlib import Path
+
+import pytest
+from auth_tokens import bearer, make_token
+from fastapi.testclient import TestClient
+from idea_agro_api.accounts import Role
+from idea_agro_api.app import create_app
+from idea_agro_api.audit import AuditAction
+from idea_agro_api.auth import OidcVerifier
+from idea_agro_api.indicator_visibility import IndicatorVisibility, MemoryVisibility, Visibility
+from idea_agro_api.services import Services, services_for_tests
+from idea_agro_api.zones import LocalFiles
+
+ANA = bearer(make_token("ana"))
+BO = bearer(make_token("bo"))
+EVERY = ["apar", "cob", "ppna", "compn", "rh", "et", "iose", "divtfe", "csue", "ahppn"]
+DAYS = ["2025-01-01", "2025-01-17"]
+FILES = {
+    "catalog.json": {
+        "indicators": {"ppna": {"kind": "continuous", "years": [2024]}, "rh": {"kind": "continuous", "years": [2024]}},
+        "seasonal": {"ppna": DAYS, "rh": DAYS},
+        "divisions": {"seccionales": 1},
+    },
+    "series/seccionales/1406.json": {"ppna": [1.0, 2.0], "rh": [3.0, 4.0]},
+    "values/seccionales/rh.json": {"years": [2024], "values": {"1406": [310.0]}},
+}
+IMAGES = ["maps/rh/2024.webp", "maps/rh/lite/2024.webp", "maps/thumbnails/rh-light.webp", "maps/previews/rh-dark.webp"]
+ROUTES = [
+    "/v1/maps/rh/2024",
+    "/v1/maps/rh/2024?size=lite",
+    "/v1/maps/rh/thumbnail",
+    "/v1/maps/rh/preview?theme=dark",
+    "/v1/divisions/seccionales/values/rh",
+]
+UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable"
+
+
+@pytest.fixture
+def services(tmp_path: Path, verifier: OidcVerifier) -> Services:
+    for name, content in FILES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(json.dumps(content))
+    for name in IMAGES:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_bytes(b"webp")
+    return services_for_tests(files=LocalFiles(tmp_path), verifier=verifier)
+
+
+@pytest.fixture
+def client(services: Services) -> TestClient:
+    found = TestClient(create_app(services))
+    ana = found.get("/v1/me", headers=ANA).json()["id"]
+    found.get("/v1/me", headers=BO)
+    services.accounts.update(ana, roles=frozenset({Role.EDITOR}))
+    return found
+
+
+def test_every_indicator_is_shown_until_an_editor_hides_it(client: TestClient) -> None:
+    listed = client.get("/v1/indicators/visibility", headers=ANA).json()
+
+    assert [v["indicator"] for v in listed] == EVERY
+    assert all(v["shown"] and v["updated_by"] is None for v in listed)
+    assert "unavailable" not in json.dumps(client.get("/v1/catalog").json())
+
+
+def test_an_editor_hides_an_indicator(client: TestClient) -> None:
+    hidden = client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False}).json()
+
+    assert hidden["shown"] is False
+    assert hidden["updated_by"]["name"] == "Ana"
+    listed = {v["indicator"]: v["shown"] for v in client.get("/v1/indicators/visibility", headers=ANA).json()}
+    assert listed["rh"] is False
+    assert listed["ppna"] is True
+
+
+def test_every_switch_is_audited_and_marks_the_site_behind(client: TestClient, services: Services) -> None:
+    client.put("/v1/indicators/apar/visibility", headers=ANA, json={"shown": False})
+    behind = services.site_rebuild.read().published_at
+    client.put("/v1/indicators/apar/visibility", headers=ANA, json={"shown": True})
+
+    actions = [(e.action, e.target) for e in services.audit.latest(10)]
+    assert actions == [(AuditAction.INDICATOR_SHOWN, "apar"), (AuditAction.INDICATOR_HIDDEN, "apar")]
+    assert behind is not None
+    assert client.get("/v1/catalog").json()["indicators"]["ppna"].get("unavailable") is None
+
+
+def test_switching_to_the_same_state_changes_nothing(client: TestClient, services: Services) -> None:
+    same = client.put("/v1/indicators/ppna/visibility", headers=ANA, json={"shown": True})
+
+    assert same.status_code == 200
+    assert services.audit.latest(10) == []
+    assert services.site_rebuild.read().published_at is None
+
+
+def test_only_editors_see_and_switch_indicators(client: TestClient) -> None:
+    assert client.get("/v1/indicators/visibility").status_code == 401
+    assert client.get("/v1/indicators/visibility", headers=BO).status_code == 403
+    assert client.put("/v1/indicators/rh/visibility", headers=BO, json={"shown": False}).status_code == 403
+    assert client.put("/v1/indicators/nothing/visibility", headers=ANA, json={"shown": False}).status_code == 422
+    assert client.get("/v1/divisions/seccionales/values/rh").status_code == 200
+
+
+def test_the_catalog_marks_a_hidden_indicator_unavailable(client: TestClient, services: Services) -> None:
+    services.visibility.put(Visibility("rh", False))
+
+    response = client.get("/v1/catalog")
+    catalog = response.json()
+
+    assert catalog["indicators"]["rh"] == {"kind": "continuous", "years": [2024], "unavailable": True}
+    assert "unavailable" not in catalog["indicators"]["ppna"]
+    assert list(catalog["seasonal"]) == ["ppna", "rh"]
+    assert catalog["divisions"] == {"seccionales": 1}
+    assert response.headers["cache-control"] == "public, max-age=60"
+
+
+def test_a_zone_s_series_leave_a_hidden_indicator_out(client: TestClient, services: Services) -> None:
+    assert set(client.get("/v1/zones/seccionales/1406/seasonal").json()) >= {"ppna", "rh"}
+
+    services.visibility.put(Visibility("rh", False))
+    response = client.get("/v1/zones/seccionales/1406/seasonal")
+
+    assert "rh" not in response.json()
+    assert response.json()["ppna"]["values"] == [1.0, 2.0]
+    assert response.headers["cache-control"] == "public, max-age=60"
+
+
+def test_a_hidden_indicator_s_articles_stay_published_and_editable(client: TestClient) -> None:
+    client.post("/v1/articles/seed", headers=ANA)
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False})
+
+    cited = client.get("/v1/articles").json()["citations"]["rh"]
+    changed = client.put("/v1/indicators/rh/articles", headers=ANA, json={"articles": cited[:1]})
+
+    assert changed.status_code == 200
+    assert client.get("/v1/articles").json()["citations"]["rh"] == cited[:1]
+
+
+@pytest.mark.parametrize("path", ROUTES)
+def test_a_hidden_indicator_s_routes_say_it_is_temporarily_unavailable(
+    client: TestClient, services: Services, path: str
+) -> None:
+    services.visibility.put(Visibility("rh", False))
+
+    response = client.get(path)
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["type"] == UNAVAILABLE
+    assert response.json()["detail"] == "rh is temporarily unavailable while its data is reviewed."
+
+
+@pytest.mark.parametrize("path", ROUTES)
+def test_a_shown_indicator_answers_again(client: TestClient, services: Services, path: str) -> None:
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False})
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": True})
+
+    response = client.get(path)
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"].startswith("public")
+
+
+@pytest.mark.parametrize("path", ["/v1/maps/rh/1999", "/v1/divisions/cuencas-1/values/rh", "/v1/maps/nothing/2024"])
+def test_a_wrong_route_is_another_problem(client: TestClient, path: str) -> None:
+    assert client.get(path).json()["type"] != UNAVAILABLE
+
+
+def test_the_hidden_ones_are_kept_for_a_few_seconds() -> None:
+    store = MemoryVisibility()
+    kept = IndicatorVisibility(store, keep_seconds=300)
+    assert kept.hidden() == frozenset()
+
+    store.put(Visibility("rh", False))
+    assert kept.hidden() == frozenset()
+
+    kept.put(Visibility("et", False))
+    assert kept.hidden() == {"rh", "et"}

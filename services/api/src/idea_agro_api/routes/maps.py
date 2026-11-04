@@ -7,7 +7,7 @@ from idea_agro_api import public_data
 from idea_agro_api.deps import ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.public_data import Indicator, MapSize, Theme
-from idea_agro_api.routes.stored import IMAGE_SECONDS, stored
+from idea_agro_api.routes.stored import IMAGE_SECONDS, UNAVAILABLE, available, stored
 
 router = APIRouter(tags=["Maps"])
 
@@ -19,13 +19,14 @@ IMAGE: dict[int | str, dict[str, object]] = {200: {"description": "A WebP image.
     "/v1/maps/{indicator}/thumbnail",
     summary="A small picture of an indicator's map",
     response_class=Response,
-    responses=IMAGE | problems(404, 422),
+    responses=IMAGE | problems(404, 422, s404=UNAVAILABLE),
 )
 def get_map_thumbnail(
     indicator: IndicatorParam,
     services: ServicesDep,
     theme: Annotated[Theme, Query(description="For a light or a dark page.")] = Theme.LIGHT,
 ) -> Response:
+    available(services, indicator)
     name = public_data.thumbnail(indicator, theme)
     return stored(services, name, "image/webp", f"{indicator} has no thumbnail.", IMAGE_SECONDS)
 
@@ -38,13 +39,14 @@ def get_map_thumbnail(
         "transparent where there is no value. Cacheable for a day."
     ),
     response_class=Response,
-    responses=IMAGE | problems(404, 422),
+    responses=IMAGE | problems(404, 422, s404=UNAVAILABLE),
 )
 def get_map_preview(
     indicator: IndicatorParam,
     services: ServicesDep,
     theme: Annotated[Theme, Query(description="For a light or a dark page.")] = Theme.LIGHT,
 ) -> Response:
+    available(services, indicator)
     name = public_data.preview(indicator, theme)
     return stored(services, name, "image/webp", f"{indicator} has no preview.", IMAGE_SECONDS)
 
@@ -58,7 +60,7 @@ def get_map_preview(
         "`size`, `lite` its `lite_size`. Cacheable for a day."
     ),
     response_class=Response,
-    responses=IMAGE | problems(404, 422),
+    responses=IMAGE | problems(404, 422, s404=UNAVAILABLE),
 )
 def get_map(
     indicator: IndicatorParam,
@@ -73,5 +75,6 @@ def get_map(
     services: ServicesDep,
     size: Annotated[MapSize, Query(description="Full or light.")] = MapSize.FULL,
 ) -> Response:
+    available(services, indicator)
     name = public_data.map_image(indicator, period, size)
     return stored(services, name, "image/webp", f"{indicator} has no map for {period}.", IMAGE_SECONDS)

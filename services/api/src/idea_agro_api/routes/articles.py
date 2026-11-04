@@ -160,7 +160,7 @@ def delete_article(article_id: ArticleId, caller: EditorDep, services: ServicesD
 @router.put(
     "/v1/indicators/{indicator}/articles",
     summary="Choose the articles an indicator cites",
-    description="In the order the site lists them. For editors.",
+    description="In the order the site lists them. For editors, a hidden indicator's too.",
     responses=problems(401, 403, 422),
 )
 def cite_articles(

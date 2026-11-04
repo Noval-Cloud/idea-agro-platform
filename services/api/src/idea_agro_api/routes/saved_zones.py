@@ -185,15 +185,17 @@ def keep(services: Services, owner: str, prepared: list[tuple[SavedZone, bytes]]
 
 
 def seasonal(services: Services, zone: SavedZone) -> SavedZoneSeasonal:
-    """The series of the zone's current outline, on the catalog's calendar."""
+    """The series of the zone's current outline, on the catalog's calendar, without the hidden indicators."""
     found = saved_seasonal(services.geometries, zone.file, services.zones.calendar())
     if found is None:
         return SavedZoneSeasonal(computing=True)
+    hidden = services.visibility.hidden()
     series = {
         indicator.value: SeasonalSeries(
             unit=SEASONAL_UNITS[indicator][0], cadence_days=SEASONAL_UNITS[indicator][1], dates=dates, values=values
         )
         for indicator, (dates, values) in found.items()
+        if indicator not in hidden
     }
     return SavedZoneSeasonal(computing=False, **series)
 
@@ -279,7 +281,7 @@ def get_saved_zone_geometry(zone_id: ZoneId, caller: CallerDep, services: Servic
     description=(
         "Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed "
         "radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline "
-        "takes a few minutes to compute: until then, `computing` is true."
+        "takes a few minutes to compute: until then, `computing` is true. An indicator editors hide is left out."
     ),
     response_model_exclude_none=True,
     responses=problems(401, 403, 404, 422, 429),

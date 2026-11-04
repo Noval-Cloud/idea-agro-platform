@@ -76,6 +76,21 @@ The scientific articles behind the indicators live in the content database: `art
 - **Editing:** editors add, change and remove articles and set each indicator's list (`/v1/indicators/{indicator}/articles`). Each change is audited and marks the site behind, as a text's publish does.
 - **First load:** `POST /v1/articles/seed` loads, once, what the website's code had (`articles_seed.json`).
 
+## Hidden indicators
+
+Editors hide an indicator while its data is reviewed, and show it again, at `/v1/indicators/{indicator}/visibility`. The website shows a hidden indicator as temporarily unavailable, with its editable text on why (`indicators.items.<id>.unavailable`), and none of its data.
+
+- **What is stored:** `indicator_visibility` in the content database, one record per indicator ever switched; one without a record is shown. Each switch is audited and marks the site behind, as a text's publish does.
+- **In the public API,** a hidden indicator:
+  - stays in the catalog, marked `unavailable: true`, which the website reads when it is built;
+  - is left out of the seasonal series of zones, saved zones and project zones;
+  - has its maps and division values answer 404 with the problem type `urn:idea-agro:problem:indicator-temporarily-unavailable` and `Cache-Control: no-store`.
+
+- **Caching:** while one is hidden, the catalog and the series are cacheable for a minute instead of an hour.
+- **Editors** keep working on it: its texts and the articles it cites.
+- **The data jobs** never read the switch: a hidden indicator keeps being computed.
+- Each instance keeps the hidden indicators for 10 seconds, so maps do not read the database on every request.
+
 ## Emails
 
 Every email is a kind (`emails/templates.py`), written in the inviter's or reader's language, `es`, `en` or `pt`.

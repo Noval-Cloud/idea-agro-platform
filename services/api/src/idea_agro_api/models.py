@@ -458,6 +458,13 @@ class IndicatorRange(BaseModel):
     min: float | None = Field(default=None, description="The lowest value on the map, for its color scale.")
     max: float | None = Field(default=None, description="The highest value on the map, for its color scale.")
     classes: list[int] | None = Field(default=None, description="The classes of a categorical indicator.")
+    unavailable: bool = Field(
+        default=False,
+        description=(
+            "True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the "
+            "series leave it out."
+        ),
+    )
 
 
 class PadronDepartment(BaseModel):
@@ -708,3 +715,20 @@ class Citations(BaseModel):
     """The articles an indicator cites, in order."""
 
     articles: list[str] = Field(max_length=50)
+
+
+class IndicatorVisibilityOut(BaseModel):
+    """Whether an indicator is shown on the site and in the public API."""
+
+    indicator: Indicator
+    shown: bool = Field(
+        description="False while editors hide it: the site shows it as unavailable, and the API withholds its data."
+    )
+    updated_at: datetime | None = Field(description="When it was last shown or hidden; null if never.")
+    updated_by: TextAuthor | None = Field(description="Who did it; null if never.")
+
+
+class VisibilityChange(BaseModel):
+    """Whether an indicator is to be shown."""
+
+    shown: bool = Field(description="True shows the indicator; false hides it while its data is reviewed.")

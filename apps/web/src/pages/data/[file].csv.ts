@@ -1,6 +1,11 @@
-import type { APIRoute } from "astro";
+import type { APIRoute, GetStaticPaths } from "astro";
 import { sectionals, sectionalPeriod } from "@/data/geo";
 import { compositeDate } from "@/data/series";
+import { isShown } from "@/data/shown";
+
+// Published only while productivity is shown.
+export const getStaticPaths = (() =>
+  isShown("ppna") ? [{ params: { file: "sectionals-ppna" } }] : []) satisfies GetStaticPaths;
 
 /** Grass productivity of the latest 16-day period, as a download: one row per police district. */
 // Bands are named b<year>-<day of year> in Earth Engine; the file carries the calendar date.

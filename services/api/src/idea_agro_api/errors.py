@@ -71,6 +71,16 @@ class SessionsEndedLocally(HTTPException):
         super().__init__(503, detail)
 
 
+class IndicatorTemporarilyUnavailable(HTTPException):
+    """Editors hid the indicator while its data is reviewed. It answers again once shown, so the answer is not kept."""
+
+    type = "urn:idea-agro:problem:indicator-temporarily-unavailable"
+
+    def __init__(self, indicator: str) -> None:
+        detail = f"{indicator} is temporarily unavailable while its data is reviewed."
+        super().__init__(404, detail, headers={"Cache-Control": "no-store"})
+
+
 def problems(*statuses: int, **descriptions: str) -> dict[int | str, dict[str, Any]]:
     """The documented error responses of a route; `descriptions` override the defaults by status, as `s404=...`."""
     return {

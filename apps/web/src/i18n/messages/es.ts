@@ -80,6 +80,11 @@ export const es = {
       chartFor: "Gráfico de {name}",
       mean: "Promedio nacional",
     },
+    unavailable: {
+      label: "No disponible por ahora",
+      info: "Por qué {name} no está disponible",
+      close: "Cerrar",
+    },
     items: {
       apar: {
         short: "RFAA",
@@ -95,6 +100,7 @@ export const es = {
         mapShows: "Total del año productivo {from}–{to}",
         chartTitle: "Radiación absorbida a lo largo del año",
         chartUnit: "MJ/m² cada 16 días",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       cob: {
         short: "COB",
@@ -109,6 +115,7 @@ export const es = {
         mapShows: "Pastizal natural en {year}",
         chartTitle: "Pastizal natural, en porcentaje del país",
         chartUnit: "% de la superficie del país",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       ppna: {
         short: "PPNA",
@@ -124,6 +131,7 @@ export const es = {
         mapShows: "Total del año productivo {from}–{to}",
         chartTitle: "Producción total de cada año productivo",
         chartUnit: "kg MS/ha por año",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       compn: {
         short: "ComPN",
@@ -138,6 +146,7 @@ export const es = {
         mapShows: "Dónde se encuentra cada comunidad",
         chartTitle: "Superficie de cada comunidad",
         chartUnit: "% del área de pastizal mapeada",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       rh: {
         short: "RH",
@@ -152,6 +161,7 @@ export const es = {
         mapShows: "Total del año productivo {from}–{to}",
         chartTitle: "Rendimiento hidrológico de cada año",
         chartUnit: "mm por año",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       et: {
         short: "ET",
@@ -166,6 +176,7 @@ export const es = {
         mapShows: "Total del año productivo {from}–{to}",
         chartTitle: "Evapotranspiración de cada año productivo",
         chartUnit: "mm por año",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       iose: {
         short: "IOSE",
@@ -181,6 +192,7 @@ export const es = {
         mapShows: "Año productivo {from}–{to}",
         chartTitle: "Índice promedio del país",
         chartUnit: "Índice de 0 a 1",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       divtfe: {
         short: "DivTFE",
@@ -197,6 +209,7 @@ export const es = {
         mapShows: "Diversidad en ventanas de 2 km",
         chartTitle: "Cómo se distribuye en el territorio",
         chartUnit: "Índice de Shannon",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       csue: {
         short: "CSUE",
@@ -212,6 +225,7 @@ export const es = {
         mapShows: "Pérdida estimada 2017–2019",
         chartTitle: "Cómo se distribuye en el territorio",
         chartUnit: "t/ha por año",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
       ahppn: {
         short: "AHPPN",
@@ -227,6 +241,7 @@ export const es = {
         mapShows: "Apropiación 2017–2019",
         chartTitle: "Cómo se distribuye en el territorio",
         chartUnit: "% de la productividad potencial",
+        unavailable: "Este indicador no está disponible por ahora, mientras se revisan sus datos.",
       },
     },
   },
@@ -1196,6 +1211,12 @@ export const es = {
         pick: "Indicador",
         search: "Buscar indicador…",
         tabsLabel: "Partes del indicador",
+        shown: "Visible en el sitio",
+        shownHint:
+          "Oculto, el sitio lo muestra como no disponible por ahora cuando se reconstruye, con su texto sobre el porqué, y sin ninguno de sus datos. Sus datos se siguen calculando, y sus textos y artículos se pueden seguir editando.",
+        hidden: "Oculto",
+        switchFailed: "No pudimos guardar el cambio. Probá de nuevo.",
+        loadFailed: "No pudimos cargar si el sitio muestra cada indicador. Recargá la página.",
       },
       indicatorFields: {
         short: "Sigla",
@@ -1210,6 +1231,7 @@ export const es = {
         mapShows: "Qué muestra el mapa",
         chartTitle: "Título del gráfico",
         chartUnit: "Unidad del gráfico",
+        unavailable: "Por qué no está disponible",
       },
       articles: {
         add: "Agregar artículo",
@@ -1483,6 +1505,8 @@ export const es = {
         article_deleted: "{actor} eliminó el artículo {target}",
         citations_changed: "{actor} cambió los artículos de {target}",
         articles_seeded: "{actor} cargó los artículos que tenía el sitio",
+        indicator_hidden: "{actor} ocultó {target} del sitio",
+        indicator_shown: "{actor} volvió a mostrar {target} en el sitio",
       },
       count: {
         one: "{count} acción",

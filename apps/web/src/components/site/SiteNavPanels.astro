@@ -5,7 +5,9 @@ import Check from "@lucide/astro/icons/check";
 import { createTranslator, htmlLang, languageSwitchPath, locales, localizePath, type Locale } from "@/i18n";
 import { iconSize } from "@/design/tokens";
 import { flags, flagSize } from "./flags";
-import { indicators, indicatorsByGroup } from "@/data/indicators";
+import { indicators, indicatorsByGroup, type IndicatorId } from "@/data/indicators";
+import { isHidden } from "@/data/shown";
+import UnavailableInfo from "@/components/indicators/UnavailableInfo.astro";
 import { familyBackground } from "@/design/family-classes";
 import { basinCounts } from "@/data/geo";
 
@@ -19,11 +21,12 @@ const switchPath = languageSwitchPath(Astro.url.pathname);
 const explore = localizePath("/explore/", locale);
 const resources = localizePath("/resources/", locale);
 
-// Every indicator and every kind of zone opens the map already set to it.
+// Every indicator and every kind of zone opens the map already set to it; a hidden indicator is disabled instead.
 const groups = (["structure", "environment"] as const).map((group) => ({
   label: t(`nav.groups.${group}`),
   items: indicatorsByGroup(group).map((id) => ({
     id,
+    hidden: isHidden(id),
     href: `${explore}?ind=${id}`,
     name: t(`indicators.items.${id}.name`),
     short: t(`indicators.items.${id}.short`),
@@ -31,7 +34,7 @@ const groups = (["structure", "environment"] as const).map((group) => ({
   })),
 }));
 
-const zoneItems = [
+const zoneItems: { href: string; name: string; detail: string; needs?: IndicatorId }[] = [
   { href: `${explore}?reg=seccionales`, name: t("explorer.regions.seccionales"), detail: t("zones.seccionales.detail") },
   {
     href: `${explore}?reg=cuencas`,
@@ -39,7 +42,12 @@ const zoneItems = [
     detail: t("zones.basins.detail", { count: number(basinCounts[5]) }),
   },
   { href: `${explore}?reg=padrones`, name: t("explorer.regions.padrones"), detail: t("zones.padrones.detail") },
-  { href: `${explore}?ind=compn`, name: t("zones.communities.name"), detail: t("zones.communities.detail") },
+  {
+    href: `${explore}?ind=compn`,
+    name: t("zones.communities.name"),
+    detail: t("zones.communities.detail"),
+    needs: "compn",
+  },
   { href: `${explore}?reg=mine`, name: t("zones.custom.name"), detail: t("zones.custom.detail") },
 ];
 
@@ -69,11 +77,22 @@ const panelClass =
             <ul class="grid gap-1">
               {group.items.map((item) => (
                 <li>
-                  <a href={item.href} class="group flex items-center gap-3 rounded-sm px-2 py-2 hover:bg-action-soft">
-                    <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
-                    <span class="text-sm text-ink">{item.name}</span>
-                    <span class="text-xs text-ink-subtle">{item.short}</span>
-                  </a>
+                  {item.hidden ? (
+                    <div class="flex items-center gap-1">
+                      <span class="flex items-center gap-3 px-2 py-2 text-ink-subtle">
+                        <span class:list={["size-2.5 shrink-0 rounded-xs opacity-40", item.swatch]} aria-hidden="true" />
+                        <span class="text-sm">{item.name}</span>
+                        <span class="text-xs">{item.short}</span>
+                      </span>
+                      <UnavailableInfo locale={locale} indicator={item.id} />
+                    </div>
+                  ) : (
+                    <a href={item.href} class="group flex items-center gap-3 rounded-sm px-2 py-2 hover:bg-action-soft">
+                      <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
+                      <span class="text-sm text-ink">{item.name}</span>
+                      <span class="text-xs text-ink-subtle">{item.short}</span>
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -91,10 +110,20 @@ const panelClass =
       {
         zoneItems.map((item) => (
           <li>
-            <a href={item.href} class="block rounded-sm px-2 py-2 hover:bg-action-soft">
-              <span class="block text-sm font-medium text-ink">{item.name}</span>
-              <span class="block text-sm text-ink-muted">{item.detail}</span>
-            </a>
+            {item.needs && isHidden(item.needs) ? (
+              <div class="flex items-start gap-1">
+                <span class="block px-2 py-2 text-ink-subtle">
+                  <span class="block text-sm font-medium">{item.name}</span>
+                  <span class="block text-sm">{item.detail}</span>
+                </span>
+                <UnavailableInfo locale={locale} indicator={item.needs} class="mt-1.5" />
+              </div>
+            ) : (
+              <a href={item.href} class="block rounded-sm px-2 py-2 hover:bg-action-soft">
+                <span class="block text-sm font-medium text-ink">{item.name}</span>
+                <span class="block text-sm text-ink-muted">{item.detail}</span>
+              </a>
+            )}
           </li>
         ))
       }
@@ -140,10 +169,20 @@ const panelClass =
           <ul class="grid gap-1">
             {group.items.map((item) => (
               <li>
-                <a href={item.href} class="flex items-center gap-3 rounded-sm py-2">
-                  <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
-                  <span class="text-base text-ink">{item.name}</span>
-                </a>
+                {item.hidden ? (
+                  <div class="flex items-center gap-1">
+                    <span class="flex items-center gap-3 py-2 text-ink-subtle">
+                      <span class:list={["size-2.5 shrink-0 rounded-xs opacity-40", item.swatch]} aria-hidden="true" />
+                      <span class="text-base">{item.name}</span>
+                    </span>
+                    <UnavailableInfo locale={locale} indicator={item.id} />
+                  </div>
+                ) : (
+                  <a href={item.href} class="flex items-center gap-3 rounded-sm py-2">
+                    <span class:list={["size-2.5 shrink-0 rounded-xs", item.swatch]} aria-hidden="true" />
+                    <span class="text-base text-ink">{item.name}</span>
+                  </a>
+                )}
               </li>
             ))}
           </ul>
@@ -156,9 +195,16 @@ const panelClass =
         {
           zoneItems.map((item) => (
             <li>
-              <a href={item.href} class="block py-2 text-base text-ink">
-                {item.name}
-              </a>
+              {item.needs && isHidden(item.needs) ? (
+                <div class="flex items-center gap-1">
+                  <span class="block py-2 text-base text-ink-subtle">{item.name}</span>
+                  <UnavailableInfo locale={locale} indicator={item.needs} />
+                </div>
+              ) : (
+                <a href={item.href} class="block py-2 text-base text-ink">
+                  {item.name}
+                </a>
+              )}
             </li>
           ))
         }

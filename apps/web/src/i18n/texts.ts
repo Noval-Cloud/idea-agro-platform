@@ -9,7 +9,12 @@ export type Text = string | Plural;
 export type Edits = Record<string, Text>;
 
 /** Which texts allow Markdown; the rest are plain. A pattern's `*` stands for one part of a key. */
-export const markdownKeys = ["indicators.items.*.measures", "indicators.items.*.method", "journey.scenes.*.text"];
+export const markdownKeys = [
+  "indicators.items.*.measures",
+  "indicators.items.*.method",
+  "indicators.items.*.unavailable",
+  "journey.scenes.*.text",
+];
 
 export function isMarkdown(key: string): boolean {
   const parts = key.split(".");

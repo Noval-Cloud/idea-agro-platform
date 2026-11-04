@@ -70,6 +70,12 @@ The explorer and the zone page read everything through the API, with its generat
 
 The home and Indicators pages draw the country's series when the site is built. `src/data/series.ts` reads the API's `uruguay` zone when `PUBLIC_API_URL` is an `https` address, and fails the build if it cannot. Without one (checks, local builds) it reads `src/data/national.json`, a copy of the same answers that `node scripts/national.ts` refreshes.
 
+Editors hide an indicator while its data is reviewed. A deploy build reads the hidden ones from the catalog's `unavailable` marks (`src/data/shown.ts`); a build without an API shows them all.
+
+- **Where it is listed:** every page keeps a hidden indicator, disabled, with an info button beside it that opens a dialog with its text on why it is unavailable. Pages use `components/indicators/Unavailable.astro` and `UnavailableInfo.astro`, a native modal dialog. Islands, which receive the shown indicators as a prop, use `UnavailableInfo.tsx`, the islands' Radix dialog.
+- **Its data:** none is shown. Where a map, chart or value would be, the same disabled state stands instead.
+- **Links:** a link that names a hidden indicator opens the default one: PPNA, or the first shown while PPNA is hidden.
+
 The scientific articles and which each indicator cites come the same way, from `/v1/articles` (`src/data/articles.ts`), with `src/data/articles.json` as the copy that `node scripts/articles.ts` refreshes. An API with no articles yet also falls back to the copy. The zone page's island receives each indicator's articles as a prop, so it never reads the store.
 
 The prototype's data, extracted once from Earth Engine by `scripts/prototype-data/`, lives in `.cache/prototype-data/explorer/`, which git ignores. `make public-data` turns it into what the API serves, until the data jobs regenerate it from Earth Engine.

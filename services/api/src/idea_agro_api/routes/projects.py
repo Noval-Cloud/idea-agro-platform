@@ -606,7 +606,10 @@ def get_project_zone_geometry(
 @router.get(
     "/v1/projects/{project_id}/zones/{zone_id}/seasonal",
     summary="Seasonal series of a saved zone of a project",
-    description="For every member. The same series as the zone's owner sees: `computing` is true until it is ready.",
+    description=(
+        "For every member. The same series as the zone's owner sees: `computing` is true until it is ready. An "
+        "indicator editors hide is left out."
+    ),
     response_model_exclude_none=True,
     responses=problems(401, 403, 404, 422, 429),
 )

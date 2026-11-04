@@ -28,7 +28,7 @@
  *
  * Every error is a Problem Details object (RFC 9457), served as `application/problem+json`.
  *
- * OpenAPI spec version: 1.17.0
+ * OpenAPI spec version: 1.18.0
  */
 import {
   useMutation,
@@ -254,6 +254,8 @@ export const AuditAction = {
   article_deleted: 'article_deleted',
   citations_changed: 'citations_changed',
   articles_seeded: 'articles_seeded',
+  indicator_hidden: 'indicator_hidden',
+  indicator_shown: 'indicator_shown',
 } as const;
 
 /**
@@ -326,6 +328,8 @@ export interface IndicatorRange {
   max?: number | null;
   /** The classes of a categorical indicator. */
   classes?: number[] | null;
+  /** True while editors hide the indicator as its data is reviewed: its maps and values answer 404, and the series leave it out. */
+  unavailable?: boolean;
 }
 
 /**
@@ -526,6 +530,19 @@ export interface HTTPValidationError {
 export interface Health {
   /** `ok` when the service answers. */
   status: string;
+}
+
+/**
+ * Whether an indicator is shown on the site and in the public API.
+ */
+export interface IndicatorVisibilityOut {
+  indicator: Indicator;
+  /** False while editors hide it: the site shows it as unavailable, and the API withholds its data. */
+  shown: boolean;
+  /** When it was last shown or hidden; null if never. */
+  updated_at: string | null;
+  /** Who did it; null if never. */
+  updated_by: TextAuthor | null;
 }
 
 /**
@@ -1379,6 +1396,14 @@ export const Theme = {
   dark: 'dark',
 } as const;
 
+/**
+ * Whether an indicator is to be shown.
+ */
+export interface VisibilityChange {
+  /** True shows the indicator; false hides it while its data is reviewed. */
+  shown: boolean;
+}
+
 export interface ZoneProperties {
   /** The zone's id within its division. */
   id: string;
@@ -1690,7 +1715,7 @@ export const getGetCatalogUrl = () => {
 }
 
 /**
- * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. Cacheable for an hour.
+ * The indicators with their years and ranges, the seasonal calendars, the divisions, the departments with rural parcels, and the frame of the map images. An indicator editors hide while its data is reviewed is marked `unavailable`. Cacheable for an hour, or a minute while an indicator is hidden.
  * @summary What data exists
  */
 export const getCatalog = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getCatalogResponse> => {
@@ -2331,7 +2356,7 @@ export const getGetZoneSeasonalUrl = (division: Division,
 }
 
 /**
- * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). The response can be cached for an hour.
+ * Every composite of the satellite record for the zone, for each indicator with a seasonal series: productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). An indicator editors hide is left out. The response can be cached for an hour, or a minute while an indicator is hidden.
  * @summary Seasonal series of a zone
  */
 export const getZoneSeasonal = async (division: Division,
@@ -4581,7 +4606,7 @@ export const getGetSavedZoneSeasonalUrl = (zoneId: string,) => {
 }
 
 /**
- * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true.
+ * Every composite of the satellite record in the zone's current outline: productivity (`ppna`), absorbed radiation (`apar`) and evapotranspiration (`et`), on the same dates as the predefined zones. A new outline takes a few minutes to compute: until then, `computing` is true. An indicator editors hide is left out.
  * @summary Seasonal series of a saved zone
  */
 export const getSavedZoneSeasonal = async (zoneId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSavedZoneSeasonalResponse> => {
@@ -7698,7 +7723,7 @@ export const getGetProjectZoneSeasonalUrl = (projectId: string,
 }
 
 /**
- * For every member. The same series as the zone's owner sees: `computing` is true until it is ready.
+ * For every member. The same series as the zone's owner sees: `computing` is true until it is ready. An indicator editors hide is left out.
  * @summary Seasonal series of a saved zone of a project
  */
 export const getProjectZoneSeasonal = async (projectId: string,
@@ -11056,7 +11081,7 @@ export const getCiteArticlesUrl = (indicator: Indicator,) => {
 }
 
 /**
- * In the order the site lists them. For editors.
+ * In the order the site lists them. For editors, a hidden indicator's too.
  * @summary Choose the articles an indicator cites
  */
 export const citeArticles = async (indicator: Indicator,
@@ -11135,6 +11160,251 @@ export const useCiteArticles = <TError = Problem,
         TContext
       > => {
       return useMutation(getCiteArticlesMutationOptions(options), queryClient);
+    }
+
+export type listVisibilityResponse200 = {
+  data: IndicatorVisibilityOut[]
+  status: 200
+}
+
+export type listVisibilityResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type listVisibilityResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type listVisibilityResponseSuccess = (listVisibilityResponse200) & {
+  headers: Headers;
+};
+export type listVisibilityResponseError = (listVisibilityResponse401 | listVisibilityResponse403) & {
+  headers: Headers;
+};
+
+export type listVisibilityResponse = (listVisibilityResponseSuccess | listVisibilityResponseError)
+
+export const getListVisibilityUrl = () => {
+
+
+
+
+  return `/v1/indicators/visibility`
+}
+
+/**
+ * Every indicator, hidden ones too, with who last showed or hid it. For editors.
+ * @summary Whether each indicator is shown
+ */
+export const listVisibility = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listVisibilityResponse> => {
+
+  return apiFetch<listVisibilityResponse>(getListVisibilityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVisibilityQueryKey = () => {
+    return [
+    `/v1/indicators/visibility`
+    ] as const;
+    }
+
+
+export const getListVisibilityQueryOptions = <TData = Awaited<ReturnType<typeof listVisibility>>, TError = Problem>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVisibilityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVisibility>>> = ({ signal }) => listVisibility({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListVisibilityQueryResult = NonNullable<Awaited<ReturnType<typeof listVisibility>>>
+export type ListVisibilityQueryError = Problem
+
+
+export function useListVisibility<TData = Awaited<ReturnType<typeof listVisibility>>, TError = Problem>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVisibility>>,
+          TError,
+          Awaited<ReturnType<typeof listVisibility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVisibility<TData = Awaited<ReturnType<typeof listVisibility>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVisibility>>,
+          TError,
+          Awaited<ReturnType<typeof listVisibility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVisibility<TData = Awaited<ReturnType<typeof listVisibility>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Whether each indicator is shown
+ */
+
+export function useListVisibility<TData = Awaited<ReturnType<typeof listVisibility>>, TError = Problem>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisibility>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListVisibilityQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type putVisibilityResponse200 = {
+  data: IndicatorVisibilityOut
+  status: 200
+}
+
+export type putVisibilityResponse401 = {
+  data: Problem
+  status: 401
+}
+
+export type putVisibilityResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type putVisibilityResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type putVisibilityResponseSuccess = (putVisibilityResponse200) & {
+  headers: Headers;
+};
+export type putVisibilityResponseError = (putVisibilityResponse401 | putVisibilityResponse403 | putVisibilityResponse422) & {
+  headers: Headers;
+};
+
+export type putVisibilityResponse = (putVisibilityResponseSuccess | putVisibilityResponseError)
+
+export const getPutVisibilityUrl = (indicator: Indicator,) => {
+
+
+
+
+  return `/v1/indicators/${indicator}/visibility`
+}
+
+/**
+ * Once the site is rebuilt, it shows a hidden indicator as temporarily unavailable, with none of its data. The catalog marks it `unavailable`, the series leave it out, and its maps and values answer 404. Its data keeps being computed. For editors.
+ * @summary Show or hide an indicator
+ */
+export const putVisibility = async (indicator: Indicator,
+    visibilityChange: VisibilityChange, options?: Parameters<typeof apiFetch>[1]): Promise<putVisibilityResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<putVisibilityResponse>(getPutVisibilityUrl(indicator),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(visibilityChange)
+  }
+);}
+
+
+
+
+
+export const getPutVisibilityMutationKey = () => ['putVisibility'] as const;
+
+export const getPutVisibilityMutationOptions = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putVisibility>>, TError,PutVisibilityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putVisibility>>, TError,PutVisibilityMutationVariables, TContext> => {
+
+const mutationKey = getPutVisibilityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putVisibility>>, PutVisibilityMutationVariables> = (props) => {
+          const {indicator,data} = props ?? {};
+
+          return  putVisibility(indicator,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutVisibilityMutationResult = NonNullable<Awaited<ReturnType<typeof putVisibility>>>
+    export type PutVisibilityMutationBody = VisibilityChange
+    export type PutVisibilityMutationError = Problem
+    export type PutVisibilityMutationVariables = {indicator: Indicator;data: VisibilityChange}
+
+    /**
+ * @summary Show or hide an indicator
+ */
+export const usePutVisibility = <TError = Problem,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putVisibility>>, TError,PutVisibilityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putVisibility>>,
+        TError,
+        PutVisibilityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPutVisibilityMutationOptions(options), queryClient);
     }
 
 export type listAccountsResponse200 = {

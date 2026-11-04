@@ -5,7 +5,11 @@ import Play from "@lucide/astro/icons/play";
 import { iconSize } from "@/design/tokens";
 import { createTranslator, localizePath, type Locale } from "@/i18n";
 import { sectionals } from "@/data/geo";
-import { grasslandShare, ppnaAnnual } from "@/data/series";
+import type { IndicatorId } from "@/data/indicators";
+import { grasslandShare, processedYears } from "@/data/series";
+import { isHidden, openingIndicator } from "@/data/shown";
+import Unavailable from "@/components/indicators/Unavailable.astro";
+import UnavailableInfo from "@/components/indicators/UnavailableInfo.astro";
 import Grassland from "./art/Grassland.astro";
 import Field from "./art/Field.astro";
 import Science from "./art/Science.astro";
@@ -24,25 +28,31 @@ const i18n = createTranslator(locale);
 const { t } = i18n;
 const path = (p: string) => localizePath(p, locale);
 
-// Natural grassland share of the mapped country, first and last year of MapBiomas Uruguay.
-const first = grasslandShare[0];
-const last = grasslandShare[grasslandShare.length - 1];
+// Natural grassland share of the mapped country, first and last year of MapBiomas Uruguay; none while COB is hidden.
+const first = grasslandShare.at(0);
+const last = grasslandShare.at(-1);
 
+// A chapter whose text or art `draws` an indicator's data `needs` it: while editors hide it, the disabled state stands
+// in that place. A link that `needs` a hidden indicator is disabled too.
 const scenes = [
   {
     key: "grassland",
     Art: Grassland,
-    values: { now: i18n.percent(last.value), before: i18n.percent(first.value) },
-    source: t("journey.scenes.grassland.source", { year: last.year }),
-    links: [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link") }],
+    needs: "cob",
+    draws: "text",
+    values: { now: last ? i18n.percent(last.value) : "", before: first ? i18n.percent(first.value) : "" },
+    source: t("journey.scenes.grassland.source", { year: last?.year ?? "" }),
+    links: [{ href: `${path("/explore/")}?ind=compn`, label: t("journey.scenes.grassland.link"), needs: "compn" }],
   },
   { key: "field", Art: Field },
   { key: "science", Art: Science, links: [{ href: `${path("/resources/")}#science`, label: t("journey.scenes.science.link") }] },
-  { key: "satellites", Art: Satellites },
+  { key: "satellites", Art: Satellites, needs: "ppna", draws: "art" },
   {
     key: "processing",
     Art: Processing,
-    values: { years: i18n.number(ppnaAnnual.length) },
+    needs: "ppna",
+    draws: "art",
+    values: { years: i18n.number(processedYears) },
     links: [{ href: path("/indicators/"), label: t("journey.scenes.processing.link") }],
   },
   { key: "indicators", Art: Indicators },
@@ -50,16 +60,29 @@ const scenes = [
   {
     key: "decisions",
     Art: Decisions,
-    links: [{ href: `${path("/zone/")}?d=seccionales&id=1806&ind=ppna`, label: t("journey.scenes.decisions.link") }],
+    needs: "ppna",
+    draws: "art",
+    links: [
+      {
+        href: `${path("/zone/")}?d=seccionales&id=1806&ind=${openingIndicator ?? "ppna"}`,
+        label: t("journey.scenes.decisions.link"),
+      },
+    ],
   },
   { key: "open", Art: Open, links: [{ href: `${path("/resources/")}#open`, label: t("journey.scenes.open.link") }] },
 ] as const satisfies readonly {
   key: string;
   Art: unknown;
+  needs?: IndicatorId;
+  draws?: "text" | "art";
   values?: Record<string, string>;
   source?: string;
-  links?: { href: string; label: string }[];
+  links?: { href: string; label: string; needs?: IndicatorId }[];
 }[];
+
+/** Whether the chapter's text or art draws a hidden indicator's data. */
+const withheld = (scene: (typeof scenes)[number], part: "text" | "art") =>
+  "needs" in scene && scene.draws === part && isHidden(scene.needs) ? scene.needs : null;
 
 type SceneKey = (typeof scenes)[number]["key"];
 const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<string, string>) =>
@@ -100,7 +123,10 @@ const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<strin
 
     <div class="journey-slides mt-10 grid overflow-hidden rounded-lg border border-line bg-surface">
       {
-        scenes.map((scene, i) => (
+        scenes.map((scene, i) => {
+          const text = withheld(scene, "text");
+          const art = withheld(scene, "art");
+          return (
           <div
             id={`journey-slide-${i}`}
             class:list={["journey-slide grid gap-6 p-5 sm:p-6 lg:grid-cols-12 lg:gap-10 lg:p-8", i === 0 && "is-active is-settled"]}
@@ -115,32 +141,50 @@ const sceneText = (key: SceneKey, field: "name" | "title", values?: Record<strin
               <h2 class="mt-2 font-display text-3xl font-medium tracking-tight text-ink">
                 {sceneText(scene.key, "title", "values" in scene ? scene.values : undefined)}
               </h2>
-              <div
-                class="rich-text mt-4 max-w-measure text-base text-ink-muted"
-                set:html={i18n.md(`journey.scenes.${scene.key}.text`, "values" in scene ? scene.values : undefined)}
-              />
-              {"source" in scene && <p class="mt-2 text-2xs text-ink-subtle">{scene.source}</p>}
+              {text ? (
+                <Unavailable locale={locale} indicator={text} class="mt-4" />
+              ) : (
+                <>
+                  <div
+                    class="rich-text mt-4 max-w-measure text-base text-ink-muted"
+                    set:html={i18n.md(`journey.scenes.${scene.key}.text`, "values" in scene ? scene.values : undefined)}
+                  />
+                  {"source" in scene && <p class="mt-2 text-2xs text-ink-subtle">{scene.source}</p>}
+                </>
+              )}
               {"links" in scene && (
                 <ul class="mt-5 grid gap-2">
-                  {scene.links.map((link) => (
-                    <li>
-                      <a
-                        href={link.href}
-                        class="inline-flex items-center gap-2 text-sm font-medium text-link underline-offset-(--ia-link-underline-offset) hover:underline"
-                      >
+                  {scene.links.map((link) =>
+                    "needs" in link && isHidden(link.needs) ? (
+                      <li class="flex items-center gap-1 text-sm text-ink-subtle">
                         {link.label}
-                        <ArrowRight size={iconSize.sm} aria-hidden="true" />
-                      </a>
-                    </li>
-                  ))}
+                        <UnavailableInfo locale={locale} indicator={link.needs} />
+                      </li>
+                    ) : (
+                      <li>
+                        <a
+                          href={link.href}
+                          class="inline-flex items-center gap-2 text-sm font-medium text-link underline-offset-(--ia-link-underline-offset) hover:underline"
+                        >
+                          {link.label}
+                          <ArrowRight size={iconSize.sm} aria-hidden="true" />
+                        </a>
+                      </li>
+                    ),
+                  )}
                 </ul>
               )}
             </div>
             <div class="min-w-0 lg:col-span-8">
-              <scene.Art locale={locale} />
+              {art ? (
+                <Unavailable locale={locale} indicator={art} variant="area" class="aspect-16/10 w-full" />
+              ) : (
+                <scene.Art locale={locale} />
+              )}
             </div>
           </div>
-        ))
+          );
+        })
       }
     </div>
 

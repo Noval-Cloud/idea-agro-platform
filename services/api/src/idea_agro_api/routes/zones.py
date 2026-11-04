@@ -9,7 +9,7 @@ from idea_agro_api.deps import ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.models import DivisionValues, SeasonalSeries, ZoneCollection, ZoneDetail, ZoneSeasonal
 from idea_agro_api.public_data import Indicator
-from idea_agro_api.routes.stored import documented, stored
+from idea_agro_api.routes.stored import UNAVAILABLE, available, documented, list_seconds, stored
 from idea_agro_api.zones import Division, SeasonalIndicator
 
 router = APIRouter(tags=["Zones"])
@@ -21,8 +21,6 @@ SEASONAL_UNITS: dict[SeasonalIndicator, tuple[str, int]] = {
     SeasonalIndicator.ET: ("mm per day", 8),
     SeasonalIndicator.RH: ("mm per 16 days", 16),
 }
-
-CACHE_CONTROL = "public, max-age=3600"
 
 DivisionParam = Annotated[Division, PathParam(description="The division.")]
 ZoneParam = Annotated[
@@ -50,13 +48,14 @@ def get_division_zones(division: DivisionParam, services: ServicesDep) -> Respon
         "quartiles; for a categorical one, each class's share of the zone. Cacheable for an hour."
     ),
     response_class=Response,
-    responses=documented(DivisionValues, "The values, by zone id.") | problems(404, 422),
+    responses=documented(DivisionValues, "The values, by zone id.") | problems(404, 422, s404=UNAVAILABLE),
 )
 def get_division_values(
     division: DivisionParam,
     indicator: Annotated[Indicator, PathParam(description="The indicator.")],
     services: ServicesDep,
 ) -> Response:
+    available(services, indicator)
     name = public_data.values(division, indicator)
     return stored(services, name, "application/json", f"{division} has no published values of {indicator}.")
 
@@ -79,7 +78,8 @@ def get_zone(division: DivisionParam, zone: ZoneParam, services: ServicesDep) ->
     description=(
         "Every composite of the satellite record for the zone, for each indicator with a seasonal series: "
         "productivity (`ppna`), absorbed radiation (`apar`), evapotranspiration (`et`) and water yield (`rh`). "
-        "The response can be cached for an hour."
+        "An indicator editors hide is left out. The response can be cached for an hour, or a minute while an "
+        "indicator is hidden."
     ),
     response_model_exclude_none=True,
     responses=problems(404, 422, s404="The zone does not exist in that division."),
@@ -93,11 +93,13 @@ def get_zone_seasonal(
     found = services.zones.seasonal(division, zone)
     if found is None:
         raise HTTPException(404, f"Zone {zone} does not exist in {division}.")
-    response.headers["Cache-Control"] = CACHE_CONTROL
+    response.headers["Cache-Control"] = f"public, max-age={list_seconds(services)}"
+    hidden = services.visibility.hidden()
     series = {
         indicator.value: SeasonalSeries(
             unit=SEASONAL_UNITS[indicator][0], cadence_days=SEASONAL_UNITS[indicator][1], dates=dates, values=values
         )
         for indicator, (dates, values) in found.items()
+        if indicator not in hidden
     }
     return ZoneSeasonal(division=division, zone=zone, **series)

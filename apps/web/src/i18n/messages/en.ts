@@ -80,6 +80,11 @@ export const en = {
       chartFor: "Chart of {name}",
       mean: "National mean",
     },
+    unavailable: {
+      label: "Temporarily unavailable",
+      info: "Why {name} is unavailable",
+      close: "Close",
+    },
     items: {
       apar: {
         short: "APAR",
@@ -95,6 +100,7 @@ export const en = {
         mapShows: "Total for the {from}–{to} growing year",
         chartTitle: "Absorbed radiation through the year",
         chartUnit: "MJ/m² every 16 days",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       cob: {
         short: "COB",
@@ -110,6 +116,7 @@ export const en = {
         mapShows: "Natural grassland in {year}",
         chartTitle: "Natural grassland, as a share of the country",
         chartUnit: "% of the country",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       ppna: {
         short: "ANPP",
@@ -125,6 +132,7 @@ export const en = {
         mapShows: "Total for the {from}–{to} growing year",
         chartTitle: "Total production of each growing year",
         chartUnit: "kg DM/ha per year",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       compn: {
         short: "ComPN",
@@ -139,6 +147,7 @@ export const en = {
         mapShows: "Where each community occurs",
         chartTitle: "Area of each community",
         chartUnit: "% of the mapped grassland area",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       rh: {
         short: "RH",
@@ -154,6 +163,7 @@ export const en = {
         mapShows: "Total for the {from}–{to} growing year",
         chartTitle: "Water yield of each year",
         chartUnit: "mm per year",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       et: {
         short: "ET",
@@ -168,6 +178,7 @@ export const en = {
         mapShows: "Total for the {from}–{to} growing year",
         chartTitle: "Evapotranspiration of each growing year",
         chartUnit: "mm per year",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       iose: {
         short: "ESPI",
@@ -183,6 +194,7 @@ export const en = {
         mapShows: "Productive year {from}–{to}",
         chartTitle: "Country-wide average index",
         chartUnit: "Index from 0 to 1",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       divtfe: {
         short: "DivTFE",
@@ -199,6 +211,7 @@ export const en = {
         mapShows: "Diversity in 2 km windows",
         chartTitle: "How it spreads across the territory",
         chartUnit: "Shannon index",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       csue: {
         short: "CSUE",
@@ -214,6 +227,7 @@ export const en = {
         mapShows: "Estimated loss 2017–2019",
         chartTitle: "How it spreads across the territory",
         chartUnit: "t/ha per year",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
       ahppn: {
         short: "HANPP",
@@ -229,6 +243,7 @@ export const en = {
         mapShows: "Appropriation 2017–2019",
         chartTitle: "How it spreads across the territory",
         chartUnit: "% of potential productivity",
+        unavailable: "This indicator is temporarily unavailable while its data is reviewed.",
       },
     },
   },
@@ -1191,6 +1206,12 @@ export const en = {
         pick: "Indicator",
         search: "Search indicators…",
         tabsLabel: "Parts of the indicator",
+        shown: "Shown on the site",
+        shownHint:
+          "Hidden, the site shows it as temporarily unavailable once it is rebuilt, with its text on why, and none of its data. Its data keeps being computed, and its texts and articles can still be edited.",
+        hidden: "Hidden",
+        switchFailed: "We could not save the change. Try again.",
+        loadFailed: "We could not load whether the site shows each indicator. Reload the page.",
       },
       indicatorFields: {
         short: "Abbreviation",
@@ -1205,6 +1226,7 @@ export const en = {
         mapShows: "What the map shows",
         chartTitle: "Chart title",
         chartUnit: "Chart unit",
+        unavailable: "Why it is unavailable",
       },
       articles: {
         add: "Add article",
@@ -1478,6 +1500,8 @@ export const en = {
         article_deleted: "{actor} deleted the article {target}",
         citations_changed: "{actor} changed the articles of {target}",
         articles_seeded: "{actor} loaded the articles the site had",
+        indicator_hidden: "{actor} hid {target} from the site",
+        indicator_shown: "{actor} showed {target} on the site again",
       },
       count: {
         one: "{count} action",

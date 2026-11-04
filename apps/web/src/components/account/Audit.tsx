@@ -34,7 +34,7 @@ const GROUP = "role:";
 const kindOf = (action: AuditOut["action"]): Kind =>
   action.startsWith("text_")
     ? "texts"
-    : action === "citations_changed"
+    : action === "citations_changed" || action.startsWith("indicator_")
       ? "indicators"
       : action.startsWith("article")
         ? "articles"
@@ -156,7 +156,7 @@ export default function Audit({ translator, signInPath }: Props) {
   } satisfies Record<string, ChoiceSection[]>;
 
   const target = (entry: AuditOut) => {
-    if (entry.action === "citations_changed") {
+    if (kindOf(entry.action) === "indicators") {
       const key = `indicators.items.${entry.target}.name`;
       return translator.has(key) ? t(key as AccountKey) : entry.target;
     }

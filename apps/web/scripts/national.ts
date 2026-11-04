@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 import { fetchNational } from "../src/data/national-source.ts";
 
 const base = process.argv[2] ?? "https://api.idea-agro.org";
-const national = await fetchNational(base);
+// A hidden indicator would leave its series out of the committed copy, so the refresh waits until it is shown.
+const national = await fetchNational(base, { strict: true }).catch((error: Error) => {
+  console.error(`${error.message}\nShow the indicator(s) in the account's content page, or refresh later.`);
+  process.exit(1);
+});
 const file = fileURLToPath(new URL("../src/data/national.json", import.meta.url));
 writeFileSync(file, `${JSON.stringify(national)}\n`);
 // Formatted as the repository's checks expect.

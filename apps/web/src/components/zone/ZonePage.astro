@@ -6,6 +6,7 @@ import SiteNavPanels from "@/components/site/SiteNavPanels.astro";
 import ZoneApp from "./ZoneApp";
 import { articleUrl, citations } from "@/data/articles";
 import { indicatorIds } from "@/data/indicators";
+import { shownIds } from "@/data/shown";
 import { pickAppCatalog } from "@/components/explorer/lib/i18n";
 import { catalogs, createTranslator, localizePath, type Locale } from "@/i18n";
 
@@ -23,6 +24,7 @@ const { t } = createTranslator(locale);
       client:load
       locale={locale}
       catalog={pickAppCatalog(catalogs[locale])}
+      shownIndicators={[...shownIds]}
       citations={Object.fromEntries(
         indicatorIds.map((id) => [id, citations(id).map((a) => ({ ...a, href: articleUrl(a) }))]),
       )}
