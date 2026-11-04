@@ -296,6 +296,14 @@
       "pt": "{surname} et al. {year}"
     }
   },
+  "account.audit.citeTwo": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} & {secondSurname} {year}",
+      "en": "{surname} & {secondSurname} {year}",
+      "pt": "{surname} & {secondSurname} {year}"
+    }
+  },
   "account.audit.count": {
     "format": "plural",
     "default": {
@@ -600,6 +608,14 @@
       "es": "Sin citar",
       "en": "Not cited",
       "pt": "Sem citação"
+    }
+  },
+  "account.content.articles.frameworkHint": {
+    "format": "plain",
+    "default": {
+      "es": "Aparece en Recursos, bajo Marco de referencia",
+      "en": "Shown on Resources, under Reference framework",
+      "pt": "Aparece em Recursos, sob Marco de referência"
     }
   },
   "account.content.articles.frameworkLabel": {
@@ -9198,12 +9214,44 @@
       "pt": "Indicadores que este artigo respalda"
     }
   },
+  "science.citeOne": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} {year}",
+      "en": "{surname} {year}",
+      "pt": "{surname} {year}"
+    }
+  },
+  "science.citeSeveral": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} et al. {year}",
+      "en": "{surname} et al. {year}",
+      "pt": "{surname} et al. {year}"
+    }
+  },
+  "science.citeTwo": {
+    "format": "plain",
+    "default": {
+      "es": "{surname} & {secondSurname} {year}",
+      "en": "{surname} & {secondSurname} {year}",
+      "pt": "{surname} & {secondSurname} {year}"
+    }
+  },
   "science.doi": {
     "format": "plain",
     "default": {
       "es": "DOI {doi}",
       "en": "DOI {doi}",
       "pt": "DOI {doi}"
+    }
+  },
+  "science.frameworkDoi": {
+    "format": "plain",
+    "default": {
+      "es": "DOI",
+      "en": "DOI",
+      "pt": "DOI"
     }
   },
   "science.frameworkLabel": {

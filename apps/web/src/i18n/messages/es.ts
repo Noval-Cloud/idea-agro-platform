@@ -295,8 +295,12 @@ export const es = {
     frameworkLabel: "Marco de referencia",
     papersLabel: "Artículos que respaldan los indicadores",
     doi: "DOI {doi}",
+    frameworkDoi: "DOI",
     link: "Leer el artículo",
     backsLabel: "Indicadores que respalda",
+    citeOne: "{surname} {year}",
+    citeTwo: "{surname} & {secondSurname} {year}",
+    citeSeveral: "{surname} et al. {year}",
   },
   open: {
     title: "Abierta por diseño",
@@ -1250,6 +1254,7 @@ export const es = {
         doiHint: "Por ejemplo 10.1007/s10021-005-0013-x.",
         url: "Link para leerlo",
         frameworkLabel: "Es el marco de referencia que siguen los indicadores",
+        frameworkHint: "Aparece en Recursos, bajo Marco de referencia",
         remove: "Eliminar el artículo",
         removeTitle: "¿Eliminar el artículo?",
         removeBody: "Se quita también de los indicadores que lo citan.",
@@ -1535,6 +1540,7 @@ export const es = {
         other: "{count} artículos",
       },
       citeOne: "{surname} {year}",
+      citeTwo: "{surname} & {secondSurname} {year}",
       citeSeveral: "{surname} et al. {year}",
     },
     sessions: {

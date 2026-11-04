@@ -298,8 +298,12 @@ export const pt = {
     frameworkLabel: "Marco de referência",
     papersLabel: "Artigos que respaldam os indicadores",
     doi: "DOI {doi}",
+    frameworkDoi: "DOI",
     link: "Ler o artigo",
     backsLabel: "Indicadores que este artigo respalda",
+    citeOne: "{surname} {year}",
+    citeTwo: "{surname} & {secondSurname} {year}",
+    citeSeveral: "{surname} et al. {year}",
   },
   open: {
     title: "Aberta desde a concepção",
@@ -1249,6 +1253,7 @@ export const pt = {
         doiHint: "Por exemplo 10.1007/s10021-005-0013-x.",
         url: "Link para lê-lo",
         frameworkLabel: "É o marco de referência que os indicadores seguem",
+        frameworkHint: "Aparece em Recursos, sob Marco de referência",
         remove: "Excluir o artigo",
         removeTitle: "Excluir o artigo?",
         removeBody: "Ele também é retirado dos indicadores que o citam.",
@@ -1534,6 +1539,7 @@ export const pt = {
         other: "{count} artigos",
       },
       citeOne: "{surname} {year}",
+      citeTwo: "{surname} & {secondSurname} {year}",
       citeSeveral: "{surname} et al. {year}",
     },
     sessions: {

@@ -38,8 +38,8 @@ const byId = new Map(published.articles.map((a) => [a.id, a]));
 
 /** Every article, newest first. */
 export const articles = published.articles;
-/** The reference framework the indicators follow. */
-export const framework = articles.find((a) => a.framework);
+/** The reference framework the indicators follow, newest first. */
+export const frameworkArticles = articles.filter((a) => a.framework);
 /** The articles an indicator cites, in its order. */
 export const citations = (indicator: IndicatorId): Article[] =>
   (published.citations[indicator] ?? []).map((id) => byId.get(id)).filter((a): a is Article => a !== undefined);
