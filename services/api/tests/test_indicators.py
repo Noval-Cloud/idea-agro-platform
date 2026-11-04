@@ -23,7 +23,17 @@ FILES = {
         "divisions": {"seccionales": 1},
     },
     "series/seccionales/1406.json": {"ppna": [1.0, 2.0], "rh": [3.0, 4.0]},
+    "values/seccionales/rh.json": {"years": [2024], "values": {"1406": [310.0]}},
 }
+IMAGES = ["maps/rh/2024.webp", "maps/rh/lite/2024.webp", "maps/thumbnails/rh-light.webp", "maps/previews/rh-dark.webp"]
+ROUTES = [
+    "/v1/maps/rh/2024",
+    "/v1/maps/rh/2024?size=lite",
+    "/v1/maps/rh/thumbnail",
+    "/v1/maps/rh/preview?theme=dark",
+    "/v1/divisions/seccionales/values/rh",
+]
+UNAVAILABLE = "urn:idea-agro:problem:indicator-temporarily-unavailable"
 
 
 @pytest.fixture
@@ -31,6 +41,9 @@ def services(tmp_path: Path, verifier: OidcVerifier) -> Services:
     for name, content in FILES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(json.dumps(content))
+    for name in IMAGES:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_bytes(b"webp")
     return services_for_tests(files=LocalFiles(tmp_path), verifier=verifier)
 
 
@@ -124,6 +137,37 @@ def test_the_published_citations_leave_a_hidden_indicator_out(client: TestClient
     cited = client.put("/v1/indicators/rh/articles", headers=ANA, json={"articles": every["rh"][:1]})
     assert cited.status_code == 200
     assert client.get("/v1/indicators/articles", headers=BO).status_code == 403
+
+
+@pytest.mark.parametrize("path", ROUTES)
+def test_a_hidden_indicator_s_routes_say_it_is_temporarily_unavailable(
+    client: TestClient, services: Services, path: str
+) -> None:
+    services.visibility.put(Visibility("rh", False))
+
+    response = client.get(path)
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["type"] == UNAVAILABLE
+    assert response.json()["detail"] == "rh is temporarily unavailable while its data is reviewed."
+
+
+@pytest.mark.parametrize("path", ROUTES)
+def test_a_shown_indicator_answers_again(client: TestClient, services: Services, path: str) -> None:
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": False})
+    client.put("/v1/indicators/rh/visibility", headers=ANA, json={"shown": True})
+
+    response = client.get(path)
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"].startswith("public")
+
+
+@pytest.mark.parametrize("path", ["/v1/maps/rh/1999", "/v1/divisions/cuencas-1/values/rh", "/v1/maps/nothing/2024"])
+def test_a_wrong_route_is_another_problem(client: TestClient, path: str) -> None:
+    assert client.get(path).json()["type"] != UNAVAILABLE
 
 
 def test_the_hidden_ones_are_kept_for_a_few_seconds() -> None:

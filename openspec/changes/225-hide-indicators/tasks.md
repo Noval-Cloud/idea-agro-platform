@@ -2,7 +2,7 @@
 
 - [x] 1.1 Keep whether each indicator is shown, list the shown ones publicly, and let editors change it, audited and marking the site behind
 - [x] 1.2 Leave hidden indicators out of the catalog, the seasonal series and the articles' citations, and give editors every citation
-- [ ] 1.3 Answer a hidden indicator's maps and division values with the `indicator-temporarily-unavailable` problem, not stored
+- [x] 1.3 Answer a hidden indicator's maps and division values with the `indicator-temporarily-unavailable` problem, not stored
 - [ ] 1.4 Regenerate the contract and the client, and document the switch in the API's README
 
 ## 2. Website

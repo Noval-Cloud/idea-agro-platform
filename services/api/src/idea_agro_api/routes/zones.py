@@ -9,7 +9,7 @@ from idea_agro_api.deps import ServicesDep
 from idea_agro_api.errors import problems
 from idea_agro_api.models import DivisionValues, SeasonalSeries, ZoneCollection, ZoneDetail, ZoneSeasonal
 from idea_agro_api.public_data import Indicator
-from idea_agro_api.routes.stored import documented, list_seconds, stored
+from idea_agro_api.routes.stored import UNAVAILABLE, available, documented, list_seconds, stored
 from idea_agro_api.zones import Division, SeasonalIndicator
 
 router = APIRouter(tags=["Zones"])
@@ -48,13 +48,14 @@ def get_division_zones(division: DivisionParam, services: ServicesDep) -> Respon
         "quartiles; for a categorical one, each class's share of the zone. Cacheable for an hour."
     ),
     response_class=Response,
-    responses=documented(DivisionValues, "The values, by zone id.") | problems(404, 422),
+    responses=documented(DivisionValues, "The values, by zone id.") | problems(404, 422, s404=UNAVAILABLE),
 )
 def get_division_values(
     division: DivisionParam,
     indicator: Annotated[Indicator, PathParam(description="The indicator.")],
     services: ServicesDep,
 ) -> Response:
+    available(services, indicator)
     name = public_data.values(division, indicator)
     return stored(services, name, "application/json", f"{division} has no published values of {indicator}.")
 
