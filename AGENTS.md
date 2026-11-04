@@ -26,3 +26,13 @@ Before changing a part of the repository, read its README, such as [infrastructu
 - Comments are short and never tell history.
 - Every change belongs to a story and reaches `main` through one pull request per story.
 - Run `make check` before opening a pull request.
+
+## Cost
+
+Spend tokens and time where they buy quality, never at its expense.
+
+- Settle the design with the person before a story is dispatched, and split a story that touches several parts or leaves choices open.
+- Tests and `make check` are the default proof. Run the app only for what tests can't show, and once.
+- Don't re-check what a tool already reported.
+- The developer runs on a cheaper model for routine stories; the architect, the reviewer and hard stories keep the strongest one.
+- One session per story.
