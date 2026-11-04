@@ -465,13 +465,17 @@ function ArticlePanel({
           {field("source", "account.content.articles.source", "account.content.articles.sourceHint")}
           {field("doi", "account.content.articles.doi", "account.content.articles.doiHint")}
           {field("url", "account.content.articles.url", "account.content.articles.urlHint")}
-          <label className="flex items-center gap-2 text-sm text-ink">
+          <label className="flex items-start gap-3 text-sm text-ink">
             <input
               type="checkbox"
+              className="mt-0.5 size-4"
               checked={form.framework ?? false}
               onChange={(event) => set({ framework: event.target.checked })}
             />
-            {t("account.content.articles.frameworkLabel")}
+            <span className="grid gap-0.5">
+              {t("account.content.articles.frameworkLabel")}
+              <span className="text-xs text-ink-subtle">{t("account.content.articles.frameworkHint")}</span>
+            </span>
           </label>
         </div>
       )}

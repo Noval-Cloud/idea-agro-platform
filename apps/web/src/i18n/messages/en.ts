@@ -1247,6 +1247,7 @@ export const en = {
         doiHint: "For example 10.1007/s10021-005-0013-x.",
         url: "Link to read it",
         frameworkLabel: "It is the reference framework the indicators follow",
+        frameworkHint: "Shown on Resources, under Reference framework",
         remove: "Delete the article",
         removeTitle: "Delete the article?",
         removeBody: "It is also removed from the indicators that cite it.",

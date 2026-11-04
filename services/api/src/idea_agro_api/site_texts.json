@@ -602,6 +602,14 @@
       "pt": "Sem citação"
     }
   },
+  "account.content.articles.frameworkHint": {
+    "format": "plain",
+    "default": {
+      "es": "Aparece en Recursos, bajo Marco de referencia",
+      "en": "Shown on Resources, under Reference framework",
+      "pt": "Aparece em Recursos, sob Marco de referência"
+    }
+  },
   "account.content.articles.frameworkLabel": {
     "format": "plain",
     "default": {

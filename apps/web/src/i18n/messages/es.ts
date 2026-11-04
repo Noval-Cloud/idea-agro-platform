@@ -1252,6 +1252,7 @@ export const es = {
         doiHint: "Por ejemplo 10.1007/s10021-005-0013-x.",
         url: "Link para leerlo",
         frameworkLabel: "Es el marco de referencia que siguen los indicadores",
+        frameworkHint: "Aparece en Recursos, bajo Marco de referencia",
         remove: "Eliminar el artículo",
         removeTitle: "¿Eliminar el artículo?",
         removeBody: "Se quita también de los indicadores que lo citan.",
