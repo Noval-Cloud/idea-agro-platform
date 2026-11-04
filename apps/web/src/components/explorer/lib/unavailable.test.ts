@@ -1,6 +1,17 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { indicatorIds } from "../../../data/indicators";
-import { failure, isUnavailableAnswer, shownWithout, UnavailableError } from "./unavailable";
+import type { Manifest } from "./data";
+import { loadSummaryStats } from "./data";
+import {
+  failure,
+  isUnavailableAnswer,
+  markUnavailable,
+  reportUnavailable,
+  shownWithout,
+  unavailableIn,
+  UnavailableError,
+  withheldNow,
+} from "./unavailable";
 
 const PROBLEM = "urn:idea-agro:problem:indicator-temporarily-unavailable";
 const answer = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
@@ -25,5 +36,38 @@ describe("failure", () => {
   it("reads the answer of the generated client", () => {
     expect(isUnavailableAnswer(404, { type: PROBLEM })).toBe(true);
     expect(isUnavailableAnswer(200, { type: PROBLEM })).toBe(false);
+  });
+});
+
+const problem = () => answer(404, { type: PROBLEM });
+
+describe("what the API withholds", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("marks an indicator once, whatever the number of answers", () => {
+    markUnavailable("rh");
+    markUnavailable("rh");
+    expect(withheldNow().filter((id) => id === "rh")).toHaveLength(1);
+  });
+
+  it("reports only the unavailable answer", () => {
+    reportUnavailable("et", new Error("500"));
+    expect(withheldNow()).not.toContain("et");
+    reportUnavailable("et", new UnavailableError("404"));
+    expect(withheldNow()).toContain("et");
+  });
+
+  it("marks the indicator of values the API withholds", async () => {
+    vi.stubGlobal("fetch", async () => problem());
+    await expect(loadSummaryStats("seccionales", "csue")).rejects.toThrow();
+    expect(withheldNow()).toContain("csue");
+  });
+});
+
+describe("unavailableIn", () => {
+  it("lists the indicators the catalog marks", () => {
+    const manifest = { indicators: { ppna: {}, rh: { unavailable: true } } } as unknown as Manifest;
+    expect(unavailableIn(manifest)).toEqual(["rh"]);
+    expect(unavailableIn(null)).toEqual([]);
   });
 });

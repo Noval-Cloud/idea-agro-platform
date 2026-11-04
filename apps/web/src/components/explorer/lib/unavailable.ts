@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { indicatorIds, type IndicatorId } from "../../../data/indicators";
+import { UNAVAILABLE } from "../../../data/national-source";
 import type { Manifest } from "./data";
 
 /*
@@ -7,13 +8,11 @@ import type { Manifest } from "./data";
  * and values with a 404 of this problem type. What the site learns at runtime joins the list it was built with.
  */
 
-const PROBLEM = "urn:idea-agro:problem:indicator-temporarily-unavailable";
-
 export class UnavailableError extends Error {}
 
 /** Whether an API answer is the "temporarily unavailable" one, and not a wrong route or another failure. */
 export const isUnavailableAnswer = (status: number, body: unknown) =>
-  status === 404 && typeof body === "object" && body !== null && (body as { type?: unknown }).type === PROBLEM;
+  status === 404 && typeof body === "object" && body !== null && (body as { type?: unknown }).type === UNAVAILABLE;
 
 /** The error for a failed response: `UnavailableError` for a hidden indicator's, a plain one else. */
 export async function failure(response: Response, what: string): Promise<Error> {
@@ -31,8 +30,13 @@ export const shownWithout = (shown: readonly IndicatorId[], ...hidden: (readonly
 export const unavailableIn = (manifest: Manifest | null): IndicatorId[] =>
   manifest ? indicatorIds.filter((id) => manifest.indicators[id]?.unavailable) : [];
 
-let withheld: readonly IndicatorId[] = [];
+const none: readonly IndicatorId[] = [];
+let withheld = none;
 const listeners = new Set<() => void>();
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => void listeners.delete(listener);
+};
 
 /** Remembers an indicator the API answered as unavailable, and tells whoever reads the list. */
 export function markUnavailable(id: IndicatorId) {
@@ -41,13 +45,18 @@ export function markUnavailable(id: IndicatorId) {
   for (const listener of listeners) listener();
 }
 
+/** Marks the indicator when a failed read is the API's "temporarily unavailable" answer. */
+export function reportUnavailable(indicator: IndicatorId, error: unknown) {
+  if (error instanceof UnavailableError) markUnavailable(indicator);
+}
+
 /** The indicators the API has answered as unavailable on this page. */
 export const useWithheld = () =>
   useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
+    subscribe,
     () => withheld,
-    () => [] as readonly IndicatorId[],
+    () => none,
   );
+
+/** The indicators marked so far, for tests. */
+export const withheldNow = () => withheld;

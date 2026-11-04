@@ -53,7 +53,7 @@ import {
 } from "@/components/explorer/lib/i18n";
 import { decodeGray, zonalCounts, zonalMean } from "@/components/explorer/lib/raster";
 import { findMyZone } from "@/components/explorer/lib/my-zones";
-import { shownWithout, unavailableIn, useWithheld } from "@/components/explorer/lib/unavailable";
+import { reportUnavailable, shownWithout, unavailableIn, useWithheld } from "@/components/explorer/lib/unavailable";
 import AddToProject from "./AddToProject";
 import Locator from "./Locator";
 import OutlineVersions from "./OutlineVersions";
@@ -206,7 +206,7 @@ export default function ZoneApp({
   const i18n = useMemo(() => createAppTranslator(locale, catalog), [locale, catalog]);
   const { t } = i18n;
   const [target, setTarget] = useState<Target | null | undefined>(undefined);
-  const [indicator, setIndicator] = useState<IndicatorId>(() => opening(shownIndicators));
+  const [chosen, setIndicator] = useState<IndicatorId>(() => opening(shownIndicators));
   const [year, setYear] = useState<number | null>(null);
   const [compared, setCompared] = useState<Compared[]>([]);
   const [mapYear, setMapYear] = useState<number | null>(null);
@@ -220,9 +220,7 @@ export default function ZoneApp({
     [shownIndicators, manifest, withheld],
   );
   // A link or a choice that names an indicator now hidden opens the default one.
-  useEffect(() => {
-    if (!shownList.includes(indicator)) setIndicator(opening(shownList));
-  }, [indicator, shownList]);
+  const indicator = shownList.includes(chosen) ? chosen : opening(shownList);
 
   useEffect(() => {
     const read = readTarget(location.search, shownIndicators);
@@ -1532,7 +1530,10 @@ function EstimatedView({
         setValues([...out]);
       }
     };
-    void run().catch(() => live && setValues([]));
+    void run().catch((error) => {
+      reportUnavailable(indicator, error);
+      if (live) setValues([]);
+    });
     return () => {
       live = false;
     };

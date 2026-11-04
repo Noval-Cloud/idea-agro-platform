@@ -3,7 +3,7 @@ import { indicators, type IndicatorId } from "@/data/indicators";
 import { rasterUrl, type Manifest } from "./data";
 import { decodeGray, paint, type GrayRaster } from "./raster";
 import type { MapThemeName } from "./theme";
-import { markUnavailable, UnavailableError } from "./unavailable";
+import { reportUnavailable } from "./unavailable";
 
 export type Frame = { key: string; url: string; gray: GrayRaster; lite: boolean };
 export type FrameRequest = {
@@ -64,7 +64,7 @@ export function getFrame(manifest: Manifest, request: FrameRequest): Promise<Fra
   }));
   frame.catch((error) => {
     frames.delete(key);
-    if (error instanceof UnavailableError) markUnavailable(request.indicator);
+    reportUnavailable(request.indicator, error);
   });
   frames.set(key, frame);
   while (frames.size > LIMIT) {

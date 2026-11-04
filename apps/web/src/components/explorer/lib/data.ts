@@ -23,7 +23,7 @@ export type IndicatorManifest = {
   min?: number;
   max?: number;
   classes?: number[];
-  /** Editors hid it after the site was built: its data answers 404. */
+  /** Editors hid it: its data answers 404. */
   unavailable?: boolean;
 };
 

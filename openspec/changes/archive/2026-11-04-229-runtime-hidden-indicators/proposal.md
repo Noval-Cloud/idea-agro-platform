@@ -7,3 +7,9 @@ The site learns which indicators are hidden only when it is built. Between an ed
 - **Runtime marks:** the explorer and the zone page also treat as hidden every indicator that the catalog they load marks `unavailable`, in the same disabled state, with the same info button and dialog.
 - **Unavailable answers:** a map or values request that the API answers with the `indicator-temporarily-unavailable` problem marks that indicator unavailable on the page, so the loading stops and the indicator shows as disabled.
 - **Links:** a link that names an indicator hidden at runtime opens the default one.
+
+## Impact
+
+- Story: #229
+- Affected specs: `indicator-visibility` (modified).
+- Affected code: `apps/web` (explorer, zone page).
