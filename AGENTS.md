@@ -26,6 +26,7 @@ Before changing a part of the repository, read its README, such as [infrastructu
 - Comments are short and never tell history.
 - Every change belongs to a story and reaches `main` through one pull request per story.
 - Run `make check` before opening a pull request.
+- At the end of each piece of work, tell the person what waits on them: pull requests to merge, and infrastructure changes to apply, in this repository or another.
 
 ## Cost
 
