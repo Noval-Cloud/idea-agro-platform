@@ -613,9 +613,9 @@
   "account.content.articles.frameworkHint": {
     "format": "plain",
     "default": {
-      "es": "Aparece en Recursos, bajo Marco de referencia",
-      "en": "Shown on Resources, under Reference framework",
-      "pt": "Aparece em Recursos, sob Marco de referência"
+      "es": "Aparece en Recursos, en su propia caja, como marco de referencia",
+      "en": "Shown on Resources in a card of its own, as the reference framework",
+      "pt": "Aparece em Recursos, em um cartão próprio, como marco de referência"
     }
   },
   "account.content.articles.frameworkLabel": {
