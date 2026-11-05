@@ -613,9 +613,9 @@
   "account.content.articles.frameworkHint": {
     "format": "plain",
     "default": {
-      "es": "Aparece en Recursos, bajo Marco de referencia",
-      "en": "Shown on Resources, under Reference framework",
-      "pt": "Aparece em Recursos, sob Marco de referência"
+      "es": "Aparece en Recursos, en su propia caja, como marco de referencia",
+      "en": "Shown on Resources in a card of its own, as the reference framework",
+      "pt": "Aparece em Recursos, em um cartão próprio, como marco de referência"
     }
   },
   "account.content.articles.frameworkLabel": {
@@ -9246,28 +9246,12 @@
       "pt": "DOI {doi}"
     }
   },
-  "science.frameworkDoi": {
-    "format": "plain",
-    "default": {
-      "es": "DOI",
-      "en": "DOI",
-      "pt": "DOI"
-    }
-  },
-  "science.frameworkLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Marco de referencia",
-      "en": "Reference framework",
-      "pt": "Marco de referência"
-    }
-  },
   "science.lead": {
     "format": "plain",
     "default": {
-      "es": "Los indicadores siguen el marco de desempeño ambiental definido por INIA para los sistemas agropecuarios del Uruguay y se apoyan en investigación revisada por pares.",
-      "en": "The indicators follow the environmental performance framework defined by INIA for Uruguay's farming systems and rest on peer-reviewed research.",
-      "pt": "Os indicadores seguem o marco de desempenho ambiental definido pelo INIA para os sistemas agropecuários do Uruguai e se apoiam em pesquisa revisada por pares."
+      "es": "Los indicadores siguen el marco de referencia de los trabajos que aparecen abajo y se apoyan en investigación revisada por pares.",
+      "en": "The indicators follow the reference framework set out in the works below, and rest on peer-reviewed research.",
+      "pt": "Os indicadores seguem o marco de referência dos trabalhos que aparecem abaixo e se apoiam em pesquisa revisada por pares."
     }
   },
   "science.link": {
