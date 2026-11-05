@@ -14,6 +14,8 @@ const generated = [
 ];
 
 export default defineConfig({
+  // Tests import the website's modules by its `@/` paths.
+  resolve: { tsconfigPaths: true },
   fmt: {
     printWidth: 120,
     sortPackageJson: true,
