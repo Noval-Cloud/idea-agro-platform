@@ -1,6 +1,7 @@
 # earthengine-api leaves some arguments untyped, and google.auth its credentials; this module is their only user.
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
-"""Earth Engine as a source of the zones' values, computed from the indicator assets as they are.
+"""Earth Engine as a source of the zones' values, computed from the indicator assets as they are, and as the writer of
+the indicators' collections.
 
 PPNA, APAR, ET and RH are each one image with a band per composite, named `b<year>-<day of the year>`, and their
 yearly values are the sum over each productive year; the others are one image with a band per year, or a single map.
@@ -13,14 +14,28 @@ import time
 import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from itertools import batched
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import ee
 import ee.data
 import google.auth
+from ee.batch import Export, Task
 
+from idea_agro_jobs import et
+from idea_agro_jobs.collection import (
+    Collection,
+    CollectionError,
+    ExportState,
+    StoredImage,
+    image_asset,
+    is_public,
+    operation_composite,
+    operation_state,
+    stored_image,
+    task_name,
+)
 from idea_agro_jobs.domain import Division, Indicator, Period, ZoneValues
 from idea_agro_jobs.frame import BOUNDS
 
@@ -73,6 +88,19 @@ OUTLINE_CHUNK = 100
 # About 625 km² of 250 m pixels; a larger zone is read with coarser ones.
 OUTLINE_PIXELS = 100_000
 ATTEMPTS = 4
+
+
+class Formula(NamedTuple):
+    """How a collection's composites are listed and computed, and the region and pixel size they are exported at."""
+
+    starts: Callable[[date, date], ee.List]
+    composite: Callable[[date], ee.Image]
+    region: Callable[[], ee.Geometry]
+    scale: float
+
+
+FORMULAS = {Indicator.ET: Formula(et.starts, et.composite, et.region, et.SCALE)}
+EXPORT_MAX_PIXELS = 10**12
 
 
 def band_start(band: str) -> date:
@@ -133,6 +161,20 @@ def retry[T](label: str, compute: Callable[[], T]) -> T:
             log.warning("%s failed (attempt %d), retrying: %s", label, attempt, str(error)[:200])
             time.sleep(4 * attempt)
     raise AssertionError("unreachable")
+
+
+def export_task(collection: Collection, start: date) -> Task:
+    """The unstarted export of a composite to its image in the collection, which it never overwrites."""
+    formula = FORMULAS[collection.indicator]
+    image = ee.Image(formula.composite(start).rename(collection.band).set(collection.properties))
+    return Export.image.toAsset(
+        image=image,
+        description=task_name(collection, start),
+        assetId=image_asset(collection, start),
+        region=formula.region(),
+        scale=formula.scale,
+        maxPixels=EXPORT_MAX_PIXELS,
+    )
 
 
 class EarthEngine:
@@ -377,3 +419,45 @@ class EarthEngine:
                 return cast(bytes, response.read())
 
         return retry(f"map of {indicator} {year}", download)
+
+    def check_collection(self, collection: Collection) -> None:
+        asset = collection.asset
+        try:
+            found = cast(dict[str, Any], retry(f"collection {asset}", lambda: ee.data.getAsset(asset)))
+        except ee.EEException as error:
+            raise CollectionError(f"{asset} must exist and be shared with the job ({error})") from error
+        if found.get("type") != "IMAGE_COLLECTION":
+            raise CollectionError(f"{asset} must be an ImageCollection, not {found.get('type')}")
+        try:
+            policy = cast(dict[str, Any], retry(f"readers of {asset}", lambda: ee.data.getIamPolicy(asset)))
+        except ee.EEException as error:
+            raise CollectionError(f"The job cannot see who reads {asset} ({error})") from error
+        if not is_public(policy):
+            raise CollectionError(f"{asset} must be readable by anyone, so that each image the job adds is public")
+        # Writing the collection's own properties proves the job may write in it.
+        try:
+            retry(f"properties of {asset}", lambda: ee.data.setAssetProperties(asset, collection.properties))
+        except ee.EEException as error:
+            raise CollectionError(f"{asset} must be shared with the job's account as a writer ({error})") from error
+
+    def collection_images(self, asset: str) -> list[StoredImage]:
+        found = cast(dict[str, Any], retry(f"images of {asset}", lambda: ee.data.listImages({"parent": asset})))
+        return [stored_image(image) for image in cast(list[dict[str, Any]], found.get("images") or [])]
+
+    def running_exports(self, collection: Collection) -> list[date]:
+        operations = cast(list[dict[str, Any]], retry("operations", ee.data.listOperations))
+        return [start for operation in operations if (start := operation_composite(operation, collection))]
+
+    def published(self, collection: Collection, since: date, until: date) -> list[date]:
+        starts = FORMULAS[collection.indicator].starts(since, until)
+        found = cast(list[int], retry(f"{collection.indicator} composites", starts.getInfo))
+        return sorted({datetime.fromtimestamp(ms / 1000, UTC).date() for ms in found})
+
+    def start_export(self, collection: Collection, start: date) -> str:
+        task = export_task(collection, start)
+        # A retried start reuses its request id, so the export starts once.
+        retry(f"export of {task_name(collection, start)}", task.start)
+        return str(task.name)
+
+    def export_state(self, operation: str) -> ExportState:
+        return operation_state(cast(dict[str, Any], retry(operation, lambda: ee.data.getOperation(operation))))

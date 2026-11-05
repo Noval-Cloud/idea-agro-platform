@@ -7,6 +7,9 @@ from typing import Any, cast
 import pytest
 from earth_offline import offline
 from idea_agro_jobs import et
+from idea_agro_jobs.collection import COLLECTIONS
+from idea_agro_jobs.domain import Indicator
+from idea_agro_jobs.earth import export_task
 
 
 @pytest.fixture(autouse=True)
@@ -52,3 +55,18 @@ def test_published_composites_are_listed_up_to_the_last_day_included() -> None:
     found = constants(et.starts(date(2024, 1, 1), date(2024, 12, 31)).serialize())
 
     assert {et.SOURCE, "2024-01-01", "2025-01-01", "system:time_start"} <= set(map(str, found))
+
+
+def test_a_composite_is_exported_to_its_image_and_never_overwrites_it() -> None:
+    config = cast(dict[str, Any], export_task(COLLECTIONS[Indicator.ET], date(2024, 1, 9)).config)
+    found = constants(config["expression"].serialize())
+
+    assert config["description"] == "idea-agro-et-2024_01_09"
+    assert config["assetExportOptions"]["earthEngineDestination"] == {
+        "name": "projects/pastizalesrou/assets/idea-agro/et/2024_01_09",
+        "overwrite": False,
+    }
+    assert config["maxPixels"] == {"value": str(10**12)}
+    # Over Uruguay's outline at the current asset's pixel, with the band and properties of the collection.
+    assert {et.OUTLINE, "et", "8-day", "mm/day"} <= set(map(str, found))
+    assert et.SCALE in found

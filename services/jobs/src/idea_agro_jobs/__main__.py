@@ -1,4 +1,4 @@
-"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps`.
+"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps saved collections`.
 
 `PUBLIC_DATA` is where the API's public files are (`gs://<bucket>` or a folder), `VALUES_STORE` the BigQuery
 dataset of the zones' values (`bigquery://<project>/<dataset>`), `SAVED_ZONES` where the API keeps the saved zones'
@@ -10,9 +10,11 @@ import argparse
 import json
 import logging
 import os
+from datetime import date
 from pathlib import Path
 
-from idea_agro_jobs import maps, outlines, saved, site, values
+from idea_agro_jobs import collection, maps, outlines, saved, site, values
+from idea_agro_jobs.collection import COLLECTIONS
 from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
@@ -25,6 +27,7 @@ TASKS = {
     "maps": "draw the maps of new years, and the thumbnails of the latest",
     "saved": "add the composites the saved zones' seasonal series lack",
     "site": "ask for the website's build once the texts editors published have settled",
+    "collections": "add to each indicator's public collection the composites it lacks, as Earth Engine exports",
 }
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
@@ -62,9 +65,30 @@ def main() -> None:
         action="append",
         help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
     )
+    parser.add_argument(
+        "--since",
+        type=date.fromisoformat,
+        help="for collections: only the composites that start on this day (YYYY-MM-DD) or later",
+    )
+    parser.add_argument(
+        "--until",
+        type=date.fromisoformat,
+        help="for collections: only the composites that start on this day (YYYY-MM-DD) or earlier",
+    )
+    parser.add_argument(
+        "--indicator",
+        action="append",
+        type=Indicator,
+        choices=list(COLLECTIONS),
+        default=[],
+        help="for collections: only this indicator's collection (repeatable); else every one",
+    )
     arguments = parser.parse_args()
     if arguments.recompute and arguments.source == "public-files":
         parser.error("--recompute computes from Earth Engine, not from the public files")
+    if arguments.since and arguments.until and arguments.since > arguments.until:
+        parser.error("--since must not be after --until")
+    collections = [COLLECTIONS[indicator] for indicator in arguments.indicator] or list(COLLECTIONS.values())
 
     handler = logging.StreamHandler()
     # Cloud Run sets CLOUD_RUN_JOB; a local run keeps plain lines.
@@ -104,6 +128,8 @@ def main() -> None:
                 only=arguments.outline,
                 recompute=arguments.recompute,
             )
+        elif task == "collections":
+            collection.refresh(earth_engine(), collections, since=arguments.since, until=arguments.until)
 
 
 if __name__ == "__main__":

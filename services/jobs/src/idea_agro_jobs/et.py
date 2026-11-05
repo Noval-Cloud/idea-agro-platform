@@ -42,7 +42,7 @@ def starts(since: date, until: date) -> ee.List:
 
 def _rescale(image: ee.Image) -> ee.Image:
     image = ee.Image(image)
-    return image.multiply(0.1).copyProperties(image, image.propertyNames())
+    return ee.Image(image.multiply(0.1).copyProperties(image, image.propertyNames()))
 
 
 def _add_time_band(image: ee.Image) -> ee.Image:
@@ -86,7 +86,7 @@ def linear_interp(collection: ee.ImageCollection, frame: int, nodata: int) -> ee
         filled = later.subtract(earlier).multiply(ratio).add(earlier)
         qc = image.mask().Not().rename("qc")
         filled = _replace_mask(image, filled, nodata)
-        return filled.addBands(qc).copyProperties(image, image.propertyNames())
+        return ee.Image(filled.addBands(qc).copyProperties(image, image.propertyNames()))
 
     return ee.ImageCollection(joined.map(interpolate))
 
@@ -101,4 +101,4 @@ def composite(start: date) -> ee.Image:
     """The composite that starts on `start`, as `et-8` holds it: one band, in mm per day."""
     filled = linear_interp(_year(start.year).map(_rescale), FRAME_DAYS, NODATA).select([0])
     image = ee.Image(filled.filter(ee.Filter.eq(TIME, millis(start))).first())
-    return image.clip(outline()).divide(8).copyProperties(image, [TIME, "system:time_end"])
+    return ee.Image(image.clip(outline()).divide(8).copyProperties(image, [TIME, "system:time_end"]))
