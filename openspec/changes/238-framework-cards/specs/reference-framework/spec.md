@@ -25,6 +25,15 @@ The Science section of the Resources page SHALL show, under its lead, one card f
 - **WHEN** no article is marked as framework
 - **THEN** the Science section shows no framework card
 
+### Requirement: The article form says where a framework article shows
+
+The framework checkbox in the article form SHALL have a hint saying the article is shown on Resources in a card of its own, as the reference framework, in Spanish, English and Portuguese, and editable as a site text.
+
+#### Scenario: An editor reads the checkbox
+
+- **WHEN** an editor opens an article in Content → Articles
+- **THEN** the framework checkbox reads "Shown on Resources in a card of its own, as the reference framework" under its label
+
 ## ADDED Requirements
 
 ### Requirement: The Science section's lead points to the framework
