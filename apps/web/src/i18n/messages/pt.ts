@@ -1552,5 +1552,10 @@ export const pt = {
       confirmAction: "Encerrar as sessões",
       cancel: "Cancelar",
     },
+    toast: {
+      label: "Aviso",
+      region: "Avisos ({hotkey})",
+      close: "Fechar o aviso",
+    },
   },
 } as const satisfies CatalogShape<typeof es>;

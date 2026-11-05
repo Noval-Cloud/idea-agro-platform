@@ -1548,5 +1548,10 @@ export const en = {
       confirmAction: "Sign out everywhere",
       cancel: "Cancel",
     },
+    toast: {
+      label: "Notice",
+      region: "Notices ({hotkey})",
+      close: "Close the notice",
+    },
   },
 } as const satisfies CatalogShape<typeof es>;

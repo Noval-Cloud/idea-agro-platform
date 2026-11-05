@@ -350,7 +350,12 @@ export const layers = {
   sticky: "30",
   header: "40",
   popover: "50",
-  /** Dialogs and their scrim, over everything but tooltips. */
+  /** Dialogs and their scrim, over everything but toasts and tooltips. */
   modal: "55",
+  /** Confirmations, seen over the panel that asked for them. */
+  toast: "58",
   tooltip: "60",
 } as const;
+
+/** How long a toast stays (ms); hovering or focusing it holds it. */
+export const toastDuration = 5000;

@@ -2820,6 +2820,30 @@
       "pt": "Sua conta"
     }
   },
+  "account.toast.close": {
+    "format": "plain",
+    "default": {
+      "es": "Cerrar el aviso",
+      "en": "Close the notice",
+      "pt": "Fechar o aviso"
+    }
+  },
+  "account.toast.label": {
+    "format": "plain",
+    "default": {
+      "es": "Aviso",
+      "en": "Notice",
+      "pt": "Aviso"
+    }
+  },
+  "account.toast.region": {
+    "format": "plain",
+    "default": {
+      "es": "Avisos ({hotkey})",
+      "en": "Notices ({hotkey})",
+      "pt": "Avisos ({hotkey})"
+    }
+  },
   "account.users.access": {
     "format": "plain",
     "default": {

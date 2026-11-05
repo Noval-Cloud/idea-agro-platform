@@ -3,6 +3,7 @@ import type { Me } from "@idea-agro/api-client";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Toaster } from "@/components/ui/toast";
 import type { Locale } from "@/i18n/core";
 import { createAccountTranslator, type AccountCatalog } from "./i18n";
 import { accountSubpages, type AccountSection, type AccountSubpage } from "./paths";
@@ -38,7 +39,21 @@ const formerAnchors: Record<string, { section: AccountSection; hash?: string }> 
   "#users": { section: "admin" },
 };
 
-export default function AccountApp({
+/** The account, with the toast every section confirms its actions with. */
+export default function AccountApp(props: Props) {
+  const { t } = createAccountTranslator(props.locale, props.catalog);
+  return (
+    <Toaster
+      label={t("account.toast.label")}
+      region={t("account.toast.region", { hotkey: "F8" })}
+      close={t("account.toast.close")}
+    >
+      <Account {...props} />
+    </Toaster>
+  );
+}
+
+function Account({
   locale,
   catalog,
   section,

@@ -1,7 +1,7 @@
 ## 1. Shared pieces
 
 - [x] 1.1 Give the shared `Button` a busy state: disabled, a spinner inside, its width and name kept
-- [ ] 1.2 Add the account's toast: one corner, `role="status"`, gone after a few seconds, light and dark, its texts in every catalog
+- [x] 1.2 Add the account's toast: one corner, `role="status"`, gone after a few seconds, light and dark, its texts in every catalog
 
 ## 2. Content
 

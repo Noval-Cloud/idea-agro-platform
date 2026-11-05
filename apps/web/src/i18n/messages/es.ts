@@ -1553,5 +1553,10 @@ export const es = {
       confirmAction: "Cerrar las sesiones",
       cancel: "Cancelar",
     },
+    toast: {
+      label: "Aviso",
+      region: "Avisos ({hotkey})",
+      close: "Cerrar el aviso",
+    },
   },
 } as const;
