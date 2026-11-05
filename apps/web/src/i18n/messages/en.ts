@@ -300,10 +300,8 @@ export const en = {
   science: {
     title: "Every number has a source",
     lead: "The indicators follow the environmental performance framework defined by INIA for Uruguay's farming systems and rest on peer-reviewed research.",
-    frameworkLabel: "Reference framework",
     papersLabel: "Papers behind the indicators",
     doi: "DOI {doi}",
-    frameworkDoi: "DOI",
     link: "Read the article",
     backsLabel: "Indicators it supports",
     citeOne: "{surname} {year}",

@@ -9246,22 +9246,6 @@
       "pt": "DOI {doi}"
     }
   },
-  "science.frameworkDoi": {
-    "format": "plain",
-    "default": {
-      "es": "DOI",
-      "en": "DOI",
-      "pt": "DOI"
-    }
-  },
-  "science.frameworkLabel": {
-    "format": "plain",
-    "default": {
-      "es": "Marco de referencia",
-      "en": "Reference framework",
-      "pt": "Marco de referência"
-    }
-  },
   "science.lead": {
     "format": "plain",
     "default": {
