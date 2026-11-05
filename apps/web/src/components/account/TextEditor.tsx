@@ -100,8 +100,7 @@ export async function run<T>(call: Run): Promise<T> {
 
 /**
  * One text in a side panel, edited in its three languages: published at once or kept as a draft, with its
- * history. It stays open after each action, which a toast confirms. `label` names it where the page knows a better
- * name than its key.
+ * history. `label` names it where the page knows a better name than its key.
  */
 export function TextPanel({
   textKey,

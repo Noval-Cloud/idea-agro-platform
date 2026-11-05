@@ -19,6 +19,7 @@
 - [x] 4.1 Show the toast at the bottom, in the right corner on larger screens and across phones, with its close button
 - [x] 4.2 Confirm deleting an invitation, a project or an area, and renaming an area, with the toast
 - [x] 4.3 Ignore closing a panel while its action runs, so a failure is not lost
+- [x] 4.4 Keep the text panel's doc comment to two lines
 
 ## 5. Close
 
