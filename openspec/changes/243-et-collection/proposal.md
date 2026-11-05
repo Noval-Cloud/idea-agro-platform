@@ -1,0 +1,20 @@
+## Why
+
+Each indicator lives in `pastizalesrou` as one multiband image of several GB, brought up to date by hand: an owner runs Code Editor scripts in order and checks each result. For ET (`et/et-8`) the script, `et-generator.js`, recomputes the current year and rewrites the whole image. The platform takes that over, starting with ET, and writes a collection with one image per composite instead of rewriting the giant image.
+
+## What Changes
+
+- **Collection:** the data job writes ET's composites to the ImageCollection `projects/pastizalesrou/assets/idea-agro/et`, which the owner created empty and shared with the job as a writer and with anyone as a reader. Each image is named after its start (`2024_01_09`) and holds `system:time_start`, `system:time_end`, the band `et`, and the properties `period` (`8-day`) and `unit` (`mm/day`). The job writes nothing else: `et/et-8` stays as it is, and the readers (zone values, maps) keep reading it.
+- **Computation:** each image is what `et-generator.js` gives for that composite: MOD16A2's `ET` (`MODIS/061/MOD16A2`) times 0.1, its gaps filled linearly from the composites of its calendar year up to 72 days away (the script's `linearInterp`, from `InterpoladorDDK`), clipped to `users/fgallego/Contorno_Uy` and divided by 8, exported over that outline at 231.656 m in the image's own projection, MODIS's sinusoidal grid. The script defines `ET_QC` masks but applies none (the masked line is commented out), so the job applies none either, to reproduce `et-8`.
+- **History and current:** the collection starts at `et-8`'s first composite, 2001-01-01. A new task, `collections`, adds each composite MODIS has published that the collection lacks and no export is writing yet, optionally only those from `--since` to `--until`. It joins the daily run, so the history fills over the first runs and then each run adds the composites published since the last one. A composite added before the later composites of its year exist has its gaps filled from the earlier ones only, and is not rewritten when they arrive.
+- **Exports:** each image is an Earth Engine export task to `<collection>/<id>`, named `idea-agro-et-<id>`. A run keeps at most 4 running, starts none after 3 hours, and waits for those it started. A re-run never duplicates an image: it skips those the collection holds and those an export is still writing, and an export never overwrites.
+- **Checks at start:** the collection must exist as an ImageCollection, be readable by anyone, and be writable by the job, which it proves by writing the collection's own `period` and `unit`. Otherwise the run fails with a message saying which, and adds nothing.
+- **Record:** the run logs each composite added with the Earth Engine compute it used, and a summary. A failed export is logged as an error, which emails the admins (#134); after 3 failures the run starts no more.
+- **Comparison:** a new task, `compare`, compares an indicator's multiband asset (`b<year>-<day>` bands) with its collection over an optional date range, and writes a Markdown report under `jobs/comparisons/<indicator>/` in the public files' bucket. For each composite it says whether it is only in one of them; otherwise it gives, for the zone means of the seccionales and for a fixed sample of 5000 pixels, how many were compared, how many have a value in only one, the mean and maximum absolute difference, and the share within the indicator's tolerance (0.01 mm/day for ET). `--old` and `--new` compare other assets than the indicator's own. It works for any indicator the job writes a collection for, and each run writes a new report, so later runs show what changed.
+
+## Impact
+
+- Story: #243
+- Affected specs: `indicator-collections` (added).
+- Affected code: `services/jobs` (new tasks `collections` and `compare`, the ET computation, Earth Engine exports, the README), `infrastructure/terraform/modules/services/jobs` (the daily run's arguments).
+- Earth Engine: the job's account writes to `projects/pastizalesrou/assets/idea-agro/et` only, and runs export tasks in `pastizales-uy`, which use that project's batch quota.
