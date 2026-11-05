@@ -52,7 +52,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 ## Collections
 
-`idea-agro-jobs collections` keeps each indicator's public ImageCollection current, one image per composite, which the readers switch to later: today ET's, `projects/pastizalesrou/assets/idea-agro/et`, in place of `et/et-8`.
+`idea-agro-jobs collections` keeps each indicator's public ImageCollection current, one image per composite. ET's is `projects/pastizalesrou/assets/idea-agro/et`, built as `et/et-8` is.
 
 - **Images:** each is named after its composite's start (`2024_01_09`), with `system:time_start`, `system:time_end`, the band `et` and the properties `period` (`8-day`) and `unit` (`mm/day`). An image is never rewritten.
 - **Computation:** `et.py` ports `et-generator.js`, the owner's Code Editor script that builds `et-8`: MOD16A2's `ET` times 0.1, its gaps filled linearly from the composites of its calendar year up to 72 days away (`InterpoladorDDK`'s `linearInterp`), clipped to `users/fgallego/Contorno_Uy` and divided by 8, exported at 231.656 m in MODIS's sinusoidal projection. The script applies no `ET_QC` mask, so neither does the port. A composite of the current year is filled from the earlier ones only, since the later ones do not exist yet.
