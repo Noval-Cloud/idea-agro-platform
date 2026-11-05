@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/components/ui/toast";
 import { loadManifest, type Manifest } from "@/components/explorer/lib/data";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
@@ -73,6 +74,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
   const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
   const [view, setView] = useListView("saved-zones");
   const fileInput = useRef<HTMLInputElement>(null);
+  const toast = useToast();
 
   useEffect(() => {
     void api()
@@ -104,6 +106,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       if (response.status !== 200) return false;
       setZones((all) => all?.map((z) => (z.id === id ? response.data : z)));
       setEditing(null);
+      toast(t("account.zones.renamed"));
       focusSoon(`zone-${id}`);
       return true;
     });
@@ -114,6 +117,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       // Already gone, as after a delete from another tab: the list just catches up.
       if (response.status !== 204 && response.status !== 404) return false;
       setZones((all) => all?.filter((z) => z.id !== zone.id));
+      toast(t("account.zones.deleted"));
       focusSoon("list-search");
       return true;
     });

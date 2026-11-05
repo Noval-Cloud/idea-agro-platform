@@ -91,6 +91,7 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       const response = await privately((init) => client.deletePlatformInvitation(invitation.id, init));
       if (response.status !== 204) return setProblem(t("account.invitations.failed"));
       setInvitations((now) => (now ?? []).filter((i) => i.id !== invitation.id));
+      toast(t("account.invitations.deleted"));
       // Its row is gone: focus waits on the button that invites, once the list has changed.
       requestAnimationFrame(() => inviteButton.current?.focus());
     });

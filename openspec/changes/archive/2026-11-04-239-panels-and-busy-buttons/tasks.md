@@ -17,6 +17,7 @@
 ## 4. Review
 
 - [x] 4.1 Show the toast at the bottom, in the right corner on larger screens and across phones, with its close button
+- [x] 4.2 Confirm deleting an invitation, a project or an area, and renaming an area, with the toast
 
 ## 5. Close
 

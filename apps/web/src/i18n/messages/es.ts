@@ -1068,6 +1068,8 @@ export const es = {
       editOutline: "Editar el contorno",
       rename: "Renombrar",
       renameLabel: "Nuevo nombre de {name}",
+      renamed: "Zona renombrada.",
+      deleted: "Zona eliminada.",
       save: "Guardar",
       cancel: "Cancelar",
       delete: "Eliminar",
@@ -1121,6 +1123,7 @@ export const es = {
       open: "Abrir",
       onMap: "Ver en el mapa",
       delete: "Eliminar",
+      deleted: "Proyecto eliminado.",
       confirmDelete: {
         title: "¿Eliminar «{name}»?",
         body: "Se borran el proyecto y su actividad, y deja de estar compartido. Sus zonas no se borran.",
@@ -1184,6 +1187,7 @@ export const es = {
       resend: "Reenviar la invitación a {email}",
       delete: "Eliminar",
       deleteNamed: "Eliminar la invitación a {email}",
+      deleted: "Invitación eliminada.",
       confirmTitle: "¿Eliminar la invitación?",
       confirmBody:
         "{email} deja de estar en tu lista. Si todavía no entró, el enlace del correo igual le sirve para entrar.",

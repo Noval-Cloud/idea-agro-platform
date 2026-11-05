@@ -78,12 +78,17 @@ The toast SHALL sit at the bottom of the screen: in its right corner on larger s
 
 ### Requirement: The account's other confirmations use the toast
 
-An invitation sent or resent, areas imported from a file, and an indicator's articles reordered or put back SHALL be confirmed with the toast. Removing an article from an indicator SHALL keep its line under the list, with its Undo.
+An invitation sent, resent or deleted, a project deleted, an area renamed or deleted, areas imported from a file, and an indicator's articles reordered or put back SHALL be confirmed with the toast. Removing an article from an indicator SHALL keep its line under the list, with its Undo.
 
 #### Scenario: An invitation is sent
 
 - **WHEN** a person sends an invitation from Invitations
 - **THEN** the dialog closes and a toast reads "Invitation sent to" the address
+
+#### Scenario: An area is deleted
+
+- **WHEN** a person deletes an area from My areas after confirming
+- **THEN** the area leaves the list and a toast reads "Area deleted."
 
 ### Requirement: Buttons show when their action is running
 
