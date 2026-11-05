@@ -5,6 +5,7 @@ import { Send, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { iconSize } from "@/design/tokens";
 import { readHint } from "@/lib/account-hint";
 import type { Locale } from "@/i18n/core";
@@ -20,9 +21,13 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
   const { t, date, ago } = translator;
   const [invitations, setInvitations] = useState<PlatformInvitationOut[] | null | undefined>(undefined);
   const [problem, setProblem] = useState("");
+  // An invitation kept whose email did not leave; a sent one confirms with the toast.
   const [news, setNews] = useState("");
+  // The row button whose call is on its way, such as `resend:<id>`.
+  const [busy, setBusy] = useState<string | null>(null);
   const inviteButton = useRef<HTMLButtonElement>(null);
   const { ask, dialog } = useConfirm(t("account.invitations.cancel"));
+  const toast = useToast();
 
   useEffect(() => {
     void api()
@@ -51,24 +56,27 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       if (response.status === 201) {
         const { invitation_sent, ...invitation } = response.data;
         setInvitations((now) => [invitation, ...(now ?? [])]);
-        setNews(t(invitation_sent ? "account.invitations.sent" : "account.invitations.unsent", { email }));
+        if (invitation_sent) toast(t("account.invitations.sent", { email }));
+        else setNews(t("account.invitations.unsent", { email }));
       }
       return response.status;
     });
 
-  const resend = (invitation: PlatformInvitationOut) =>
-    void call(async ([{ privately }, client]) => {
+  const resend = async (invitation: PlatformInvitationOut) => {
+    setBusy(`resend:${invitation.id}`);
+    await call(async ([{ privately }, client]) => {
       const response = await privately((init) =>
         client.resendPlatformInvitation(invitation.id, { language: locale }, init),
       );
       if (response.status === 200) {
         const { invitation_sent, ...renewed } = response.data;
         setInvitations((now) => (now ?? []).map((i) => (i.id === renewed.id ? renewed : i)));
-        setNews(
-          t(invitation_sent ? "account.invitations.resent" : "account.invitations.unsent", { email: renewed.email }),
-        );
+        if (invitation_sent) toast(t("account.invitations.resent", { email: renewed.email }));
+        else setNews(t("account.invitations.unsent", { email: renewed.email }));
       } else setProblem(t(response.status === 429 ? "account.invitations.soon" : "account.invitations.failed"));
     });
+    setBusy(null);
+  };
 
   const remove = async (invitation: PlatformInvitationOut) => {
     const yes = await ask({
@@ -78,6 +86,7 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       tone: "danger",
     });
     if (!yes) return;
+    setBusy(`delete:${invitation.id}`);
     await call(async ([{ privately }, client]) => {
       const response = await privately((init) => client.deletePlatformInvitation(invitation.id, init));
       if (response.status !== 204) return setProblem(t("account.invitations.failed"));
@@ -85,6 +94,7 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
       // Its row is gone: focus waits on the button that invites, once the list has changed.
       requestAnimationFrame(() => inviteButton.current?.focus());
     });
+    setBusy(null);
   };
 
   const state = (invitation: PlatformInvitationOut) =>
@@ -126,7 +136,9 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
                   size="icon"
                   variant="ghost"
                   aria-label={t("account.invitations.resend", { email: invitation.email })}
-                  onClick={() => resend(invitation)}
+                  busy={busy === `resend:${invitation.id}`}
+                  disabled={busy !== null}
+                  onClick={() => void resend(invitation)}
                 >
                   <Send size={iconSize.sm} aria-hidden="true" />
                 </Button>
@@ -135,6 +147,8 @@ export default function Invitations({ translator, locale, signInPath }: Props) {
                 size="icon"
                 variant="ghost"
                 aria-label={t("account.invitations.deleteNamed", { email: invitation.email })}
+                busy={busy === `delete:${invitation.id}`}
+                disabled={busy !== null}
                 onClick={() => void remove(invitation)}
               >
                 <Trash2 size={iconSize.sm} aria-hidden="true" />
@@ -260,8 +274,8 @@ function InviteDialog({
                   {t("account.invitations.cancel")}
                 </Button>
               </Dialog.Close>
-              <Button type="submit" size="sm" disabled={sending}>
-                {sending ? t("account.invitations.inviting") : t("account.invitations.invite")}
+              <Button type="submit" size="sm" busy={sending}>
+                {t("account.invitations.invite")}
               </Button>
             </div>
           </form>

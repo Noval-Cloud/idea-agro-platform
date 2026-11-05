@@ -12,7 +12,7 @@
 ## 3. Administration and the rest of the account
 
 - [x] 3.1 Confirm a user panel's actions with the toast, each with its own message, and show which action runs
-- [ ] 3.2 Move invitations' and imported areas' confirmations to the toast, and use busy buttons for invitations, projects, areas and sessions
+- [x] 3.2 Move invitations' and imported areas' confirmations to the toast, and use busy buttons for invitations, projects, areas and sessions
 
 ## 4. Close
 

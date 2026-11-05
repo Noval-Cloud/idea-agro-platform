@@ -1090,7 +1090,6 @@ export const pt = {
         hint: "GeoJSON, KML, KMZ ou Shapefile em .zip. Para desenhar uma zona, use o mapa.",
         found: { one: "{count} zona em “{name}”", other: "{count} zonas em “{name}”" },
         save: { one: "Salvar {count} zona", other: "Salvar {count} zonas" },
-        saving: "Salvando…",
         cancel: "Cancelar",
         saved: { one: "Salvamos {count} zona.", other: "Salvamos {count} zonas." },
         empty: "Não encontramos polígonos em “{name}”.",
@@ -1119,7 +1118,6 @@ export const pt = {
       descriptionLabel: "Descrição",
       descriptionPlaceholder: "Do que se trata (opcional)",
       createAction: "Criar e abrir",
-      creating: "Criando…",
       cancel: "Cancelar",
       open: "Abrir",
       onMap: "Ver no mapa",
@@ -1162,7 +1160,6 @@ export const pt = {
       intro:
         "Convide alguém para o IDEA-Agro. A pessoa recebe um e-mail com o seu nome e um link para entrar; vale uma semana. Você vai ver aqui quando ela entrar.",
       invite: "Convidar",
-      inviting: "Convidando…",
       inviteTitle: "Convidar para o IDEA-Agro",
       inviteBody: "Enviamos um e-mail no seu idioma. Quando a pessoa entrar com esse e-mail, o convite fica aceito.",
       email: "E-mail",

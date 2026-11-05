@@ -2,6 +2,7 @@ import { useState, type RefObject } from "react";
 import { FileUp } from "lucide-react";
 import type { SavedZoneOut } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { iconSize } from "@/design/tokens";
 import { importBatches, readZoneFile, zoneFileTypes, type FileZone } from "@/components/explorer/lib/files";
 import type { AccountTranslator } from "./i18n";
@@ -18,24 +19,26 @@ type Props = {
 /** Reads a file's polygons, shows them, and saves them to the library. Drawing stays on the map. */
 export default function ImportZones({ t, number, signInPath, input, onSaved }: Props) {
   const [found, setFound] = useState<{ file: string; zones: FileZone[] } | null>(null);
-  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
+  // What went wrong; saved areas confirm with the toast.
+  const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   const pick = async (file: File) => {
-    setNotice(null);
+    setProblem(null);
     try {
       const zones = await readZoneFile(file, (n) => t("account.zones.import.unnamed", { number: n }));
-      if (!zones.length) return setNotice({ text: t("account.zones.import.empty", { name: file.name }), ok: false });
+      if (!zones.length) return setProblem(t("account.zones.import.empty", { name: file.name }));
       setFound({ file: file.name, zones });
     } catch {
-      setNotice({ text: t("account.zones.import.unreadable", { name: file.name }), ok: false });
+      setProblem(t("account.zones.import.unreadable", { name: file.name }));
     }
   };
 
   const save = async () => {
     if (!found) return;
     setSaving(true);
-    setNotice(null);
+    setProblem(null);
     let saved = 0;
     try {
       const [{ privately }, client] = await Promise.all([import("@/lib/account"), import("@idea-agro/api-client")]);
@@ -47,7 +50,7 @@ export default function ImportZones({ t, number, signInPath, input, onSaved }: P
         const response = await privately((init) => client.importSavedZones({ zones: batch.map((b) => b.zone) }, init));
         if (response.status !== 201) {
           const detail = (response.data as { detail?: string | null }).detail ?? String(response.status);
-          return setNotice({ text: t("account.zones.import.failed", { reason: detail }), ok: false });
+          return setProblem(t("account.zones.import.failed", { reason: detail }));
         }
         saved += response.data.length;
         onSaved(response.data);
@@ -56,11 +59,11 @@ export default function ImportZones({ t, number, signInPath, input, onSaved }: P
         setFound((now) => now && { ...now, zones: now.zones.filter((z) => !sent.has(z.key)) });
       }
       setFound(null);
-      setNotice({ text: t("account.zones.import.saved", { count: saved }), ok: true });
+      toast(t("account.zones.import.saved", { count: saved }));
     } catch (error) {
       if (error instanceof (await import("@/lib/account")).SignedOut)
         return location.assign(`${signInPath}?next=${encodeURIComponent(location.pathname)}`);
-      setNotice({ text: t("account.zones.import.interrupted"), ok: false });
+      setProblem(t("account.zones.import.interrupted"));
     } finally {
       setSaving(false);
     }
@@ -82,7 +85,7 @@ export default function ImportZones({ t, number, signInPath, input, onSaved }: P
           if (file) void pick(file);
         }}
       />
-      {(found || notice) && (
+      {(found || problem) && (
         <div className="grid gap-3">
           {found && (
             <div className="grid gap-3 rounded-lg border border-line bg-surface p-4">
@@ -106,10 +109,8 @@ export default function ImportZones({ t, number, signInPath, input, onSaved }: P
                 ))}
               </ul>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" disabled={saving} onClick={() => void save()}>
-                  {saving
-                    ? t("account.zones.import.saving")
-                    : t("account.zones.import.save", { count: found.zones.length })}
+                <Button size="sm" busy={saving} onClick={() => void save()}>
+                  {t("account.zones.import.save", { count: found.zones.length })}
                 </Button>
                 <Button size="sm" variant="ghost" disabled={saving} onClick={() => setFound(null)}>
                   {t("account.zones.import.cancel")}
@@ -117,12 +118,9 @@ export default function ImportZones({ t, number, signInPath, input, onSaved }: P
               </div>
             </div>
           )}
-          {notice && (
-            <p
-              role={notice.ok ? "status" : "alert"}
-              className={notice.ok ? "text-sm text-ink-muted" : "text-sm text-danger"}
-            >
-              {notice.text}
+          {problem && (
+            <p role="alert" className="text-sm text-danger">
+              {problem}
             </p>
           )}
         </div>

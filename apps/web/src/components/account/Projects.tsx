@@ -426,8 +426,8 @@ function NewProject({
                 {t("account.projects.cancel")}
               </Button>
             </PopoverClose>
-            <Button type="submit" size="sm" disabled={creating || !name.trim()}>
-              {creating ? t("account.projects.creating") : t("account.projects.createAction")}
+            <Button type="submit" size="sm" busy={creating} disabled={!name.trim()}>
+              {t("account.projects.createAction")}
             </Button>
           </div>
         </form>

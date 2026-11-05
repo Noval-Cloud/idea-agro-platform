@@ -182,7 +182,7 @@ function Account({
         </Setting>
         <Setting id="sessions" title={t("account.sessions.title")} body={t("account.sessions.body")}>
           <div className="grid justify-items-start gap-3">
-            <Button variant="outline" size="sm" disabled={ending === "working"} onClick={() => setConfirming(true)}>
+            <Button variant="outline" size="sm" busy={ending === "working"} onClick={() => setConfirming(true)}>
               <LogOut aria-hidden="true" />
               {t("account.sessions.action")}
             </Button>

@@ -2121,14 +2121,6 @@
       "pt": "Convidar para o IDEA-Agro"
     }
   },
-  "account.invitations.inviting": {
-    "format": "plain",
-    "default": {
-      "es": "Invitando…",
-      "en": "Inviting…",
-      "pt": "Convidando…"
-    }
-  },
   "account.invitations.limit": {
     "format": "plain",
     "default": {
@@ -2384,14 +2376,6 @@
       "es": "Agrupá zonas de tu biblioteca, seccionales, cuencas o padrones, y compartilas con otras personas.",
       "en": "Group areas from your library, police districts, basins or parcels, and share them with others.",
       "pt": "Agrupe zonas da sua biblioteca, seccionais, bacias ou padrones, e compartilhe com outras pessoas."
-    }
-  },
-  "account.projects.creating": {
-    "format": "plain",
-    "default": {
-      "es": "Creando…",
-      "en": "Creating…",
-      "pt": "Criando…"
     }
   },
   "account.projects.delete": {
@@ -3527,14 +3511,6 @@
         "one": "Salvamos {count} zona.",
         "other": "Salvamos {count} zonas."
       }
-    }
-  },
-  "account.zones.import.saving": {
-    "format": "plain",
-    "default": {
-      "es": "Guardando…",
-      "en": "Saving…",
-      "pt": "Salvando…"
     }
   },
   "account.zones.import.unnamed": {

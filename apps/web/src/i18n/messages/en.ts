@@ -1085,7 +1085,6 @@ export const en = {
         hint: "GeoJSON, KML, KMZ or a zipped Shapefile. To draw an area, use the map.",
         found: { one: "{count} area in “{name}”", other: "{count} areas in “{name}”" },
         save: { one: "Save {count} area", other: "Save {count} areas" },
-        saving: "Saving…",
         cancel: "Cancel",
         saved: { one: "We saved {count} area.", other: "We saved {count} areas." },
         empty: "We found no polygons in “{name}”.",
@@ -1114,7 +1113,6 @@ export const en = {
       descriptionLabel: "Description",
       descriptionPlaceholder: "What it is about (optional)",
       createAction: "Create and open",
-      creating: "Creating…",
       cancel: "Cancel",
       open: "Open",
       onMap: "See on the map",
@@ -1157,7 +1155,6 @@ export const en = {
       intro:
         "Invite someone to IDEA-Agro. They get an email with your name and a link to sign in; it lasts a week. You will see here when they join.",
       invite: "Invite",
-      inviting: "Inviting…",
       inviteTitle: "Invite to IDEA-Agro",
       inviteBody:
         "We send them an email in your language. When they sign in with that email, the invitation is accepted.",
