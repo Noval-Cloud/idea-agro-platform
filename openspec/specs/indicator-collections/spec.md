@@ -41,7 +41,7 @@ A composite added before the later composites of its year exist SHALL have its g
 
 ### Requirement: Each run adds only what is missing
 
-A run of the `collections` task SHALL export each composite MODIS has published that the collection lacks and no export is writing yet, as one Earth Engine export task per image, and wait for the exports it starts. It SHALL keep at most 4 exports running, start none after 3 hours, and leave the rest for the next run. With `--since` and `--until`, it SHALL consider only the composites that start within those days. The daily run SHALL include this task.
+A run of the `collections` task SHALL export, one Earth Engine export task per image, each composite MODIS has published that the collection lacks and no export is writing yet. It SHALL keep at most 4 exports running, start none after 3 hours, and wait for its exports up to an hour more, leaving the rest to the next run. With `--since` and `--until`, it SHALL consider only the composites that start within those days. The daily run SHALL include this task.
 
 #### Scenario: Nothing new
 
@@ -57,6 +57,11 @@ A run of the `collections` task SHALL export each composite MODIS has published 
 
 - **WHEN** a run is repeated, or starts while another run's exports are still running
 - **THEN** it starts no export for a composite the collection holds or an export is writing
+
+#### Scenario: Exports outlast the run
+
+- **WHEN** exports are still running an hour after the last one could start
+- **THEN** the run logs them and ends, and the next run starts no export for them while they run
 
 #### Scenario: One year
 

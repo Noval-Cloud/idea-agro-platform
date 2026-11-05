@@ -9,6 +9,7 @@ from idea_agro_jobs.collection import (
     IN_FLIGHT,
     MAX_FAILURES,
     POLL,
+    WAIT,
     Collection,
     CollectionError,
     ExportState,
@@ -136,7 +137,9 @@ def test_only_the_composites_the_collection_lacks_are_exported(caplog: pytest.Lo
 
     assert archive.started == published[3:]
     assert "et 2024-02-02: added" in caplog.text
-    assert "et: 3 composites added (2024-01-25 to 2024-02-10), 0.05 EECU-hours; 0 left" in caplog.text
+    assert "et: 3 composites added (2024-01-25 to 2024-02-10), 0.05 EECU-hours; 0 still exporting, 0 left" in (
+        caplog.text
+    )
 
 
 def test_running_it_again_adds_nothing() -> None:
@@ -182,7 +185,22 @@ def test_no_export_starts_once_the_time_is_spent(caplog: pytest.LogCaptureFixtur
 
     # The first four start, and only those, which the run waits for.
     assert len(archive.started) == IN_FLIGHT
-    assert "et: 4 composites added (2024-01-01 to 2024-01-25), 0.07 EECU-hours; 16 left for the next run" in caplog.text
+    summary = "et: 4 composites added (2024-01-01 to 2024-01-25), 0.07 EECU-hours; 0 still exporting, 16 left"
+    assert summary in caplog.text
+
+
+def test_the_run_stops_waiting_for_exports_that_outlast_it(caplog: pytest.LogCaptureFixture) -> None:
+    # Exports that run past the budget and the wait after it.
+    archive = FakeArchive(eight_days(date(2024, 1, 1), 6), polls=int((BUDGET + WAIT).total_seconds() / POLL) + 10)
+    clock = Clock()
+
+    with caplog.at_level(logging.INFO):
+        run(archive, clock)
+
+    assert len(archive.started) == IN_FLIGHT
+    assert clock.now <= (BUDGET + WAIT).total_seconds() + POLL
+    assert "et: 4 exports still running, left to finish: 2024-01-01, 2024-01-09, 2024-01-17, 2024-01-25" in caplog.text
+    assert "et: 0 composites added, 0.00 EECU-hours; 4 still exporting, 2 left for the next run" in caplog.text
 
 
 def test_failed_exports_alert_and_stop_the_run(caplog: pytest.LogCaptureFixture) -> None:

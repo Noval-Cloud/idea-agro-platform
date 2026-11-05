@@ -58,6 +58,9 @@ COLLECTIONS = {
 IN_FLIGHT = 4
 # No export starts after this long into the task; the next run goes on.
 BUDGET = timedelta(hours=3)
+# How long after that the run still waits for its exports, well within the job's 6 hours; the next run leaves the
+# ones still running to finish.
+WAIT = timedelta(hours=1)
 # Failed exports after which a run starts no more.
 MAX_FAILURES = 3
 # Seconds between two looks at the running exports.
@@ -230,7 +233,7 @@ def _export(
         while waiting and len(running) < IN_FLIGHT and failures < MAX_FAILURES and clock() < deadline:
             start = waiting.pop(0)
             running[archive.start_export(collection, start)] = start
-        if not running:
+        if not running or clock() >= deadline + WAIT.total_seconds():
             break
         sleep(POLL)
         for operation, start in list(running.items()):
@@ -249,11 +252,15 @@ def _export(
                 log.error("%s %s: export failed: %s", collection.indicator, start, state.error)
     if waiting and failures >= MAX_FAILURES:
         log.error("%s: stopped after %d failed exports", collection.indicator, failures)
+    if running:
+        still = ", ".join(str(start) for start in sorted(running.values()))
+        log.warning("%s: %d exports still running, left to finish: %s", collection.indicator, len(running), still)
     log.info(
-        "%s: %d composites added%s, %.2f EECU-hours; %d left for the next run",
+        "%s: %d composites added%s, %.2f EECU-hours; %d still exporting, %d left for the next run",
         collection.indicator,
         len(added),
         f" ({added[0]} to {added[-1]})" if added else "",
         eecu_seconds / 3600,
+        len(running),
         len(waiting),
     )
