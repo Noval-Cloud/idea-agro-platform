@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
@@ -67,6 +68,7 @@ export function Articles({ translator, onChanged, changed }: Props) {
   const [flagsValue, setFlags] = useQueryState("only", "");
   const on = flags.filter((f) => flagsValue.split(",").includes(f));
   const [seeding, setSeeding] = useState<"idle" | "busy" | "failed">("idle");
+  const toast = useToast();
 
   if (published === null)
     return (
@@ -110,11 +112,12 @@ export function Articles({ translator, onChanged, changed }: Props) {
       id={open === "new" ? null : open}
       citedBy={open === "new" ? [] : citing(open).map(name)}
       translator={translator}
-      onSaved={(id) => {
-        setOpen(id);
+      onDone={(done, removed) => {
+        setOpen(null);
         onChanged();
+        toast(t(done));
         // A removed article takes its row with it: focus goes to the search.
-        if (!id) requestAnimationFrame(() => document.getElementById("list-search")?.focus());
+        if (removed) requestAnimationFrame(() => document.getElementById("list-search")?.focus());
       }}
       onClose={() => setOpen(null)}
     />
@@ -264,25 +267,29 @@ const fromArticle = (found: ArticleOut): ArticleIn => ({
   framework: found.framework,
 });
 
-/** One article in a side panel: its data and its removal. `id` is null for one being added. */
+/**
+ * One article in a side panel: its data and its removal, each closing the panel once done. `id` is null for one
+ * being added.
+ */
 function ArticlePanel({
   id,
   citedBy,
   translator,
-  onSaved,
+  onDone,
   onClose,
 }: {
   id: string | null;
   citedBy: string[];
   translator: AccountTranslator;
-  onSaved: (id: string | null) => void;
+  /** What was done, to confirm it, and whether the article is gone. */
+  onDone: (done: AccountKey, removed: boolean) => void;
   onClose: () => void;
 }) {
   const { t, moment, list } = translator;
   const [article, setArticle] = useState<ArticleOut | null>(null);
   const [form, setForm] = useState<ArticleIn | null>(id ? null : empty);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<{ tone: "done" | "failed"; key: AccountKey } | null>(null);
+  const [busy, setBusy] = useState<"save" | "remove" | null>(null);
+  const [failed, setFailed] = useState<AccountKey | null>(null);
   const [confirming, setConfirming] = useState(false);
   const leave = useConfirm(t("account.content.keepEditing"));
 
@@ -293,7 +300,7 @@ function ArticlePanel({
         setArticle(found);
         setForm(fromArticle(found));
       })
-      .catch(() => setNotice({ tone: "failed", key: "account.content.failed" }));
+      .catch(() => setFailed("account.content.failed"));
   }, [id]);
 
   const set = (patch: Partial<ArticleIn>) => form && setForm({ ...form, ...patch });
@@ -330,38 +337,36 @@ function ArticlePanel({
     }
     onClose();
   };
-  const act = async (run: () => Promise<ArticleOut | null>, done: AccountKey, reset = false) => {
-    setBusy(true);
-    setNotice(null);
+  const act = async (action: "save" | "remove", run: () => Promise<unknown>, done: AccountKey) => {
+    setBusy(action);
+    setFailed(null);
     try {
-      const saved = await run();
-      if (saved) {
-        setArticle(saved);
-        if (reset) setForm(fromArticle(saved));
-      }
-      setNotice({ tone: "done", key: done });
-      onSaved(saved ? saved.id : null);
+      await run();
     } catch {
-      setNotice({ tone: "failed", key: "account.content.saveFailed" });
-    } finally {
-      setBusy(false);
+      setBusy(null);
+      return setFailed("account.content.saveFailed");
     }
+    onDone(done, action === "remove");
   };
   const save = () =>
     body &&
-    act(
-      () =>
-        id
-          ? call<ArticleOut>((client, init) => client.putArticle(id, body, init))
-          : call<ArticleOut>((client, init) => client.addArticle(body, init)),
-      "account.content.articles.saved",
-      true,
-    );
+    (id
+      ? act(
+          "save",
+          () => call<ArticleOut>((client, init) => client.putArticle(id, body, init)),
+          "account.content.articles.saved",
+        )
+      : act(
+          "save",
+          () => call<ArticleOut>((client, init) => client.addArticle(body, init)),
+          "account.content.articles.added",
+        ));
   const remove = () =>
-    act(async () => {
-      await call((client, init) => client.deleteArticle(id ?? "", init));
-      return null;
-    }, "account.content.articles.removed");
+    act(
+      "remove",
+      () => call((client, init) => client.deleteArticle(id ?? "", init)),
+      "account.content.articles.removed",
+    );
 
   // The API's own limits, so a long value is caught while typing.
   const lengths = { authors: 500, title: 500, source: 300, doi: 200, url: 500 };
@@ -391,18 +396,25 @@ function ArticlePanel({
 
   const footer = form && (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <p
-        role="status"
-        className={cn("mr-auto min-w-0 text-sm", notice?.tone === "failed" ? "text-danger" : "text-ink-muted")}
-      >
-        {notice ? t(notice.key) : ""}
+      <p role="status" className="mr-auto min-w-0 text-sm text-danger">
+        {failed ? t(failed) : ""}
       </p>
       {id && (
-        <Button variant="ghost" className="text-danger" disabled={busy} onClick={() => setConfirming(true)}>
+        <Button
+          variant="ghost"
+          className="text-danger"
+          busy={busy === "remove"}
+          disabled={busy !== null}
+          onClick={() => setConfirming(true)}
+        >
           {t("account.content.articles.remove")}
         </Button>
       )}
-      <Button disabled={busy || !valid || (id !== null && !dirty)} onClick={() => void save()}>
+      <Button
+        busy={busy === "save"}
+        disabled={busy !== null || !valid || (id !== null && !dirty)}
+        onClick={() => void save()}
+      >
         {id ? t("account.content.articles.save") : t("account.content.articles.create")}
       </Button>
     </div>
@@ -424,8 +436,8 @@ function ArticlePanel({
       footer={footer}
     >
       {!form ? (
-        <p className={cn("text-sm", notice ? "text-danger" : "text-ink-muted")}>
-          {notice ? t(notice.key) : t("account.loading")}
+        <p className={cn("text-sm", failed ? "text-danger" : "text-ink-muted")}>
+          {failed ? t(failed) : t("account.loading")}
         </p>
       ) : (
         <div className="grid gap-5">

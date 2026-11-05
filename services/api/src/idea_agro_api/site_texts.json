@@ -481,6 +481,14 @@
       "pt": "Adicionar artigo"
     }
   },
+  "account.content.articles.added": {
+    "format": "plain",
+    "default": {
+      "es": "Artículo agregado.",
+      "en": "Article added.",
+      "pt": "Artigo adicionado."
+    }
+  },
   "account.content.articles.anyIndicator": {
     "format": "plain",
     "default": {
@@ -701,9 +709,9 @@
   "account.content.articles.saved": {
     "format": "plain",
     "default": {
-      "es": "Guardado. El sitio lo va a mostrar en su próxima actualización.",
-      "en": "Saved. The site will show it when it next updates.",
-      "pt": "Salvo. O site vai mostrá-lo na próxima atualização."
+      "es": "Artículo guardado.",
+      "en": "Article saved.",
+      "pt": "Artigo salvo."
     }
   },
   "account.content.articles.searchLabel": {

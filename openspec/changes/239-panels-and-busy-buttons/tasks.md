@@ -5,7 +5,7 @@
 
 ## 2. Content
 
-- [ ] 2.1 Close the article panel when adding, saving or deleting succeeds, with a toast, and busy buttons
+- [x] 2.1 Close the article panel when adding, saving or deleting succeeds, with a toast, and busy buttons
 - [ ] 2.2 Keep the article picker open while its articles are saved, close it with a toast, and move the citation list's confirmations to the toast
 - [ ] 2.3 Confirm a text panel's actions with the toast, keep it open, and show which action runs; busy buttons for loading the articles and updating the site
 
