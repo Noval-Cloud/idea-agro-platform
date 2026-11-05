@@ -294,7 +294,7 @@ export const pt = {
   },
   science: {
     title: "Cada número tem uma fonte",
-    lead: "Os indicadores seguem o marco de desempenho ambiental definido pelo INIA para os sistemas agropecuários do Uruguai e se apoiam em pesquisa revisada por pares.",
+    lead: "Os indicadores seguem o marco de referência dos trabalhos que aparecem abaixo e se apoiam em pesquisa revisada por pares.",
     papersLabel: "Artigos que respaldam os indicadores",
     doi: "DOI {doi}",
     link: "Ler o artigo",

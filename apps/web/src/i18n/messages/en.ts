@@ -299,7 +299,7 @@ export const en = {
   },
   science: {
     title: "Every number has a source",
-    lead: "The indicators follow the environmental performance framework defined by INIA for Uruguay's farming systems and rest on peer-reviewed research.",
+    lead: "The indicators follow the reference framework set out in the works below, and rest on peer-reviewed research.",
     papersLabel: "Papers behind the indicators",
     doi: "DOI {doi}",
     link: "Read the article",
