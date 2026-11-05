@@ -44,7 +44,13 @@ variable "placeholder_image" {
 variable "args" {
   description = "Arguments of a run that does not override them: the task and its options"
   type        = list(string)
-  default     = ["outlines", "values", "maps", "saved", "collections"]
+  default     = ["outlines", "values", "maps", "saved"]
+}
+
+variable "collections" {
+  description = "Whether a run that does not override its arguments also adds to the indicators' Earth Engine collections the composites they lack: only where pastizalesrou shares them with the job"
+  type        = bool
+  default     = false
 }
 
 variable "cpu" {

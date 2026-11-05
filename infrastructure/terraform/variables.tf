@@ -63,6 +63,12 @@ variable "earth_engine_project" {
   type        = string
 }
 
+variable "jobs_collections" {
+  description = "Whether the data job's daily run keeps the indicators' Earth Engine collections current: only where pastizalesrou shares them with the job"
+  type        = bool
+  default     = false
+}
+
 variable "domain" {
   description = "The platform's own domain, such as idea-agro.org, verified in Search Console with the operator as an owner; empty keeps the run.app addresses only"
   type        = string

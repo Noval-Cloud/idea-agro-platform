@@ -11,6 +11,7 @@
 - [x] 2.2 Stop waiting for running exports an hour after the last one may start, and leave them to the next run
 - [x] 2.3 Test the Earth Engine side of the collections task, with `ee.data` answering for the server
 - [x] 2.4 Keep progress out of the jobs README
+- [x] 2.5 Add `collections` to the daily run only where Terraform's `jobs_collections` is on, off by default
 
 ## 3. Close
 

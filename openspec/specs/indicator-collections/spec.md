@@ -41,7 +41,7 @@ A composite added before the later composites of its year exist SHALL have its g
 
 ### Requirement: Each run adds only what is missing
 
-A run of the `collections` task SHALL export, one Earth Engine export task per image, each composite MODIS has published that the collection lacks and no export is writing yet. It SHALL keep at most 4 exports running, start none after 3 hours, and wait for its exports up to an hour more, leaving the rest to the next run. With `--since` and `--until`, it SHALL consider only the composites that start within those days. The daily run SHALL include this task.
+A run of the `collections` task SHALL export, one Earth Engine export task per image, each composite MODIS has published that the collection lacks and no export is writing yet. It SHALL keep at most 4 exports running, start none after 3 hours, and wait for its exports up to an hour more, leaving the rest to the next run. With `--since` and `--until`, it SHALL consider only the composites that start within those days.
 
 #### Scenario: Nothing new
 
@@ -67,6 +67,15 @@ A run of the `collections` task SHALL export, one Earth Engine export task per i
 
 - **WHEN** a run is given `--since 2024-01-01 --until 2024-12-31`
 - **THEN** it adds only the missing composites that start in 2024
+
+### Requirement: Each environment chooses whether its daily run adds composites
+
+The daily run SHALL include the `collections` task only in the environments whose Terraform sets `jobs_collections`, which is off by default.
+
+#### Scenario: An environment that does not set it
+
+- **WHEN** an environment's `terraform.tfvars` does not set `jobs_collections`
+- **THEN** its daily run adds nothing to the collections, and checks none
 
 ### Requirement: The job checks the collection before writing
 

@@ -2,7 +2,7 @@
 
 Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery, publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)), and write the indicators' public collections in Earth Engine.
 
-`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps saved collections`.
+`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps saved`, and `collections` where Terraform's `jobs_collections` is on.
 
 ## Values
 
@@ -54,6 +54,7 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 `idea-agro-jobs collections` keeps each indicator's public ImageCollection current, one image per composite. ET's is `projects/pastizalesrou/assets/idea-agro/et`, built as `et/et-8` is.
 
+- **Where:** the daily run includes it only where the environment's `terraform.tfvars` sets `jobs_collections = true`, since `pastizalesrou` shares each collection with one environment's job. Without it, the task runs only when asked, with `make jobs-run`.
 - **Images:** each is named after its composite's start (`2024_01_09`), with `system:time_start`, `system:time_end`, the band `et` and the properties `period` (`8-day`) and `unit` (`mm/day`). An image is never rewritten.
 - **Computation:** `et.py` ports `et-generator.js`, the owner's Code Editor script that builds `et-8`: MOD16A2's `ET` times 0.1, its gaps filled linearly from the composites of its calendar year up to 72 days away (`InterpoladorDDK`'s `linearInterp`), clipped to `users/fgallego/Contorno_Uy` and divided by 8, exported at 231.656 m in MODIS's sinusoidal projection. The script applies no `ET_QC` mask, so neither does the port. A composite of the current year is filled from the earlier ones only, since the later ones do not exist yet.
 - **What a run adds:** each composite MODIS published, from the collection's first (2001-01-01), that the collection lacks and no export is writing; `--since` and `--until` (`YYYY-MM-DD`, both included) narrow it. Each is an export task named `idea-agro-et-<image>`, which never overwrites. A run keeps 4 running, starts none after 3 hours, and waits for those it started up to an hour more (`collection.py`); the next run leaves those still running to finish. So the first runs fill the history, and then each adds the new composites.
@@ -106,7 +107,7 @@ gcloud storage cat gs://idea-agro-dev-zones/jobs/comparisons/et/<report>.md
 
 ## Schedule
 
-Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. That is how new satellite data reaches the platform without anyone running it: each run adds the composites and years the assets gained, publishes the outlines only when an asset changed, draws the maps of new years, and adds to the collections the composites MODIS published. A run with nothing new ends in a minute or two.
+Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. That is how new satellite data reaches the platform without anyone running it: each run adds the composites and years the assets gained, publishes the outlines only when an asset changed, draws the maps of new years, and, with `jobs_collections`, adds to the collections the composites MODIS published. A run with nothing new ends in a minute or two.
 
 ## Alerts
 

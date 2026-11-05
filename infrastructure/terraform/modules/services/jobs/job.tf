@@ -17,7 +17,7 @@ resource "google_cloud_run_v2_job" "data" {
 
       containers {
         image = var.placeholder_image
-        args  = var.args
+        args  = concat(var.args, var.collections ? ["collections"] : [])
 
         env {
           name  = "PUBLIC_DATA"
