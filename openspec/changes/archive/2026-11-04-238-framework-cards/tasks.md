@@ -6,4 +6,4 @@
 
 ## 2. Close
 
-- [ ] 2.1 Archive the change
+- [x] 2.1 Archive the change
