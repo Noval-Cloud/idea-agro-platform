@@ -133,7 +133,7 @@ export function Articles({ translator, onChanged, changed }: Props) {
     return (
       <>
         <EmptyState icon={<BookOpen />} title={t("account.content.articles.none")}>
-          <Button size="sm" disabled={seeding === "busy"} onClick={() => void seed()}>
+          <Button size="sm" busy={seeding === "busy"} onClick={() => void seed()}>
             {t("account.content.articles.seed")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => openPanel("new")}>
