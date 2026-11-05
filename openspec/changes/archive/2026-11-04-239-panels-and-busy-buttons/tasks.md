@@ -16,4 +16,4 @@
 
 ## 4. Close
 
-- [ ] 4.1 Archive the change
+- [x] 4.1 Archive the change
