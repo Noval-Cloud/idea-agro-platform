@@ -424,6 +424,7 @@ function ArticlePanel({
     <Sheet
       open
       onClose={() => void close()}
+      busy={busy !== null}
       title={id ? t("account.content.articles.editTitle") : t("account.content.articles.add")}
       description={
         id
@@ -729,6 +730,7 @@ function ArticlePicker({
     <Sheet
       open
       onClose={onClose}
+      busy={adding === "busy"}
       title={t("account.content.citations.pickTitle")}
       close={t("account.content.close")}
       footer={

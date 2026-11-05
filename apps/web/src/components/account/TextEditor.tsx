@@ -264,6 +264,7 @@ export function TextPanel({
     <Sheet
       open
       onClose={() => void close()}
+      busy={busy !== null}
       title={label ?? t("account.content.editText")}
       description={<code className="font-mono text-xs">{textKey}</code>}
       close={t("account.content.close")}

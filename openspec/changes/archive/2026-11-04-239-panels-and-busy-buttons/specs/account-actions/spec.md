@@ -36,7 +36,7 @@ A side panel holding several actions (a site text's draft, publish, discard, res
 
 ### Requirement: A failed action keeps its panel open
 
-When an account action fails, its panel SHALL stay open and SHALL show the error where the panel shows errors, with what was typed kept. No toast SHALL be shown for a failure.
+When an account action fails, its panel SHALL stay open and SHALL show the error where the panel shows errors, with what was typed kept. While the action runs, the panel SHALL ignore requests to close it (its close button, Escape and a click outside). No toast SHALL be shown for a failure.
 
 #### Scenario: Saving an article fails
 
@@ -47,6 +47,11 @@ When an account action fails, its panel SHALL stay open and SHALL show the error
 
 - **WHEN** saving the articles chosen in an indicator's picker fails
 - **THEN** the picker stays open with its choice, and its footer says the change could not be saved
+
+#### Scenario: Closing while a save runs
+
+- **WHEN** an editor presses Escape or clicks outside the article picker while its articles are being saved
+- **THEN** the picker stays open until the save answers, and shows its error if it fails
 
 ### Requirement: The account confirms with one toast
 

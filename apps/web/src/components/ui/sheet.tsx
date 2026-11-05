@@ -7,6 +7,8 @@ type Props = {
   open: boolean;
   /** Asked to close by the close button, Escape or a click outside; the owner decides whether it does. */
   onClose: () => void;
+  /** Its action is running: asking to close does nothing, so a failure stays in view. */
+  busy?: boolean;
   title: ReactNode;
   description?: ReactNode;
   /** The close button's name. */
@@ -41,10 +43,10 @@ const keepSearch = (event: KeyboardEvent) => {
  * A panel over the right of the page, the whole screen on phones, for working on one thing while the list it
  * came from stays behind. Focus returns to what opened it.
  */
-export function Sheet({ open, onClose, title, description, close, footer, children }: Props) {
+export function Sheet({ open, onClose, busy = false, title, description, close, footer, children }: Props) {
   const giveBack = useOpener(open);
   return (
-    <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog.Root open={open} onOpenChange={(next) => !next && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="ia-fade fixed inset-0 z-(--ia-layer-modal) bg-scrim/40" />
         <Dialog.Content
@@ -60,7 +62,11 @@ export function Sheet({ open, onClose, title, description, close, footer, childr
                 <Dialog.Description className="text-sm break-words text-ink-muted">{description}</Dialog.Description>
               )}
             </div>
-            <Dialog.Close aria-label={close} className={buttonVariants({ variant: "ghost", size: "icon" })}>
+            <Dialog.Close
+              aria-label={close}
+              disabled={busy}
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
               <X aria-hidden="true" />
             </Dialog.Close>
           </header>

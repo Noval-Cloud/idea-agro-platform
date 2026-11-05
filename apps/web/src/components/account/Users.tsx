@@ -524,6 +524,7 @@ export default function Users({ translator, signInPath, me }: Props) {
           <Sheet
             open
             onClose={() => void close()}
+            busy={busy !== null || proving}
             title={nameOf(opened)}
             description={opened.name && opened.email ? opened.email : undefined}
             close={t("account.users.close")}
