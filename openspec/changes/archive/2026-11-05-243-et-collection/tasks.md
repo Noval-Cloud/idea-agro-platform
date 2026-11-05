@@ -9,6 +9,7 @@
 
 - [x] 2.1 Know the collection's images by their asset name, not the listing's display id
 - [x] 2.2 Stop waiting for running exports an hour after the last one may start, and leave them to the next run
+- [x] 2.3 Test the Earth Engine side of the collections task, with `ee.data` answering for the server
 
 ## 3. Close
 

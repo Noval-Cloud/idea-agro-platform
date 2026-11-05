@@ -1,14 +1,10 @@
 import logging
-from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-import ee
-import ee.data as ee_data
-import google.auth
 import pytest
-from earth_offline import offline
+from earth_offline import offline_earth
 from idea_agro_jobs.collection import COLLECTIONS, StoredImage
 from idea_agro_jobs.comparison import (
     CHUNK,
@@ -24,7 +20,6 @@ from idea_agro_jobs.comparison import (
     stats,
 )
 from idea_agro_jobs.domain import Division, Indicator
-from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import LocalFiles
 
 ET = COLLECTIONS[Indicator.ET]
@@ -141,41 +136,23 @@ def test_composites_are_read_a_few_at_a_time(tmp_path: Path) -> None:
     assert [len(starts) for kind, starts in earth.read if kind == "zones"] == [CHUNK, 1]
 
 
-@pytest.fixture
-def earth_engine() -> Iterator[list[str]]:
-    """An `EarthEngine` that records each graph it computes, and answers two zones or pixels."""
+def test_earth_engine_reads_zones_and_pixels_of_both() -> None:
     graphs: list[str] = []
 
     def compute(computed: Any) -> dict[str, Any]:
         graphs.append(computed.serialize())
         return {"features": [{"properties": {"o0": 1.0, "n0": 1.25}}, {"properties": {"o0": 2.0}}]}
 
-    def credentials(scopes: list[str]) -> tuple[None, None]:
-        return None, None
-
-    def initialize(*args: object, **kwargs: object) -> None:
-        pass
-
-    # Undone before the offline client is, which restores what it replaced.
-    with offline(), pytest.MonkeyPatch.context() as patch:
-        patch.setattr(google.auth, "default", credentials)
-        patch.setattr(ee, "Initialize", initialize)
-        patch.setattr(ee_data, "computeValue", compute)
-        yield graphs
-
-
-def test_earth_engine_reads_zones_and_pixels_of_both(earth_engine: list[str]) -> None:
-    earth = EarthEngine("project")
     composites = [Composite(date(2024, 1, 9), "b2024-9", f"{NEW}/2024_01_09")]
-
-    zones = earth.zone_pairs(ET.current, composites, DIVISION, ZONE_SCALE)
-    pixels = earth.pixel_pairs(ET.current, composites, PIXELS, SEED)
+    with offline_earth(computeValue=compute) as earth:
+        zones = earth.zone_pairs(ET.current, composites, DIVISION, ZONE_SCALE)
+        pixels = earth.pixel_pairs(ET.current, composites, PIXELS, SEED)
 
     assert zones == pixels == {date(2024, 1, 9): [(1.0, 1.25), (2.0, None)]}
-    for graph in earth_engine:
+    for graph in graphs:
         assert ET.current in graph
         assert f"{NEW}/2024_01_09" in graph
         assert '"b2024-9"' in graph
-    assert "Seccionales_Policiales" in earth_engine[0]
-    assert "limite_oficial_rou_km2" in earth_engine[1]
-    assert f'"constantValue": {PIXELS}' in earth_engine[1]
+    assert "Seccionales_Policiales" in graphs[0]
+    assert "limite_oficial_rou_km2" in graphs[1]
+    assert f'"constantValue": {PIXELS}' in graphs[1]
