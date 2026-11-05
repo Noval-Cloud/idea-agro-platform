@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { ListCount, ListToolbar, underToolbar } from "@/components/lists/ListToolbar";
 import { RowMenu, type RowAction } from "@/components/lists/RowMenu";
@@ -43,6 +44,7 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
   const sort = decodeSort<Key>(sortValue, keys, { key: "changed", descending: true });
   const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
   const [view, setView] = useListView("projects");
+  const toast = useToast();
 
   useEffect(() => {
     void api()
@@ -59,6 +61,7 @@ export default function Projects({ translator, projectPath, mapPath, signInPath 
       // Already gone, as after a delete from another tab: the list just catches up.
       if (response.status === 204 || response.status === 404) {
         setProjects((all) => all?.filter((p) => p.id !== project.id));
+        toast(t("account.projects.deleted"));
         requestAnimationFrame(() => document.getElementById("list-search")?.focus());
       } else setFailed(true);
     } catch (error) {
@@ -426,8 +429,8 @@ function NewProject({
                 {t("account.projects.cancel")}
               </Button>
             </PopoverClose>
-            <Button type="submit" size="sm" disabled={creating || !name.trim()}>
-              {creating ? t("account.projects.creating") : t("account.projects.createAction")}
+            <Button type="submit" size="sm" busy={creating} disabled={!name.trim()}>
+              {t("account.projects.createAction")}
             </Button>
           </div>
         </form>

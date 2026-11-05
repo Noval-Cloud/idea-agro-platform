@@ -373,16 +373,17 @@ function SiteStatus({ translator, changed }: { translator: AccountTranslator; ch
         )}
         {behind && (!updating || stalled) && (
           <Tooltip label={t("account.content.site.updateNow")}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("account.content.site.updateNow")}
               aria-describedby="site-hint"
-              disabled={asking === "busy"}
+              busy={asking === "busy"}
               onClick={() => void updateNow()}
-              className="grid size-7 place-items-center rounded-sm text-ink-muted hover:bg-action-soft hover:text-ink disabled:opacity-50"
+              className="size-7 text-ink-muted hover:text-ink"
             >
-              <RefreshCw aria-hidden="true" className="size-4" />
-            </button>
+              <RefreshCw aria-hidden="true" />
+            </Button>
           </Tooltip>
         )}
         {asking === "unavailable" && <span className="text-danger">{t("account.content.site.unavailable")}</span>}

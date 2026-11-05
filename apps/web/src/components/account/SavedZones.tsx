@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Segmented, SegmentedItem } from "@/components/ui/toggle-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/components/ui/toast";
 import { loadManifest, type Manifest } from "@/components/explorer/lib/data";
 import { EmptyState } from "@/components/lists/EmptyState";
 import { FilterSelect } from "@/components/lists/FilterSelect";
@@ -73,6 +74,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
   const setSort = (next: Sort<Key>) => setSortValue(encodeSort(next));
   const [view, setView] = useListView("saved-zones");
   const fileInput = useRef<HTMLInputElement>(null);
+  const toast = useToast();
 
   useEffect(() => {
     void api()
@@ -104,6 +106,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       if (response.status !== 200) return false;
       setZones((all) => all?.map((z) => (z.id === id ? response.data : z)));
       setEditing(null);
+      toast(t("account.zones.renamed"));
       focusSoon(`zone-${id}`);
       return true;
     });
@@ -114,6 +117,7 @@ export default function SavedZones({ translator, zonePath, outlinePath, exploreP
       // Already gone, as after a delete from another tab: the list just catches up.
       if (response.status !== 204 && response.status !== 404) return false;
       setZones((all) => all?.filter((z) => z.id !== zone.id));
+      toast(t("account.zones.deleted"));
       focusSoon("list-search");
       return true;
     });
@@ -523,12 +527,15 @@ function RenameForm({
   onCancel: () => void;
 }) {
   const [name, setName] = useState(zone.name);
+  const [saving, setSaving] = useState(false);
   return (
     <form
       className="relative z-10 flex min-w-0 grow items-center gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
-        if (name.trim()) void onRename(zone.id, name.trim());
+        if (!name.trim() || saving) return;
+        setSaving(true);
+        void onRename(zone.id, name.trim()).finally(() => setSaving(false));
       }}
     >
       <input
@@ -540,10 +547,10 @@ function RenameForm({
         autoFocus
         className="h-8 min-w-0 grow rounded-sm border border-input bg-surface px-2 text-sm text-ink focus-visible:border-focus"
       />
-      <Button type="submit" size="sm" className="h-8 px-2.5">
+      <Button type="submit" size="sm" className="h-8 px-2.5" busy={saving}>
         {t("account.zones.save")}
       </Button>
-      <Button type="button" size="sm" variant="ghost" className="h-8 px-2.5" onClick={onCancel}>
+      <Button type="button" size="sm" variant="ghost" className="h-8 px-2.5" disabled={saving} onClick={onCancel}>
         {t("account.zones.cancel")}
       </Button>
     </form>

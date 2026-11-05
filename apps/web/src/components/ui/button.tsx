@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "radix-ui";
 import { cva, type VariantProps } from "class-variance-authority";
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
@@ -28,9 +29,27 @@ export const buttonVariants = cva(
 export type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    /** Its action is running: disabled, with a spinner over its content, which keeps its width and its name. */
+    busy?: boolean;
   };
 
-export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Component = asChild ? Slot.Root : "button";
-  return <Component data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+export function Button({ className, variant, size, asChild = false, busy = false, ...props }: ButtonProps) {
+  const classes = cn(buttonVariants({ variant, size, className }), busy && "relative");
+  if (asChild) return <Slot.Root data-slot="button" className={classes} {...props} />;
+  const { children, disabled, ...rest } = props;
+  return (
+    <button data-slot="button" className={classes} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
+      {busy ? (
+        <>
+          {/* Transparent, not hidden: the content still sizes the button and names it. */}
+          <span className="inline-flex items-center justify-center gap-[inherit] opacity-0">{children}</span>
+          <span aria-hidden="true" className="absolute inset-0 grid place-items-center">
+            <LoaderCircle className="animate-spin motion-reduce:animate-none" />
+          </span>
+        </>
+      ) : (
+        children
+      )}
+    </button>
+  );
 }

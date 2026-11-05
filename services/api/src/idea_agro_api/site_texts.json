@@ -481,6 +481,14 @@
       "pt": "Adicionar artigo"
     }
   },
+  "account.content.articles.added": {
+    "format": "plain",
+    "default": {
+      "es": "Artículo agregado.",
+      "en": "Article added.",
+      "pt": "Artigo adicionado."
+    }
+  },
   "account.content.articles.anyIndicator": {
     "format": "plain",
     "default": {
@@ -701,9 +709,9 @@
   "account.content.articles.saved": {
     "format": "plain",
     "default": {
-      "es": "Guardado. El sitio lo va a mostrar en su próxima actualización.",
-      "en": "Saved. The site will show it when it next updates.",
-      "pt": "Salvo. O site vai mostrá-lo na próxima atualização."
+      "es": "Artículo guardado.",
+      "en": "Article saved.",
+      "pt": "Artigo salvo."
     }
   },
   "account.content.articles.searchLabel": {
@@ -2017,6 +2025,14 @@
       "pt": "Excluir o convite para {email}"
     }
   },
+  "account.invitations.deleted": {
+    "format": "plain",
+    "default": {
+      "es": "Invitación eliminada.",
+      "en": "Invitation deleted.",
+      "pt": "Convite excluído."
+    }
+  },
   "account.invitations.email": {
     "format": "plain",
     "default": {
@@ -2111,14 +2127,6 @@
       "es": "Invitar a IDEA-Agro",
       "en": "Invite to IDEA-Agro",
       "pt": "Convidar para o IDEA-Agro"
-    }
-  },
-  "account.invitations.inviting": {
-    "format": "plain",
-    "default": {
-      "es": "Invitando…",
-      "en": "Inviting…",
-      "pt": "Convidando…"
     }
   },
   "account.invitations.limit": {
@@ -2378,20 +2386,20 @@
       "pt": "Agrupe zonas da sua biblioteca, seccionais, bacias ou padrones, e compartilhe com outras pessoas."
     }
   },
-  "account.projects.creating": {
-    "format": "plain",
-    "default": {
-      "es": "Creando…",
-      "en": "Creating…",
-      "pt": "Criando…"
-    }
-  },
   "account.projects.delete": {
     "format": "plain",
     "default": {
       "es": "Eliminar",
       "en": "Delete",
       "pt": "Excluir"
+    }
+  },
+  "account.projects.deleted": {
+    "format": "plain",
+    "default": {
+      "es": "Proyecto eliminado.",
+      "en": "Project deleted.",
+      "pt": "Projeto excluído."
     }
   },
   "account.projects.descriptionLabel": {
@@ -2820,6 +2828,30 @@
       "pt": "Sua conta"
     }
   },
+  "account.toast.close": {
+    "format": "plain",
+    "default": {
+      "es": "Cerrar el aviso",
+      "en": "Close the notice",
+      "pt": "Fechar o aviso"
+    }
+  },
+  "account.toast.label": {
+    "format": "plain",
+    "default": {
+      "es": "Aviso",
+      "en": "Notice",
+      "pt": "Aviso"
+    }
+  },
+  "account.toast.region": {
+    "format": "plain",
+    "default": {
+      "es": "Avisos ({hotkey})",
+      "en": "Notices ({hotkey})",
+      "pt": "Avisos ({hotkey})"
+    }
+  },
   "account.users.access": {
     "format": "plain",
     "default": {
@@ -2949,12 +2981,44 @@
       "pt": "Desativada"
     }
   },
-  "account.users.done": {
+  "account.users.done.disabled": {
     "format": "plain",
     "default": {
-      "es": "Listo.",
-      "en": "Done.",
-      "pt": "Pronto."
+      "es": "Cuenta deshabilitada.",
+      "en": "Account disabled.",
+      "pt": "Conta desativada."
+    }
+  },
+  "account.users.done.enabled": {
+    "format": "plain",
+    "default": {
+      "es": "Cuenta habilitada.",
+      "en": "Account enabled.",
+      "pt": "Conta ativada."
+    }
+  },
+  "account.users.done.recovery": {
+    "format": "plain",
+    "default": {
+      "es": "Enlace de recuperación enviado.",
+      "en": "Recovery link sent.",
+      "pt": "Link de recuperação enviado."
+    }
+  },
+  "account.users.done.revoked": {
+    "format": "plain",
+    "default": {
+      "es": "Sesiones cerradas.",
+      "en": "Sessions ended.",
+      "pt": "Sessões encerradas."
+    }
+  },
+  "account.users.done.roles": {
+    "format": "plain",
+    "default": {
+      "es": "Roles guardados.",
+      "en": "Roles saved.",
+      "pt": "Papéis salvos."
     }
   },
   "account.users.enable": {
@@ -3310,6 +3374,14 @@
       "pt": "Excluir"
     }
   },
+  "account.zones.deleted": {
+    "format": "plain",
+    "default": {
+      "es": "Zona eliminada.",
+      "en": "Area deleted.",
+      "pt": "Zona excluída."
+    }
+  },
   "account.zones.departments.all": {
     "format": "plain",
     "default": {
@@ -3465,14 +3537,6 @@
       }
     }
   },
-  "account.zones.import.saving": {
-    "format": "plain",
-    "default": {
-      "es": "Guardando…",
-      "en": "Saving…",
-      "pt": "Salvando…"
-    }
-  },
   "account.zones.import.unnamed": {
     "format": "plain",
     "default": {
@@ -3567,6 +3631,14 @@
       "es": "Nuevo nombre de {name}",
       "en": "New name for {name}",
       "pt": "Novo nome para {name}"
+    }
+  },
+  "account.zones.renamed": {
+    "format": "plain",
+    "default": {
+      "es": "Zona renombrada.",
+      "en": "Area renamed.",
+      "pt": "Zona renomeada."
     }
   },
   "account.zones.save": {

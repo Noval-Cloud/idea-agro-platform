@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, MoreHorizontal } from "lucide-react";
 import type { PluralText, SiteTextOut, TextValue, TextVersionOut } from "@idea-agro/api-client";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
+import { useToast } from "@/components/ui/toast";
 import { markdown } from "@/i18n/markdown";
 import { cn } from "@/lib/utils";
 import type { AccountKey, AccountTranslator } from "./i18n";
@@ -97,8 +98,6 @@ export async function run<T>(call: Run): Promise<T> {
   return response.data as T;
 }
 
-type Notice = { tone: "done" | "failed"; text: string } | null;
-
 /**
  * One text in a side panel, edited in its three languages: published at once or kept as a draft, with its
  * history. `label` names it where the page knows a better name than its key.
@@ -120,8 +119,10 @@ export function TextPanel({
   const [text, setText] = useState<SiteTextOut | null>(null);
   const [values, setValues] = useState<Values | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  // The action on its way: `publish`, `draft`, `discard`, `default` or `restore:<version>`.
+  const [busy, setBusy] = useState<string | null>(null);
+  const [refused, setRefused] = useState(false);
+  const toast = useToast();
   const [versions, setVersions] = useState<TextVersionOut[] | null>(null);
   const [previewing, setPreviewing] = useState<Language[]>([]);
   const [confirming, setConfirming] = useState(false);
@@ -175,30 +176,35 @@ export function TextPanel({
     onClose();
   };
 
-  const act = async (call: Run, done: AccountKey) => {
-    setBusy(true);
-    setNotice(null);
+  const act = async (action: string, call: Run, done: AccountKey) => {
+    setBusy(action);
+    setRefused(false);
     try {
       show(await run<SiteTextOut>(call));
       // An open history shows the change just made.
       if (versions !== null) loadVersions();
-      setNotice({ tone: "done", text: t(done) });
+      toast(t(done));
       onChanged();
     } catch {
-      setNotice({ tone: "failed", text: t("account.content.saveFailed") });
+      setRefused(true);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
   const publish = () =>
     untouched && text?.draft
-      ? act((client, init) => client.publishText(textKey, init), "account.content.published")
+      ? act("publish", (client, init) => client.publishText(textKey, init), "account.content.published")
       : act(
+          "publish",
           (client, init) => client.putText(textKey, { texts: toPublish, publish: true }, init),
           "account.content.published",
         );
   const saveDraft = () =>
-    act((client, init) => client.putText(textKey, { texts: edited, publish: false }, init), "account.content.drafted");
+    act(
+      "draft",
+      (client, init) => client.putText(textKey, { texts: edited, publish: false }, init),
+      "account.content.drafted",
+    );
   const loadVersions = () =>
     void run<TextVersionOut[]>((client, init) => client.listVersions(textKey, init))
       .then(setVersions)
@@ -206,26 +212,28 @@ export function TextPanel({
 
   const footer = ready && (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <p
-        role="status"
-        className={cn("mr-auto min-w-0 text-sm", notice?.tone === "failed" ? "text-danger" : "text-ink-muted")}
-      >
-        {notice?.text}
+      <p role="status" className="mr-auto min-w-0 text-sm text-danger">
+        {refused ? t("account.content.saveFailed") : ""}
       </p>
       {(text.draft || Object.keys(text.published).length > 0) && (
         <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label={t("account.content.moreActions")}
-            disabled={busy}
-            className={buttonVariants({ variant: "ghost", size: "icon" })}
-          >
-            <MoreHorizontal aria-hidden="true" />
+          {/* The menu's actions spin on its button. */}
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t("account.content.moreActions")}
+              busy={busy === "discard" || busy === "default"}
+              disabled={busy !== null}
+            >
+              <MoreHorizontal aria-hidden="true" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {text.draft && (
               <DropdownMenuItem
                 onSelect={() =>
-                  void act((client, init) => client.discardDraft(textKey, init), "account.content.discarded")
+                  void act("discard", (client, init) => client.discardDraft(textKey, init), "account.content.discarded")
                 }
               >
                 {t("account.content.discardDraft")}
@@ -237,10 +245,15 @@ export function TextPanel({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      <Button variant="outline" disabled={busy || !valid || untouched} onClick={() => void saveDraft()}>
+      <Button
+        variant="outline"
+        busy={busy === "draft"}
+        disabled={busy !== null || !valid || untouched}
+        onClick={() => void saveDraft()}
+      >
         {t("account.content.saveDraft")}
       </Button>
-      <Button disabled={busy || !canPublish} onClick={() => void publish()}>
+      <Button busy={busy === "publish"} disabled={busy !== null || !canPublish} onClick={() => void publish()}>
         {t("account.content.publish")}
       </Button>
     </div>
@@ -250,6 +263,7 @@ export function TextPanel({
     <Sheet
       open
       onClose={() => void close()}
+      busy={busy !== null}
       title={label ?? t("account.content.editText")}
       description={<code className="font-mono text-xs">{textKey}</code>}
       close={t("account.content.close")}
@@ -381,9 +395,11 @@ export function TextPanel({
                       variant="link"
                       size="sm"
                       className="justify-self-start px-0"
-                      disabled={busy}
+                      busy={busy === `restore:${version.id}`}
+                      disabled={busy !== null}
                       onClick={() =>
                         void act(
+                          `restore:${version.id}`,
                           (client, init) => client.restoreText(textKey, { version: version.id }, init),
                           "account.content.restored",
                         )
@@ -407,6 +423,7 @@ export function TextPanel({
             onConfirm={() => {
               setConfirming(false);
               void act(
+                "default",
                 (client, init) => client.restoreText(textKey, { version: null }, init),
                 "account.content.restored",
               );

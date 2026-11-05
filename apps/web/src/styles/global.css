@@ -240,6 +240,11 @@
     animation: ia-fade-in var(--ia-motion-fast) var(--ia-motion-ease-out);
   }
 
+  /* Toasts rise into their corner; closing is instant. */
+  .ia-toast[data-state="open"] {
+    animation: ia-rise-in var(--ia-motion-base) var(--ia-motion-ease-out);
+  }
+
   /* Chart marks: thin, quiet chrome; the data is the only loud thing. */
   .chart-grid {
     stroke: var(--ia-viz-grid);
@@ -514,6 +519,13 @@
 
 @keyframes ia-fade-in {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes ia-rise-in {
+  from {
+    transform: translateY(0.75rem);
     opacity: 0;
   }
 }
