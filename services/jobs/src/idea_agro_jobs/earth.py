@@ -36,6 +36,7 @@ from idea_agro_jobs.collection import (
     stored_image,
     task_name,
 )
+from idea_agro_jobs.comparison import Composite, Pair, pairs
 from idea_agro_jobs.domain import Division, Indicator, Period, ZoneValues
 from idea_agro_jobs.frame import BOUNDS
 
@@ -461,3 +462,35 @@ class EarthEngine:
 
     def export_state(self, operation: str) -> ExportState:
         return operation_state(cast(dict[str, Any], retry(operation, lambda: ee.data.getOperation(operation))))
+
+    def asset_composites(self, asset: str) -> dict[date, str]:
+        return {band_start(band): band for band in self._band_names(asset) if re.fullmatch(r"b\d{4}-\d{1,3}", band)}
+
+    @staticmethod
+    def _paired(old: str, composites: list[Composite]) -> ee.Image:
+        """Each composite's old band as `o<n>` and its image in the collection as `n<n>`, the old ones first."""
+        before = ee.Image(old).select([c.band for c in composites], [f"o{n}" for n in range(len(composites))])
+        after = [ee.Image(c.image).select([0], [f"n{n}"]) for n, c in enumerate(composites)]
+        return ee.Image.cat([before, *after])
+
+    def zone_pairs(
+        self, old: str, composites: list[Composite], division: Division, scale: int
+    ) -> dict[date, list[Pair]]:
+        zones, _ = self._zones(division)
+        # Reduced in the old asset's projection, its first band's.
+        reduced = self._paired(old, composites).reduceRegions(
+            collection=zones, reducer=ee.Reducer.mean(), scale=scale, tileScale=4
+        )
+        found = cast(dict[str, Any], retry(f"zones of {old}", reduced.select([".*"], retainGeometry=False).getInfo))
+        rows = [cast(dict[str, Any], feature["properties"]) for feature in found["features"]]
+        return pairs(rows, composites)
+
+    def pixel_pairs(self, old: str, composites: list[Composite], count: int, seed: int) -> dict[date, list[Pair]]:
+        country = ee.FeatureCollection(ASSETS + COUNTRY).geometry()
+        # Sampled in the old asset's projection and scale; pixels with a value in only one are kept.
+        sampled = self._paired(old, composites).sample(
+            region=country, numPixels=count, seed=seed, dropNulls=False, tileScale=4, geometries=False
+        )
+        found = cast(dict[str, Any], retry(f"pixels of {old}", sampled.getInfo))
+        rows = [cast(dict[str, Any], feature["properties"]) for feature in found["features"]]
+        return pairs(rows, composites)

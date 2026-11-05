@@ -8,7 +8,12 @@ from typing import Protocol
 from google.api_core.exceptions import NotFound, PreconditionFailed
 from google.cloud import storage  # pyright: ignore[reportMissingTypeStubs]
 
-MEDIA_TYPES = {".json": "application/json", ".geojson": "application/geo+json", ".webp": "image/webp"}
+MEDIA_TYPES = {
+    ".json": "application/json",
+    ".geojson": "application/geo+json",
+    ".webp": "image/webp",
+    ".md": "text/markdown; charset=utf-8",
+}
 
 
 def media_type(name: str) -> str:

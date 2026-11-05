@@ -13,7 +13,7 @@ import os
 from datetime import date
 from pathlib import Path
 
-from idea_agro_jobs import collection, maps, outlines, saved, site, values
+from idea_agro_jobs import collection, comparison, maps, outlines, saved, site, values
 from idea_agro_jobs.collection import COLLECTIONS
 from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
@@ -28,6 +28,7 @@ TASKS = {
     "saved": "add the composites the saved zones' seasonal series lack",
     "site": "ask for the website's build once the texts editors published have settled",
     "collections": "add to each indicator's public collection the composites it lacks, as Earth Engine exports",
+    "compare": "compare each collection with the multiband asset it replaces, and write a report",
 }
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
@@ -68,12 +69,12 @@ def main() -> None:
     parser.add_argument(
         "--since",
         type=date.fromisoformat,
-        help="for collections: only the composites that start on this day (YYYY-MM-DD) or later",
+        help="for collections and compare: only the composites that start on this day (YYYY-MM-DD) or later",
     )
     parser.add_argument(
         "--until",
         type=date.fromisoformat,
-        help="for collections: only the composites that start on this day (YYYY-MM-DD) or earlier",
+        help="for collections and compare: only the composites that start on this day (YYYY-MM-DD) or earlier",
     )
     parser.add_argument(
         "--indicator",
@@ -81,14 +82,18 @@ def main() -> None:
         type=Indicator,
         choices=list(COLLECTIONS),
         default=[],
-        help="for collections: only this indicator's collection (repeatable); else every one",
+        help="for collections and compare: only this indicator's collection (repeatable); else every one",
     )
+    parser.add_argument("--old", help="for compare: the multiband asset to compare, instead of the indicator's own")
+    parser.add_argument("--new", help="for compare: the collection to compare, instead of the indicator's own")
     arguments = parser.parse_args()
     if arguments.recompute and arguments.source == "public-files":
         parser.error("--recompute computes from Earth Engine, not from the public files")
     if arguments.since and arguments.until and arguments.since > arguments.until:
         parser.error("--since must not be after --until")
     collections = [COLLECTIONS[indicator] for indicator in arguments.indicator] or list(COLLECTIONS.values())
+    if (arguments.old or arguments.new) and len(collections) != 1:
+        parser.error("--old and --new are one indicator's assets: name it with --indicator")
 
     handler = logging.StreamHandler()
     # Cloud Run sets CLOUD_RUN_JOB; a local run keeps plain lines.
@@ -130,6 +135,16 @@ def main() -> None:
             )
         elif task == "collections":
             collection.refresh(earth_engine(), collections, since=arguments.since, until=arguments.until)
+        elif task == "compare":
+            comparison.compare(
+                earth_engine(),
+                files,
+                collections,
+                since=arguments.since,
+                until=arguments.until,
+                old=arguments.old,
+                new=arguments.new,
+            )
 
 
 if __name__ == "__main__":
