@@ -58,6 +58,7 @@ module "jobs" {
   series_suffix      = module.api.series_suffix
 
   earth_engine_project = var.earth_engine_project
+  collections          = var.jobs_collections
   alert_channels       = module.platform.alert_channels
   environment_labels   = local.labels
 }

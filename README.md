@@ -4,18 +4,18 @@ Open platform of environmental and productive indicators for Uruguay's agricultu
 
 ## Layout
 
-| Folder            | What it holds                                                                 |
-| :---------------- | :---------------------------------------------------------------------------- |
-| `apps/web`        | The website (Astro)                                                           |
-| `packages/`       | Shared TypeScript packages, such as the API client                            |
-| `services/api`    | The API (Python)                                                              |
-| `services/jobs`   | Data jobs: zone values in BigQuery and the files the API serves               |
-| `gee/`            | Earth Engine scripts and asset documentation                                  |
-| `infrastructure/` | Terraform, project setup and environments                                     |
-| `scripts/`        | Helper scripts that `make` targets and agents run                             |
-| `openspec/`       | Living specs and the change of every story                                    |
-| `.agents/`        | Context, roles and skills for coding agents (start at [AGENTS.md](AGENTS.md)) |
-| `docs/`           | Project documentation                                                         |
+| Folder            | What it holds                                                                                              |
+| :---------------- | :--------------------------------------------------------------------------------------------------------- |
+| `apps/web`        | The website (Astro)                                                                                        |
+| `packages/`       | Shared TypeScript packages, such as the API client                                                         |
+| `services/api`    | The API (Python)                                                                                           |
+| `services/jobs`   | Data jobs: zone values in BigQuery, the files the API serves, and the indicators' Earth Engine collections |
+| `gee/`            | Earth Engine scripts and asset documentation                                                               |
+| `infrastructure/` | Terraform, project setup and environments                                                                  |
+| `scripts/`        | Helper scripts that `make` targets and agents run                                                          |
+| `openspec/`       | Living specs and the change of every story                                                                 |
+| `.agents/`        | Context, roles and skills for coding agents (start at [AGENTS.md](AGENTS.md))                              |
+| `docs/`           | Project documentation                                                                                      |
 
 Folders are added as their parts arrive.
 

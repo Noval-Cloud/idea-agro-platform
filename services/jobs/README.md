@@ -1,8 +1,8 @@
 # Data jobs
 
-Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery and publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)).
+Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery, publish the files the API serves from its bucket (their layout is in the [API's README](../api/README.md#data)), and write the indicators' public collections in Earth Engine.
 
-`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps saved`.
+`idea-agro-jobs <task>...` runs its tasks in order; the job's own arguments are `outlines values maps saved`, and `collections` where Terraform's `jobs_collections` is on.
 
 ## Values
 
@@ -50,6 +50,32 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 - **Which:** `--outline <name>` (repeatable) computes those outlines, as the API asks when it writes one. Without it, the run keeps every zone's latest version current and deletes the series of removed outlines; earlier versions keep theirs, which a restore brings along. `--recompute <indicator>` computes that indicator again for every version, so a restore does not bring back its replaced values.
 - **Failures:** an outline Earth Engine cannot read is logged as an error, which alerts. The others go on, and the next run tries it again.
 
+## Collections
+
+`idea-agro-jobs collections` keeps each indicator's public ImageCollection current, one image per composite. ET's is `projects/pastizalesrou/assets/idea-agro/et`, built as `et/et-8` is.
+
+- **Where:** the daily run includes it only where the environment's `terraform.tfvars` sets `jobs_collections = true`, since `pastizalesrou` shares each collection with one environment's job. Without it, the task runs only when asked, with `make jobs-run`.
+- **Images:** each is named after its composite's start (`2024_01_09`), with `system:time_start`, `system:time_end`, the band `et` and the properties `period` (`8-day`) and `unit` (`mm/day`). An image is never rewritten.
+- **Computation:** `et.py` ports `et-generator.js`, the owner's Code Editor script that builds `et-8`: MOD16A2's `ET` times 0.1, its gaps filled linearly from the composites of its calendar year up to 72 days away (`InterpoladorDDK`'s `linearInterp`), clipped to `users/fgallego/Contorno_Uy` and divided by 8, exported at 231.656 m in MODIS's sinusoidal projection. The script applies no `ET_QC` mask, so neither does the port. A composite of the current year is filled from the earlier ones only, since the later ones do not exist yet.
+- **What a run adds:** each composite MODIS published, from the collection's first (2001-01-01), that the collection lacks and no export is writing; `--since` and `--until` (`YYYY-MM-DD`, both included) narrow it. Each is an export task named `idea-agro-et-<image>`, which never overwrites. A run keeps 4 running, starts none after 3 hours, and waits for those it started up to an hour more (`collection.py`); the next run leaves those still running to finish. So the first runs fill the history, and then each adds the new composites.
+- **Checks:** a run first checks that the collection exists, that anyone can read it, and that the job can write it, by writing the collection's own `period` and `unit`. Otherwise it fails saying which.
+- **Record:** each image added is logged with the EECU-seconds its export took, then a summary with the EECU-hours of the run. A failed export is logged as an error, which alerts; after 3, the run starts no more. A missing composite is exported again by the next run.
+- **Quota:** the exports run in `earth_engine_project` and share its noncommercial batch quota with the owner's own tasks.
+
+## Comparisons
+
+`idea-agro-jobs compare` compares each collection with the multiband image it replaces, over `--since` and `--until` (by default, every composite), and writes a Markdown report to `jobs/comparisons/<indicator>/<since>_<until>_<time>.md` in the public files' bucket. Each run writes a new one, so later runs show what changed.
+
+- **Per composite:** whether it is only in one of them. Otherwise, for the seccionales' zone means at 1 km, as the values task computes them, and for about 5000 pixels sampled at the old asset's scale, the same ones each run: how many were compared, how many have a value in only one, the mean and largest absolute difference, and the share within the indicator's tolerance (0.01 mm/day for ET, the precision of the values).
+- **Other assets:** `--old` and `--new` compare others, such as a test collection, for the indicator `--indicator` names.
+- **Next indicators:** a collection added to `COLLECTIONS` (`collection.py`), with its current asset and tolerance, is compared the same way.
+
+```bash
+make jobs-run ENV=dev ARGS="compare --since 2024-01-01 --until 2024-12-31"
+gcloud storage ls gs://idea-agro-dev-zones/jobs/comparisons/et/
+gcloud storage cat gs://idea-agro-dev-zones/jobs/comparisons/et/<report>.md
+```
+
 ## Site
 
 `idea-agro-jobs site` asks for the website's build once the texts editors published have settled: no publish for `QUIET` (5 minutes, `site.py`) since the last one, and no build asked for since. A schedule runs it every 5 minutes (`site_schedule`).
@@ -77,11 +103,11 @@ Python on a Cloud Run job, `data`. The jobs keep every zone's values in BigQuery
 
 - **Periods:** a composite is the band's start date. A productive year runs from mid July to mid July and counts once it has every composite, and its value is their sum (et's composites are daily rates, so 8 times it). For the others, a year is a band.
 - **Values:** a zone's value is the mean of its pixels: at 1 km for composites, at 500 m for years (1 km for rh) and summaries (250 m for the communities' classes).
-- **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Writer, since each map is drawn as a thumbnail created in that project (no asset is written), and Service Usage Consumer, plus read access to the assets above. Without them a run stops at Earth Engine's error and changes nothing.
+- **Access:** the job's account (`data-jobs@<project>`) computes in the project `earth_engine_project` names, which must be registered for Earth Engine (noncommercial): `pastizales-uy` in every environment. There it needs Earth Engine Resource Writer, since each map is drawn as a thumbnail created in that project and each image of a collection is an export task run there, and Service Usage Consumer, plus read access to the assets above, `MODIS/061/MOD16A2` and `users/fgallego/Contorno_Uy`. The owner of `pastizalesrou` shares its `idea-agro` folder with the account as a writer: the job writes nowhere else. Without them a run stops at Earth Engine's error and changes nothing.
 
 ## Schedule
 
-Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. That is how new satellite data reaches the platform without anyone running it: each run adds the composites and years the assets gained, publishes the outlines only when an asset changed, and draws the maps of new years. A run with nothing new ends in a minute or two.
+Cloud Scheduler runs the job every day at 6:00 (Montevideo) with its own arguments. That is how new satellite data reaches the platform without anyone running it: each run adds the composites and years the assets gained, publishes the outlines only when an asset changed, draws the maps of new years, and, with `jobs_collections`, adds to the collections the composites MODIS published. A run with nothing new ends in a minute or two.
 
 ## Alerts
 
@@ -97,6 +123,7 @@ Any error the job or its schedule logs is emailed to `alert_emails` (Terraform),
 make jobs-deploy ENV=dev                                  # build the image from git and update the job
 make jobs-run ENV=dev                                     # one run, as the schedule does, waiting for it to end
 make jobs-run ENV=dev ARGS="values --source public-files" # one run from the public files
+make jobs-run ENV=dev ARGS="collections --since 2024-01-01 --until 2024-12-31" # add 2024 to ET's collection
 ```
 
 Locally, the job reads and writes a folder instead of the bucket, while still writing BigQuery. That is how a first run from Earth Engine is checked: into a copy of the published files, compared with them before the job writes the bucket.

@@ -1,4 +1,4 @@
-"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps`.
+"""Runs the data jobs' tasks, in the order given: `idea-agro-jobs outlines values maps saved collections`.
 
 `PUBLIC_DATA` is where the API's public files are (`gs://<bucket>` or a folder), `VALUES_STORE` the BigQuery
 dataset of the zones' values (`bigquery://<project>/<dataset>`), `SAVED_ZONES` where the API keeps the saved zones'
@@ -10,9 +10,11 @@ import argparse
 import json
 import logging
 import os
+from datetime import date
 from pathlib import Path
 
-from idea_agro_jobs import maps, outlines, saved, site, values
+from idea_agro_jobs import collection, comparison, maps, outlines, saved, site, values
+from idea_agro_jobs.collection import COLLECTIONS
 from idea_agro_jobs.domain import Indicator
 from idea_agro_jobs.earth import EarthEngine
 from idea_agro_jobs.files import files_from
@@ -25,6 +27,8 @@ TASKS = {
     "maps": "draw the maps of new years, and the thumbnails of the latest",
     "saved": "add the composites the saved zones' seasonal series lack",
     "site": "ask for the website's build once the texts editors published have settled",
+    "collections": "add to each indicator's public collection the composites it lacks, as Earth Engine exports",
+    "compare": "compare each collection with the multiband asset it replaces, and write a report",
 }
 MAP_THEME = "apps/web/src/design/generated/map-theme.json"
 
@@ -62,9 +66,34 @@ def main() -> None:
         action="append",
         help="for saved: only this outline (repeatable), as the API asks when it writes one; else every zone's current",
     )
+    parser.add_argument(
+        "--since",
+        type=date.fromisoformat,
+        help="for collections and compare: only the composites that start on this day (YYYY-MM-DD) or later",
+    )
+    parser.add_argument(
+        "--until",
+        type=date.fromisoformat,
+        help="for collections and compare: only the composites that start on this day (YYYY-MM-DD) or earlier",
+    )
+    parser.add_argument(
+        "--indicator",
+        action="append",
+        type=Indicator,
+        choices=list(COLLECTIONS),
+        default=[],
+        help="for collections and compare: only this indicator's collection (repeatable); else every one",
+    )
+    parser.add_argument("--old", help="for compare: the multiband asset to compare, instead of the indicator's own")
+    parser.add_argument("--new", help="for compare: the collection to compare, instead of the indicator's own")
     arguments = parser.parse_args()
     if arguments.recompute and arguments.source == "public-files":
         parser.error("--recompute computes from Earth Engine, not from the public files")
+    if arguments.since and arguments.until and arguments.since > arguments.until:
+        parser.error("--since must not be after --until")
+    collections = [COLLECTIONS[indicator] for indicator in arguments.indicator] or list(COLLECTIONS.values())
+    if (arguments.old or arguments.new) and len(collections) != 1:
+        parser.error("--old and --new are one indicator's assets: name it with --indicator")
 
     handler = logging.StreamHandler()
     # Cloud Run sets CLOUD_RUN_JOB; a local run keeps plain lines.
@@ -103,6 +132,18 @@ def main() -> None:
                 files_from(os.environ["SAVED_ZONES"]),
                 only=arguments.outline,
                 recompute=arguments.recompute,
+            )
+        elif task == "collections":
+            collection.refresh(earth_engine(), collections, since=arguments.since, until=arguments.until)
+        elif task == "compare":
+            comparison.compare(
+                earth_engine(),
+                files,
+                collections,
+                since=arguments.since,
+                until=arguments.until,
+                old=arguments.old,
+                new=arguments.new,
             )
 
 
