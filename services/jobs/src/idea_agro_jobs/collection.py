@@ -123,17 +123,18 @@ def operation_composite(operation: Mapping[str, Any], collection: Collection) ->
 
 @dataclass(frozen=True)
 class StoredImage:
-    id: str
+    # The asset's full name, `projects/<project>/assets/<path>`, which Earth Engine takes as its identity.
+    name: str
     start: date | None
     properties: frozenset[str]
 
 
 def stored_image(asset: Mapping[str, Any]) -> StoredImage:
-    """An image of a collection, from Earth Engine's listing."""
+    """An image of a collection, from Earth Engine's listing, whose `id` is only for display."""
     start = cast(str | None, asset.get("startTime"))
     properties = cast(dict[str, Any], asset.get("properties") or {})
     return StoredImage(
-        id=str(asset["id"]),
+        name=str(asset["name"]),
         start=date.fromisoformat(start[:10]) if start else None,
         properties=frozenset(properties),
     )
@@ -171,7 +172,7 @@ def missing(
     collection: Collection, published: Iterable[date], images: Iterable[StoredImage], running: Iterable[date]
 ) -> list[date]:
     """The published composites that the collection lacks and no export is writing."""
-    held = {image.id for image in images}
+    held = {image.name for image in images}
     writing = set(running)
     return [start for start in published if image_asset(collection, start) not in held and start not in writing]
 
@@ -179,7 +180,7 @@ def missing(
 def incomplete(collection: Collection, images: Iterable[StoredImage]) -> list[str]:
     """The images that lack their start or the collection's properties."""
     expected = set(collection.properties)
-    return [image.id for image in images if image.start is None or not expected <= image.properties]
+    return [image.name for image in images if image.start is None or not expected <= image.properties]
 
 
 def refresh(

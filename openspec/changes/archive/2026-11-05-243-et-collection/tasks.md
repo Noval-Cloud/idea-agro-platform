@@ -5,6 +5,10 @@
 - [x] 1.3 Add the `compare` task: compare a multiband asset with a collection over a date range and write the report; test the statistics and the report
 - [x] 1.4 Document both tasks in the jobs README, and add `collections` to the daily run's arguments
 
-## 2. Close
+## 2. Review
 
-- [x] 2.1 Archive the change
+- [x] 2.1 Know the collection's images by their asset name, not the listing's display id
+
+## 3. Close
+
+- [x] 3.1 Archive the change

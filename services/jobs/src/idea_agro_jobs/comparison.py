@@ -210,7 +210,7 @@ def compare(
             start: band for start, band in comparable.asset_composites(old_asset).items() if first <= start <= last
         }
         images = {
-            image.start: image.id
+            image.start: image.name
             for image in comparable.collection_images(new_asset)
             if image.start and first <= image.start <= last
         }

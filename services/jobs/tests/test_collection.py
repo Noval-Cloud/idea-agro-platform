@@ -18,6 +18,7 @@ from idea_agro_jobs.collection import (
     image_id,
     incomplete,
     is_public,
+    missing,
     operation_composite,
     operation_state,
     refresh,
@@ -237,17 +238,25 @@ def test_only_running_exports_of_the_collection_count_as_written() -> None:
     assert operation_composite(operation("ET-8"), ET) is None
 
 
-def test_images_are_read_from_earth_engines_listing() -> None:
-    image = "projects/pastizalesrou/assets/idea-agro/et/2024_01_09"
+def test_images_are_known_by_their_name_not_their_display_id() -> None:
+    # As Earth Engine lists them: `id` is `name` without `projects/*/assets/`, for display only.
     listed = {
         "type": "IMAGE",
-        "id": image,
+        "name": "projects/pastizalesrou/assets/idea-agro/et/2024_01_09",
+        "id": "idea-agro/et/2024_01_09",
+        "updateTime": "2026-11-06T10:41:07.115Z",
         "startTime": "2024-01-09T00:00:00Z",
+        "endTime": "2024-01-17T00:00:00Z",
+        "sizeBytes": "5320000",
         "properties": {"period": "8-day", "unit": "mm/day"},
     }
+    bare = {"type": "IMAGE", "name": "projects/pastizalesrou/assets/idea-agro/et/x", "id": "idea-agro/et/x"}
 
-    assert stored_image(listed) == StoredImage(image, date(2024, 1, 9), PROPERTIES)
-    assert stored_image({"id": "x"}) == StoredImage("x", None, frozenset())
+    image = stored_image(listed)
+
+    assert image == StoredImage(image_asset(ET, date(2024, 1, 9)), date(2024, 1, 9), PROPERTIES)
+    assert missing(ET, [date(2024, 1, 9), date(2024, 1, 17)], [image], []) == [date(2024, 1, 17)]
+    assert stored_image(bare) == StoredImage(bare["name"], None, frozenset())
 
 
 def test_a_collection_is_public_when_all_users_read_it() -> None:
