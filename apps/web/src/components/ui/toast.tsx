@@ -12,8 +12,8 @@ const Confirm = createContext<(text: string) => void>(() => undefined);
 export const useToast = () => useContext(Confirm);
 
 /**
- * Shows the toasts asked for inside it, in the bottom-left corner, over any panel. Screen readers hear each one
- * through a status region; hovering or focusing one holds it.
+ * Shows the toasts asked for inside it at the bottom, on the right from small screens up, over any panel. Screen
+ * readers hear each one through a status region; hovering or focusing one holds it.
  */
 export function Toaster({
   label,
@@ -35,7 +35,7 @@ export function Toaster({
   const drop = (id: number) => setToasts((now) => now.filter((toast) => toast.id !== id));
 
   return (
-    <Toast.Provider label={label} duration={toastDuration} swipeDirection="left">
+    <Toast.Provider label={label} duration={toastDuration} swipeDirection="right">
       <Confirm value={show}>{children}</Confirm>
       {toasts.map((toast) => (
         <Toast.Root
@@ -53,7 +53,7 @@ export function Toaster({
       ))}
       <Toast.Viewport
         label={region}
-        className="fixed bottom-0 left-0 z-(--ia-layer-toast) m-0 flex w-full list-none flex-col gap-2 p-4 outline-none sm:max-w-sm"
+        className="fixed inset-x-0 bottom-0 z-(--ia-layer-toast) m-0 flex list-none flex-col gap-2 p-4 outline-none sm:left-auto sm:w-full sm:max-w-sm"
       />
     </Toast.Provider>
   );

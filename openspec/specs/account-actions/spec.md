@@ -56,7 +56,7 @@ When an account action fails, its panel SHALL stay open and SHALL show the error
 
 ### Requirement: The account confirms with one toast
 
-The account SHALL confirm every successful action with one toast component: in the bottom-left corner of the screen, over any panel, announced to screen readers through `role="status"`, gone after five seconds unless hovered or focused, and drawn from the design tokens in light and dark. Its messages SHALL be site texts in Spanish, English and Portuguese.
+The account SHALL confirm every successful action with one toast component, over any panel: announced to screen readers through `role="status"`, gone after five seconds unless hovered or focused, and drawn from the design tokens in light and dark. Its messages SHALL be site texts in Spanish, English and Portuguese.
 
 #### Scenario: A screen reader hears the confirmation
 
@@ -67,6 +67,20 @@ The account SHALL confirm every successful action with one toast component: in t
 
 - **WHEN** a toast appears and the person neither hovers nor focuses it
 - **THEN** it is gone after five seconds
+
+### Requirement: The toast sits at the bottom and can be closed
+
+The toast SHALL sit at the bottom of the screen: in its right corner on larger screens, and across its width on phones. Every toast SHALL have a visible close button with an X icon, named by a site text, so a person closes a toast that hides something.
+
+#### Scenario: A toast on a phone
+
+- **WHEN** an editor publishes a text on a phone
+- **THEN** the toast appears at the bottom of the screen, over the panel
+
+#### Scenario: A person closes a toast
+
+- **WHEN** a toast hides a button the person wants, and they press its close button
+- **THEN** the toast is gone and the button can be used
 
 ### Requirement: The account's other confirmations use the toast
 

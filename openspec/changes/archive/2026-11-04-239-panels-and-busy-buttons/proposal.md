@@ -8,7 +8,7 @@ Saving an article keeps its side panel open, and the only sign that a save is ru
 - **Multi-action panels** (a site text's draft, publish, discard and restore; a user's roles, sessions, access and recovery) stay open after each action, and each one confirms with the same toast.
 - **The account's other confirmations** move to the toast too: an invitation sent or resent, areas imported from a file, an indicator's articles reordered or put back. Removing an article from an indicator keeps its line under the list, because that line holds its Undo.
 - **On failure** the panel stays open and shows the error where it does today. The article picker, which closed before its save, now waits for it and shows a failure in its footer.
-- **One toast for the account:** in the bottom-left corner, announced to screen readers through `role="status"`, gone after five seconds (held while hovered or focused), in light and dark. Its messages are site texts in Spanish, English and Portuguese.
+- **One toast for the account:** at the bottom of the screen, in its right corner on larger screens and across it on phones, with a visible close button. It is announced to screen readers through `role="status"`, gone after five seconds (held while hovered or focused), in light and dark. Its messages are site texts in Spanish, English and Portuguese.
 - **The shared `Button` gets a busy state:** while its action runs it is disabled and shows a spinner inside it, keeping its width and its accessible name. Every account button that starts a request uses it, which retires the "Saving…", "Creating…" and "Inviting…" labels.
 
 ## Impact

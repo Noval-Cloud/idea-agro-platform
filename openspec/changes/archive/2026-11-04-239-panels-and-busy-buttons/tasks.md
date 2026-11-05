@@ -14,6 +14,10 @@
 - [x] 3.1 Confirm a user panel's actions with the toast, each with its own message, and show which action runs
 - [x] 3.2 Move invitations' and imported areas' confirmations to the toast, and use busy buttons for invitations, projects, areas and sessions
 
-## 4. Close
+## 4. Review
 
-- [x] 4.1 Archive the change
+- [x] 4.1 Show the toast at the bottom, in the right corner on larger screens and across phones, with its close button
+
+## 5. Close
+
+- [x] 5.1 Archive the change
