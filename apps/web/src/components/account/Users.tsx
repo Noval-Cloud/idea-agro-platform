@@ -4,6 +4,7 @@ import type { AccountRole, AdminAccount } from "@idea-agro/api-client";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Sheet } from "@/components/ui/sheet";
+import { useToast } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AppliedFilters,
@@ -27,11 +28,15 @@ import { PageHeader } from "./PageHeader";
 import { useLeaveGuard } from "./TextEditor";
 
 type Props = { translator: AccountTranslator; signInPath: string; me: string };
-type Notice = "done" | "failed" | "own" | "recoveryNotApplicable" | null;
+type Notice = "failed" | "own" | "recoveryNotApplicable" | null;
 type Outcome = { status: number; type?: string | null; account?: AdminAccount; notice?: Notice };
 type Run = (modules: Awaited<ReturnType<typeof api>>) => Promise<Outcome>;
-/** An action and what it is called, for the person to recognize when asked to confirm it. */
-type Action = { run: Run; label: string; account: AdminAccount };
+type Kind = "roles" | "revoke" | "access" | "recovery";
+/**
+ * An action, the button it runs on, what it is called, for the person to recognize when asked to confirm it, and
+ * what confirms it once done.
+ */
+type Action = { run: Run; kind: Kind; label: string; done: string; account: AdminAccount };
 type Role = "editor" | "admin";
 const roleChoices = ["admin", "editor", "client"] as const;
 const statusChoices = ["active", "disabled"] as const;
@@ -75,7 +80,9 @@ export default function Users({ translator, signInPath, me }: Props) {
   // An action waiting for the person to confirm it is them; confirming retries it.
   const [waiting, setWaiting] = useState<Action | null>(null);
   const [confirmReady, setConfirmReady] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<Kind | null>(null);
+  const [proving, setProving] = useState(false);
+  const toast = useToast();
   const confirm = useRef<(() => Promise<void>) | null>(null);
   const asking = useConfirm(t("account.users.cancel"));
 
@@ -152,7 +159,7 @@ export default function Users({ translator, signInPath, me }: Props) {
     setNotice(null);
     // A new action replaces one still waiting for confirmation.
     setWaiting(null);
-    setBusy(true);
+    setBusy(action.kind);
     try {
       const modules = await api();
       const outcome = await action.run(modules);
@@ -162,28 +169,33 @@ export default function Users({ translator, signInPath, me }: Props) {
         setAccounts((all) => all?.map((a) => (a.id === changed.id ? changed : a)) ?? null);
         setOlder((all) => all.map((a) => (a.id === changed.id ? changed : a)));
       }
-      setNotice(outcome.notice ?? (outcome.status < 300 ? "done" : outcome.status === 409 ? "own" : "failed"));
+      if (outcome.notice || outcome.status >= 300)
+        return setNotice(outcome.notice ?? (outcome.status === 409 ? "own" : "failed"));
       // The page shows the admin's own roles and sessions: it starts over when they change.
-      if (outcome.status < 300 && action.account.id === me) {
+      if (action.account.id === me) {
         release();
         return location.reload();
       }
+      toast(action.done);
     } catch (error) {
       const { SignedOut } = await import("@/lib/account");
       if (error instanceof SignedOut) return location.assign(signInPath);
       setNotice("failed");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const confirmAndRetry = async () => {
     const action = waiting;
     if (!action || !confirm.current) return;
+    setProving(true);
     try {
       await confirm.current();
     } catch {
       return setNotice("failed");
+    } finally {
+      setProving(false);
     }
     await act(action);
   };
@@ -193,7 +205,9 @@ export default function Users({ translator, signInPath, me }: Props) {
   const saveRoles = (account: AdminAccount, roles: Role[]) =>
     void act({
       account,
+      kind: "roles",
       label: t("account.users.saveRoles"),
+      done: t("account.users.done.roles"),
       run: async ([{ privately }, client]) => {
         const response = await privately((init) => client.changeAccountRoles(account.id, { roles }, init));
         if (response.status !== 200) return { status: response.status, type: problem(response.data) };
@@ -214,7 +228,9 @@ export default function Users({ translator, signInPath, me }: Props) {
       return;
     void act({
       account,
+      kind: "access",
       label: disabled ? t("account.users.disable") : t("account.users.enable"),
+      done: disabled ? t("account.users.done.disabled") : t("account.users.done.enabled"),
       run: async ([{ privately }, client]) => {
         const response = await privately((init) => client.changeAccountAccess(account.id, { disabled }, init));
         return response.status === 200
@@ -236,7 +252,9 @@ export default function Users({ translator, signInPath, me }: Props) {
       return;
     void act({
       account,
+      kind: "revoke",
       label: t("account.users.revoke"),
+      done: t("account.users.done.revoked"),
       run: async ([{ privately }, client]) => {
         const response = await privately((init) => client.revokeAccountSessions(account.id, init));
         return { status: response.status };
@@ -247,7 +265,9 @@ export default function Users({ translator, signInPath, me }: Props) {
   const recover = (account: AdminAccount) =>
     void act({
       account,
+      kind: "recovery",
       label: t("account.users.recovery"),
+      done: t("account.users.done.recovery"),
       run: async ([{ privately }, client]) => {
         const response = await privately((init) => client.sendAccountRecovery(account.id, init));
         return response.status === 409 ? { status: 409, notice: "recoveryNotApplicable" } : { status: response.status };
@@ -518,16 +538,18 @@ export default function Users({ translator, signInPath, me }: Props) {
                       <Button size="sm" variant="ghost" onClick={() => setWaiting(null)}>
                         {t("account.users.cancel")}
                       </Button>
-                      <Button size="sm" disabled={!confirmReady || busy} onClick={() => void confirmAndRetry()}>
+                      <Button
+                        size="sm"
+                        busy={proving}
+                        disabled={!confirmReady || busy !== null}
+                        onClick={() => void confirmAndRetry()}
+                      >
                         {t("account.users.confirmAction")}
                       </Button>
                     </div>
                   )}
                   {notice && (
-                    <p
-                      role={notice === "done" ? "status" : "alert"}
-                      className={cn("text-sm", notice === "done" ? "text-ink-muted" : "text-danger")}
-                    >
+                    <p role="alert" className="text-sm text-danger">
                       {t(`account.users.${notice}`)}
                     </p>
                   )}
@@ -613,7 +635,8 @@ function Manage({
   translator: AccountTranslator;
   account: AdminAccount;
   own: boolean;
-  busy: boolean;
+  /** The action running, whose button spins; the others wait. */
+  busy: Kind | null;
   roles: Set<Role>;
   unsaved: boolean;
   onToggle: (role: Role) => void;
@@ -649,14 +672,27 @@ function Manage({
             </span>
           </label>
         ))}
-        <Button size="sm" className="justify-self-start" disabled={busy || !unsaved} onClick={onRoles}>
+        <Button
+          size="sm"
+          className="justify-self-start"
+          busy={busy === "roles"}
+          disabled={busy !== null || !unsaved}
+          onClick={onRoles}
+        >
           {t("account.users.saveRoles")}
         </Button>
       </fieldset>
       <div className={part}>
         <p className="font-medium text-ink">{t("account.users.sessions")}</p>
         <p className="text-ink-muted">{t("account.users.sessionsBody")}</p>
-        <Button size="sm" variant="outline" className="justify-self-start" disabled={busy} onClick={onRevoke}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="justify-self-start"
+          busy={busy === "revoke"}
+          disabled={busy !== null}
+          onClick={onRevoke}
+        >
           {t("account.users.revoke")}
         </Button>
       </div>
@@ -670,7 +706,8 @@ function Manage({
             size="sm"
             variant="outline"
             className={cn("justify-self-start", !account.disabled && "text-danger")}
-            disabled={busy}
+            busy={busy === "access"}
+            disabled={busy !== null}
             onClick={() => onAccess(!account.disabled)}
           >
             {account.disabled ? t("account.users.enable") : t("account.users.disable")}
@@ -680,7 +717,14 @@ function Manage({
       <div className={part}>
         <p className="font-medium text-ink">{t("account.users.recoveryTitle")}</p>
         <p className="text-ink-muted">{t("account.users.recoveryBody")}</p>
-        <Button size="sm" variant="ghost" className="-ml-3 justify-self-start" disabled={busy} onClick={onRecover}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="-ml-3 justify-self-start"
+          busy={busy === "recovery"}
+          disabled={busy !== null}
+          onClick={onRecover}
+        >
           {t("account.users.recovery")}
         </Button>
       </div>

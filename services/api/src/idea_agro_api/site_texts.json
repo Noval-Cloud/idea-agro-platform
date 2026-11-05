@@ -2981,12 +2981,44 @@
       "pt": "Desativada"
     }
   },
-  "account.users.done": {
+  "account.users.done.disabled": {
     "format": "plain",
     "default": {
-      "es": "Listo.",
-      "en": "Done.",
-      "pt": "Pronto."
+      "es": "Cuenta deshabilitada.",
+      "en": "Account disabled.",
+      "pt": "Conta desativada."
+    }
+  },
+  "account.users.done.enabled": {
+    "format": "plain",
+    "default": {
+      "es": "Cuenta habilitada.",
+      "en": "Account enabled.",
+      "pt": "Conta ativada."
+    }
+  },
+  "account.users.done.recovery": {
+    "format": "plain",
+    "default": {
+      "es": "Enlace de recuperación enviado.",
+      "en": "Recovery link sent.",
+      "pt": "Link de recuperação enviado."
+    }
+  },
+  "account.users.done.revoked": {
+    "format": "plain",
+    "default": {
+      "es": "Sesiones cerradas.",
+      "en": "Sessions ended.",
+      "pt": "Sessões encerradas."
+    }
+  },
+  "account.users.done.roles": {
+    "format": "plain",
+    "default": {
+      "es": "Roles guardados.",
+      "en": "Roles saved.",
+      "pt": "Papéis salvos."
     }
   },
   "account.users.enable": {
