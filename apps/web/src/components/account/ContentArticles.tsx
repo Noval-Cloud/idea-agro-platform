@@ -524,49 +524,77 @@ export function IndicatorArticles({
   published: ReturnType<typeof usePublished>;
 }) {
   const { t } = translator;
+  const toast = useToast();
   const [chosen, setChosen] = useState<string[] | null>(null);
-  const [busy, setBusy] = useState(false);
+  // The change on its way: `pick`, `undo`, or a button and its article, such as `up:<id>`.
+  const [busy, setBusy] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
-  const [notice, setNotice] = useState<{ tone: "done" | "failed"; text: string; undo?: string[] } | null>(null);
+  // A failure, or the last removal with what Undo brings back.
+  const [notice, setNotice] = useState<{ text: string; undo?: string[] } | null>(null);
 
   // The list follows what is published, except while a change is on its way.
   useEffect(() => {
-    if (published && published !== "failed" && !busy) setChosen(published.citations[indicator] ?? []);
+    if (published && published !== "failed" && busy === null) setChosen(published.citations[indicator] ?? []);
   }, [published, indicator]);
 
   if (published === null || chosen === null) return <p className="text-sm text-ink-muted">{t("account.loading")}</p>;
   if (published === "failed") return <p className="text-sm text-danger">{t("account.content.listFailed")}</p>;
 
   const byId = new Map<string, ArticlePublic>(published.articles.map((a) => [a.id, a]));
-  const save = async (next: string[], done: string, undo?: string[]) => {
+  /** Saves the list; the list's own buttons show it at once, and go back if it fails. */
+  const save = async (next: string[], action: string, early = true) => {
     const before = chosen;
-    setChosen(next);
-    setBusy(true);
-    setNotice(null);
+    if (early) setChosen(next);
+    setBusy(action);
     try {
       await call((client, init) => client.citeArticles(indicator, { articles: next }, init));
-      setNotice({ tone: "done", text: done, undo });
-      // A removal takes the focused button with it: focus goes to its undo.
-      if (undo) requestAnimationFrame(() => document.getElementById("citation-undo")?.focus());
+      setChosen(next);
       onChanged();
+      return true;
     } catch {
       setChosen(before);
-      setNotice({ tone: "failed", text: t("account.content.saveFailed") });
+      return false;
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
-  const move = (index: number, by: number) => {
+  const failed = () => setNotice({ text: t("account.content.saveFailed") });
+  const move = async (articleId: string, index: number, by: number) => {
     const next = [...chosen];
     [next[index], next[index + by]] = [next[index + by], next[index]];
-    void save(next, t("account.content.citations.moved"));
+    if (!(await save(next, `${by < 0 ? "up" : "down"}:${articleId}`))) return failed();
+    setNotice(null);
+    toast(t("account.content.citations.moved"));
+  };
+  const remove = async (articleId: string, title: string) => {
+    const before = chosen;
+    const next = chosen.filter((c) => c !== articleId);
+    if (!(await save(next, `remove:${articleId}`))) return failed();
+    setNotice({ text: t("account.content.citations.removed", { title }), undo: before });
+    // A removal takes the focused button with it: focus goes to its undo.
+    requestAnimationFrame(() => document.getElementById("citation-undo")?.focus());
+  };
+  const undo = async (articles: string[]) => {
+    if (!(await save(articles, "undo"))) return failed();
+    setNotice(null);
+    toast(t("account.content.citations.restored"));
+    // The undo goes with its line: focus waits on the button that adds articles.
+    requestAnimationFrame(() => document.getElementById("citations-add")?.focus());
+  };
+  const pick = async (ids: string[]) => {
+    // The picker stays open until they are saved, so the list behind changes only then.
+    if (!(await save([...chosen, ...ids], "pick", false))) return false;
+    setPicking(false);
+    setNotice(null);
+    toast(t("account.content.citations.added", { count: ids.length }));
+    return true;
   };
 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-muted">{t("account.content.citations.lead")}</p>
-        <Button id="citations-add" disabled={busy} onClick={() => setPicking(true)}>
+        <Button id="citations-add" disabled={busy !== null} onClick={() => setPicking(true)}>
           <Plus aria-hidden="true" />
           {t("account.content.citations.add")}
         </Button>
@@ -603,8 +631,9 @@ export function IndicatorArticles({
                     size="icon"
                     variant="ghost"
                     className="size-9"
-                    disabled={busy || index === 0}
-                    onClick={() => move(index, -1)}
+                    busy={busy === `up:${articleId}`}
+                    disabled={busy !== null || index === 0}
+                    onClick={() => void move(articleId, index, -1)}
                     aria-label={t("account.content.citations.up", { title })}
                   >
                     <ArrowUp aria-hidden="true" />
@@ -613,8 +642,9 @@ export function IndicatorArticles({
                     size="icon"
                     variant="ghost"
                     className="size-9"
-                    disabled={busy || index === chosen.length - 1}
-                    onClick={() => move(index, 1)}
+                    busy={busy === `down:${articleId}`}
+                    disabled={busy !== null || index === chosen.length - 1}
+                    onClick={() => void move(articleId, index, 1)}
                     aria-label={t("account.content.citations.down", { title })}
                   >
                     <ArrowDown aria-hidden="true" />
@@ -623,14 +653,9 @@ export function IndicatorArticles({
                     size="icon"
                     variant="ghost"
                     className="size-9"
-                    disabled={busy}
-                    onClick={() =>
-                      void save(
-                        chosen.filter((c) => c !== articleId),
-                        t("account.content.citations.removed", { title }),
-                        chosen,
-                      )
-                    }
+                    busy={busy === `remove:${articleId}`}
+                    disabled={busy !== null}
+                    onClick={() => void remove(articleId, title)}
                     aria-label={t("account.content.citations.remove", { title })}
                   >
                     <X aria-hidden="true" />
@@ -645,7 +670,7 @@ export function IndicatorArticles({
         role="status"
         className={cn(
           "flex min-h-5 flex-wrap items-center gap-x-2 text-sm",
-          notice?.tone === "failed" ? "text-danger" : "text-ink-muted",
+          notice?.undo ? "text-ink-muted" : "text-danger",
         )}
       >
         {notice?.text}
@@ -655,8 +680,9 @@ export function IndicatorArticles({
             variant="link"
             size="sm"
             className="h-auto px-0"
-            disabled={busy}
-            onClick={() => void save(notice.undo ?? [], t("account.content.citations.restored"))}
+            busy={busy === "undo"}
+            disabled={busy !== null}
+            onClick={() => void undo(notice.undo ?? [])}
           >
             {t("account.content.citations.undo")}
           </Button>
@@ -667,20 +693,14 @@ export function IndicatorArticles({
           translator={translator}
           articles={published.articles.filter((a) => !chosen.includes(a.id))}
           onClose={() => setPicking(false)}
-          onPick={(ids) => {
-            setPicking(false);
-            // The button that opened the picker waits for the save; focus goes back to it then.
-            void save([...chosen, ...ids], t("account.content.citations.added", { count: ids.length })).then(() =>
-              requestAnimationFrame(() => document.getElementById("citations-add")?.focus()),
-            );
-          }}
+          onPick={pick}
         />
       )}
     </div>
   );
 }
 
-/** Picks several articles at once, found by a search. */
+/** Picks several articles at once, found by a search, and stays open until they are saved. */
 function ArticlePicker({
   translator,
   articles,
@@ -690,13 +710,20 @@ function ArticlePicker({
   translator: AccountTranslator;
   articles: ArticlePublic[];
   onClose: () => void;
-  onPick: (ids: string[]) => void;
+  /** Saves the articles picked; whether it could. */
+  onPick: (ids: string[]) => Promise<boolean>;
 }) {
   const { t } = translator;
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
+  const [adding, setAdding] = useState<"idle" | "busy" | "failed">("idle");
   const shown = articles.filter((a) => found(a, query));
   const toggle = (id: string) => setPicked(picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id]);
+  const add = async () => {
+    setAdding("busy");
+    // Once saved, the picker closes.
+    if (!(await onPick(picked))) setAdding("failed");
+  };
 
   return (
     <Sheet
@@ -706,13 +733,16 @@ function ArticlePicker({
       close={t("account.content.close")}
       footer={
         <div className="flex items-center justify-end gap-2">
-          <span className="mr-auto text-sm text-ink-muted">
-            {t("account.content.citations.picked", { count: picked.length })}
-          </span>
-          <Button variant="ghost" onClick={onClose}>
+          <div className="mr-auto grid min-w-0 text-sm">
+            <span className="text-ink-muted">{t("account.content.citations.picked", { count: picked.length })}</span>
+            <span role="status" className="text-danger">
+              {adding === "failed" ? t("account.content.saveFailed") : ""}
+            </span>
+          </div>
+          <Button variant="ghost" disabled={adding === "busy"} onClick={onClose}>
             {t("account.content.cancel")}
           </Button>
-          <Button disabled={picked.length === 0} onClick={() => onPick(picked)}>
+          <Button busy={adding === "busy"} disabled={picked.length === 0} onClick={() => void add()}>
             {picked.length
               ? t("account.content.citations.addPicked", { count: picked.length })
               : t("account.content.citations.add")}
